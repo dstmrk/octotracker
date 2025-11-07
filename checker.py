@@ -178,8 +178,7 @@ def format_notification(savings, user_rates, current_rates):
         message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
 
     message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
-    message += "☕️ Se questo bot ti è utile, puoi offrirmi un caffè :)\n"
-    message += "https://ko-fi.com/dstmrk"
+    message += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
 
     return message
 
