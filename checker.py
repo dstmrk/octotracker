@@ -29,37 +29,38 @@ def save_users(users):
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
 
-def format_number(value, min_decimals=0, max_decimals=3):
+def format_number(value, max_decimals=3):
     """
-    Formatta numero rimuovendo zeri trailing non significativi
+    Formatta numero con logica intelligente per i decimali:
+    - Se intero (es. 72.0) → "72" (nessun decimale)
+    - Se ha decimali → mostra almeno 2 decimali, rimuovi zeri trailing oltre il secondo
     Usa virgola come separatore decimale (stile italiano)
 
     Esempi:
     - 72.0 → "72"
-    - 72.5 → "72,5"
+    - 72.5 → "72,50"
     - 0.145 → "0,145"
     - 0.140 → "0,14"
-    - 0.100 → "0,1"
+    - 0.100 → "0,10"
     """
     # Arrotonda al massimo di decimali
     rounded = round(value, max_decimals)
 
-    # Converti in stringa con max decimali
+    # Controlla se è un numero intero
+    if rounded == int(rounded):
+        return str(int(rounded))
+
+    # Ha decimali: formatta con max decimali e poi sistema
     formatted = f"{rounded:.{max_decimals}f}"
 
-    # Rimuovi zeri trailing dopo la virgola
-    if '.' in formatted:
-        # Rimuovi zeri alla fine
-        formatted = formatted.rstrip('0')
-        # Se rimane solo il punto, rimuovilo (numero intero)
-        if formatted.endswith('.'):
-            formatted = formatted[:-1]
-        else:
-            # Assicurati di avere almeno min_decimals
-            parts = formatted.split('.')
-            if len(parts[1]) < min_decimals:
-                parts[1] = parts[1].ljust(min_decimals, '0')
-                formatted = '.'.join(parts)
+    # Rimuovi zeri trailing
+    formatted = formatted.rstrip('0')
+
+    # Assicurati di avere almeno 2 decimali se ci sono decimali
+    parts = formatted.split('.')
+    if len(parts) > 1 and len(parts[1]) < 2:
+        parts[1] = parts[1].ljust(2, '0')
+        formatted = '.'.join(parts)
 
     # Sostituisci punto con virgola (stile italiano)
     return formatted.replace('.', ',')
