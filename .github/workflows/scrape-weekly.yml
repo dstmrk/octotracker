@@ -1,0 +1,37 @@
+name: Scrape Tariffe Settimanale
+
+on:
+  schedule:
+    # Ogni lunedì alle 8:00 UTC (9:00 Italia)
+    - cron: '0 8 * * 1'
+  workflow_dispatch: # Permette esecuzione manuale
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Commit and push tariffe
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/current_rates.json data/last_scrape.png
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update tariffe $(date +'%Y-%m-%d')"
+          git push

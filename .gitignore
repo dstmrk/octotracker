@@ -1,0 +1,14 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Data files (commentato perché servono in git per GitHub Actions)
+# data/users.json
+# data/current_rates.json
+
+# Playwright
+.playwright/
+playwright-report/
+test-results/
