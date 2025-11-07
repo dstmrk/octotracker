@@ -76,6 +76,7 @@ python checker.py
 - `/update` - Aggiorna le tue tariffe
 - `/status` - Visualizza i tuoi dati salvati
 - `/remove` - Cancella i tuoi dati
+- `/help` - Mostra messaggio di aiuto con tutti i comandi
 - `/cancel` - Annulla registrazione in corso
 
 ### Automazione GitHub Actions

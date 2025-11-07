@@ -164,7 +164,8 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         "Comandi disponibili:\n"
         "• /status - Visualizza i tuoi dati\n"
         "• /update - Aggiorna i tuoi dati\n"
-        "• /remove - Cancella i tuoi dati"
+        "• /remove - Cancella i tuoi dati\n"
+        "• /help - Mostra tutti i comandi"
     )
 
     await send_message(messaggio)
@@ -224,6 +225,23 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Usa /start per registrarti."
         )
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mostra messaggio di aiuto"""
+    help_text = (
+        "👋 **Benvenuto su OctoTracker!**\n\n"
+        "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
+        "e ti avvisa quando ci sono offerte più convenienti rispetto alle tue.\n\n"
+        "**Comandi disponibili:**\n"
+        "• /start – Inizia e registra le tue tariffe attuali\n"
+        "• /update – Aggiorna le tariffe che hai impostato\n"
+        "• /status – Mostra le tariffe e lo stato attuale\n"
+        "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
+        "• /help – Mostra questo messaggio di aiuto\n\n"
+        "💡 Il bot controlla ogni giorno le tariffe e ti avvisa automaticamente se trova qualcosa di meglio.\n\n"
+        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
+    )
+    await update.message.reply_text(help_text)
+
 def main():
     """Avvia il bot"""
     token = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -251,6 +269,7 @@ def main():
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler('status', status))
     app.add_handler(CommandHandler('remove', remove_data))
+    app.add_handler(CommandHandler('help', help_command))
 
     print("🤖 Bot avviato!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
