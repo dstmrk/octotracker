@@ -89,13 +89,43 @@ def format_notification(savings, user_rates, current_rates):
     if savings['luce_energia'] or savings['luce_comm']:
         message += "💡 <b>Luce:</b>\n"
         message += f"Tua tariffa: {user_rates['luce_energia']:.3f} €/kWh, {user_rates['luce_comm']:.0f} €/anno\n"
-        message += f"Nuova tariffa: {current_rates['luce']['energia']:.3f} €/kWh, {current_rates['luce']['commercializzazione']:.0f} €/anno\n\n"
+
+        # Evidenzia in grassetto solo i valori migliorati
+        energia_new = current_rates['luce']['energia']
+        comm_new = current_rates['luce']['commercializzazione']
+
+        if savings['luce_energia']:
+            energia_str = f"<b>{energia_new:.3f} €/kWh</b>"
+        else:
+            energia_str = f"{energia_new:.3f} €/kWh"
+
+        if savings['luce_comm']:
+            comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+        else:
+            comm_str = f"{comm_new:.0f} €/anno"
+
+        message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
     # Mostra Gas se c'è risparmio in energia O commercializzazione (e se l'utente ha il gas)
     if (savings['gas_energia'] or savings['gas_comm']) and user_rates.get('gas_energia') is not None:
         message += "🔥 <b>Gas:</b>\n"
         message += f"Tua tariffa: {user_rates['gas_energia']:.2f} €/Smc, {user_rates['gas_comm']:.0f} €/anno\n"
-        message += f"Nuova tariffa: {current_rates['gas']['energia']:.2f} €/Smc, {current_rates['gas']['commercializzazione']:.0f} €/anno\n\n"
+
+        # Evidenzia in grassetto solo i valori migliorati
+        energia_new = current_rates['gas']['energia']
+        comm_new = current_rates['gas']['commercializzazione']
+
+        if savings['gas_energia']:
+            energia_str = f"<b>{energia_new:.2f} €/Smc</b>"
+        else:
+            energia_str = f"{energia_new:.2f} €/Smc"
+
+        if savings['gas_comm']:
+            comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+        else:
+            comm_str = f"{comm_new:.0f} €/anno"
+
+        message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
     message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
     message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe"
