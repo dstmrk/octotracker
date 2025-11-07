@@ -34,10 +34,13 @@ def save_users(users):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Avvia registrazione tariffe"""
     await update.message.reply_text(
-        "👋 Ciao! Ti aiuto a monitorare le tariffe Octopus Energy.\n\n"
-        "Inserisci le tue tariffe attuali.\n\n"
-        "💡 **LUCE - Costo Energia** (€/kWh)\n"
-        "Esempio: 0.12"
+        "👋 **Benvenuto su OctoTracker!**\n\n"
+        "Ti aiuterò a monitorare ogni giorno le tariffe di Octopus Energy "
+        "e a scoprire se ci sono offerte più convenienti rispetto alle tue.\n\n"
+        "Ti farò alcune brevi domande per registrare le tue tariffe attuali.\n"
+        "Rispondi con i valori numerici richiesti (puoi usare il punto o la virgola).\n\n"
+        "Iniziamo! ⚡️\n\n"
+        "👉 Quanto paghi per la materia energia luce (€/kWh)?"
     )
     return LUCE_ENERGIA
 
