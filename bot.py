@@ -6,15 +6,16 @@ Gestisce bot, scraper schedulato, checker schedulato e keep-alive
 import os
 import json
 import asyncio
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from dotenv import load_dotenv
 
 # Import moduli interni
 from scraper import scrape_octopus_tariffe
-from checker import check_and_notify_users
+from checker import check_and_notify_users, format_number
 
 load_dotenv()
 
@@ -60,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if is_update:
         messaggio = (
-            "♻️ **Aggiorniamo le tue tariffe!**\n\n"
+            "♻️ <b>Aggiorniamo le tue tariffe!</b>\n\n"
             "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
             "con le nuove offerte di Octopus Energy.\n\n"
             "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
@@ -68,7 +69,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         messaggio = (
-            "🐙 **Benvenuto su OctoTracker!**\n\n"
+            "🐙 <b>Benvenuto su OctoTracker!</b>\n\n"
             "Questo bot controlla ogni giorno le tariffe di Octopus Energy e ti avvisa "
             "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
             "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
@@ -76,7 +77,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👉 Iniziamo con la luce: quanto paghi per la materia energia (€/kWh)?"
         )
 
-    await update.message.reply_text(messaggio)
+    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
     return LUCE_ENERGIA
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,11 +159,11 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     if hasattr(update_or_query, 'effective_user'):
         # È un Update
         user_id = str(update_or_query.effective_user.id)
-        send_message = lambda text: update_or_query.message.reply_text(text)
+        send_message = lambda text, **kwargs: update_or_query.message.reply_text(text, **kwargs)
     else:
         # È un CallbackQuery
         user_id = str(update_or_query.from_user.id)
-        send_message = lambda text: update_or_query.edit_message_text(text)
+        send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
 
     user_data = {
         'luce_energia': context.user_data['luce_energia'],
@@ -179,19 +180,25 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     users[user_id] = user_data
     save_users(users)
 
+    # Formatta numeri rimuovendo zeri trailing
+    luce_energia_fmt = format_number(user_data['luce_energia'], max_decimals=3)
+    luce_comm_fmt = format_number(user_data['luce_comm'], max_decimals=2)
+
     messaggio = (
-        "✅ **Abbiamo finito!**\n\n"
+        "✅ <b>Abbiamo finito!</b>\n\n"
         "Ecco i dati che hai inserito:\n\n"
-        f"💡 **Luce**\n"
-        f"- Materia energia: {user_data['luce_energia']:.4f} €/kWh\n"
-        f"- Commercializzazione: {user_data['luce_comm']:.4f} €/anno\n"
+        f"💡 <b>Luce</b>\n"
+        f"- Materia energia: {luce_energia_fmt} €/kWh\n"
+        f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if not solo_luce:
+        gas_energia_fmt = format_number(user_data['gas_energia'], max_decimals=3)
+        gas_comm_fmt = format_number(user_data['gas_comm'], max_decimals=2)
         messaggio += (
-            f"\n🔥 **Gas**\n"
-            f"- Materia energia: {user_data['gas_energia']:.4f} €/Smc\n"
-            f"- Commercializzazione: {user_data['gas_comm']:.4f} €/anno\n"
+            f"\n🔥 <b>Gas</b>\n"
+            f"- Materia energia: {gas_energia_fmt} €/Smc\n"
+            f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
     messaggio += (
@@ -200,7 +207,7 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
 
-    await send_message(messaggio)
+    await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -215,28 +222,36 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id not in users:
         await update.message.reply_text(
-            "❌ Non hai ancora salvato i tuoi dati.\n"
-            "Usa /start per registrarti."
+            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
+            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
+            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
         return
 
     data = users[user_id]
+
+    # Formatta numeri rimuovendo zeri trailing
+    luce_energia_fmt = format_number(data['luce_energia'], max_decimals=3)
+    luce_comm_fmt = format_number(data['luce_comm'], max_decimals=2)
+
     messaggio = (
-        "📊 **I tuoi dati:**\n\n"
-        f"💡 **Luce:**\n"
-        f"  - Energia: €{data['luce_energia']:.4f}/kWh\n"
-        f"  - Commercializzazione: €{data['luce_comm']:.4f}/anno\n"
+        "📊 <b>I tuoi dati:</b>\n\n"
+        f"💡 <b>Luce:</b>\n"
+        f"  - Energia: {luce_energia_fmt} €/kWh\n"
+        f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if data.get('gas_energia') is not None:
+        gas_energia_fmt = format_number(data['gas_energia'], max_decimals=3)
+        gas_comm_fmt = format_number(data['gas_comm'], max_decimals=2)
         messaggio += (
-            f"\n🔥 **Gas:**\n"
-            f"  - Energia: €{data['gas_energia']:.4f}/Smc\n"
-            f"  - Commercializzazione: €{data['gas_comm']:.4f}/anno\n"
+            f"\n🔥 <b>Gas:</b>\n"
+            f"  - Energia: {gas_energia_fmt} €/Smc\n"
+            f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
     messaggio += "\nPer modificarli usa /update"
-    await update.message.reply_text(messaggio)
+    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
 
 async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancella dati utente"""
@@ -247,22 +262,27 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del users[user_id]
         save_users(users)
         await update.message.reply_text(
-            "✅ I tuoi dati sono stati cancellati.\n"
-            "Usa /start se vuoi registrarti nuovamente."
+            "✅ <b>Dati cancellati con successo</b>\n\n"
+            "Tutte le informazioni che avevi registrato (tariffe e preferenze) sono state rimosse.\n"
+            "Da questo momento non riceverai più notifiche da OctoTracker.\n\n"
+            "🐙 Ti ringrazio per averlo provato!\n\n"
+            "Se in futuro vuoi ricominciare a monitorare le tariffe, ti basta usare il comando /start.",
+            parse_mode=ParseMode.HTML
         )
     else:
         await update.message.reply_text(
-            "❌ Non hai dati da cancellare.\n"
-            "Usa /start per registrarti."
+            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
+            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
+            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mostra messaggio di aiuto"""
     help_text = (
-        "👋 **Benvenuto su OctoTracker!**\n\n"
+        "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
         "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
         "e ti avvisa quando ci sono offerte più convenienti rispetto alle tue.\n\n"
-        "**Comandi disponibili:**\n"
+        "<b>Comandi disponibili:</b>\n"
         "• /start – Inizia e registra le tue tariffe attuali\n"
         "• /update – Aggiorna le tariffe che hai impostato\n"
         "• /status – Mostra le tariffe e lo stato attuale\n"
@@ -271,7 +291,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
-    await update.message.reply_text(help_text)
+    await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
 
 # ========== SCHEDULER ==========
 
@@ -293,25 +313,59 @@ async def run_checker(bot_token: str):
     except Exception as e:
         print(f"❌ Errore checker: {e}")
 
-async def daily_scheduler(bot_token: str):
-    """Scheduler giornaliero per scraper e checker"""
-    print(f"📅 Scheduler attivo - Scraper: {SCRAPER_HOUR}:00, Checker: {CHECKER_HOUR}:00")
+def calculate_seconds_until_next_run(target_hour: int) -> float:
+    """
+    Calcola secondi fino alla prossima esecuzione all'ora target.
 
+    Args:
+        target_hour: Ora del giorno (0-23) in cui eseguire il task
+
+    Returns:
+        Secondi fino alla prossima esecuzione
+    """
+    now = datetime.now()
+    target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+
+    # Se l'orario è già passato oggi, schedula per domani
+    if now >= target:
+        target += timedelta(days=1)
+
+    delta = (target - now).total_seconds()
+    return delta
+
+async def scraper_daily_task():
+    """Task giornaliero per lo scraper - si esegue una volta al giorno"""
+    # Calcola quanto dormire fino alla prima esecuzione
+    seconds_until_run = calculate_seconds_until_next_run(SCRAPER_HOUR)
+    hours_until_run = seconds_until_run / 3600
+
+    print(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    await asyncio.sleep(seconds_until_run)
+
+    # Loop infinito: esegui e dormi 24 ore
     while True:
-        now = datetime.now()
+        await run_scraper()
 
-        # Controlla se è ora di eseguire lo scraper
-        if now.hour == SCRAPER_HOUR and now.minute == 0:
-            await run_scraper()
-            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+        # Dormi esattamente 24 ore fino alla prossima esecuzione
+        print(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
+        await asyncio.sleep(24 * 3600)
 
-        # Controlla se è ora di eseguire il checker
-        elif now.hour == CHECKER_HOUR and now.minute == 0:
-            await run_checker(bot_token)
-            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+async def checker_daily_task(bot_token: str):
+    """Task giornaliero per il checker - si esegue una volta al giorno"""
+    # Calcola quanto dormire fino alla prima esecuzione
+    seconds_until_run = calculate_seconds_until_next_run(CHECKER_HOUR)
+    hours_until_run = seconds_until_run / 3600
 
-        # Controlla ogni 30 secondi
-        await asyncio.sleep(30)
+    print(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    await asyncio.sleep(seconds_until_run)
+
+    # Loop infinito: esegui e dormi 24 ore
+    while True:
+        await run_checker(bot_token)
+
+        # Dormi esattamente 24 ore fino alla prossima esecuzione
+        print(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
+        await asyncio.sleep(24 * 3600)
 
 async def keep_alive():
     """Keep-alive per evitare che il worker vada in sleep (solo in modalità polling)"""
@@ -336,8 +390,9 @@ async def post_init(application: Application) -> None:
     """Avvia scheduler e keep-alive dopo l'inizializzazione del bot"""
     bot_token = application.bot.token
 
-    # Avvia scheduler in background
-    asyncio.create_task(daily_scheduler(bot_token))
+    # Avvia i due task giornalieri separati in background
+    asyncio.create_task(scraper_daily_task())
+    asyncio.create_task(checker_daily_task(bot_token))
 
     # Avvia keep-alive in background
     asyncio.create_task(keep_alive())
