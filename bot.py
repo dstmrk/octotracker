@@ -33,15 +33,30 @@ def save_users(users):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Avvia registrazione tariffe"""
-    await update.message.reply_text(
-        "👋 **Benvenuto su OctoTracker!**\n\n"
-        "Ti aiuterò a monitorare ogni giorno le tariffe di Octopus Energy "
-        "e a scoprire se ci sono offerte più convenienti rispetto alle tue.\n\n"
-        "Ti farò alcune brevi domande per registrare le tue tariffe attuali.\n"
-        "Rispondi con i valori numerici richiesti (puoi usare il punto o la virgola).\n\n"
-        "Iniziamo! ⚡️\n\n"
-        "👉 Quanto paghi per la materia energia luce (€/kWh)?"
-    )
+    # Verifica se è un update o una prima registrazione
+    users = load_users()
+    user_id = str(update.effective_user.id)
+    is_update = user_id in users
+
+    if is_update:
+        messaggio = (
+            "♻️ **Aggiorniamo le tue tariffe!**\n\n"
+            "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
+            "con le nuove offerte di Octopus Energy.\n\n"
+            "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
+            "👉 Partiamo: quanto paghi ora per la materia energia luce (€/kWh)?"
+        )
+    else:
+        messaggio = (
+            "🐙 **Benvenuto su OctoTracker!**\n\n"
+            "Questo bot controlla ogni giorno le tariffe di Octopus Energy e ti avvisa "
+            "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
+            "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
+            "Rispondi passo passo ai messaggi: ci vorrà meno di un minuto. ⚡️\n\n"
+            "👉 Iniziamo con la luce: quanto paghi per la materia energia (€/kWh)?"
+        )
+
+    await update.message.reply_text(messaggio)
     return LUCE_ENERGIA
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
