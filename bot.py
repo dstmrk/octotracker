@@ -11,6 +11,7 @@ from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
+from telegram.error import TimedOut, NetworkError
 from dotenv import load_dotenv
 
 # Import moduli interni
@@ -384,6 +385,23 @@ async def keep_alive():
         await asyncio.sleep(KEEPALIVE_INTERVAL * 60)
         print(f"💓 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Keep-alive ping")
 
+# ========== ERROR HANDLER ==========
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Gestisce errori senza crashare il bot"""
+    error = context.error
+
+    # Log dell'errore
+    print(f"❌ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Errore: {error}")
+
+    # Gestione specifica per timeout e errori di rete
+    if isinstance(error, (TimedOut, NetworkError)):
+        print("⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente.")
+    else:
+        print(f"⚠️  Tipo errore: {type(error).__name__}")
+
+    # Non fare nulla - il bot continuerà a funzionare
+
 # ========== MAIN ==========
 
 async def post_init(application: Application) -> None:
@@ -415,7 +433,17 @@ def main():
     else:
         print(f"💓 Keep-alive: ogni {KEEPALIVE_INTERVAL} minuti" if KEEPALIVE_INTERVAL > 0 else "💓 Keep-alive: disabilitato")
 
-    app = Application.builder().token(token).post_init(post_init).build()
+    # Costruisci app con timeout aumentati per connessioni lente (Raspberry Pi)
+    app = (
+        Application.builder()
+        .token(token)
+        .post_init(post_init)
+        .connect_timeout(30.0)  # Timeout connessione (default: 5.0)
+        .read_timeout(30.0)     # Timeout lettura (default: 5.0)
+        .write_timeout(30.0)    # Timeout scrittura (default: 5.0)
+        .pool_timeout(30.0)     # Timeout pool connessioni (default: 1.0)
+        .build()
+    )
 
     # Handler conversazione registrazione
     conv_handler = ConversationHandler(
@@ -437,6 +465,9 @@ def main():
     app.add_handler(CommandHandler('status', status))
     app.add_handler(CommandHandler('remove', remove_data))
     app.add_handler(CommandHandler('help', help_command))
+
+    # Registra error handler per gestire timeout e errori di rete
+    app.add_error_handler(error_handler)
 
     print("✅ Bot configurato!")
 
