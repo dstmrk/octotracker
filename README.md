@@ -1,5 +1,7 @@
 # 🔌 OctoTracker
 
+<img height="256" width="256" src="https://github.com/user-attachments/assets/95261ce6-a06e-4b3e-b980-009069568753" alt="octotracker"/>
+      
 Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono offerte più convenienti.
 
 ## 🎯 Funzionalità
