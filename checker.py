@@ -80,39 +80,25 @@ def check_better_rates(user_rates, current_rates):
 
     return savings
 
-def format_notification(savings):
+def format_notification(savings, user_rates, current_rates):
     """Formatta messaggio di notifica"""
-    message = "🎉 <b>Trovate tariffe più convenienti!</b>\n\n"
+    message = "⚡️ <b>Buone notizie!</b>\n"
+    message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
 
-    if savings['luce_energia']:
-        s = savings['luce_energia']
-        message += f"💡 <b>LUCE - Energia</b>\n"
-        message += f"  Attuale: €{s['attuale']:.4f}/kWh\n"
-        message += f"  Nuova: €{s['nuova']:.4f}/kWh\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/kWh\n\n"
+    # Mostra Luce se c'è risparmio in energia O commercializzazione
+    if savings['luce_energia'] or savings['luce_comm']:
+        message += "💡 <b>Luce:</b>\n"
+        message += f"Tua tariffa: {user_rates['luce_energia']:.3f} €/kWh, {user_rates['luce_comm']:.0f} €/anno\n"
+        message += f"Nuova tariffa: {current_rates['luce']['energia']:.3f} €/kWh, {current_rates['luce']['commercializzazione']:.0f} €/anno\n\n"
 
-    if savings['luce_comm']:
-        s = savings['luce_comm']
-        message += f"💡 <b>LUCE - Commercializzazione</b>\n"
-        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
-        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
+    # Mostra Gas se c'è risparmio in energia O commercializzazione (e se l'utente ha il gas)
+    if (savings['gas_energia'] or savings['gas_comm']) and user_rates.get('gas_energia') is not None:
+        message += "🔥 <b>Gas:</b>\n"
+        message += f"Tua tariffa: {user_rates['gas_energia']:.2f} €/Smc, {user_rates['gas_comm']:.0f} €/anno\n"
+        message += f"Nuova tariffa: {current_rates['gas']['energia']:.2f} €/Smc, {current_rates['gas']['commercializzazione']:.0f} €/anno\n\n"
 
-    if savings['gas_energia']:
-        s = savings['gas_energia']
-        message += f"🔥 <b>GAS - Energia</b>\n"
-        message += f"  Attuale: €{s['attuale']:.4f}/Smc\n"
-        message += f"  Nuova: €{s['nuova']:.4f}/Smc\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/Smc\n\n"
-
-    if savings['gas_comm']:
-        s = savings['gas_comm']
-        message += f"🔥 <b>GAS - Commercializzazione</b>\n"
-        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
-        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
-
-    message += "🔗 Controlla le tariffe su: https://octopusenergy.it/le-nostre-tariffe"
+    message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
+    message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe"
 
     return message
 
@@ -172,7 +158,7 @@ async def check_and_notify_users(bot_token: str):
                 print(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
             else:
                 # Tariffe diverse o prima notifica - invia messaggio
-                message = format_notification(savings)
+                message = format_notification(savings, user_rates, current_rates)
                 success = await send_notification(bot, user_id, message)
                 if success:
                     # Aggiorna last_notified_rates per questo utente
