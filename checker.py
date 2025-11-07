@@ -87,30 +87,30 @@ def format_notification(savings):
     if savings['luce_energia']:
         s = savings['luce_energia']
         message += f"💡 **LUCE - Energia**\n"
-        message += f"  Attuale: €{s['attuale']:.3f}/kWh\n"
-        message += f"  Nuova: €{s['nuova']:.3f}/kWh\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.3f}/kWh\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/kWh\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/kWh\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/kWh\n\n"
 
     if savings['luce_comm']:
         s = savings['luce_comm']
         message += f"💡 **LUCE - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/anno\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/anno\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/anno\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
 
     if savings['gas_energia']:
         s = savings['gas_energia']
         message += f"🔥 **GAS - Energia**\n"
-        message += f"  Attuale: €{s['attuale']:.3f}/Smc\n"
-        message += f"  Nuova: €{s['nuova']:.3f}/Smc\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.3f}/Smc\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/Smc\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/Smc\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/Smc\n\n"
 
     if savings['gas_comm']:
         s = savings['gas_comm']
         message += f"🔥 **GAS - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/anno\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/anno\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/anno\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
 
     message += "🔗 Controlla le tariffe su: https://octopusenergy.it/le-nostre-tariffe"
 

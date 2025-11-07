@@ -81,7 +81,7 @@ def scrape_octopus_tariffe():
                     "commercializzazione": comm_luce_anno,
                     "nome_tariffa": "Mono-oraria Fissa"
                 }
-                print(f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.3f}/kWh, comm: €{comm_luce_anno:.2f}/anno" if comm_luce_anno else f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.3f}/kWh")
+                print(f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.4f}/kWh, comm: €{comm_luce_anno:.4f}/anno" if comm_luce_anno else f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.4f}/kWh")
 
             if energia_gas_match:
                 # Per gas, cerca commercializzazione (può essere in €/mese o €/anno)
@@ -106,7 +106,7 @@ def scrape_octopus_tariffe():
                     "commercializzazione": comm_gas_anno,
                     "nome_tariffa": "Mono-oraria Fissa"
                 }
-                print(f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.3f}/Smc, comm: €{comm_gas_anno:.2f}/anno" if comm_gas_anno else f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.3f}/Smc")
+                print(f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.4f}/Smc, comm: €{comm_gas_anno:.4f}/anno" if comm_gas_anno else f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.4f}/Smc")
 
             # Se non troviamo nulla con regex, proviamo a cercare elementi specifici
             if not tariffe_data["luce"] or not tariffe_data["gas"]:
@@ -138,7 +138,7 @@ def scrape_octopus_tariffe():
                                 "commercializzazione": comm_anno,
                                 "nome_tariffa": "Mono-oraria Fissa"
                             }
-                            print(f"✅ Luce trovata (da card): €{tariffe_data['luce']['energia']:.3f}/kWh")
+                            print(f"✅ Luce trovata (da card): €{tariffe_data['luce']['energia']:.4f}/kWh")
 
                     # Cerca gas
                     if 'gas' in card_text.lower():
@@ -160,7 +160,7 @@ def scrape_octopus_tariffe():
                                 "commercializzazione": comm_anno,
                                 "nome_tariffa": "Mono-oraria Fissa"
                             }
-                            print(f"✅ Gas trovato (da card): €{tariffe_data['gas']['energia']:.3f}/Smc")
+                            print(f"✅ Gas trovato (da card): €{tariffe_data['gas']['energia']:.4f}/Smc")
 
             # Salva screenshot per debug
             screenshot_path = DATA_DIR / "last_scrape.png"

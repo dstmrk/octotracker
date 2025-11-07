@@ -167,15 +167,15 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         "✅ **Abbiamo finito!**\n\n"
         "Ecco i dati che hai inserito:\n\n"
         f"💡 **Luce**\n"
-        f"- Materia energia: {user_data['luce_energia']:.3f} €/kWh\n"
-        f"- Commercializzazione: {user_data['luce_comm']:.2f} €/anno\n"
+        f"- Materia energia: {user_data['luce_energia']:.4f} €/kWh\n"
+        f"- Commercializzazione: {user_data['luce_comm']:.4f} €/anno\n"
     )
 
     if not solo_luce:
         messaggio += (
             f"\n🔥 **Gas**\n"
-            f"- Materia energia: {user_data['gas_energia']:.3f} €/Smc\n"
-            f"- Commercializzazione: {user_data['gas_comm']:.2f} €/anno\n"
+            f"- Materia energia: {user_data['gas_energia']:.4f} €/Smc\n"
+            f"- Commercializzazione: {user_data['gas_comm']:.4f} €/anno\n"
         )
 
     messaggio += (
@@ -208,15 +208,15 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messaggio = (
         "📊 **I tuoi dati:**\n\n"
         f"💡 **Luce:**\n"
-        f"  - Energia: €{data['luce_energia']:.3f}/kWh\n"
-        f"  - Commercializzazione: €{data['luce_comm']:.2f}/anno\n"
+        f"  - Energia: €{data['luce_energia']:.4f}/kWh\n"
+        f"  - Commercializzazione: €{data['luce_comm']:.4f}/anno\n"
     )
 
     if data.get('gas_energia') is not None:
         messaggio += (
             f"\n🔥 **Gas:**\n"
-            f"  - Energia: €{data['gas_energia']:.3f}/Smc\n"
-            f"  - Commercializzazione: €{data['gas_comm']:.2f}/anno\n"
+            f"  - Energia: €{data['gas_energia']:.4f}/Smc\n"
+            f"  - Commercializzazione: €{data['gas_comm']:.4f}/anno\n"
         )
 
     messaggio += "\nPer modificarli usa /update"
