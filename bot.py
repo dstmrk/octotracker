@@ -149,26 +149,24 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
 
     # Messaggio di conferma
     messaggio = (
-        "✅ **Dati registrati con successo!**\n\n"
-        f"💡 **Luce:**\n"
-        f"  - Energia: €{user_data['luce_energia']:.3f}/kWh\n"
-        f"  - Commercializzazione: €{user_data['luce_comm']:.2f}/anno\n"
+        "✅ **Abbiamo finito!**\n\n"
+        "Ecco i dati che hai inserito:\n\n"
+        f"💡 **Luce**\n"
+        f"- Materia energia: {user_data['luce_energia']:.3f} €/kWh\n"
+        f"- Commercializzazione: {user_data['luce_comm']:.2f} €/anno\n"
     )
 
     if not solo_luce:
         messaggio += (
-            f"\n🔥 **Gas:**\n"
-            f"  - Energia: €{user_data['gas_energia']:.3f}/Smc\n"
-            f"  - Commercializzazione: €{user_data['gas_comm']:.2f}/anno\n"
+            f"\n🔥 **Gas**\n"
+            f"- Materia energia: {user_data['gas_energia']:.3f} €/Smc\n"
+            f"- Commercializzazione: {user_data['gas_comm']:.2f} €/anno\n"
         )
 
     messaggio += (
-        "\n📬 Riceverai notifiche quando troverò tariffe più convenienti!\n\n"
-        "Comandi disponibili:\n"
-        "• /status - Visualizza i tuoi dati\n"
-        "• /update - Aggiorna i tuoi dati\n"
-        "• /remove - Cancella i tuoi dati\n"
-        "• /help - Mostra tutti i comandi"
+        "\nTutto corretto?\n"
+        "Se in futuro vuoi modificare qualcosa, puoi usare il comando /update.\n\n"
+        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
 
     await send_message(messaggio)
