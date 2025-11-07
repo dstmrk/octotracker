@@ -82,32 +82,32 @@ def check_better_rates(user_rates, current_rates):
 
 def format_notification(savings):
     """Formatta messaggio di notifica"""
-    message = "🎉 **Trovate tariffe più convenienti!**\n\n"
+    message = "🎉 <b>Trovate tariffe più convenienti!</b>\n\n"
 
     if savings['luce_energia']:
         s = savings['luce_energia']
-        message += f"💡 **LUCE - Energia**\n"
+        message += f"💡 <b>LUCE - Energia</b>\n"
         message += f"  Attuale: €{s['attuale']:.4f}/kWh\n"
         message += f"  Nuova: €{s['nuova']:.4f}/kWh\n"
         message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/kWh\n\n"
 
     if savings['luce_comm']:
         s = savings['luce_comm']
-        message += f"💡 **LUCE - Commercializzazione**\n"
+        message += f"💡 <b>LUCE - Commercializzazione</b>\n"
         message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
         message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
         message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
 
     if savings['gas_energia']:
         s = savings['gas_energia']
-        message += f"🔥 **GAS - Energia**\n"
+        message += f"🔥 <b>GAS - Energia</b>\n"
         message += f"  Attuale: €{s['attuale']:.4f}/Smc\n"
         message += f"  Nuova: €{s['nuova']:.4f}/Smc\n"
         message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/Smc\n\n"
 
     if savings['gas_comm']:
         s = savings['gas_comm']
-        message += f"🔥 **GAS - Commercializzazione**\n"
+        message += f"🔥 <b>GAS - Commercializzazione</b>\n"
         message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
         message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
         message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
@@ -119,7 +119,7 @@ def format_notification(savings):
 async def send_notification(bot, user_id, message):
     """Invia notifica Telegram"""
     try:
-        await bot.send_message(chat_id=user_id, text=message, parse_mode='Markdown')
+        await bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return True
     except Exception as e:
         print(f"❌ Errore invio messaggio a {user_id}: {e}")

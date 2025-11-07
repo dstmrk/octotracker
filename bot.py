@@ -9,6 +9,7 @@ import asyncio
 from datetime import datetime, time
 from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from dotenv import load_dotenv
 
@@ -60,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if is_update:
         messaggio = (
-            "♻️ **Aggiorniamo le tue tariffe!**\n\n"
+            "♻️ <b>Aggiorniamo le tue tariffe!</b>\n\n"
             "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
             "con le nuove offerte di Octopus Energy.\n\n"
             "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
@@ -68,7 +69,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         messaggio = (
-            "🐙 **Benvenuto su OctoTracker!**\n\n"
+            "🐙 <b>Benvenuto su OctoTracker!</b>\n\n"
             "Questo bot controlla ogni giorno le tariffe di Octopus Energy e ti avvisa "
             "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
             "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
@@ -76,7 +77,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👉 Iniziamo con la luce: quanto paghi per la materia energia (€/kWh)?"
         )
 
-    await update.message.reply_text(messaggio)
+    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
     return LUCE_ENERGIA
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,11 +159,11 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     if hasattr(update_or_query, 'effective_user'):
         # È un Update
         user_id = str(update_or_query.effective_user.id)
-        send_message = lambda text: update_or_query.message.reply_text(text)
+        send_message = lambda text, **kwargs: update_or_query.message.reply_text(text, **kwargs)
     else:
         # È un CallbackQuery
         user_id = str(update_or_query.from_user.id)
-        send_message = lambda text: update_or_query.edit_message_text(text)
+        send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
 
     user_data = {
         'luce_energia': context.user_data['luce_energia'],
@@ -180,16 +181,16 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     save_users(users)
 
     messaggio = (
-        "✅ **Abbiamo finito!**\n\n"
+        "✅ <b>Abbiamo finito!</b>\n\n"
         "Ecco i dati che hai inserito:\n\n"
-        f"💡 **Luce**\n"
+        f"💡 <b>Luce</b>\n"
         f"- Materia energia: {user_data['luce_energia']:.4f} €/kWh\n"
         f"- Commercializzazione: {user_data['luce_comm']:.4f} €/anno\n"
     )
 
     if not solo_luce:
         messaggio += (
-            f"\n🔥 **Gas**\n"
+            f"\n🔥 <b>Gas</b>\n"
             f"- Materia energia: {user_data['gas_energia']:.4f} €/Smc\n"
             f"- Commercializzazione: {user_data['gas_comm']:.4f} €/anno\n"
         )
@@ -200,7 +201,7 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
 
-    await send_message(messaggio)
+    await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -222,21 +223,21 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = users[user_id]
     messaggio = (
-        "📊 **I tuoi dati:**\n\n"
-        f"💡 **Luce:**\n"
+        "📊 <b>I tuoi dati:</b>\n\n"
+        f"💡 <b>Luce:</b>\n"
         f"  - Energia: €{data['luce_energia']:.4f}/kWh\n"
         f"  - Commercializzazione: €{data['luce_comm']:.4f}/anno\n"
     )
 
     if data.get('gas_energia') is not None:
         messaggio += (
-            f"\n🔥 **Gas:**\n"
+            f"\n🔥 <b>Gas:</b>\n"
             f"  - Energia: €{data['gas_energia']:.4f}/Smc\n"
             f"  - Commercializzazione: €{data['gas_comm']:.4f}/anno\n"
         )
 
     messaggio += "\nPer modificarli usa /update"
-    await update.message.reply_text(messaggio)
+    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
 
 async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancella dati utente"""
@@ -259,10 +260,10 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mostra messaggio di aiuto"""
     help_text = (
-        "👋 **Benvenuto su OctoTracker!**\n\n"
+        "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
         "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
         "e ti avvisa quando ci sono offerte più convenienti rispetto alle tue.\n\n"
-        "**Comandi disponibili:**\n"
+        "<b>Comandi disponibili:</b>\n"
         "• /start – Inizia e registra le tue tariffe attuali\n"
         "• /update – Aggiorna le tariffe che hai impostato\n"
         "• /status – Mostra le tariffe e lo stato attuale\n"
@@ -271,7 +272,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
-    await update.message.reply_text(help_text)
+    await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
 
 # ========== SCHEDULER ==========
 
