@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 # Import moduli interni
 from scraper import scrape_octopus_tariffe
-from checker import check_and_notify_users
+from checker import check_and_notify_users, format_number
 
 load_dotenv()
 
@@ -180,19 +180,25 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     users[user_id] = user_data
     save_users(users)
 
+    # Formatta numeri rimuovendo zeri trailing
+    luce_energia_fmt = format_number(user_data['luce_energia'], max_decimals=3)
+    luce_comm_fmt = format_number(user_data['luce_comm'], max_decimals=2)
+
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
         "Ecco i dati che hai inserito:\n\n"
         f"💡 <b>Luce</b>\n"
-        f"- Materia energia: {user_data['luce_energia']:.4f} €/kWh\n"
-        f"- Commercializzazione: {user_data['luce_comm']:.4f} €/anno\n"
+        f"- Materia energia: {luce_energia_fmt} €/kWh\n"
+        f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if not solo_luce:
+        gas_energia_fmt = format_number(user_data['gas_energia'], max_decimals=3)
+        gas_comm_fmt = format_number(user_data['gas_comm'], max_decimals=2)
         messaggio += (
             f"\n🔥 <b>Gas</b>\n"
-            f"- Materia energia: {user_data['gas_energia']:.4f} €/Smc\n"
-            f"- Commercializzazione: {user_data['gas_comm']:.4f} €/anno\n"
+            f"- Materia energia: {gas_energia_fmt} €/Smc\n"
+            f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
     messaggio += (
@@ -222,18 +228,25 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     data = users[user_id]
+
+    # Formatta numeri rimuovendo zeri trailing
+    luce_energia_fmt = format_number(data['luce_energia'], max_decimals=3)
+    luce_comm_fmt = format_number(data['luce_comm'], max_decimals=2)
+
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
         f"💡 <b>Luce:</b>\n"
-        f"  - Energia: €{data['luce_energia']:.4f}/kWh\n"
-        f"  - Commercializzazione: €{data['luce_comm']:.4f}/anno\n"
+        f"  - Energia: {luce_energia_fmt} €/kWh\n"
+        f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if data.get('gas_energia') is not None:
+        gas_energia_fmt = format_number(data['gas_energia'], max_decimals=3)
+        gas_comm_fmt = format_number(data['gas_comm'], max_decimals=2)
         messaggio += (
             f"\n🔥 <b>Gas:</b>\n"
-            f"  - Energia: €{data['gas_energia']:.4f}/Smc\n"
-            f"  - Commercializzazione: €{data['gas_comm']:.4f}/anno\n"
+            f"  - Energia: {gas_energia_fmt} €/Smc\n"
+            f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
     messaggio += "\nPer modificarli usa /update"

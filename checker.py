@@ -29,6 +29,41 @@ def save_users(users):
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
 
+def format_number(value, min_decimals=0, max_decimals=3):
+    """
+    Formatta numero rimuovendo zeri trailing non significativi
+    Usa virgola come separatore decimale (stile italiano)
+
+    Esempi:
+    - 72.0 → "72"
+    - 72.5 → "72,5"
+    - 0.145 → "0,145"
+    - 0.140 → "0,14"
+    - 0.100 → "0,1"
+    """
+    # Arrotonda al massimo di decimali
+    rounded = round(value, max_decimals)
+
+    # Converti in stringa con max decimali
+    formatted = f"{rounded:.{max_decimals}f}"
+
+    # Rimuovi zeri trailing dopo la virgola
+    if '.' in formatted:
+        # Rimuovi zeri alla fine
+        formatted = formatted.rstrip('0')
+        # Se rimane solo il punto, rimuovilo (numero intero)
+        if formatted.endswith('.'):
+            formatted = formatted[:-1]
+        else:
+            # Assicurati di avere almeno min_decimals
+            parts = formatted.split('.')
+            if len(parts[1]) < min_decimals:
+                parts[1] = parts[1].ljust(min_decimals, '0')
+                formatted = '.'.join(parts)
+
+    # Sostituisci punto con virgola (stile italiano)
+    return formatted.replace('.', ',')
+
 def check_better_rates(user_rates, current_rates):
     """
     Confronta tariffe utente con tariffe attuali
@@ -123,50 +158,62 @@ def format_notification(savings, user_rates, current_rates):
     # Mostra Luce se c'è risparmio o peggioramento in energia O commercializzazione
     if savings['luce_energia'] or savings['luce_comm'] or savings['luce_energia_worse'] or savings['luce_comm_worse']:
         message += "💡 <b>Luce:</b>\n"
-        message += f"Tua tariffa: {user_rates['luce_energia']:.3f} €/kWh, {user_rates['luce_comm']:.0f} €/anno\n"
+        # Formatta con zeri trailing rimossi
+        user_energia = format_number(user_rates['luce_energia'], max_decimals=3)
+        user_comm = format_number(user_rates['luce_comm'], max_decimals=2)
+        message += f"Tua tariffa: {user_energia} €/kWh, {user_comm} €/anno\n"
 
         # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
         energia_new = current_rates['luce']['energia']
         comm_new = current_rates['luce']['commercializzazione']
 
+        energia_formatted = format_number(energia_new, max_decimals=3)
+        comm_formatted = format_number(comm_new, max_decimals=2)
+
         if savings['luce_energia']:
-            energia_str = f"<b>{energia_new:.3f} €/kWh</b>"
+            energia_str = f"<b>{energia_formatted} €/kWh</b>"
         elif savings['luce_energia_worse']:
-            energia_str = f"<u>{energia_new:.3f} €/kWh</u>"
+            energia_str = f"<u>{energia_formatted} €/kWh</u>"
         else:
-            energia_str = f"{energia_new:.3f} €/kWh"
+            energia_str = f"{energia_formatted} €/kWh"
 
         if savings['luce_comm']:
-            comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+            comm_str = f"<b>{comm_formatted} €/anno</b>"
         elif savings['luce_comm_worse']:
-            comm_str = f"<u>{comm_new:.0f} €/anno</u>"
+            comm_str = f"<u>{comm_formatted} €/anno</u>"
         else:
-            comm_str = f"{comm_new:.0f} €/anno"
+            comm_str = f"{comm_formatted} €/anno"
 
         message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
     # Mostra Gas se c'è risparmio o peggioramento in energia O commercializzazione (e se l'utente ha il gas)
     if user_rates.get('gas_energia') is not None and (savings['gas_energia'] or savings['gas_comm'] or savings['gas_energia_worse'] or savings['gas_comm_worse']):
         message += "🔥 <b>Gas:</b>\n"
-        message += f"Tua tariffa: {user_rates['gas_energia']:.2f} €/Smc, {user_rates['gas_comm']:.0f} €/anno\n"
+        # Formatta con zeri trailing rimossi
+        user_gas_energia = format_number(user_rates['gas_energia'], max_decimals=3)
+        user_gas_comm = format_number(user_rates['gas_comm'], max_decimals=2)
+        message += f"Tua tariffa: {user_gas_energia} €/Smc, {user_gas_comm} €/anno\n"
 
         # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
         energia_new = current_rates['gas']['energia']
         comm_new = current_rates['gas']['commercializzazione']
 
+        energia_formatted = format_number(energia_new, max_decimals=3)
+        comm_formatted = format_number(comm_new, max_decimals=2)
+
         if savings['gas_energia']:
-            energia_str = f"<b>{energia_new:.2f} €/Smc</b>"
+            energia_str = f"<b>{energia_formatted} €/Smc</b>"
         elif savings['gas_energia_worse']:
-            energia_str = f"<u>{energia_new:.2f} €/Smc</u>"
+            energia_str = f"<u>{energia_formatted} €/Smc</u>"
         else:
-            energia_str = f"{energia_new:.2f} €/Smc"
+            energia_str = f"{energia_formatted} €/Smc"
 
         if savings['gas_comm']:
-            comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+            comm_str = f"<b>{comm_formatted} €/anno</b>"
         elif savings['gas_comm_worse']:
-            comm_str = f"<u>{comm_new:.0f} €/anno</u>"
+            comm_str = f"<u>{comm_formatted} €/anno</u>"
         else:
-            comm_str = f"{comm_new:.0f} €/anno"
+            comm_str = f"{comm_formatted} €/anno"
 
         message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
