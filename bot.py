@@ -222,8 +222,9 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id not in users:
         await update.message.reply_text(
-            "❌ Non hai ancora salvato i tuoi dati.\n"
-            "Usa /start per registrarti."
+            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
+            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
+            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
         return
 
@@ -270,8 +271,9 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         await update.message.reply_text(
-            "❌ Non hai dati da cancellare.\n"
-            "Usa /start per registrarti."
+            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
+            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
+            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
