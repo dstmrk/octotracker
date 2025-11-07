@@ -23,6 +23,12 @@ def load_json(file_path):
             return json.load(f)
     return None
 
+def save_users(users):
+    """Salva dati utenti"""
+    DATA_DIR.mkdir(exist_ok=True)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
+
 def check_better_rates(user_rates, current_rates):
     """
     Confronta tariffe utente con tariffe attuali
@@ -144,19 +150,47 @@ async def main():
 
     # Controlla ogni utente
     notifications_sent = 0
+    users_updated = False
+
     for user_id, user_rates in users.items():
         print(f"📊 Controllo utente {user_id}...")
 
         savings = check_better_rates(user_rates, current_rates)
 
         if savings['has_savings']:
-            message = format_notification(savings)
-            success = await send_notification(bot, user_id, message)
-            if success:
-                notifications_sent += 1
-                print(f"  ✅ Notifica inviata")
+            # Costruisci oggetto con tariffe Octopus attuali
+            current_octopus = {
+                'luce_energia': current_rates['luce']['energia'],
+                'luce_comm': current_rates['luce']['commercializzazione']
+            }
+
+            # Aggiungi gas solo se l'utente ce l'ha e se sono disponibili
+            if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
+                current_octopus['gas_energia'] = current_rates['gas']['energia']
+                current_octopus['gas_comm'] = current_rates['gas']['commercializzazione']
+
+            # Controlla se abbiamo già notificato queste stesse tariffe
+            last_notified = user_rates.get('last_notified_rates', {})
+
+            if last_notified == current_octopus:
+                print(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
+            else:
+                # Tariffe diverse o prima notifica - invia messaggio
+                message = format_notification(savings)
+                success = await send_notification(bot, user_id, message)
+                if success:
+                    # Aggiorna last_notified_rates per questo utente
+                    users[user_id]['last_notified_rates'] = current_octopus
+                    users_updated = True
+                    notifications_sent += 1
+                    print(f"  ✅ Notifica inviata e tariffe salvate")
         else:
             print(f"  ℹ️  Nessun risparmio trovato")
+
+    # Salva users.json se ci sono stati aggiornamenti
+    if users_updated:
+        save_users(users)
+        print(f"💾 Dati utenti aggiornati")
 
     print(f"\n✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 
