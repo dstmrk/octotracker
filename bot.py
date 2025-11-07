@@ -154,10 +154,13 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     """Salva dati utente e mostra conferma"""
     users = load_users()
 
-    if hasattr(update_or_query, 'message') and hasattr(update_or_query.message, 'reply_text'):
+    # Distingui tra Update (con message) e CallbackQuery
+    if hasattr(update_or_query, 'effective_user'):
+        # È un Update
         user_id = str(update_or_query.effective_user.id)
         send_message = lambda text: update_or_query.message.reply_text(text)
     else:
+        # È un CallbackQuery
         user_id = str(update_or_query.from_user.id)
         send_message = lambda text: update_or_query.edit_message_text(text)
 
