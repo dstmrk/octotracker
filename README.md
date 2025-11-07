@@ -6,9 +6,13 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 
 - **Bot Telegram 24/7** per registrare e gestire le tue tariffe (luce e gas)
 - **Scraping automatico** delle tariffe Octopus Energy (solo mono-orarie fisse)
-- **Controllo giornaliero** e notifica se ci sono tariffe più convenienti
-- **Keep-alive** configurabile per evitare sleep del worker
-- **Zero costi**: hosting gratuito su Render
+- **Notifiche intelligenti** con 3 modalità:
+  - ✅ **Tutto migliorato**: conferma che la nuova tariffa conviene
+  - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
+  - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
+- **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
+- **Supporto webhook o polling**: scegli tra latenza zero (webhook) o semplicità (polling)
+- **Persistenza dati** (Docker locale) o hosting cloud gratuito (Render)
 - **Zero manutenzione**: tutto automatico, un solo servizio
 
 ## 🚀 Setup
@@ -226,6 +230,50 @@ Nel servizio `octotracker` creato, vai su **Environment** e aggiungi:
 - `/help` - Mostra tutti i comandi
 - `/cancel` - Annulla registrazione in corso
 
+## 📬 Sistema di Notifiche Intelligenti
+
+OctoTracker analizza le tariffe Octopus e ti notifica in modo intelligente:
+
+### ✅ Caso 1: Tutto Migliorato
+Quando **entrambe** le componenti (energia + commercializzazione) migliorano:
+
+```
+⚡️ Buone notizie!
+OctoTracker ha trovato una tariffa Octopus Energy più conveniente...
+
+💡 Luce:
+Tua tariffa: 0.145 €/kWh, 72 €/anno
+Nuova tariffa: 0.138 €/kWh, 60 €/anno
+                ^^^^^^^^^^^^  ^^^^^^^^^^
+              (grassetto)    (grassetto)
+```
+
+### ⚖️ Caso 2: Mix Migliorato/Peggiorato
+Quando una componente migliora ma l'altra peggiora (caso ambiguo):
+
+```
+⚖️ Aggiornamento tariffe Octopus Energy
+...una delle due componenti è migliorata, l'altra è aumentata.
+
+💡 Luce:
+Tua tariffa: 0.145 €/kWh, 60 €/anno
+Nuova tariffa: 0.138 €/kWh, 84 €/anno
+              (grassetto)  (sottolineato)
+
+📊 In questi casi la convenienza dipende dai tuoi consumi.
+Ti consiglio di fare una verifica in base ai kWh che usi...
+```
+
+**Legenda**:
+- **Grassetto** = valore migliorato 📉
+- <u>Sottolineato</u> = valore peggiorato 📈
+- Normale = nessun cambiamento
+
+### 🚫 Niente Spam
+- Non ricevi notifiche se le tariffe Octopus non cambiano
+- Non ricevi notifiche duplicate per le stesse tariffe
+- Ricevi notifiche solo quando c'è almeno un miglioramento
+
 ## ⚙️ Configurazione Avanzata
 
 Puoi personalizzare il comportamento tramite variabili d'ambiente su Render:
@@ -388,12 +436,20 @@ docker compose version
 
 ## 🔮 Possibili Miglioramenti Futuri
 
-- [ ] PostgreSQL per persistenza dati
-- [ ] Supporto tariffe bi-orarie e variabili
-- [ ] Stima risparmio annuale basata su consumi
-- [ ] Storico tariffe con grafici
-- [ ] Notifiche personalizzate per orario
+### Alta priorità
+- [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
+
+### Media priorità
+- [ ] PostgreSQL per persistenza dati cloud (Render)
+- [ ] Supporto tariffe bi-orarie (F1/F23)
+- [ ] Supporto tariffe variabili (indicizzate)
+- [ ] Stima risparmio annuale con grafici
+
+### Bassa priorità
+- [ ] Storico tariffe con trend
+- [ ] Notifiche personalizzate per orario preferito
 - [ ] Dashboard web per visualizzare statistiche
+- [ ] Export dati in CSV/Excel
 
 ## 📄 Licenza
 
