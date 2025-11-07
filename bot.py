@@ -389,14 +389,16 @@ def main():
 
         print(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
 
-        # Configura webhook
+        # Configura webhook con retry per Docker
         app.run_webhook(
             listen="0.0.0.0",
             port=WEBHOOK_PORT,
             url_path=token,  # Usa il token come path per sicurezza
             webhook_url=f"{WEBHOOK_URL}/{token}",
             secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
-            allowed_updates=Update.ALL_TYPES
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,  # Evita messaggi vecchi
+            bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo
         )
     else:
         print("🚀 Avvio polling...")
