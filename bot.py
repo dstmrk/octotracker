@@ -314,24 +314,38 @@ async def run_checker(bot_token: str):
         print(f"❌ Errore checker: {e}")
 
 async def daily_scheduler(bot_token: str):
-    """Scheduler giornaliero per scraper e checker"""
+    """Scheduler giornaliero ottimizzato per scraper e checker"""
     print(f"📅 Scheduler attivo - Scraper: {SCRAPER_HOUR}:00, Checker: {CHECKER_HOUR}:00")
+
+    # Flag per evitare esecuzioni multiple nella stessa ora
+    last_scraper_hour = -1
+    last_checker_hour = -1
 
     while True:
         now = datetime.now()
+        current_hour = now.hour
+        current_minute = now.minute
 
-        # Controlla se è ora di eseguire lo scraper
-        if now.hour == SCRAPER_HOUR and now.minute == 0:
+        # Esegui scraper se è l'ora giusta e non l'abbiamo già fatto
+        if current_hour == SCRAPER_HOUR and current_minute == 0 and last_scraper_hour != current_hour:
             await run_scraper()
-            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+            last_scraper_hour = current_hour
 
-        # Controlla se è ora di eseguire il checker
-        elif now.hour == CHECKER_HOUR and now.minute == 0:
+        # Esegui checker se è l'ora giusta e non l'abbiamo già fatto
+        if current_hour == CHECKER_HOUR and current_minute == 0 and last_checker_hour != current_hour:
             await run_checker(bot_token)
-            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+            last_checker_hour = current_hour
 
-        # Controlla ogni 30 secondi
-        await asyncio.sleep(30)
+        # Reset flags quando cambia giorno
+        if current_hour == 0 and current_minute == 0:
+            last_scraper_hour = -1
+            last_checker_hour = -1
+
+        # Calcola secondi fino al prossimo minuto :00
+        seconds_to_next_minute = 60 - now.second
+
+        # Dormi fino al prossimo minuto, invece di controllare ogni 30 secondi
+        await asyncio.sleep(seconds_to_next_minute)
 
 async def keep_alive():
     """Keep-alive per evitare che il worker vada in sleep (solo in modalità polling)"""
