@@ -99,10 +99,81 @@ I dati sono salvati in `./data/`:
 
 ### Vantaggi Docker Locale
 ✅ **Dati persistenti** (non si perdono mai)
-✅ **Nessun IP fisso necessario** (il bot usa polling, non webhook)
+✅ **Nessun IP fisso necessario** (polling di default)
 ✅ **Controllo totale**
 ✅ **Zero costi** (oltre elettricità RPi)
 ✅ **Auto-restart** con `restart: unless-stopped`
+
+### 🌐 Opzionale: Modalità Webhook (con Cloudflare Tunnel)
+
+Se hai già un tunnel Cloudflare configurato, puoi usare **webhook** invece di polling per **latenza zero**.
+
+**Vantaggi webhook**:
+- ⚡ Latenza istantanea (vs ~1 secondo polling)
+- 🔋 Meno CPU/RAM (idle quando non ci sono messaggi)
+- 📉 Meno traffico di rete
+
+**Setup webhook**:
+
+**1. Configura Cloudflare Tunnel**
+
+Nel tuo tunnel Cloudflare, aggiungi un "Public Hostname":
+- **Subdomain**: `octotracker`
+- **Domain**: `tuodominio.xyz`
+- **Service**: `http://localhost:8443`
+
+Questo renderà il bot raggiungibile su `https://octotracker.tuodominio.xyz`
+
+**2. Genera Secret Token (opzionale ma consigliato)**
+
+```bash
+# Genera token random per sicurezza
+openssl rand -hex 32
+```
+
+**3. Modifica `.env`**
+
+```bash
+# Cambia da polling a webhook
+BOT_MODE=webhook
+
+# Imposta URL pubblico (quello configurato su Cloudflare)
+WEBHOOK_URL=https://octotracker.tuodominio.xyz
+
+# Porta locale (default: 8443)
+WEBHOOK_PORT=8443
+
+# Secret token (quello generato sopra)
+WEBHOOK_SECRET=il_tuo_token_random_qui
+```
+
+**4. Riavvia container**
+
+```bash
+docker-compose down
+docker-compose up -d
+docker-compose logs -f
+```
+
+Dovresti vedere:
+```
+📡 Modalità: WEBHOOK
+🌐 Webhook URL: https://octotracker.tuodominio.xyz
+🔌 Porta: 8443
+💓 Keep-alive: non necessario (webhook)
+✅ Bot configurato!
+🚀 Avvio webhook su https://octotracker.tuodominio.xyz...
+```
+
+**5. Test**
+
+Invia un messaggio al bot su Telegram: la risposta sarà **istantanea**! ⚡
+
+**Nota sicurezza**:
+- Il bot usa il token Telegram come path: `https://octotracker.tuodominio.xyz/{token}`
+- Solo Telegram conosce questo URL
+- Il `WEBHOOK_SECRET` valida che le richieste vengano da Telegram
+- Non serve autenticazione aggiuntiva
 
 ---
 

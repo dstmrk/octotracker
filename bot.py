@@ -30,6 +30,12 @@ SCRAPER_HOUR = int(os.getenv('SCRAPER_HOUR', '9'))  # Default: 9:00 ora italiana
 CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italiana
 KEEPALIVE_INTERVAL = int(os.getenv('KEEPALIVE_INTERVAL_MINUTES', '5'))  # Default: 5 minuti
 
+# Configurazione webhook
+BOT_MODE = os.getenv('BOT_MODE', 'polling').lower()  # 'polling' o 'webhook'
+WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio.xyz
+WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
+WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
+
 def load_users():
     """Carica dati utenti"""
     if USERS_FILE.exists():
@@ -305,7 +311,12 @@ async def daily_scheduler(bot_token: str):
         await asyncio.sleep(30)
 
 async def keep_alive():
-    """Keep-alive per evitare che il worker vada in sleep"""
+    """Keep-alive per evitare che il worker vada in sleep (solo in modalità polling)"""
+    # Keep-alive non necessario in modalità webhook
+    if BOT_MODE == 'webhook':
+        print("⏸️  Keep-alive non necessario (modalità webhook)")
+        return
+
     if KEEPALIVE_INTERVAL <= 0:
         print("⏸️  Keep-alive disabilitato")
         return
@@ -335,9 +346,16 @@ def main():
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
 
     print("🤖 Avvio OctoTracker...")
+    print(f"📡 Modalità: {BOT_MODE.upper()}")
     print(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
     print(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
-    print(f"💓 Keep-alive: ogni {KEEPALIVE_INTERVAL} minuti" if KEEPALIVE_INTERVAL > 0 else "💓 Keep-alive: disabilitato")
+
+    if BOT_MODE == 'webhook':
+        print(f"🌐 Webhook URL: {WEBHOOK_URL}")
+        print(f"🔌 Porta: {WEBHOOK_PORT}")
+        print(f"💓 Keep-alive: non necessario (webhook)")
+    else:
+        print(f"💓 Keep-alive: ogni {KEEPALIVE_INTERVAL} minuti" if KEEPALIVE_INTERVAL > 0 else "💓 Keep-alive: disabilitato")
 
     app = Application.builder().token(token).post_init(post_init).build()
 
@@ -362,8 +380,27 @@ def main():
     app.add_handler(CommandHandler('remove', remove_data))
     app.add_handler(CommandHandler('help', help_command))
 
-    print("✅ Bot avviato e in ascolto!")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    print("✅ Bot configurato!")
+
+    # Avvia in modalità webhook o polling
+    if BOT_MODE == 'webhook':
+        if not WEBHOOK_URL:
+            raise ValueError("WEBHOOK_URL richiesto per modalità webhook")
+
+        print(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
+
+        # Configura webhook
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=WEBHOOK_PORT,
+            url_path=token,  # Usa il token come path per sicurezza
+            webhook_url=f"{WEBHOOK_URL}/{token}",
+            secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
+            allowed_updates=Update.ALL_TYPES
+        )
+    else:
+        print("🚀 Avvio polling...")
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()

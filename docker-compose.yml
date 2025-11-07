@@ -7,10 +7,17 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BOT_MODE=${BOT_MODE:-polling}
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - WEBHOOK_PORT=${WEBHOOK_PORT:-8443}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
       - SCRAPER_HOUR=${SCRAPER_HOUR:-9}
       - CHECKER_HOUR=${CHECKER_HOUR:-10}
       - KEEPALIVE_INTERVAL_MINUTES=${KEEPALIVE_INTERVAL_MINUTES:-0}
       - TZ=Europe/Rome
+    ports:
+      # Esponi porta webhook (necessaria solo se BOT_MODE=webhook)
+      - "8443:8443"
     volumes:
       # Volume per persistenza dati
       - ./data:/app/data
