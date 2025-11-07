@@ -53,13 +53,18 @@ def scrape_octopus_tariffe():
             # Pattern tipico: numero + €/kWh o €/Smc per energia, numero + €/mese per commercializzazione
 
             # Estrai tutti i prezzi dalla pagina
-            energia_luce_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*kWh', text.replace('\n', ' '))
+            # Rimuovi commenti HTML e normalizza spazi per regex
+            clean_text = text.replace('\n', ' ').replace('\r', ' ')
+            # Regex più tolleranti per gestire spazi/commenti HTML
+            # (?:[.,]\d+)? rende i decimali opzionali (per catturare anche numeri interi)
+            energia_luce_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*kWh', clean_text, re.IGNORECASE)
 
             # Cerca commercializzazione luce (può essere in €/mese o €/anno)
-            comm_luce_mese_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*mese', text.replace('\n', ' '))
-            comm_luce_anno_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*anno', text.replace('\n', ' '))
+            # Pattern più tollerante per spazi e ordine - supporta numeri interi e decimali
+            comm_luce_mese_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*mese', clean_text, re.IGNORECASE)
+            comm_luce_anno_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*anno', clean_text, re.IGNORECASE)
 
-            energia_gas_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*Smc', text.replace('\n', ' '))
+            energia_gas_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*Smc', clean_text, re.IGNORECASE)
 
             # Prova anche pattern alternativi
             if not energia_luce_match:
@@ -85,8 +90,8 @@ def scrape_octopus_tariffe():
 
             if energia_gas_match:
                 # Per gas, cerca commercializzazione (può essere in €/mese o €/anno)
-                all_mese = re.findall(r'(\d+[.,]\d+)\s*€\s*/\s*mese', text.replace('\n', ' '))
-                all_anno = re.findall(r'(\d+[.,]\d+)\s*€\s*/\s*anno', text.replace('\n', ' '))
+                all_mese = re.findall(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*mese', clean_text, re.IGNORECASE)
+                all_anno = re.findall(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*anno', clean_text, re.IGNORECASE)
 
                 comm_gas_anno = None
                 if all_anno and len(all_anno) > 1:
@@ -120,9 +125,9 @@ def scrape_octopus_tariffe():
 
                     # Cerca luce
                     if 'luce' in card_text.lower() or 'elettric' in card_text.lower():
-                        energia_match = re.search(r'(\d+[.,]\d+).*?kWh', card_text, re.IGNORECASE)
-                        comm_mese_match = re.search(r'(\d+[.,]\d+).*?€\s*/\s*mese', card_text, re.IGNORECASE)
-                        comm_anno_match = re.search(r'(\d+[.,]\d+).*?€\s*/\s*anno', card_text, re.IGNORECASE)
+                        energia_match = re.search(r'(\d+(?:[.,]\d+)?).*?kWh', card_text, re.IGNORECASE)
+                        comm_mese_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*mese', card_text, re.IGNORECASE)
+                        comm_anno_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*anno', card_text, re.IGNORECASE)
 
                         if energia_match and not tariffe_data["luce"]:
                             # Calcola commercializzazione in €/anno
@@ -142,9 +147,9 @@ def scrape_octopus_tariffe():
 
                     # Cerca gas
                     if 'gas' in card_text.lower():
-                        energia_match = re.search(r'(\d+[.,]\d+).*?Smc', card_text, re.IGNORECASE)
-                        comm_mese_match = re.search(r'(\d+[.,]\d+).*?€\s*/\s*mese', card_text, re.IGNORECASE)
-                        comm_anno_match = re.search(r'(\d+[.,]\d+).*?€\s*/\s*anno', card_text, re.IGNORECASE)
+                        energia_match = re.search(r'(\d+(?:[.,]\d+)?).*?Smc', card_text, re.IGNORECASE)
+                        comm_mese_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*mese', card_text, re.IGNORECASE)
+                        comm_anno_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*anno', card_text, re.IGNORECASE)
 
                         if energia_match and not tariffe_data["gas"]:
                             # Calcola commercializzazione in €/anno
