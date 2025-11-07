@@ -5,14 +5,14 @@ Bot Telegram per registrare le tariffe degli utenti
 import os
 import json
 from pathlib import Path
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Stati conversazione
-LUCE_ENERGIA, LUCE_COMM, GAS_ENERGIA, GAS_COMM = range(4)
+LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(5)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -33,12 +33,30 @@ def save_users(users):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Avvia registrazione tariffe"""
-    await update.message.reply_text(
-        "👋 Ciao! Ti aiuto a monitorare le tariffe Octopus Energy.\n\n"
-        "Inserisci le tue tariffe attuali.\n\n"
-        "💡 **LUCE - Costo Energia** (€/kWh)\n"
-        "Esempio: 0.12"
-    )
+    # Verifica se è un update o una prima registrazione
+    users = load_users()
+    user_id = str(update.effective_user.id)
+    is_update = user_id in users
+
+    if is_update:
+        messaggio = (
+            "♻️ **Aggiorniamo le tue tariffe!**\n\n"
+            "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
+            "con le nuove offerte di Octopus Energy.\n\n"
+            "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
+            "👉 Partiamo: quanto paghi ora per la materia energia luce (€/kWh)?"
+        )
+    else:
+        messaggio = (
+            "🐙 **Benvenuto su OctoTracker!**\n\n"
+            "Questo bot controlla ogni giorno le tariffe di Octopus Energy e ti avvisa "
+            "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
+            "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
+            "Rispondi passo passo ai messaggi: ci vorrà meno di un minuto. ⚡️\n\n"
+            "👉 Iniziamo con la luce: quanto paghi per la materia energia (€/kWh)?"
+        )
+
+    await update.message.reply_text(messaggio)
     return LUCE_ENERGIA
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,8 +64,8 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
-            "💡 **LUCE - Costo Commercializzazione** (€/mese)\n"
-            "Esempio: 8.50"
+            "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
+            "💬 Esempio: 72 (se paghi 6 €/mese)"
         )
         return LUCE_COMM
     except ValueError:
@@ -55,25 +73,50 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return LUCE_ENERGIA
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Salva costo commercializzazione luce"""
+    """Salva costo commercializzazione luce e chiedi se ha gas"""
     try:
         context.user_data['luce_comm'] = float(update.message.text.replace(',', '.'))
+
+        # Chiedi se ha anche il gas con bottoni
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
         await update.message.reply_text(
-            "🔥 **GAS - Costo Energia** (€/Smc)\n"
-            "Esempio: 0.45"
+            "Hai anche una fornitura gas attiva con Octopus Energy?",
+            reply_markup=reply_markup
+        )
+        return HA_GAS
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
+        return LUCE_COMM
+
+async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Gestisci risposta se ha gas"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "gas_si":
+        await query.edit_message_text(
+            "Perfetto!\n"
+            "👉 Inserisci il costo materia energia gas (€/Smc)."
         )
         return GAS_ENERGIA
-    except ValueError:
-        await update.message.reply_text("❌ Inserisci un numero valido (es: 8.50)")
-        return LUCE_COMM
+    else:  # gas_no
+        # Salva solo luce
+        return await salva_e_conferma(query, context, solo_luce=True)
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Salva costo energia gas"""
     try:
         context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
-            "🔥 **GAS - Costo Commercializzazione** (€/mese)\n"
-            "Esempio: 12.00"
+            "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
+            "💬 Esempio: 84 (se paghi 7 €/mese)"
         )
         return GAS_COMM
     except ValueError:
@@ -81,66 +124,139 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return GAS_ENERGIA
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Salva tutto e conferma"""
+    """Salva gas e conferma"""
     try:
         context.user_data['gas_comm'] = float(update.message.text.replace(',', '.'))
-
-        # Salva nel file
-        users = load_users()
-        user_id = str(update.effective_user.id)
-        users[user_id] = {
-            'luce_energia': context.user_data['luce_energia'],
-            'luce_comm': context.user_data['luce_comm'],
-            'gas_energia': context.user_data['gas_energia'],
-            'gas_comm': context.user_data['gas_comm']
-        }
-        save_users(users)
-
-        await update.message.reply_text(
-            "✅ **Tariffe salvate!**\n\n"
-            f"💡 Luce:\n"
-            f"  - Energia: €{context.user_data['luce_energia']:.3f}/kWh\n"
-            f"  - Commercializzazione: €{context.user_data['luce_comm']:.2f}/mese\n\n"
-            f"🔥 Gas:\n"
-            f"  - Energia: €{context.user_data['gas_energia']:.3f}/Smc\n"
-            f"  - Commercializzazione: €{context.user_data['gas_comm']:.2f}/mese\n\n"
-            "Riceverai notifiche quando troverò tariffe più convenienti!\n\n"
-            "Usa /mytariffe per vedere le tue tariffe salvate."
-        )
-        return ConversationHandler.END
-
+        return await salva_e_conferma(update, context, solo_luce=False)
     except ValueError:
-        await update.message.reply_text("❌ Inserisci un numero valido (es: 12.00)")
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
+
+async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, solo_luce: bool):
+    """Salva dati utente e mostra conferma"""
+    users = load_users()
+
+    # Gestisci sia Update che CallbackQuery
+    if hasattr(update_or_query, 'message') and hasattr(update_or_query.message, 'reply_text'):
+        # È un Update normale
+        user_id = str(update_or_query.effective_user.id)
+        send_message = lambda text: update_or_query.message.reply_text(text)
+    else:
+        # È una CallbackQuery
+        user_id = str(update_or_query.from_user.id)
+        send_message = lambda text: update_or_query.edit_message_text(text)
+
+    # Prepara dati da salvare
+    user_data = {
+        'luce_energia': context.user_data['luce_energia'],
+        'luce_comm': context.user_data['luce_comm'],
+    }
+
+    if not solo_luce:
+        user_data['gas_energia'] = context.user_data['gas_energia']
+        user_data['gas_comm'] = context.user_data['gas_comm']
+    else:
+        user_data['gas_energia'] = None
+        user_data['gas_comm'] = None
+
+    users[user_id] = user_data
+    save_users(users)
+
+    # Messaggio di conferma
+    messaggio = (
+        "✅ **Abbiamo finito!**\n\n"
+        "Ecco i dati che hai inserito:\n\n"
+        f"💡 **Luce**\n"
+        f"- Materia energia: {user_data['luce_energia']:.4f} €/kWh\n"
+        f"- Commercializzazione: {user_data['luce_comm']:.4f} €/anno\n"
+    )
+
+    if not solo_luce:
+        messaggio += (
+            f"\n🔥 **Gas**\n"
+            f"- Materia energia: {user_data['gas_energia']:.4f} €/Smc\n"
+            f"- Commercializzazione: {user_data['gas_comm']:.4f} €/anno\n"
+        )
+
+    messaggio += (
+        "\nTutto corretto?\n"
+        "Se in futuro vuoi modificare qualcosa, puoi usare il comando /update.\n\n"
+        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
+    )
+
+    await send_message(messaggio)
+    return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Annulla registrazione"""
     await update.message.reply_text("❌ Registrazione annullata. Usa /start per ricominciare.")
     return ConversationHandler.END
 
-async def my_tariffe(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Mostra tariffe salvate"""
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mostra dati salvati"""
     users = load_users()
     user_id = str(update.effective_user.id)
 
     if user_id not in users:
         await update.message.reply_text(
-            "❌ Non hai ancora salvato le tue tariffe.\n"
-            "Usa /start per registrarle."
+            "❌ Non hai ancora salvato i tuoi dati.\n"
+            "Usa /start per registrarti."
         )
         return
 
     data = users[user_id]
-    await update.message.reply_text(
-        "📊 **Le tue tariffe attuali:**\n\n"
-        f"💡 Luce:\n"
-        f"  - Energia: €{data['luce_energia']:.3f}/kWh\n"
-        f"  - Commercializzazione: €{data['luce_comm']:.2f}/mese\n\n"
-        f"🔥 Gas:\n"
-        f"  - Energia: €{data['gas_energia']:.3f}/Smc\n"
-        f"  - Commercializzazione: €{data['gas_comm']:.2f}/mese\n\n"
-        "Per modificarle usa /start"
+    messaggio = (
+        "📊 **I tuoi dati:**\n\n"
+        f"💡 **Luce:**\n"
+        f"  - Energia: €{data['luce_energia']:.4f}/kWh\n"
+        f"  - Commercializzazione: €{data['luce_comm']:.4f}/anno\n"
     )
+
+    if data.get('gas_energia') is not None:
+        messaggio += (
+            f"\n🔥 **Gas:**\n"
+            f"  - Energia: €{data['gas_energia']:.4f}/Smc\n"
+            f"  - Commercializzazione: €{data['gas_comm']:.4f}/anno\n"
+        )
+
+    messaggio += "\nPer modificarli usa /update"
+
+    await update.message.reply_text(messaggio)
+
+async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Cancella dati utente"""
+    users = load_users()
+    user_id = str(update.effective_user.id)
+
+    if user_id in users:
+        del users[user_id]
+        save_users(users)
+        await update.message.reply_text(
+            "✅ I tuoi dati sono stati cancellati.\n"
+            "Usa /start se vuoi registrarti nuovamente."
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Non hai dati da cancellare.\n"
+            "Usa /start per registrarti."
+        )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mostra messaggio di aiuto"""
+    help_text = (
+        "👋 **Benvenuto su OctoTracker!**\n\n"
+        "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
+        "e ti avvisa quando ci sono offerte più convenienti rispetto alle tue.\n\n"
+        "**Comandi disponibili:**\n"
+        "• /start – Inizia e registra le tue tariffe attuali\n"
+        "• /update – Aggiorna le tariffe che hai impostato\n"
+        "• /status – Mostra le tariffe e lo stato attuale\n"
+        "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
+        "• /help – Mostra questo messaggio di aiuto\n\n"
+        "💡 Il bot controlla ogni giorno le tariffe e ti avvisa automaticamente se trova qualcosa di meglio.\n\n"
+        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
+    )
+    await update.message.reply_text(help_text)
 
 def main():
     """Avvia il bot"""
@@ -152,10 +268,14 @@ def main():
 
     # Handler conversazione registrazione
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[
+            CommandHandler('start', start),
+            CommandHandler('update', start)
+        ],
         states={
             LUCE_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_energia)],
             LUCE_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_comm)],
+            HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
@@ -163,7 +283,9 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler('mytariffe', my_tariffe))
+    app.add_handler(CommandHandler('status', status))
+    app.add_handler(CommandHandler('remove', remove_data))
+    app.add_handler(CommandHandler('help', help_command))
 
     print("🤖 Bot avviato!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)

@@ -23,6 +23,12 @@ def load_json(file_path):
             return json.load(f)
     return None
 
+def save_users(users):
+    """Salva dati utenti"""
+    DATA_DIR.mkdir(exist_ok=True)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
+
 def check_better_rates(user_rates, current_rates):
     """
     Confronta tariffe utente con tariffe attuali
@@ -54,8 +60,8 @@ def check_better_rates(user_rates, current_rates):
             }
             savings['has_savings'] = True
 
-    # Controlla gas
-    if current_rates.get('gas'):
+    # Controlla gas (solo se l'utente ha il gas)
+    if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
         if current_rates['gas'].get('energia') and current_rates['gas']['energia'] < user_rates['gas_energia']:
             savings['gas_energia'] = {
                 'attuale': user_rates['gas_energia'],
@@ -64,7 +70,7 @@ def check_better_rates(user_rates, current_rates):
             }
             savings['has_savings'] = True
 
-        if current_rates['gas'].get('commercializzazione') and current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
+        if current_rates['gas'].get('commercializzazione') and user_rates.get('gas_comm') is not None and current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
             savings['gas_comm'] = {
                 'attuale': user_rates['gas_comm'],
                 'nuova': current_rates['gas']['commercializzazione'],
@@ -81,30 +87,30 @@ def format_notification(savings):
     if savings['luce_energia']:
         s = savings['luce_energia']
         message += f"💡 **LUCE - Energia**\n"
-        message += f"  Attuale: €{s['attuale']:.3f}/kWh\n"
-        message += f"  Nuova: €{s['nuova']:.3f}/kWh\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.3f}/kWh\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/kWh\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/kWh\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/kWh\n\n"
 
     if savings['luce_comm']:
         s = savings['luce_comm']
         message += f"💡 **LUCE - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/mese\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/mese\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/mese\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
 
     if savings['gas_energia']:
         s = savings['gas_energia']
         message += f"🔥 **GAS - Energia**\n"
-        message += f"  Attuale: €{s['attuale']:.3f}/Smc\n"
-        message += f"  Nuova: €{s['nuova']:.3f}/Smc\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.3f}/Smc\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/Smc\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/Smc\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/Smc\n\n"
 
     if savings['gas_comm']:
         s = savings['gas_comm']
         message += f"🔥 **GAS - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/mese\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/mese\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/mese\n\n"
+        message += f"  Attuale: €{s['attuale']:.4f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.4f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.4f}/anno\n\n"
 
     message += "🔗 Controlla le tariffe su: https://octopusenergy.it/le-nostre-tariffe"
 
@@ -144,19 +150,47 @@ async def main():
 
     # Controlla ogni utente
     notifications_sent = 0
+    users_updated = False
+
     for user_id, user_rates in users.items():
         print(f"📊 Controllo utente {user_id}...")
 
         savings = check_better_rates(user_rates, current_rates)
 
         if savings['has_savings']:
-            message = format_notification(savings)
-            success = await send_notification(bot, user_id, message)
-            if success:
-                notifications_sent += 1
-                print(f"  ✅ Notifica inviata")
+            # Costruisci oggetto con tariffe Octopus attuali
+            current_octopus = {
+                'luce_energia': current_rates['luce']['energia'],
+                'luce_comm': current_rates['luce']['commercializzazione']
+            }
+
+            # Aggiungi gas solo se l'utente ce l'ha e se sono disponibili
+            if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
+                current_octopus['gas_energia'] = current_rates['gas']['energia']
+                current_octopus['gas_comm'] = current_rates['gas']['commercializzazione']
+
+            # Controlla se abbiamo già notificato queste stesse tariffe
+            last_notified = user_rates.get('last_notified_rates', {})
+
+            if last_notified == current_octopus:
+                print(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
+            else:
+                # Tariffe diverse o prima notifica - invia messaggio
+                message = format_notification(savings)
+                success = await send_notification(bot, user_id, message)
+                if success:
+                    # Aggiorna last_notified_rates per questo utente
+                    users[user_id]['last_notified_rates'] = current_octopus
+                    users_updated = True
+                    notifications_sent += 1
+                    print(f"  ✅ Notifica inviata e tariffe salvate")
         else:
             print(f"  ℹ️  Nessun risparmio trovato")
+
+    # Salva users.json se ci sono stati aggiornamenti
+    if users_updated:
+        save_users(users)
+        print(f"💾 Dati utenti aggiornati")
 
     print(f"\n✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 

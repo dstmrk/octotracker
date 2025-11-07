@@ -72,14 +72,17 @@ python checker.py
 
 ### Comandi Bot
 
-- `/start` - Registra o aggiorna le tue tariffe
-- `/mytariffe` - Visualizza le tariffe salvate
+- `/start` - Registra le tue tariffe (prima volta)
+- `/update` - Aggiorna le tue tariffe
+- `/status` - Visualizza i tuoi dati salvati
+- `/remove` - Cancella i tuoi dati
+- `/help` - Mostra messaggio di aiuto con tutti i comandi
 - `/cancel` - Annulla registrazione in corso
 
 ### Automazione GitHub Actions
 
-**Scraping settimanale** (`scrape-weekly.yml`)
-- Ogni **lunedì alle 9:00** (ora italiana)
+**Scraping giornaliero** (`scrape-daily.yml`)
+- Ogni **giorno alle 9:00** (ora italiana)
 - Scarica tariffe Octopus Energy
 - Commit automatico in `data/current_rates.json`
 
@@ -90,29 +93,45 @@ python checker.py
 
 ### Struttura Dati
 
-**data/users.json** - Tariffe degli utenti
+**data/users.json** - Dati degli utenti
 ```json
 {
   "123456789": {
     "luce_energia": 0.12,
-    "luce_comm": 8.50,
+    "luce_comm": 96.00,
     "gas_energia": 0.45,
-    "gas_comm": 12.00
+    "gas_comm": 144.00,
+    "last_notified_rates": {
+      "luce_energia": 0.10,
+      "luce_comm": 72.00,
+      "gas_energia": 0.38,
+      "gas_comm": 84.00
+    }
+  },
+  "987654321": {
+    "luce_energia": 0.13,
+    "luce_comm": 102.00,
+    "gas_energia": null,
+    "gas_comm": null
   }
 }
 ```
+Note:
+- `gas_energia` e `gas_comm` sono `null` se l'utente ha solo luce
+- `last_notified_rates` memorizza le ultime tariffe Octopus notificate (evita notifiche duplicate)
+- Tutti i costi di commercializzazione sono in €/anno
 
 **data/current_rates.json** - Tariffe Octopus
 ```json
 {
   "luce": {
     "energia": 0.115,
-    "commercializzazione": 8.00,
+    "commercializzazione": 96.00,
     "nome_tariffa": "Mono-oraria Fissa"
   },
   "gas": {
     "energia": 0.42,
-    "commercializzazione": 11.50,
+    "commercializzazione": 138.00,
     "nome_tariffa": "Mono-oraria Fissa"
   },
   "data_aggiornamento": "2025-11-07"
@@ -145,19 +164,22 @@ python checker.py
 
 ## 📝 Note
 
-- **Tariffe supportate**: solo mono-orarie fisse (per ora)
-- **Fonte dati**: https://octopusenergy.it/le-nostre-tariffe
-- **Frequenza scraping**: settimanale (le tariffe non cambiano spesso)
-- **Frequenza controllo**: giornaliero
-- **Privacy**: i dati sono salvati nel tuo repository privato
+- **Tariffe supportate**: solo mono-orarie fisse
+- **Fonte**: https://octopusenergy.it/le-nostre-tariffe
+- **Automazione**: scraping alle 9:00, controllo alle 10:00 (ora italiana)
+- **Utenti**: può avere solo luce, oppure luce + gas
+- **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano (non ogni giorno se rimangono uguali)
+- **Privacy**: dati salvati solo nel tuo repository
+- **Unità**: costi commercializzazione in €/anno
 
-## 🔮 Miglioramenti futuri
+## 🔮 Possibili miglioramenti futuri
 
-- [ ] Supporto tariffe bi-orarie
-- [ ] Supporto tariffe variabili
-- [ ] Stima risparmio annuale
-- [ ] Storico tariffe
-- [ ] Grafici andamento prezzi
+**Funzionalità aggiuntive**
+- [ ] **Data ultimo aggiornamento**: salva quando l'utente ha inserito/aggiornato le tariffe, per mostrare "Ultimo aggiornamento: 03/11/2025" nello `/status` e implementare reminder automatici (es. "non aggiorni da 3 mesi")
+- [ ] **Orario preferito notifiche**: campo opzionale `notify_hour` per permettere agli utenti di scegliere se ricevere messaggi al mattino o alla sera
+- [ ] Supporto tariffe bi-orarie e variabili
+- [ ] Stima risparmio annuale basata su consumi
+- [ ] Storico tariffe con grafici andamento prezzi
 
 ## 📄 Licenza
 

@@ -1,9 +1,9 @@
-name: Scrape Tariffe Settimanale
+name: Scrape Tariffe Giornaliero
 
 on:
   schedule:
-    # Ogni lunedì alle 8:00 UTC (9:00 Italia)
-    - cron: '0 8 * * 1'
+    # Ogni giorno alle 8:00 UTC (9:00 Italia)
+    - cron: '0 8 * * *'
   workflow_dispatch: # Permette esecuzione manuale
 
 jobs:
