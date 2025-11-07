@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  octotracker:
+    build: .
+    container_name: octotracker
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - SCRAPER_HOUR=${SCRAPER_HOUR:-9}
+      - CHECKER_HOUR=${CHECKER_HOUR:-10}
+      - KEEPALIVE_INTERVAL_MINUTES=${KEEPALIVE_INTERVAL_MINUTES:-0}
+      - TZ=Europe/Rome
+    volumes:
+      # Volume per persistenza dati
+      - ./data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Opzionale: limiti risorse per RPi
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 256M

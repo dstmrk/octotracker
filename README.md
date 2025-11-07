@@ -11,7 +11,102 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 - **Zero costi**: hosting gratuito su Render
 - **Zero manutenzione**: tutto automatico, un solo servizio
 
-## 🚀 Setup (3 minuti)
+## 🚀 Setup
+
+Puoi scegliere tra **due modalità** di hosting:
+- **Opzione A**: Docker su Raspberry Pi / tua macchina (dati persistenti) ⭐ **Consigliato**
+- **Opzione B**: Render cloud (gratuito, ma dati effimeri)
+
+---
+
+## 🐳 Opzione A: Docker (Raspberry Pi / Locale)
+
+### Requisiti
+- Raspberry Pi 3+ (consigliato RPi 4 con 2GB+ RAM)
+- Docker e Docker Compose installati
+- Connessione internet stabile
+
+### Setup (2 minuti)
+
+**1. Crea il Bot Telegram**
+
+1. Apri Telegram e cerca `@BotFather`
+2. Invia `/newbot` e segui le istruzioni
+3. Copia il **token** (tipo: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+**2. Clona e Configura**
+
+```bash
+# Clona il repository
+git clone https://github.com/dstmrk/octotracker.git
+cd octotracker
+
+# Crea file .env dalla template
+cp .env.example .env
+
+# Modifica .env e inserisci il tuo token
+nano .env
+# Imposta: TELEGRAM_BOT_TOKEN=il_tuo_token_qui
+```
+
+**3. Avvia con Docker**
+
+```bash
+# Build e avvio (prima volta: 5-10 min per scaricare dipendenze)
+docker-compose up -d
+
+# Verifica logs
+docker-compose logs -f
+```
+
+Dovresti vedere:
+```
+🤖 Avvio OctoTracker...
+⏰ Scraper schedulato: 9:00
+⏰ Checker schedulato: 10:00
+💓 Keep-alive: disabilitato
+✅ Bot avviato e in ascolto!
+```
+
+**4. Usa il Bot!**
+
+Cerca il tuo bot su Telegram e invia `/start` 🎉
+
+### Gestione
+
+```bash
+# Stop
+docker-compose down
+
+# Restart
+docker-compose restart
+
+# Logs in tempo reale
+docker-compose logs -f
+
+# Rebuild dopo aggiornamenti codice
+docker-compose up -d --build
+```
+
+### Dati Persistenti
+
+I dati sono salvati in `./data/`:
+- `users.json` - utenti registrati e tariffe
+- `current_rates.json` - tariffe Octopus aggiornate
+- `last_scrape.png` - screenshot debug
+
+**Backup**: Copia semplicemente la cartella `data/`!
+
+### Vantaggi Docker Locale
+✅ **Dati persistenti** (non si perdono mai)
+✅ **Nessun IP fisso necessario** (il bot usa polling, non webhook)
+✅ **Controllo totale**
+✅ **Zero costi** (oltre elettricità RPi)
+✅ **Auto-restart** con `restart: unless-stopped`
+
+---
+
+## ☁️ Opzione B: Render Cloud
 
 ### 1. Crea il Bot Telegram
 
@@ -43,25 +138,13 @@ Nel servizio `octotracker` creato, vai su **Environment** e aggiungi:
 
 **Nota**: Le altre variabili (`SCRAPER_HOUR`, `CHECKER_HOUR`, `KEEPALIVE_INTERVAL_MINUTES`) hanno già valori di default nel `render.yaml`. Puoi modificarle se vuoi.
 
-### 4. Aspetta il Deploy
+### 4. Aspetta il Deploy e Usa il Bot
 
 1. Il primo deploy richiede 5-10 minuti (installa Playwright e browser Chromium)
 2. Controlla i logs per verificare che tutto sia ok
-3. Dovresti vedere:
-   ```
-   🤖 Avvio OctoTracker...
-   ⏰ Scraper schedulato: 9:00
-   ⏰ Checker schedulato: 10:00
-   💓 Keep-alive: ogni 5 minuti
-   ✅ Bot avviato e in ascolto!
-   ```
+3. Cerca il tuo bot su Telegram e invia `/start`
 
-### 5. Usa il Bot!
-
-1. Apri Telegram e cerca il tuo bot
-2. Invia `/start`
-3. Segui le istruzioni per registrare le tue tariffe
-4. Fatto! 🎉
+⚠️ **Nota Importante**: Su Render free tier, i dati (`users.json`) sono **effimeri** e si cancellano ad ogni deploy/restart. Per dati persistenti, usa Docker locale.
 
 ## 🤖 Comandi Bot
 
@@ -140,18 +223,18 @@ I dati sono salvati localmente in file JSON:
 
 **Nota**: Su Render free tier, il filesystem è effimero (i dati si perdono al restart). Questo va bene per un bot personale con pochi utenti. Se vuoi persistenza completa, considera di usare Render PostgreSQL (gratuito) o un database esterno.
 
-## 🛠️ Sviluppo Locale
+## 🛠️ Sviluppo Locale (senza Docker)
 
-### Test locale
+Se vuoi sviluppare o testare senza Docker:
 
 ```bash
 # Installa dipendenze
 pip install -r requirements.txt
 playwright install chromium
 
-# Crea file .env
-echo "TELEGRAM_BOT_TOKEN=il_tuo_token" > .env
-echo "KEEPALIVE_INTERVAL_MINUTES=0" >> .env  # Disabilita keep-alive in locale
+# Crea .env
+cp .env.example .env
+# Modifica .env con il tuo token
 
 # Avvia bot (include scheduler)
 python bot.py
@@ -165,6 +248,28 @@ python scraper.py
 
 # Test solo checker
 python checker.py
+```
+
+## 🐳 Docker: Installazione su Raspberry Pi
+
+Se non hai ancora Docker installato sul tuo RPi:
+
+```bash
+# Installa Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Aggiungi user a gruppo docker
+sudo usermod -aG docker $USER
+
+# Logout e login per applicare
+
+# Installa Docker Compose
+sudo apt-get install docker-compose-plugin
+
+# Verifica installazione
+docker --version
+docker compose version
 ```
 
 ### File Principali
