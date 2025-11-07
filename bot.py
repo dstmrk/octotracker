@@ -87,8 +87,8 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "gas_si":
         await query.edit_message_text(
-            "🔥 **GAS - Costo Energia** (€/Smc)\n"
-            "Esempio: 0.45"
+            "Perfetto!\n"
+            "👉 Inserisci il costo materia energia gas (€/Smc)."
         )
         return GAS_ENERGIA
     else:  # gas_no
@@ -100,8 +100,8 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
-            "🔥 **GAS - Costo Commercializzazione** (€/anno)\n"
-            "Esempio: 144.00"
+            "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
+            "💬 Esempio: 84 (se paghi 7 €/mese)"
         )
         return GAS_COMM
     except ValueError:
