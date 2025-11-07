@@ -248,8 +248,12 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del users[user_id]
         save_users(users)
         await update.message.reply_text(
-            "✅ I tuoi dati sono stati cancellati.\n"
-            "Usa /start se vuoi registrarti nuovamente."
+            "✅ <b>Dati cancellati con successo</b>\n\n"
+            "Tutte le informazioni che avevi registrato (tariffe e preferenze) sono state rimosse.\n"
+            "Da questo momento non riceverai più notifiche da OctoTracker.\n\n"
+            "🐙 Ti ringrazio per averlo provato!\n\n"
+            "Se in futuro vuoi ricominciare a monitorare le tariffe, ti basta usare il comando /start.",
+            parse_mode=ParseMode.HTML
         )
     else:
         await update.message.reply_text(
