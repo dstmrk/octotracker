@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 """
-Bot Telegram per registrare le tariffe degli utenti
+Bot Telegram OctoTracker - Tutto in uno
+Gestisce bot, scraper schedulato, checker schedulato e keep-alive
 """
 import os
 import json
-import subprocess
+import asyncio
+from datetime import datetime, time
 from pathlib import Path
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from dotenv import load_dotenv
 
-load_dotenv()
+# Import moduli interni
+from scraper import scrape_octopus_tariffe
+from checker import check_and_notify_users
 
-# Import git sync helper
-try:
-    from git_sync import git_pull, git_push
-    GIT_SYNC_ENABLED = bool(os.getenv('GITHUB_TOKEN'))
-except ImportError:
-    GIT_SYNC_ENABLED = False
-    print("⚠️  git_sync.py non trovato, git sync disabilitato")
+load_dotenv()
 
 # Stati conversazione
 LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(5)
@@ -26,6 +24,11 @@ LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(5)
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
 USERS_FILE = DATA_DIR / "users.json"
+
+# Configurazione scheduler
+SCRAPER_HOUR = int(os.getenv('SCRAPER_HOUR', '9'))  # Default: 9:00 ora italiana
+CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italiana
+KEEPALIVE_INTERVAL = int(os.getenv('KEEPALIVE_INTERVAL_MINUTES', '5'))  # Default: 5 minuti
 
 def load_users():
     """Carica dati utenti"""
@@ -35,22 +38,16 @@ def load_users():
     return {}
 
 def save_users(users):
-    """Salva dati utenti e sincronizza con GitHub"""
+    """Salva dati utenti"""
     DATA_DIR.mkdir(exist_ok=True)
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
+    print(f"💾 Dati utenti salvati ({len(users)} utenti)")
 
-    # Sincronizza con GitHub se abilitato
-    if GIT_SYNC_ENABLED:
-        try:
-            git_push('data/users.json', f'Update users data [Bot]')
-        except Exception as e:
-            print(f"⚠️  Errore git push: {e}")
-            # Non blocchiamo il bot se git push fallisce
+# ========== BOT COMMANDS ==========
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Avvia registrazione tariffe"""
-    # Verifica se è un update o una prima registrazione
     users = load_users()
     user_id = str(update.effective_user.id)
     is_update = user_id in users
@@ -94,7 +91,6 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['luce_comm'] = float(update.message.text.replace(',', '.'))
 
-        # Chiedi se ha anche il gas con bottoni
         keyboard = [
             [
                 InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
@@ -123,8 +119,7 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👉 Inserisci il costo materia energia gas (€/Smc)."
         )
         return GAS_ENERGIA
-    else:  # gas_no
-        # Salva solo luce
+    else:
         return await salva_e_conferma(query, context, solo_luce=True)
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -153,17 +148,13 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     """Salva dati utente e mostra conferma"""
     users = load_users()
 
-    # Gestisci sia Update che CallbackQuery
     if hasattr(update_or_query, 'message') and hasattr(update_or_query.message, 'reply_text'):
-        # È un Update normale
         user_id = str(update_or_query.effective_user.id)
         send_message = lambda text: update_or_query.message.reply_text(text)
     else:
-        # È una CallbackQuery
         user_id = str(update_or_query.from_user.id)
         send_message = lambda text: update_or_query.edit_message_text(text)
 
-    # Prepara dati da salvare
     user_data = {
         'luce_energia': context.user_data['luce_energia'],
         'luce_comm': context.user_data['luce_comm'],
@@ -179,7 +170,6 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     users[user_id] = user_data
     save_users(users)
 
-    # Messaggio di conferma
     messaggio = (
         "✅ **Abbiamo finito!**\n\n"
         "Ecco i dati che hai inserito:\n\n"
@@ -237,7 +227,6 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     messaggio += "\nPer modificarli usa /update"
-
     await update.message.reply_text(messaggio)
 
 async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -270,27 +259,87 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• /status – Mostra le tariffe e lo stato attuale\n"
         "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
         "• /help – Mostra questo messaggio di aiuto\n\n"
-        "💡 Il bot controlla ogni giorno le tariffe e ti avvisa automaticamente se trova qualcosa di meglio.\n\n"
+        f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
     await update.message.reply_text(help_text)
 
+# ========== SCHEDULER ==========
+
+async def run_scraper():
+    """Esegue scraper delle tariffe"""
+    print(f"🕷️  [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio scraper...")
+    try:
+        result = scrape_octopus_tariffe()
+        print(f"✅ Scraper completato: {result}")
+    except Exception as e:
+        print(f"❌ Errore scraper: {e}")
+
+async def run_checker(bot_token: str):
+    """Esegue checker e invia notifiche"""
+    print(f"🔍 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio checker...")
+    try:
+        await check_and_notify_users(bot_token)
+        print(f"✅ Checker completato")
+    except Exception as e:
+        print(f"❌ Errore checker: {e}")
+
+async def daily_scheduler(bot_token: str):
+    """Scheduler giornaliero per scraper e checker"""
+    print(f"📅 Scheduler attivo - Scraper: {SCRAPER_HOUR}:00, Checker: {CHECKER_HOUR}:00")
+
+    while True:
+        now = datetime.now()
+
+        # Controlla se è ora di eseguire lo scraper
+        if now.hour == SCRAPER_HOUR and now.minute == 0:
+            await run_scraper()
+            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+
+        # Controlla se è ora di eseguire il checker
+        elif now.hour == CHECKER_HOUR and now.minute == 0:
+            await run_checker(bot_token)
+            await asyncio.sleep(60)  # Aspetta 1 minuto per evitare esecuzioni multiple
+
+        # Controlla ogni 30 secondi
+        await asyncio.sleep(30)
+
+async def keep_alive():
+    """Keep-alive per evitare che il worker vada in sleep"""
+    if KEEPALIVE_INTERVAL <= 0:
+        print("⏸️  Keep-alive disabilitato")
+        return
+
+    print(f"💓 Keep-alive attivo (ogni {KEEPALIVE_INTERVAL} minuti)")
+
+    while True:
+        await asyncio.sleep(KEEPALIVE_INTERVAL * 60)
+        print(f"💓 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Keep-alive ping")
+
+# ========== MAIN ==========
+
+async def post_init(application: Application) -> None:
+    """Avvia scheduler e keep-alive dopo l'inizializzazione del bot"""
+    bot_token = application.bot.token
+
+    # Avvia scheduler in background
+    asyncio.create_task(daily_scheduler(bot_token))
+
+    # Avvia keep-alive in background
+    asyncio.create_task(keep_alive())
+
 def main():
-    """Avvia il bot"""
+    """Avvia il bot con scheduler integrato"""
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
-        raise ValueError("TELEGRAM_BOT_TOKEN non impostato in .env")
+        raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
 
-    # Git pull all'avvio per avere dati aggiornati
-    if GIT_SYNC_ENABLED:
-        print("🔄 Sincronizzazione con GitHub all'avvio...")
-        try:
-            git_pull()
-        except Exception as e:
-            print(f"⚠️  Errore git pull: {e}")
-            print("   Procedo comunque con i dati locali")
+    print("🤖 Avvio OctoTracker...")
+    print(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
+    print(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
+    print(f"💓 Keep-alive: ogni {KEEPALIVE_INTERVAL} minuti" if KEEPALIVE_INTERVAL > 0 else "💓 Keep-alive: disabilitato")
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(post_init).build()
 
     # Handler conversazione registrazione
     conv_handler = ConversationHandler(
@@ -313,7 +362,7 @@ def main():
     app.add_handler(CommandHandler('remove', remove_data))
     app.add_handler(CommandHandler('help', help_command))
 
-    print("🤖 Bot avviato!")
+    print("✅ Bot avviato e in ascolto!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':

@@ -125,8 +125,8 @@ async def send_notification(bot, user_id, message):
         print(f"❌ Errore invio messaggio a {user_id}: {e}")
         return False
 
-async def main():
-    """Controlla tariffe e invia notifiche"""
+async def check_and_notify_users(bot_token: str):
+    """Controlla tariffe e invia notifiche (chiamata da bot.py)"""
     print("🔍 Inizio controllo tariffe...")
 
     # Carica dati
@@ -142,11 +142,7 @@ async def main():
         return
 
     # Inizializza bot
-    token = os.getenv('TELEGRAM_BOT_TOKEN')
-    if not token:
-        raise ValueError("TELEGRAM_BOT_TOKEN non impostato in .env")
-
-    bot = Bot(token=token)
+    bot = Bot(token=bot_token)
 
     # Controlla ogni utente
     notifications_sent = 0
@@ -193,6 +189,13 @@ async def main():
         print(f"💾 Dati utenti aggiornati")
 
     print(f"\n✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
+
+async def main():
+    """Main per esecuzione standalone"""
+    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not token:
+        raise ValueError("TELEGRAM_BOT_TOKEN non impostato in .env")
+    await check_and_notify_users(token)
 
 if __name__ == '__main__':
     asyncio.run(main())

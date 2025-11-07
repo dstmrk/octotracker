@@ -7,10 +7,11 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 - **Bot Telegram 24/7** per registrare e gestire le tue tariffe (luce e gas)
 - **Scraping automatico** delle tariffe Octopus Energy (solo mono-orarie fisse)
 - **Controllo giornaliero** e notifica se ci sono tariffe più convenienti
+- **Keep-alive** configurabile per evitare sleep del worker
 - **Zero costi**: hosting gratuito su Render
-- **Zero manutenzione**: tutto automatico
+- **Zero manutenzione**: tutto automatico, un solo servizio
 
-## 🚀 Setup (5 minuti)
+## 🚀 Setup (3 minuti)
 
 ### 1. Crea il Bot Telegram
 
@@ -18,15 +19,7 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 2. Invia `/newbot` e segui le istruzioni
 3. Copia il **token** che ti viene dato (tipo: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-### 2. Crea GitHub Personal Access Token
-
-1. Vai su [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Clicca **Generate new token** → **Generate new token (classic)**
-3. Dai un nome (es: "OctoTracker Render")
-4. Seleziona scope: **repo** (tutti i permessi del repo)
-5. Clicca **Generate token** e copia il token
-
-### 3. Deploy su Render
+### 2. Deploy su Render
 
 1. Vai su [render.com](https://render.com) e crea un account gratuito
 2. Collega il tuo account GitHub
@@ -35,32 +28,37 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
    - Seleziona questo repository
    - Clicca **"Apply"**
 
-4. Render creerà automaticamente **3 servizi**:
-   - `octotracker-bot` (Worker - bot attivo 24/7)
-   - `octotracker-scraper` (Cron - scraping giornaliero ore 9:00)
-   - `octotracker-checker` (Cron - controllo giornaliero ore 10:00)
+4. Render creerà automaticamente **1 solo Worker** chiamato `octotracker` che include:
+   - Bot Telegram (sempre attivo)
+   - Scraper schedulato (ore 9:00)
+   - Checker schedulato (ore 10:00)
+   - Keep-alive (ogni 5 minuti)
 
-### 4. Configura Variabili d'Ambiente
+### 3. Configura Token Telegram
 
-Per **ogni servizio** creato, vai su **Environment** e aggiungi:
+Nel servizio `octotracker` creato, vai su **Environment** e aggiungi:
 
-**Per tutti e 3 i servizi:**
-- `GITHUB_TOKEN` = il token GitHub che hai creato al passo 2
+- **Nome**: `TELEGRAM_BOT_TOKEN`
+- **Valore**: il token che hai ricevuto da BotFather
 
-**Per octotracker-bot e octotracker-checker:**
-- `TELEGRAM_BOT_TOKEN` = il token da BotFather
+**Nota**: Le altre variabili (`SCRAPER_HOUR`, `CHECKER_HOUR`, `KEEPALIVE_INTERVAL_MINUTES`) hanno già valori di default nel `render.yaml`. Puoi modificarle se vuoi.
 
-**Nota**: `GITHUB_REPO` e `GITHUB_BRANCH` sono già configurati nel `render.yaml`. Cambia solo se hai fatto fork del repo.
+### 4. Aspetta il Deploy
 
-### 5. Verifica Deploy
+1. Il primo deploy richiede 5-10 minuti (installa Playwright e browser Chromium)
+2. Controlla i logs per verificare che tutto sia ok
+3. Dovresti vedere:
+   ```
+   🤖 Avvio OctoTracker...
+   ⏰ Scraper schedulato: 9:00
+   ⏰ Checker schedulato: 10:00
+   💓 Keep-alive: ogni 5 minuti
+   ✅ Bot avviato e in ascolto!
+   ```
 
-1. Aspetta che tutti e 3 i servizi completino il primo deploy (2-3 minuti)
-2. Controlla i logs per verificare che non ci siano errori
-3. Il bot dovrebbe essere online!
+### 5. Usa il Bot!
 
-### 6. Usa il Bot
-
-1. Apri Telegram e cerca il tuo bot (il nome che hai scelto con BotFather)
+1. Apri Telegram e cerca il tuo bot
 2. Invia `/start`
 3. Segui le istruzioni per registrare le tue tariffe
 4. Fatto! 🎉
@@ -74,24 +72,47 @@ Per **ogni servizio** creato, vai su **Environment** e aggiungi:
 - `/help` - Mostra tutti i comandi
 - `/cancel` - Annulla registrazione in corso
 
-## ⚡️ Come funziona
+## ⚙️ Configurazione Avanzata
 
-### Automazione
+Puoi personalizzare il comportamento tramite variabili d'ambiente su Render:
 
-- **Scraper**: Ogni giorno alle **9:00** (ora italiana) scarica le tariffe Octopus Energy
-- **Checker**: Ogni giorno alle **10:00** (ora italiana) controlla se ci sono risparmi e ti notifica
-- **Bot**: Sempre attivo per rispondere ai tuoi comandi
+| Variabile | Default | Descrizione |
+|-----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | - | Token da BotFather (obbligatorio) |
+| `SCRAPER_HOUR` | 9 | Ora dello scraping (0-23, ora italiana) |
+| `CHECKER_HOUR` | 10 | Ora del controllo tariffe (0-23, ora italiana) |
+| `KEEPALIVE_INTERVAL_MINUTES` | 5 | Intervallo keep-alive (minuti, 0 = disabilitato) |
 
-### Sincronizzazione Dati
+**Esempio**: Per cambiare l'ora dello scraping alle 8:00 e disabilitare il keep-alive:
+- `SCRAPER_HOUR` = `8`
+- `KEEPALIVE_INTERVAL_MINUTES` = `0`
 
-Tutti i dati (`users.json`, `current_rates.json`) sono salvati su GitHub:
-- Il bot fa commit/push automatico quando registri/aggiorni le tariffe
-- Scraper e checker sincronizzano i dati via git pull/push
-- Questo garantisce che tutti i servizi vedano sempre dati aggiornati
+## ⚡️ Come Funziona
 
-### Struttura Dati
+### Architettura
 
-**data/users.json** - Dati degli utenti
+OctoTracker usa un **singolo Worker** con scheduler integrato:
+
+```
+Worker Render (sempre attivo)
+├── Bot Telegram (gestisce comandi utente)
+├── Scheduler interno (controlla l'ora ogni 30 secondi)
+│   ├── Scraper (alle ore specificate)
+│   └── Checker (alle ore specificate)
+└── Keep-alive (ping periodico)
+```
+
+**Vantaggi**:
+- ✅ Filesystem condiviso (i JSON sono accessibili a tutti i componenti)
+- ✅ Nessuna sincronizzazione git necessaria
+- ✅ Setup semplicissimo (solo `TELEGRAM_BOT_TOKEN`)
+- ✅ Un solo servizio da monitorare
+
+### Dati
+
+I dati sono salvati localmente in file JSON:
+
+**data/users.json** - Utenti e loro tariffe
 ```json
 {
   "123456789": {
@@ -99,17 +120,12 @@ Tutti i dati (`users.json`, `current_rates.json`) sono salvati su GitHub:
     "luce_comm": 96.00,
     "gas_energia": 0.45,
     "gas_comm": 144.00,
-    "last_notified_rates": {
-      "luce_energia": 0.10,
-      "luce_comm": 72.00,
-      "gas_energia": 0.38,
-      "gas_comm": 84.00
-    }
+    "last_notified_rates": { ... }
   }
 }
 ```
 
-**data/current_rates.json** - Tariffe Octopus
+**data/current_rates.json** - Tariffe Octopus aggiornate
 ```json
 {
   "luce": {
@@ -117,14 +133,12 @@ Tutti i dati (`users.json`, `current_rates.json`) sono salvati su GitHub:
     "commercializzazione": 96.00,
     "nome_tariffa": "Mono-oraria Fissa"
   },
-  "gas": {
-    "energia": 0.42,
-    "commercializzazione": 138.00,
-    "nome_tariffa": "Mono-oraria Fissa"
-  },
+  "gas": { ... },
   "data_aggiornamento": "2025-11-07"
 }
 ```
+
+**Nota**: Su Render free tier, il filesystem è effimero (i dati si perdono al restart). Questo va bene per un bot personale con pochi utenti. Se vuoi persistenza completa, considera di usare Render PostgreSQL (gratuito) o un database esterno.
 
 ## 🛠️ Sviluppo Locale
 
@@ -137,67 +151,73 @@ playwright install chromium
 
 # Crea file .env
 echo "TELEGRAM_BOT_TOKEN=il_tuo_token" > .env
+echo "KEEPALIVE_INTERVAL_MINUTES=0" >> .env  # Disabilita keep-alive in locale
 
-# Test scraper
+# Avvia bot (include scheduler)
+python bot.py
+```
+
+### Test componenti singoli
+
+```bash
+# Test solo scraper
 python scraper.py
 
-# Test bot
-python bot.py
-
-# Test checker (richiede users.json e current_rates.json)
+# Test solo checker
 python checker.py
 ```
 
 ### File Principali
 
-- `bot.py` - Bot Telegram con git sync
+- `bot.py` - Bot Telegram con scheduler integrato
 - `scraper.py` - Playwright scraper per tariffe Octopus
 - `checker.py` - Controllo e invio notifiche
-- `git_sync.py` - Helper per sincronizzazione GitHub
-- `render.yaml` - Configurazione Blueprint Render
-- `run_scraper.sh` - Script esecuzione scraper + git push
-- `run_checker.sh` - Script esecuzione checker + git push
-- `build.sh` - Build script per Playwright
+- `render.yaml` - Configurazione Blueprint Render (1 worker)
+- `build.sh` - Script build per Playwright
+- `requirements.txt` - Dipendenze Python
 
 ## 📝 Note
 
 - **Tariffe supportate**: solo mono-orarie fisse
 - **Fonte**: https://octopusenergy.it/le-nostre-tariffe
-- **Automazione**: scraping ore 9:00, controllo ore 10:00 (ora italiana)
+- **Automazione**: scraping ore 9:00, controllo ore 10:00 (configurabile)
 - **Utenti**: può avere solo luce, oppure luce + gas
 - **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano
-- **Privacy**: dati salvati nel tuo repository GitHub privato
+- **Privacy**: dati salvati localmente sul worker Render
 - **Unità**: costi commercializzazione in €/anno
-- **Costo**: 100% gratuito (Render free tier + repository pubblico/privato)
+- **Costo**: 100% gratuito (Render free tier)
 
 ## 🔧 Troubleshooting
 
 ### Bot non risponde su Telegram
-1. Verifica che il servizio `octotracker-bot` sia "Live" su Render
+1. Verifica che il servizio `octotracker` sia "Live" su Render
 2. Controlla i logs per errori
 3. Verifica che `TELEGRAM_BOT_TOKEN` sia corretto
 
-### Scraper/Checker non funzionano
-1. Controlla i logs dei cron jobs su Render
-2. Verifica che `GITHUB_TOKEN` abbia permessi `repo`
-3. Verifica che `GITHUB_REPO` punti al repo corretto (formato: `username/repo`)
+### Scraper non funziona
+1. Controlla i logs alle ore dello scraping
+2. Il primo build richiede tempo (installa Playwright)
+3. Verifica screenshot in `data/last_scrape.png` per debug
 
-### Errori git push
-1. Il token GitHub deve avere scope `repo`
-2. Se il repo è privato, verifica che il token abbia accesso
-3. Controlla che `GITHUB_BRANCH` sia corretto (di solito `main`)
+### Worker va in sleep
+1. Aumenta `KEEPALIVE_INTERVAL_MINUTES` (es: da 5 a 3)
+2. Controlla nei logs i ping keep-alive
+3. I Worker su Render free *non dovrebbero* andare in sleep (solo i Web Services)
 
-### Prima esecuzione scraper
-- Il primo build dello scraper richiede 5-10 minuti (installa Playwright e browser)
-- Le esecuzioni successive sono molto più veloci
+### Dati persi dopo restart
+- Render free tier ha filesystem effimero
+- Normale per restart/redeploy
+- Gli utenti devono registrarsi di nuovo
+- Soluzione: usare database PostgreSQL (gratuito su Render)
 
-## 🔮 Possibili miglioramenti futuri
+## 🔮 Possibili Miglioramenti Futuri
 
+- [ ] PostgreSQL per persistenza dati
 - [ ] Supporto tariffe bi-orarie e variabili
 - [ ] Stima risparmio annuale basata su consumi
 - [ ] Storico tariffe con grafici
-- [ ] Database esterno (PostgreSQL, Supabase) invece di JSON su GitHub
 - [ ] Notifiche personalizzate per orario
+- [ ] Dashboard web per visualizzare statistiche
 
 ## 📄 Licenza
 

@@ -1,57 +1,19 @@
 services:
-  # Bot Telegram - gira 24/7
+  # OctoTracker - Worker unico con scheduler integrato
   - type: worker
-    name: octotracker-bot
+    name: octotracker
     runtime: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "./build.sh"
     startCommand: "python bot.py"
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: GITHUB_TOKEN
-        sync: false
-      - key: GITHUB_REPO
-        value: "dstmrk/octotracker"
-      - key: GITHUB_BRANCH
-        value: "main"
-      - key: PYTHON_VERSION
-        value: 3.11.0
-
-  # Scraper - cron giornaliero alle 9:00 (ora italiana)
-  - type: cron
-    name: octotracker-scraper
-    runtime: python
-    plan: free
-    schedule: "0 8 * * *"
-    buildCommand: "./build.sh"
-    startCommand: "./run_scraper.sh"
-    envVars:
-      - key: GITHUB_TOKEN
-        sync: false
-      - key: GITHUB_REPO
-        value: "dstmrk/octotracker"
-      - key: GITHUB_BRANCH
-        value: "main"
-      - key: PYTHON_VERSION
-        value: 3.11.0
-
-  # Checker - cron giornaliero alle 10:00 (ora italiana)
-  - type: cron
-    name: octotracker-checker
-    runtime: python
-    plan: free
-    schedule: "0 9 * * *"
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "./run_checker.sh"
-    envVars:
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: GITHUB_TOKEN
-        sync: false
-      - key: GITHUB_REPO
-        value: "dstmrk/octotracker"
-      - key: GITHUB_BRANCH
-        value: "main"
+        sync: false  # Configura su Render dashboard
+      - key: SCRAPER_HOUR
+        value: "9"  # Ora italiana per scraping (default: 9)
+      - key: CHECKER_HOUR
+        value: "10"  # Ora italiana per checker (default: 10)
+      - key: KEEPALIVE_INTERVAL_MINUTES
+        value: "5"  # Ping keep-alive ogni X minuti (0 = disabilitato)
       - key: PYTHON_VERSION
         value: 3.11.0

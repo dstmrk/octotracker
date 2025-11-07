@@ -3,13 +3,13 @@
 
 set -e
 
-echo "📦 Installing Python dependencies..."
+echo "📦 Installazione dipendenze Python..."
 pip install -r requirements.txt
 
-echo "🎭 Installing Playwright browsers..."
+echo "🎭 Installazione Playwright browsers..."
 playwright install chromium
 
-echo "📚 Installing Playwright system dependencies..."
+echo "📚 Installazione dipendenze di sistema Playwright..."
 playwright install-deps chromium
 
-echo "✅ Build completed!"
+echo "✅ Build completato!"
