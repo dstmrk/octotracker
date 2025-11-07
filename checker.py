@@ -32,102 +32,151 @@ def save_users(users):
 def check_better_rates(user_rates, current_rates):
     """
     Confronta tariffe utente con tariffe attuali
-    Ritorna dizionario con risparmi trovati
+    Ritorna dizionario con risparmi e peggioramenti trovati
     """
     savings = {
         'luce_energia': None,
         'luce_comm': None,
         'gas_energia': None,
         'gas_comm': None,
-        'has_savings': False
+        'luce_energia_worse': False,
+        'luce_comm_worse': False,
+        'gas_energia_worse': False,
+        'gas_comm_worse': False,
+        'has_savings': False,
+        'is_mixed': False
     }
 
     # Controlla luce
     if current_rates.get('luce'):
-        if current_rates['luce'].get('energia') and current_rates['luce']['energia'] < user_rates['luce_energia']:
-            savings['luce_energia'] = {
-                'attuale': user_rates['luce_energia'],
-                'nuova': current_rates['luce']['energia'],
-                'risparmio': user_rates['luce_energia'] - current_rates['luce']['energia']
-            }
-            savings['has_savings'] = True
+        if current_rates['luce'].get('energia'):
+            if current_rates['luce']['energia'] < user_rates['luce_energia']:
+                savings['luce_energia'] = {
+                    'attuale': user_rates['luce_energia'],
+                    'nuova': current_rates['luce']['energia'],
+                    'risparmio': user_rates['luce_energia'] - current_rates['luce']['energia']
+                }
+                savings['has_savings'] = True
+            elif current_rates['luce']['energia'] > user_rates['luce_energia']:
+                savings['luce_energia_worse'] = True
 
-        if current_rates['luce'].get('commercializzazione') and current_rates['luce']['commercializzazione'] < user_rates['luce_comm']:
-            savings['luce_comm'] = {
-                'attuale': user_rates['luce_comm'],
-                'nuova': current_rates['luce']['commercializzazione'],
-                'risparmio': user_rates['luce_comm'] - current_rates['luce']['commercializzazione']
-            }
-            savings['has_savings'] = True
+        if current_rates['luce'].get('commercializzazione'):
+            if current_rates['luce']['commercializzazione'] < user_rates['luce_comm']:
+                savings['luce_comm'] = {
+                    'attuale': user_rates['luce_comm'],
+                    'nuova': current_rates['luce']['commercializzazione'],
+                    'risparmio': user_rates['luce_comm'] - current_rates['luce']['commercializzazione']
+                }
+                savings['has_savings'] = True
+            elif current_rates['luce']['commercializzazione'] > user_rates['luce_comm']:
+                savings['luce_comm_worse'] = True
 
     # Controlla gas (solo se l'utente ha il gas)
     if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
-        if current_rates['gas'].get('energia') and current_rates['gas']['energia'] < user_rates['gas_energia']:
-            savings['gas_energia'] = {
-                'attuale': user_rates['gas_energia'],
-                'nuova': current_rates['gas']['energia'],
-                'risparmio': user_rates['gas_energia'] - current_rates['gas']['energia']
-            }
-            savings['has_savings'] = True
+        if current_rates['gas'].get('energia'):
+            if current_rates['gas']['energia'] < user_rates['gas_energia']:
+                savings['gas_energia'] = {
+                    'attuale': user_rates['gas_energia'],
+                    'nuova': current_rates['gas']['energia'],
+                    'risparmio': user_rates['gas_energia'] - current_rates['gas']['energia']
+                }
+                savings['has_savings'] = True
+            elif current_rates['gas']['energia'] > user_rates['gas_energia']:
+                savings['gas_energia_worse'] = True
 
-        if current_rates['gas'].get('commercializzazione') and user_rates.get('gas_comm') is not None and current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
-            savings['gas_comm'] = {
-                'attuale': user_rates['gas_comm'],
-                'nuova': current_rates['gas']['commercializzazione'],
-                'risparmio': user_rates['gas_comm'] - current_rates['gas']['commercializzazione']
-            }
-            savings['has_savings'] = True
+        if current_rates['gas'].get('commercializzazione') and user_rates.get('gas_comm') is not None:
+            if current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
+                savings['gas_comm'] = {
+                    'attuale': user_rates['gas_comm'],
+                    'nuova': current_rates['gas']['commercializzazione'],
+                    'risparmio': user_rates['gas_comm'] - current_rates['gas']['commercializzazione']
+                }
+                savings['has_savings'] = True
+            elif current_rates['gas']['commercializzazione'] > user_rates['gas_comm']:
+                savings['gas_comm_worse'] = True
+
+    # Determina se è un caso "mixed" (una componente migliora, l'altra peggiora)
+    # Per luce
+    luce_has_improvement = savings['luce_energia'] or savings['luce_comm']
+    luce_has_worsening = savings['luce_energia_worse'] or savings['luce_comm_worse']
+
+    # Per gas
+    gas_has_improvement = savings['gas_energia'] or savings['gas_comm']
+    gas_has_worsening = savings['gas_energia_worse'] or savings['gas_comm_worse']
+
+    # È mixed se almeno una componente (luce o gas) ha sia miglioramenti che peggioramenti
+    if (luce_has_improvement and luce_has_worsening) or (gas_has_improvement and gas_has_worsening):
+        savings['is_mixed'] = True
 
     return savings
 
 def format_notification(savings, user_rates, current_rates):
     """Formatta messaggio di notifica"""
-    message = "⚡️ <b>Buone notizie!</b>\n"
-    message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
+    # Header diverso per caso mixed vs tutto migliorato
+    if savings['is_mixed']:
+        message = "⚖️ <b>Aggiornamento tariffe Octopus Energy</b>\n"
+        message += "OctoTracker ha rilevato una variazione nelle tariffe, ma non è detto che sia automaticamente più conveniente: una delle due componenti è migliorata, l'altra è aumentata.\n\n"
+    else:
+        message = "⚡️ <b>Buone notizie!</b>\n"
+        message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
 
-    # Mostra Luce se c'è risparmio in energia O commercializzazione
-    if savings['luce_energia'] or savings['luce_comm']:
+    # Mostra Luce se c'è risparmio o peggioramento in energia O commercializzazione
+    if savings['luce_energia'] or savings['luce_comm'] or savings['luce_energia_worse'] or savings['luce_comm_worse']:
         message += "💡 <b>Luce:</b>\n"
         message += f"Tua tariffa: {user_rates['luce_energia']:.3f} €/kWh, {user_rates['luce_comm']:.0f} €/anno\n"
 
-        # Evidenzia in grassetto solo i valori migliorati
+        # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
         energia_new = current_rates['luce']['energia']
         comm_new = current_rates['luce']['commercializzazione']
 
         if savings['luce_energia']:
             energia_str = f"<b>{energia_new:.3f} €/kWh</b>"
+        elif savings['luce_energia_worse']:
+            energia_str = f"<u>{energia_new:.3f} €/kWh</u>"
         else:
             energia_str = f"{energia_new:.3f} €/kWh"
 
         if savings['luce_comm']:
             comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+        elif savings['luce_comm_worse']:
+            comm_str = f"<u>{comm_new:.0f} €/anno</u>"
         else:
             comm_str = f"{comm_new:.0f} €/anno"
 
         message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
-    # Mostra Gas se c'è risparmio in energia O commercializzazione (e se l'utente ha il gas)
-    if (savings['gas_energia'] or savings['gas_comm']) and user_rates.get('gas_energia') is not None:
+    # Mostra Gas se c'è risparmio o peggioramento in energia O commercializzazione (e se l'utente ha il gas)
+    if user_rates.get('gas_energia') is not None and (savings['gas_energia'] or savings['gas_comm'] or savings['gas_energia_worse'] or savings['gas_comm_worse']):
         message += "🔥 <b>Gas:</b>\n"
         message += f"Tua tariffa: {user_rates['gas_energia']:.2f} €/Smc, {user_rates['gas_comm']:.0f} €/anno\n"
 
-        # Evidenzia in grassetto solo i valori migliorati
+        # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
         energia_new = current_rates['gas']['energia']
         comm_new = current_rates['gas']['commercializzazione']
 
         if savings['gas_energia']:
             energia_str = f"<b>{energia_new:.2f} €/Smc</b>"
+        elif savings['gas_energia_worse']:
+            energia_str = f"<u>{energia_new:.2f} €/Smc</u>"
         else:
             energia_str = f"{energia_new:.2f} €/Smc"
 
         if savings['gas_comm']:
             comm_str = f"<b>{comm_new:.0f} €/anno</b>"
+        elif savings['gas_comm_worse']:
+            comm_str = f"<u>{comm_new:.0f} €/anno</u>"
         else:
             comm_str = f"{comm_new:.0f} €/anno"
 
         message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
-    message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
+    # Footer diverso per caso mixed
+    if savings['is_mixed']:
+        message += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
+        message += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
+    else:
+        message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
+
     message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe"
 
     return message
