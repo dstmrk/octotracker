@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""
+Scraper per estrarre tariffe Octopus Energy con Playwright
+"""
+import json
+import re
+from pathlib import Path
+from datetime import datetime
+from playwright.sync_api import sync_playwright
+
+# File dati
+DATA_DIR = Path(__file__).parent / "data"
+RATES_FILE = DATA_DIR / "current_rates.json"
+
+def extract_price(text):
+    """Estrae prezzo da testo (es: '0.123 €/kWh' -> 0.123)"""
+    match = re.search(r'(\d+[.,]\d+)', text.replace(',', '.'))
+    return float(match.group(1)) if match else None
+
+def scrape_octopus_tariffe():
+    """Scrape tariffe mono-orarie fisse da Octopus Energy"""
+    print("🔍 Avvio scraping tariffe Octopus Energy...")
+
+    with sync_playwright() as p:
+        # Avvia browser
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        try:
+            # Vai alla pagina tariffe
+            print("📄 Caricamento pagina...")
+            page.goto('https://octopusenergy.it/le-nostre-tariffe', wait_until='networkidle', timeout=30000)
+
+            # Attendi caricamento contenuto
+            page.wait_for_timeout(3000)
+
+            # Estrai tutto il testo della pagina per analisi
+            content = page.content()
+            text = page.inner_text('body')
+
+            # Cerca pattern per tariffe mono-orarie fisse
+            # Questo è un approccio generico - potrebbe necessitare aggiustamenti
+            tariffe_data = {
+                "luce": None,
+                "gas": None,
+                "data_aggiornamento": datetime.now().strftime("%Y-%m-%d")
+            }
+
+            # Cerca sezioni luce e gas
+            # Cerca pattern comuni: "€/kWh", "€/Smc", "€/mese"
+
+            # Strategia: cerca elementi che contengono prezzi
+            # Pattern tipico: numero + €/kWh o €/Smc per energia, numero + €/mese per commercializzazione
+
+            # Estrai tutti i prezzi dalla pagina
+            energia_luce_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*kWh', text.replace('\n', ' '))
+            comm_luce_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*mese', text.replace('\n', ' '))
+            energia_gas_match = re.search(r'(\d+[.,]\d+)\s*€\s*/\s*Smc', text.replace('\n', ' '))
+
+            # Prova anche pattern alternativi
+            if not energia_luce_match:
+                # Cerca pattern tipo "0,123 €/kWh" o "0.123€/kWh"
+                energia_luce_match = re.search(r'(\d+[.,]\d+)\s*€?\s*kWh', text.replace('\n', ' '))
+
+            if energia_luce_match:
+                tariffe_data["luce"] = {
+                    "energia": float(energia_luce_match.group(1).replace(',', '.')),
+                    "commercializzazione": float(comm_luce_match.group(1).replace(',', '.')) if comm_luce_match else None,
+                    "nome_tariffa": "Mono-oraria Fissa"
+                }
+                print(f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.3f}/kWh")
+
+            if energia_gas_match:
+                # Per gas, cerca la seconda occorrenza di €/mese se c'è
+                all_mese = re.findall(r'(\d+[.,]\d+)\s*€\s*/\s*mese', text.replace('\n', ' '))
+                comm_gas = float(all_mese[1].replace(',', '.')) if len(all_mese) > 1 else (float(all_mese[0].replace(',', '.')) if all_mese else None)
+
+                tariffe_data["gas"] = {
+                    "energia": float(energia_gas_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm_gas,
+                    "nome_tariffa": "Mono-oraria Fissa"
+                }
+                print(f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.3f}/Smc")
+
+            # Se non troviamo nulla con regex, proviamo a cercare elementi specifici
+            if not tariffe_data["luce"] or not tariffe_data["gas"]:
+                print("⚠️  Pattern regex non hanno trovato tutto, provo con selettori...")
+
+                # Cerca carte/sezioni tariffe
+                cards = page.query_selector_all('[class*="card"], [class*="tariffa"], [class*="price"]')
+
+                for card in cards:
+                    card_text = card.inner_text()
+
+                    # Cerca luce
+                    if 'luce' in card_text.lower() or 'elettric' in card_text.lower():
+                        energia_match = re.search(r'(\d+[.,]\d+).*?kWh', card_text, re.IGNORECASE)
+                        comm_match = re.search(r'(\d+[.,]\d+).*?mese', card_text, re.IGNORECASE)
+
+                        if energia_match and not tariffe_data["luce"]:
+                            tariffe_data["luce"] = {
+                                "energia": float(energia_match.group(1).replace(',', '.')),
+                                "commercializzazione": float(comm_match.group(1).replace(',', '.')) if comm_match else None,
+                                "nome_tariffa": "Mono-oraria Fissa"
+                            }
+                            print(f"✅ Luce trovata (da card): €{tariffe_data['luce']['energia']:.3f}/kWh")
+
+                    # Cerca gas
+                    if 'gas' in card_text.lower():
+                        energia_match = re.search(r'(\d+[.,]\d+).*?Smc', card_text, re.IGNORECASE)
+                        comm_match = re.search(r'(\d+[.,]\d+).*?mese', card_text, re.IGNORECASE)
+
+                        if energia_match and not tariffe_data["gas"]:
+                            tariffe_data["gas"] = {
+                                "energia": float(energia_match.group(1).replace(',', '.')),
+                                "commercializzazione": float(comm_match.group(1).replace(',', '.')) if comm_match else None,
+                                "nome_tariffa": "Mono-oraria Fissa"
+                            }
+                            print(f"✅ Gas trovato (da card): €{tariffe_data['gas']['energia']:.3f}/Smc")
+
+            # Salva screenshot per debug
+            screenshot_path = DATA_DIR / "last_scrape.png"
+            page.screenshot(path=str(screenshot_path))
+            print(f"📸 Screenshot salvato: {screenshot_path}")
+
+        except Exception as e:
+            print(f"❌ Errore durante scraping: {e}")
+            raise
+
+        finally:
+            browser.close()
+
+    # Salva risultati
+    DATA_DIR.mkdir(exist_ok=True)
+    with open(RATES_FILE, 'w') as f:
+        json.dump(tariffe_data, f, indent=2)
+
+    print(f"💾 Tariffe salvate in {RATES_FILE}")
+
+    return tariffe_data
+
+if __name__ == '__main__':
+    result = scrape_octopus_tariffe()
+    print("\n📊 Tariffe estratte:")
+    print(json.dumps(result, indent=2))
