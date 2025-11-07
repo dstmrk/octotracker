@@ -4,12 +4,21 @@ Bot Telegram per registrare le tariffe degli utenti
 """
 import os
 import json
+import subprocess
 from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Import git sync helper
+try:
+    from git_sync import git_pull, git_push
+    GIT_SYNC_ENABLED = bool(os.getenv('GITHUB_TOKEN'))
+except ImportError:
+    GIT_SYNC_ENABLED = False
+    print("⚠️  git_sync.py non trovato, git sync disabilitato")
 
 # Stati conversazione
 LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(5)
@@ -26,10 +35,18 @@ def load_users():
     return {}
 
 def save_users(users):
-    """Salva dati utenti"""
+    """Salva dati utenti e sincronizza con GitHub"""
     DATA_DIR.mkdir(exist_ok=True)
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
+
+    # Sincronizza con GitHub se abilitato
+    if GIT_SYNC_ENABLED:
+        try:
+            git_push('data/users.json', f'Update users data [Bot]')
+        except Exception as e:
+            print(f"⚠️  Errore git push: {e}")
+            # Non blocchiamo il bot se git push fallisce
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Avvia registrazione tariffe"""
@@ -263,6 +280,15 @@ def main():
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato in .env")
+
+    # Git pull all'avvio per avere dati aggiornati
+    if GIT_SYNC_ENABLED:
+        print("🔄 Sincronizzazione con GitHub all'avvio...")
+        try:
+            git_pull()
+        except Exception as e:
+            print(f"⚠️  Errore git pull: {e}")
+            print("   Procedo comunque con i dati locali")
 
     app = Application.builder().token(token).build()
 

@@ -8,10 +8,50 @@ services:
     startCommand: "python bot.py"
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        sync: false  # Dovrai impostarlo manualmente su Render
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: "dstmrk/octotracker"
+      - key: GITHUB_BRANCH
+        value: "main"
       - key: PYTHON_VERSION
         value: 3.11.0
 
-  # Nota: Scraper e Checker continuano a girare su GitHub Actions
-  # perché è più semplice gestire git commit/push da lì.
-  # Se vuoi migrare anche quelli, vedi la documentazione alternativa.
+  # Scraper - cron giornaliero alle 9:00 (ora italiana)
+  - type: cron
+    name: octotracker-scraper
+    runtime: python
+    plan: free
+    schedule: "0 8 * * *"
+    buildCommand: "./build.sh"
+    startCommand: "./run_scraper.sh"
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: "dstmrk/octotracker"
+      - key: GITHUB_BRANCH
+        value: "main"
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # Checker - cron giornaliero alle 10:00 (ora italiana)
+  - type: cron
+    name: octotracker-checker
+    runtime: python
+    plan: free
+    schedule: "0 9 * * *"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "./run_checker.sh"
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: "dstmrk/octotracker"
+      - key: GITHUB_BRANCH
+        value: "main"
+      - key: PYTHON_VERSION
+        value: 3.11.0

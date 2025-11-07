@@ -4,25 +4,13 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 
 ## 🎯 Funzionalità
 
-- **Bot Telegram** per registrare le tue tariffe attuali (luce e gas)
+- **Bot Telegram 24/7** per registrare e gestire le tue tariffe (luce e gas)
 - **Scraping automatico** delle tariffe Octopus Energy (solo mono-orarie fisse)
 - **Controllo giornaliero** e notifica se ci sono tariffe più convenienti
-- **Zero costi**: gira tutto su GitHub Actions (gratis)
+- **Zero costi**: hosting gratuito su Render
 - **Zero manutenzione**: tutto automatico
 
-## 🚀 Setup
-
-Puoi scegliere tra **due modalità** di hosting:
-- **Opzione A**: Solo GitHub Actions (100% gratuito, ma bot non sempre attivo)
-- **Opzione B**: Render + GitHub Actions (bot 24/7, configurazione ibrida) ⭐ **Consigliato**
-
----
-
-## 📦 Opzione B: Setup con Render + GitHub Actions (Consigliato)
-
-Questa configurazione ibrida è **ottimale**:
-- **Render**: ospita il bot Telegram 24/7 (sempre raggiungibile)
-- **GitHub Actions**: esegue scraping e controlli automatici (gratis)
+## 🚀 Setup (5 minuti)
 
 ### 1. Crea il Bot Telegram
 
@@ -30,125 +18,76 @@ Questa configurazione ibrida è **ottimale**:
 2. Invia `/newbot` e segui le istruzioni
 3. Copia il **token** che ti viene dato (tipo: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-### 2. Setup GitHub Actions (automazione scraper/checker)
+### 2. Crea GitHub Personal Access Token
 
-1. Vai su **Settings** → **Secrets and variables** → **Actions**
-2. Clicca **New repository secret**
-3. Nome: `TELEGRAM_BOT_TOKEN`
-4. Valore: incolla il token di BotFather
-5. Salva
+1. Vai su [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Clicca **Generate new token** → **Generate new token (classic)**
+3. Dai un nome (es: "OctoTracker Render")
+4. Seleziona scope: **repo** (tutti i permessi del repo)
+5. Clicca **Generate token** e copia il token
 
-6. Vai su **Settings** → **Actions** → **General**
-7. Scorri fino a **Workflow permissions**
-8. Seleziona **"Read and write permissions"**
-9. Salva
-
-10. Vai su **Actions** e abilita i workflows se richiesto
-
-### 3. Setup Render (bot 24/7)
+### 3. Deploy su Render
 
 1. Vai su [render.com](https://render.com) e crea un account gratuito
 2. Collega il tuo account GitHub
-3. Vai alla [Dashboard Render](https://dashboard.render.com)
-4. Clicca **"New +"** → **"Blueprint"**
-5. Collega questo repository
-6. Render rileverà automaticamente il file `render.yaml` e creerà il Background Worker
+3. Dalla [Dashboard Render](https://dashboard.render.com):
+   - Clicca **"New +"** → **"Blueprint"**
+   - Seleziona questo repository
+   - Clicca **"Apply"**
 
-### 4. Configura Variabili Render
+4. Render creerà automaticamente **3 servizi**:
+   - `octotracker-bot` (Worker - bot attivo 24/7)
+   - `octotracker-scraper` (Cron - scraping giornaliero ore 9:00)
+   - `octotracker-checker` (Cron - controllo giornaliero ore 10:00)
 
-Nel servizio **octotracker-bot** appena creato:
-- Nome: `TELEGRAM_BOT_TOKEN`
-- Valore: il token che hai ricevuto da BotFather
+### 4. Configura Variabili d'Ambiente
 
-### 5. Verifica e testa
+Per **ogni servizio** creato, vai su **Environment** e aggiungi:
 
-1. Aspetta che il deploy su Render sia completato (2-3 minuti)
-2. Cerca il tuo bot su Telegram e invia `/start`
+**Per tutti e 3 i servizi:**
+- `GITHUB_TOKEN` = il token GitHub che hai creato al passo 2
+
+**Per octotracker-bot e octotracker-checker:**
+- `TELEGRAM_BOT_TOKEN` = il token da BotFather
+
+**Nota**: `GITHUB_REPO` e `GITHUB_BRANCH` sono già configurati nel `render.yaml`. Cambia solo se hai fatto fork del repo.
+
+### 5. Verifica Deploy
+
+1. Aspetta che tutti e 3 i servizi completino il primo deploy (2-3 minuti)
+2. Controlla i logs per verificare che non ci siano errori
+3. Il bot dovrebbe essere online!
+
+### 6. Usa il Bot
+
+1. Apri Telegram e cerca il tuo bot (il nome che hai scelto con BotFather)
+2. Invia `/start`
 3. Segui le istruzioni per registrare le tue tariffe
+4. Fatto! 🎉
 
-### 6. Automazione
-
-- **Scraper** (GitHub Actions): ogni giorno alle 9:00 (ora italiana)
-- **Checker** (GitHub Actions): ogni giorno alle 10:00 (ora italiana)
-- **Bot** (Render): sempre attivo per rispondere ai comandi
-
----
-
-## 🔧 Opzione A: Solo GitHub Actions
-
-### 1. Crea il Bot Telegram
-
-1. Apri Telegram e cerca `@BotFather`
-2. Invia `/newbot` e segui le istruzioni
-3. Copia il **token** che ti viene dato
-
-### 2. Configura GitHub Secrets
-
-1. Vai su **Settings** → **Secrets and variables** → **Actions**
-2. Clicca **New repository secret**
-3. Nome: `TELEGRAM_BOT_TOKEN`
-4. Valore: incolla il token di BotFather
-5. Salva
-
-### 3. Abilita GitHub Actions
-
-1. Vai su **Actions** nel tuo repository
-2. Se chiede di abilitarle, clicca su **"I understand my workflows, go ahead and enable them"**
-
-### 4. Dai permessi di scrittura a GitHub Actions
-
-1. Vai su **Settings** → **Actions** → **General**
-2. Scorri fino a **Workflow permissions**
-3. Seleziona **"Read and write permissions"**
-4. Salva
-
-### 5. Avvia il bot localmente
-
-⚠️ Con questa modalità il bot **NON è attivo 24/7**. Dovrai avviarlo manualmente:
-
-```bash
-# Installa dipendenze
-pip install -r requirements.txt
-
-# Crea file .env
-echo "TELEGRAM_BOT_TOKEN=il_tuo_token_qui" > .env
-
-# Avvia bot
-python bot.py
-```
-
-### 6. Test manuale (opzionale)
-
-```bash
-# Test scraping
-python scraper.py
-
-# Test controllo tariffe
-python checker.py
-```
-
-## 🤖 Come funziona
-
-### Comandi Bot
+## 🤖 Comandi Bot
 
 - `/start` - Registra le tue tariffe (prima volta)
 - `/update` - Aggiorna le tue tariffe
 - `/status` - Visualizza i tuoi dati salvati
 - `/remove` - Cancella i tuoi dati
-- `/help` - Mostra messaggio di aiuto con tutti i comandi
+- `/help` - Mostra tutti i comandi
 - `/cancel` - Annulla registrazione in corso
 
-### Automazione GitHub Actions
+## ⚡️ Come funziona
 
-**Scraping giornaliero** (`scrape-daily.yml`)
-- Ogni **giorno alle 9:00** (ora italiana)
-- Scarica tariffe Octopus Energy
-- Commit automatico in `data/current_rates.json`
+### Automazione
 
-**Controllo giornaliero** (`check-daily.yml`)
-- Ogni **giorno alle 10:00** (ora italiana)
-- Confronta tariffe per ogni utente
-- Invia notifica Telegram se trova risparmi
+- **Scraper**: Ogni giorno alle **9:00** (ora italiana) scarica le tariffe Octopus Energy
+- **Checker**: Ogni giorno alle **10:00** (ora italiana) controlla se ci sono risparmi e ti notifica
+- **Bot**: Sempre attivo per rispondere ai tuoi comandi
+
+### Sincronizzazione Dati
+
+Tutti i dati (`users.json`, `current_rates.json`) sono salvati su GitHub:
+- Il bot fa commit/push automatico quando registri/aggiorni le tariffe
+- Scraper e checker sincronizzano i dati via git pull/push
+- Questo garantisce che tutti i servizi vedano sempre dati aggiornati
 
 ### Struttura Dati
 
@@ -166,19 +105,9 @@ python checker.py
       "gas_energia": 0.38,
       "gas_comm": 84.00
     }
-  },
-  "987654321": {
-    "luce_energia": 0.13,
-    "luce_comm": 102.00,
-    "gas_energia": null,
-    "gas_comm": null
   }
 }
 ```
-Note:
-- `gas_energia` e `gas_comm` sono `null` se l'utente ha solo luce
-- `last_notified_rates` memorizza le ultime tariffe Octopus notificate (evita notifiche duplicate)
-- Tutti i costi di commercializzazione sono in €/anno
 
 **data/current_rates.json** - Tariffe Octopus
 ```json
@@ -197,61 +126,83 @@ Note:
 }
 ```
 
-## 🛠️ Sviluppo
+## 🛠️ Sviluppo Locale
 
-### File Principali
-
-- `bot.py` - Bot Telegram per registrazione utenti
-- `scraper.py` - Playwright scraper per tariffe Octopus
-- `checker.py` - Controllo e invio notifiche
-- `.github/workflows/` - GitHub Actions
-
-### Test locale completo
+### Test locale
 
 ```bash
-# 1. Scraping
+# Installa dipendenze
+pip install -r requirements.txt
+playwright install chromium
+
+# Crea file .env
+echo "TELEGRAM_BOT_TOKEN=il_tuo_token" > .env
+
+# Test scraper
 python scraper.py
 
-# 2. Avvia bot in background
-python bot.py &
+# Test bot
+python bot.py
 
-# 3. Registrati su Telegram
-
-# 4. Testa checker
+# Test checker (richiede users.json e current_rates.json)
 python checker.py
 ```
 
+### File Principali
+
+- `bot.py` - Bot Telegram con git sync
+- `scraper.py` - Playwright scraper per tariffe Octopus
+- `checker.py` - Controllo e invio notifiche
+- `git_sync.py` - Helper per sincronizzazione GitHub
+- `render.yaml` - Configurazione Blueprint Render
+- `run_scraper.sh` - Script esecuzione scraper + git push
+- `run_checker.sh` - Script esecuzione checker + git push
+- `build.sh` - Build script per Playwright
+
 ## 📝 Note
 
-- **Hosting consigliato**: Render (bot sempre attivo)
 - **Tariffe supportate**: solo mono-orarie fisse
 - **Fonte**: https://octopusenergy.it/le-nostre-tariffe
-- **Automazione**: scraping alle 9:00, controllo alle 10:00 (ora italiana)
+- **Automazione**: scraping ore 9:00, controllo ore 10:00 (ora italiana)
 - **Utenti**: può avere solo luce, oppure luce + gas
-- **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano (non ogni giorno se rimangono uguali)
-- **Privacy**: dati salvati solo nel tuo repository
+- **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano
+- **Privacy**: dati salvati nel tuo repository GitHub privato
 - **Unità**: costi commercializzazione in €/anno
+- **Costo**: 100% gratuito (Render free tier + repository pubblico/privato)
 
-## 🆚 Confronto Hosting
+## 🔧 Troubleshooting
 
-| Feature | Render + GitHub (Opzione B) | Solo GitHub (Opzione A) |
-|---------|---------------------------|---------------------------|
-| Bot 24/7 | ✅ Sempre attivo | ❌ Solo locale |
-| Scraping auto | ✅ GitHub Actions | ✅ GitHub Actions |
-| Checker auto | ✅ GitHub Actions | ✅ GitHub Actions |
-| Costo | 🆓 100% Gratis | 🆓 100% Gratis |
-| Setup | 🟡 Medio (5 min) | 🟢 Veloce (3 min) |
-| Manutenzione | 🟢 Zero | 🟡 Devi tenere bot acceso |
+### Bot non risponde su Telegram
+1. Verifica che il servizio `octotracker-bot` sia "Live" su Render
+2. Controlla i logs per errori
+3. Verifica che `TELEGRAM_BOT_TOKEN` sia corretto
+
+### Scraper/Checker non funzionano
+1. Controlla i logs dei cron jobs su Render
+2. Verifica che `GITHUB_TOKEN` abbia permessi `repo`
+3. Verifica che `GITHUB_REPO` punti al repo corretto (formato: `username/repo`)
+
+### Errori git push
+1. Il token GitHub deve avere scope `repo`
+2. Se il repo è privato, verifica che il token abbia accesso
+3. Controlla che `GITHUB_BRANCH` sia corretto (di solito `main`)
+
+### Prima esecuzione scraper
+- Il primo build dello scraper richiede 5-10 minuti (installa Playwright e browser)
+- Le esecuzioni successive sono molto più veloci
 
 ## 🔮 Possibili miglioramenti futuri
 
-**Funzionalità aggiuntive**
-- [ ] **Data ultimo aggiornamento**: salva quando l'utente ha inserito/aggiornato le tariffe, per mostrare "Ultimo aggiornamento: 03/11/2025" nello `/status` e implementare reminder automatici (es. "non aggiorni da 3 mesi")
-- [ ] **Orario preferito notifiche**: campo opzionale `notify_hour` per permettere agli utenti di scegliere se ricevere messaggi al mattino o alla sera
 - [ ] Supporto tariffe bi-orarie e variabili
 - [ ] Stima risparmio annuale basata su consumi
-- [ ] Storico tariffe con grafici andamento prezzi
+- [ ] Storico tariffe con grafici
+- [ ] Database esterno (PostgreSQL, Supabase) invece di JSON su GitHub
+- [ ] Notifiche personalizzate per orario
 
 ## 📄 Licenza
 
 MIT
+
+---
+
+⚠️ **Disclaimer**: OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy. È un progetto indipendente di monitoraggio tariffe.
