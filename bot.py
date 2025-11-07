@@ -6,7 +6,7 @@ Gestisce bot, scraper schedulato, checker schedulato e keep-alive
 import os
 import json
 import asyncio
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.constants import ParseMode
@@ -313,39 +313,59 @@ async def run_checker(bot_token: str):
     except Exception as e:
         print(f"❌ Errore checker: {e}")
 
-async def daily_scheduler(bot_token: str):
-    """Scheduler giornaliero ottimizzato per scraper e checker"""
-    print(f"📅 Scheduler attivo - Scraper: {SCRAPER_HOUR}:00, Checker: {CHECKER_HOUR}:00")
+def calculate_seconds_until_next_run(target_hour: int) -> float:
+    """
+    Calcola secondi fino alla prossima esecuzione all'ora target.
 
-    # Flag per evitare esecuzioni multiple nella stessa ora
-    last_scraper_hour = -1
-    last_checker_hour = -1
+    Args:
+        target_hour: Ora del giorno (0-23) in cui eseguire il task
 
+    Returns:
+        Secondi fino alla prossima esecuzione
+    """
+    now = datetime.now()
+    target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+
+    # Se l'orario è già passato oggi, schedula per domani
+    if now >= target:
+        target += timedelta(days=1)
+
+    delta = (target - now).total_seconds()
+    return delta
+
+async def scraper_daily_task():
+    """Task giornaliero per lo scraper - si esegue una volta al giorno"""
+    # Calcola quanto dormire fino alla prima esecuzione
+    seconds_until_run = calculate_seconds_until_next_run(SCRAPER_HOUR)
+    hours_until_run = seconds_until_run / 3600
+
+    print(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    await asyncio.sleep(seconds_until_run)
+
+    # Loop infinito: esegui e dormi 24 ore
     while True:
-        now = datetime.now()
-        current_hour = now.hour
-        current_minute = now.minute
+        await run_scraper()
 
-        # Esegui scraper se è l'ora giusta e non l'abbiamo già fatto
-        if current_hour == SCRAPER_HOUR and current_minute == 0 and last_scraper_hour != current_hour:
-            await run_scraper()
-            last_scraper_hour = current_hour
+        # Dormi esattamente 24 ore fino alla prossima esecuzione
+        print(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
+        await asyncio.sleep(24 * 3600)
 
-        # Esegui checker se è l'ora giusta e non l'abbiamo già fatto
-        if current_hour == CHECKER_HOUR and current_minute == 0 and last_checker_hour != current_hour:
-            await run_checker(bot_token)
-            last_checker_hour = current_hour
+async def checker_daily_task(bot_token: str):
+    """Task giornaliero per il checker - si esegue una volta al giorno"""
+    # Calcola quanto dormire fino alla prima esecuzione
+    seconds_until_run = calculate_seconds_until_next_run(CHECKER_HOUR)
+    hours_until_run = seconds_until_run / 3600
 
-        # Reset flags quando cambia giorno
-        if current_hour == 0 and current_minute == 0:
-            last_scraper_hour = -1
-            last_checker_hour = -1
+    print(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    await asyncio.sleep(seconds_until_run)
 
-        # Calcola secondi fino al prossimo minuto :00
-        seconds_to_next_minute = 60 - now.second
+    # Loop infinito: esegui e dormi 24 ore
+    while True:
+        await run_checker(bot_token)
 
-        # Dormi fino al prossimo minuto, invece di controllare ogni 30 secondi
-        await asyncio.sleep(seconds_to_next_minute)
+        # Dormi esattamente 24 ore fino alla prossima esecuzione
+        print(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
+        await asyncio.sleep(24 * 3600)
 
 async def keep_alive():
     """Keep-alive per evitare che il worker vada in sleep (solo in modalità polling)"""
@@ -370,8 +390,9 @@ async def post_init(application: Application) -> None:
     """Avvia scheduler e keep-alive dopo l'inizializzazione del bot"""
     bot_token = application.bot.token
 
-    # Avvia scheduler in background
-    asyncio.create_task(daily_scheduler(bot_token))
+    # Avvia i due task giornalieri separati in background
+    asyncio.create_task(scraper_daily_task())
+    asyncio.create_task(checker_daily_task(bot_token))
 
     # Avvia keep-alive in background
     asyncio.create_task(keep_alive())
