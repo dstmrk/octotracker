@@ -72,14 +72,16 @@ python checker.py
 
 ### Comandi Bot
 
-- `/start` - Registra o aggiorna le tue tariffe
-- `/mytariffe` - Visualizza le tariffe salvate
+- `/start` - Registra le tue tariffe (prima volta)
+- `/update` - Aggiorna le tue tariffe
+- `/status` - Visualizza i tuoi dati salvati
+- `/remove` - Cancella i tuoi dati
 - `/cancel` - Annulla registrazione in corso
 
 ### Automazione GitHub Actions
 
-**Scraping settimanale** (`scrape-weekly.yml`)
-- Ogni **lunedì alle 9:00** (ora italiana)
+**Scraping giornaliero** (`scrape-daily.yml`)
+- Ogni **giorno alle 9:00** (ora italiana)
 - Scarica tariffe Octopus Energy
 - Commit automatico in `data/current_rates.json`
 
@@ -90,29 +92,36 @@ python checker.py
 
 ### Struttura Dati
 
-**data/users.json** - Tariffe degli utenti
+**data/users.json** - Dati degli utenti
 ```json
 {
   "123456789": {
     "luce_energia": 0.12,
-    "luce_comm": 8.50,
+    "luce_comm": 96.00,
     "gas_energia": 0.45,
-    "gas_comm": 12.00
+    "gas_comm": 144.00
+  },
+  "987654321": {
+    "luce_energia": 0.13,
+    "luce_comm": 102.00,
+    "gas_energia": null,
+    "gas_comm": null
   }
 }
 ```
+Note: `gas_energia` e `gas_comm` possono essere `null` se l'utente ha solo luce. I costi di commercializzazione sono in €/anno.
 
 **data/current_rates.json** - Tariffe Octopus
 ```json
 {
   "luce": {
     "energia": 0.115,
-    "commercializzazione": 8.00,
+    "commercializzazione": 96.00,
     "nome_tariffa": "Mono-oraria Fissa"
   },
   "gas": {
     "energia": 0.42,
-    "commercializzazione": 11.50,
+    "commercializzazione": 138.00,
     "nome_tariffa": "Mono-oraria Fissa"
   },
   "data_aggiornamento": "2025-11-07"
@@ -147,9 +156,11 @@ python checker.py
 
 - **Tariffe supportate**: solo mono-orarie fisse (per ora)
 - **Fonte dati**: https://octopusenergy.it/le-nostre-tariffe
-- **Frequenza scraping**: settimanale (le tariffe non cambiano spesso)
-- **Frequenza controllo**: giornaliero
+- **Frequenza scraping**: giornaliero alle 9:00
+- **Frequenza controllo**: giornaliero alle 10:00
+- **Utenti**: può avere solo luce, oppure luce + gas
 - **Privacy**: i dati sono salvati nel tuo repository privato
+- **Costi commercializzazione**: espressi in €/anno
 
 ## 🔮 Miglioramenti futuri
 

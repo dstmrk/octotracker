@@ -54,8 +54,8 @@ def check_better_rates(user_rates, current_rates):
             }
             savings['has_savings'] = True
 
-    # Controlla gas
-    if current_rates.get('gas'):
+    # Controlla gas (solo se l'utente ha il gas)
+    if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
         if current_rates['gas'].get('energia') and current_rates['gas']['energia'] < user_rates['gas_energia']:
             savings['gas_energia'] = {
                 'attuale': user_rates['gas_energia'],
@@ -64,7 +64,7 @@ def check_better_rates(user_rates, current_rates):
             }
             savings['has_savings'] = True
 
-        if current_rates['gas'].get('commercializzazione') and current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
+        if current_rates['gas'].get('commercializzazione') and user_rates.get('gas_comm') is not None and current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
             savings['gas_comm'] = {
                 'attuale': user_rates['gas_comm'],
                 'nuova': current_rates['gas']['commercializzazione'],
@@ -88,9 +88,9 @@ def format_notification(savings):
     if savings['luce_comm']:
         s = savings['luce_comm']
         message += f"💡 **LUCE - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/mese\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/mese\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/mese\n\n"
+        message += f"  Attuale: €{s['attuale']:.2f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.2f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/anno\n\n"
 
     if savings['gas_energia']:
         s = savings['gas_energia']
@@ -102,9 +102,9 @@ def format_notification(savings):
     if savings['gas_comm']:
         s = savings['gas_comm']
         message += f"🔥 **GAS - Commercializzazione**\n"
-        message += f"  Attuale: €{s['attuale']:.2f}/mese\n"
-        message += f"  Nuova: €{s['nuova']:.2f}/mese\n"
-        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/mese\n\n"
+        message += f"  Attuale: €{s['attuale']:.2f}/anno\n"
+        message += f"  Nuova: €{s['nuova']:.2f}/anno\n"
+        message += f"  ✅ Risparmi: €{s['risparmio']:.2f}/anno\n\n"
 
     message += "🔗 Controlla le tariffe su: https://octopusenergy.it/le-nostre-tariffe"
 
