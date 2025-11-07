@@ -12,18 +12,11 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
 - **Supporto webhook o polling**: scegli tra latenza zero (webhook) o semplicità (polling)
-- **Persistenza dati** (Docker locale) o hosting cloud gratuito (Render)
-- **Zero manutenzione**: tutto automatico, un solo servizio
+- **Persistenza dati** tramite Docker volumes
+- **Scheduler ottimizzato**: zero polling, task indipendenti che dormono 24 ore tra esecuzioni
+- **Resiliente**: error handler per gestire timeout di rete senza crashare
 
-## 🚀 Setup
-
-Puoi scegliere tra **due modalità** di hosting:
-- **Opzione A**: Docker su Raspberry Pi / tua macchina (dati persistenti) ⭐ **Consigliato**
-- **Opzione B**: Render cloud (gratuito, ma dati effimeri)
-
----
-
-## 🐳 Opzione A: Docker (Raspberry Pi / Locale)
+## 🚀 Setup con Docker
 
 ### Requisiti
 - Raspberry Pi 3+ (consigliato RPi 4 con 2GB+ RAM)
@@ -101,12 +94,13 @@ I dati sono salvati in `./data/`:
 
 **Backup**: Copia semplicemente la cartella `data/`!
 
-### Vantaggi Docker Locale
+### Vantaggi
 ✅ **Dati persistenti** (non si perdono mai)
 ✅ **Nessun IP fisso necessario** (polling di default)
-✅ **Controllo totale**
+✅ **Controllo totale** sul tuo server
 ✅ **Zero costi** (oltre elettricità RPi)
 ✅ **Auto-restart** con `restart: unless-stopped`
+✅ **Ottimizzato per Raspberry Pi** con timeout aumentati per connessioni lente
 
 ### 🌐 Opzionale: Modalità Webhook (con Cloudflare Tunnel)
 
@@ -181,46 +175,6 @@ Invia un messaggio al bot su Telegram: la risposta sarà **istantanea**! ⚡
 
 ---
 
-## ☁️ Opzione B: Render Cloud
-
-### 1. Crea il Bot Telegram
-
-1. Apri Telegram e cerca `@BotFather`
-2. Invia `/newbot` e segui le istruzioni
-3. Copia il **token** che ti viene dato (tipo: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
-
-### 2. Deploy su Render
-
-1. Vai su [render.com](https://render.com) e crea un account gratuito
-2. Collega il tuo account GitHub
-3. Dalla [Dashboard Render](https://dashboard.render.com):
-   - Clicca **"New +"** → **"Blueprint"**
-   - Seleziona questo repository
-   - Clicca **"Apply"**
-
-4. Render creerà automaticamente **1 solo Worker** chiamato `octotracker` che include:
-   - Bot Telegram (sempre attivo)
-   - Scraper schedulato (ore 9:00)
-   - Checker schedulato (ore 10:00)
-   - Keep-alive (ogni 5 minuti)
-
-### 3. Configura Token Telegram
-
-Nel servizio `octotracker` creato, vai su **Environment** e aggiungi:
-
-- **Nome**: `TELEGRAM_BOT_TOKEN`
-- **Valore**: il token che hai ricevuto da BotFather
-
-**Nota**: Le altre variabili (`SCRAPER_HOUR`, `CHECKER_HOUR`, `KEEPALIVE_INTERVAL_MINUTES`) hanno già valori di default nel `render.yaml`. Puoi modificarle se vuoi.
-
-### 4. Aspetta il Deploy e Usa il Bot
-
-1. Il primo deploy richiede 5-10 minuti (installa Playwright e browser Chromium)
-2. Controlla i logs per verificare che tutto sia ok
-3. Cerca il tuo bot su Telegram e invia `/start`
-
-⚠️ **Nota Importante**: Su Render free tier, i dati (`users.json`) sono **effimeri** e si cancellano ad ogni deploy/restart. Per dati persistenti, usa Docker locale.
-
 ## 🤖 Comandi Bot
 
 - `/start` - Registra le tue tariffe (prima volta)
@@ -276,39 +230,52 @@ Ti consiglio di fare una verifica in base ai kWh che usi...
 
 ## ⚙️ Configurazione Avanzata
 
-Puoi personalizzare il comportamento tramite variabili d'ambiente su Render:
+Puoi personalizzare il comportamento tramite variabili d'ambiente nel file `.env`:
 
 | Variabile | Default | Descrizione |
 |-----------|---------|-------------|
 | `TELEGRAM_BOT_TOKEN` | - | Token da BotFather (obbligatorio) |
-| `SCRAPER_HOUR` | 9 | Ora dello scraping (0-23, ora italiana) |
-| `CHECKER_HOUR` | 10 | Ora del controllo tariffe (0-23, ora italiana) |
-| `KEEPALIVE_INTERVAL_MINUTES` | 5 | Intervallo keep-alive (minuti, 0 = disabilitato) |
+| `BOT_MODE` | `polling` | Modalità bot: `polling` o `webhook` |
+| `WEBHOOK_URL` | - | URL pubblico per webhook (richiesto se `BOT_MODE=webhook`) |
+| `WEBHOOK_PORT` | `8443` | Porta locale per webhook |
+| `WEBHOOK_SECRET` | - | Token segreto per validazione webhook (opzionale) |
+| `SCRAPER_HOUR` | `9` | Ora dello scraping (0-23, ora italiana) |
+| `CHECKER_HOUR` | `10` | Ora del controllo tariffe (0-23, ora italiana) |
+| `KEEPALIVE_INTERVAL_MINUTES` | `0` | Intervallo keep-alive (minuti, 0 = disabilitato) |
 
-**Esempio**: Per cambiare l'ora dello scraping alle 8:00 e disabilitare il keep-alive:
-- `SCRAPER_HOUR` = `8`
-- `KEEPALIVE_INTERVAL_MINUTES` = `0`
+**Esempio**: Per cambiare l'ora dello scraping alle 8:00 e abilitare keep-alive ogni 5 minuti:
+```bash
+SCRAPER_HOUR=8
+KEEPALIVE_INTERVAL_MINUTES=5
+```
+
+**Nota**: Keep-alive è utile solo in modalità `polling` ed è disabilitato di default.
 
 ## ⚡️ Come Funziona
 
 ### Architettura
 
-OctoTracker usa un **singolo Worker** con scheduler integrato:
+OctoTracker usa un **singolo container Docker** con bot e scheduler integrati:
 
 ```
-Worker Render (sempre attivo)
-├── Bot Telegram (gestisce comandi utente)
-├── Scheduler interno (controlla l'ora ogni 30 secondi)
-│   ├── Scraper (alle ore specificate)
-│   └── Checker (alle ore specificate)
-└── Keep-alive (ping periodico)
+Container Docker (sempre attivo)
+├── Bot Telegram (gestisce comandi utente 24/7)
+├── Scraper Task (indipendente, dorme 24 ore tra esecuzioni)
+├── Checker Task (indipendente, dorme 24 ore tra esecuzioni)
+└── Error Handler (gestisce timeout di rete senza crashare)
 ```
+
+**Scheduler ottimizzato**:
+- **Zero polling**: ogni task calcola esattamente quanto dormire fino alla prossima esecuzione
+- **Task indipendenti**: scraper e checker girano separatamente senza interferire
+- **Efficienza massima**: 2 esecuzioni/giorno invece di 2880 controlli/giorno
+- **Timeout aumentati**: 30 secondi per tutte le operazioni HTTP (ottimizzato per Raspberry Pi)
 
 **Vantaggi**:
 - ✅ Filesystem condiviso (i JSON sono accessibili a tutti i componenti)
-- ✅ Nessuna sincronizzazione git necessaria
-- ✅ Setup semplicissimo (solo `TELEGRAM_BOT_TOKEN`)
-- ✅ Un solo servizio da monitorare
+- ✅ Setup semplicissimo (solo `TELEGRAM_BOT_TOKEN` richiesto)
+- ✅ Un solo container da monitorare
+- ✅ Resiliente a problemi di rete temporanei
 
 ### Dati
 
@@ -340,7 +307,7 @@ I dati sono salvati localmente in file JSON:
 }
 ```
 
-**Nota**: Su Render free tier, il filesystem è effimero (i dati si perdono al restart). Questo va bene per un bot personale con pochi utenti. Se vuoi persistenza completa, considera di usare Render PostgreSQL (gratuito) o un database esterno.
+**Persistenza**: I dati sono salvati nel volume Docker (`./data` nella cartella del progetto) e sono persistenti tra restart del container.
 
 ## 🛠️ Sviluppo Locale (senza Docker)
 
@@ -393,12 +360,13 @@ docker compose version
 
 ### File Principali
 
-- `bot.py` - Bot Telegram con scheduler integrato
+- `bot.py` - Bot Telegram con scheduler integrato e error handler
 - `scraper.py` - Playwright scraper per tariffe Octopus
-- `checker.py` - Controllo e invio notifiche
-- `render.yaml` - Configurazione Blueprint Render (1 worker)
-- `build.sh` - Script build per Playwright
+- `checker.py` - Controllo e invio notifiche con formattazione intelligente
+- `docker-compose.yml` - Orchestrazione Docker
+- `Dockerfile` - Build immagine ottimizzata per RPi
 - `requirements.txt` - Dipendenze Python
+- `.env.example` - Template configurazione
 
 ## 📝 Note
 
@@ -407,43 +375,85 @@ docker compose version
 - **Automazione**: scraping ore 9:00, controllo ore 10:00 (configurabile)
 - **Utenti**: può avere solo luce, oppure luce + gas
 - **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano
-- **Privacy**: dati salvati localmente sul worker Render
+- **Privacy**: dati salvati localmente sul tuo Raspberry Pi/server
 - **Unità**: costi commercializzazione in €/anno
-- **Costo**: 100% gratuito (Render free tier)
+- **Costo**: 100% gratuito (serve solo elettricità per RPi)
+- **Timeout**: 30 secondi per operazioni HTTP (ottimizzato per connessioni lente)
+- **Resilienza**: error handler gestisce timeout di rete senza crashare
 
 ## 🔧 Troubleshooting
 
 ### Bot non risponde su Telegram
-1. Verifica che il servizio `octotracker` sia "Live" su Render
-2. Controlla i logs per errori
-3. Verifica che `TELEGRAM_BOT_TOKEN` sia corretto
+```bash
+# Controlla che il container sia attivo
+docker ps
+
+# Controlla i logs per errori
+docker compose logs -f
+
+# Verifica che TELEGRAM_BOT_TOKEN sia corretto nel .env
+cat .env
+```
+
+### Timeout di rete / Bot crasha
+Il bot ha timeout aumentati (30s) e error handler - non dovrebbe crashare.
+```bash
+# Controlla i logs per vedere errori di rete
+docker compose logs -f | grep "Errore"
+
+# Se vedi molti timeout, verifica la connessione internet
+ping 8.8.8.8 -c 5
+```
 
 ### Scraper non funziona
-1. Controlla i logs alle ore dello scraping
-2. Il primo build richiede tempo (installa Playwright)
-3. Verifica screenshot in `data/last_scrape.png` per debug
+```bash
+# Controlla i logs alle ore dello scraping (default: 9:00)
+docker compose logs -f
 
-### Worker va in sleep
-1. Aumenta `KEEPALIVE_INTERVAL_MINUTES` (es: da 5 a 3)
-2. Controlla nei logs i ping keep-alive
-3. I Worker su Render free *non dovrebbero* andare in sleep (solo i Web Services)
+# Verifica screenshot di debug
+ls -lh data/last_scrape.png
+
+# Test manuale dello scraper
+docker compose exec octotracker python scraper.py
+```
+
+### Container non parte
+```bash
+# Verifica che non ci siano problemi di memoria
+free -h
+
+# Rebuild completo del container
+docker compose down
+docker compose up -d --build
+
+# Logs dettagliati durante startup
+docker compose logs -f
+```
+
+### Warning memoria sul kernel
+Se vedi "Your kernel does not support memory soft limit capabilities", è normale su alcuni kernel. Il bot funziona comunque - il limite hard di 1G è attivo.
 
 ### Dati persi dopo restart
-- Render free tier ha filesystem effimero
-- Normale per restart/redeploy
-- Gli utenti devono registrarsi di nuovo
-- Soluzione: usare database PostgreSQL (gratuito su Render)
+I dati dovrebbero essere persistenti in `./data/`. Se si perdono:
+```bash
+# Verifica che il volume sia montato correttamente
+docker compose down
+ls -la data/
+docker compose up -d
+```
 
 ## 🔮 Possibili Miglioramenti Futuri
+
+Vedi `OPTIMIZATIONS.md` per dettagli su ottimizzazioni tecniche del codice.
 
 ### Alta priorità
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
 
 ### Media priorità
-- [ ] PostgreSQL per persistenza dati cloud (Render)
 - [ ] Supporto tariffe bi-orarie (F1/F23)
 - [ ] Supporto tariffe variabili (indicizzate)
 - [ ] Stima risparmio annuale con grafici
+- [ ] Database esterno opzionale (PostgreSQL/SQLite) per scalabilità
 
 ### Bassa priorità
 - [ ] Storico tariffe con trend
