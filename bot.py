@@ -49,8 +49,8 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
-            "💡 **LUCE - Costo Commercializzazione** (€/anno)\n"
-            "Esempio: 96.00"
+            "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
+            "💬 Esempio: 72 (se paghi 6 €/mese)"
         )
         return LUCE_COMM
     except ValueError:
@@ -72,7 +72,7 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "🔥 **Hai anche il gas?**",
+            "Hai anche una fornitura gas attiva con Octopus Energy?",
             reply_markup=reply_markup
         )
         return HA_GAS
