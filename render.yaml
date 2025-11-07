@@ -1,0 +1,17 @@
+services:
+  # Bot Telegram - gira 24/7
+  - type: worker
+    name: octotracker-bot
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false  # Dovrai impostarlo manualmente su Render
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # Nota: Scraper e Checker continuano a girare su GitHub Actions
+  # perché è più semplice gestire git commit/push da lì.
+  # Se vuoi migrare anche quelli, vedi la documentazione alternativa.
