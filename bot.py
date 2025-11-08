@@ -8,11 +8,17 @@ import json
 import asyncio
 from datetime import datetime, time, timedelta
 from pathlib import Path
+from warnings import filterwarnings
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
 from telegram.error import TimedOut, NetworkError
+from telegram.warnings import PTBUserWarning
 from dotenv import load_dotenv
+
+# Silenzia warning ConversationHandler per CallbackQueryHandler con per_message=False
+# Questo è il comportamento corretto per il nostro caso d'uso (flusso lineare, non menu interattivo)
+filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 # Import moduli interni
 from scraper import scrape_octopus_tariffe
