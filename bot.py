@@ -458,7 +458,8 @@ def main():
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler('cancel', cancel)],
+        per_message=False  # CallbackQueryHandler non tracciato per ogni messaggio
     )
 
     app.add_handler(conv_handler)
