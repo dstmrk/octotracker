@@ -222,9 +222,8 @@ def format_notification(savings, user_rates, current_rates):
     if savings['is_mixed']:
         message += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
         message += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
-    else:
-        message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
 
+    message += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
     message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
     message += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
 
