@@ -312,4 +312,5 @@ async def main():
     await check_and_notify_users(token)
 
 if __name__ == '__main__':
+    import asyncio
     asyncio.run(main())
