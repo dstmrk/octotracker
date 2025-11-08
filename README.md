@@ -13,19 +13,18 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
-- **Supporto webhook o polling**: scegli tra latenza zero (webhook) o semplicità (polling)
+- **Webhook mode**: risposte istantanee tramite Cloudflare Tunnel
 - **Persistenza dati** tramite Docker volumes
-- **Scheduler ottimizzato**: zero polling, task indipendenti che dormono 24 ore tra esecuzioni
+- **Scheduler ottimizzato**: task indipendenti che dormono 24 ore tra esecuzioni
 - **Resiliente**: error handler per gestire timeout di rete senza crashare
 
 ## 🚀 Setup con Docker
 
 ### Requisiti
-- Raspberry Pi 3+ (consigliato RPi 4 con 2GB+ RAM)
-- Docker e Docker Compose installati
-- Connessione internet stabile
+- Docker e Docker Compose
+- URL pubblico HTTPS per webhook (es. tramite tunnel o reverse proxy)
 
-### Setup (2 minuti)
+### Setup
 
 **1. Crea il Bot Telegram**
 
@@ -33,22 +32,30 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 2. Invia `/newbot` e segui le istruzioni
 3. Copia il **token** (tipo: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-**2. Clona e Configura**
+**2. Configura Webhook Pubblico**
+
+Configura un URL pubblico HTTPS che inoltri al bot sulla porta 8443:
+- Servizio locale: `http://localhost:8443`
+- URL pubblico: `https://tuodominio.xyz`
+
+**3. Clona e Configura**
 
 ```bash
-# Clona il repository
 git clone https://github.com/dstmrk/octotracker.git
 cd octotracker
-
-# Crea file .env dalla template
 cp .env.example .env
-
-# Modifica .env e inserisci il tuo token
 nano .env
-# Imposta: TELEGRAM_BOT_TOKEN=il_tuo_token_qui
 ```
 
-**3. Avvia con Docker**
+Configura le variabili in `.env`:
+```bash
+TELEGRAM_BOT_TOKEN=il_tuo_token_qui
+WEBHOOK_URL=https://tuodominio.xyz
+WEBHOOK_PORT=8443
+WEBHOOK_SECRET=  # Opzionale: openssl rand -hex 32
+```
+
+**4. Avvia con Docker**
 
 ```bash
 # Build e avvio (prima volta: 5-10 min per scaricare dipendenze)
@@ -61,13 +68,16 @@ docker-compose logs -f
 Dovresti vedere:
 ```
 🤖 Avvio OctoTracker...
+📡 Modalità: WEBHOOK
 ⏰ Scraper schedulato: 9:00
 ⏰ Checker schedulato: 10:00
-💓 Keep-alive: disabilitato
-✅ Bot avviato e in ascolto!
+🌐 Webhook URL: https://octotracker.tuodominio.xyz
+🔌 Porta: 8443
+✅ Bot configurato!
+🚀 Avvio webhook su https://octotracker.tuodominio.xyz...
 ```
 
-**4. Usa il Bot!**
+**5. Usa il Bot!**
 
 Cerca il tuo bot su Telegram e invia `/start` 🎉
 
@@ -94,85 +104,6 @@ I dati sono salvati in `./data/`:
 - `current_rates.json` - tariffe Octopus aggiornate
 
 **Backup**: Copia semplicemente la cartella `data/`!
-
-### Vantaggi
-✅ **Dati persistenti** (non si perdono mai)
-✅ **Nessun IP fisso necessario** (polling di default)
-✅ **Controllo totale** sul tuo server
-✅ **Zero costi** (oltre elettricità RPi)
-✅ **Auto-restart** con `restart: unless-stopped`
-✅ **Ottimizzato per Raspberry Pi** con timeout aumentati per connessioni lente
-
-### 🌐 Opzionale: Modalità Webhook (con Cloudflare Tunnel)
-
-Se hai già un tunnel Cloudflare configurato, puoi usare **webhook** invece di polling per **latenza zero**.
-
-**Vantaggi webhook**:
-- ⚡ Latenza istantanea (vs ~1 secondo polling)
-- 🔋 Meno CPU/RAM (idle quando non ci sono messaggi)
-- 📉 Meno traffico di rete
-
-**Setup webhook**:
-
-**1. Configura Cloudflare Tunnel**
-
-Nel tuo tunnel Cloudflare, aggiungi un "Public Hostname":
-- **Subdomain**: `octotracker`
-- **Domain**: `tuodominio.xyz`
-- **Service**: `http://localhost:8443`
-
-Questo renderà il bot raggiungibile su `https://octotracker.tuodominio.xyz`
-
-**2. Genera Secret Token (opzionale ma consigliato)**
-
-```bash
-# Genera token random per sicurezza
-openssl rand -hex 32
-```
-
-**3. Modifica `.env`**
-
-```bash
-# Cambia da polling a webhook
-BOT_MODE=webhook
-
-# Imposta URL pubblico (quello configurato su Cloudflare)
-WEBHOOK_URL=https://octotracker.tuodominio.xyz
-
-# Porta locale (default: 8443)
-WEBHOOK_PORT=8443
-
-# Secret token (quello generato sopra)
-WEBHOOK_SECRET=il_tuo_token_random_qui
-```
-
-**4. Riavvia container**
-
-```bash
-docker-compose down
-docker-compose up -d
-docker-compose logs -f
-```
-
-Dovresti vedere:
-```
-📡 Modalità: WEBHOOK
-🌐 Webhook URL: https://octotracker.tuodominio.xyz
-🔌 Porta: 8443
-💓 Keep-alive: non necessario (webhook)
-✅ Bot configurato!
-🚀 Avvio webhook su https://octotracker.tuodominio.xyz...
-```
-
-**5. Test**
-
-Invia un messaggio al bot su Telegram: la risposta sarà **istantanea**! ⚡
-
-**Nota sicurezza**:
-- Il bot usa il token Telegram come path: `https://octotracker.tuodominio.xyz/{token}`
-- Solo Telegram conosce questo URL
-- Il `WEBHOOK_SECRET` valida che le richieste vengano da Telegram
-- Non serve autenticazione aggiuntiva
 
 ---
 
@@ -236,21 +167,16 @@ Puoi personalizzare il comportamento tramite variabili d'ambiente nel file `.env
 | Variabile | Default | Descrizione |
 |-----------|---------|-------------|
 | `TELEGRAM_BOT_TOKEN` | - | Token da BotFather (obbligatorio) |
-| `BOT_MODE` | `polling` | Modalità bot: `polling` o `webhook` |
-| `WEBHOOK_URL` | - | URL pubblico per webhook (richiesto se `BOT_MODE=webhook`) |
+| `WEBHOOK_URL` | - | URL pubblico per webhook (obbligatorio) |
 | `WEBHOOK_PORT` | `8443` | Porta locale per webhook |
 | `WEBHOOK_SECRET` | - | Token segreto per validazione webhook (opzionale) |
 | `SCRAPER_HOUR` | `9` | Ora dello scraping (0-23, ora italiana) |
 | `CHECKER_HOUR` | `10` | Ora del controllo tariffe (0-23, ora italiana) |
-| `KEEPALIVE_INTERVAL_MINUTES` | `0` | Intervallo keep-alive (minuti, 0 = disabilitato) |
 
-**Esempio**: Per cambiare l'ora dello scraping alle 8:00 e abilitare keep-alive ogni 5 minuti:
+**Esempio**: Per cambiare l'ora dello scraping alle 8:00:
 ```bash
 SCRAPER_HOUR=8
-KEEPALIVE_INTERVAL_MINUTES=5
 ```
-
-**Nota**: Keep-alive è utile solo in modalità `polling` ed è disabilitato di default.
 
 ## ⚡️ Come Funziona
 
@@ -267,16 +193,10 @@ Container Docker (sempre attivo)
 ```
 
 **Scheduler ottimizzato**:
-- **Zero polling**: ogni task calcola esattamente quanto dormire fino alla prossima esecuzione
+- **Sleep-based scheduling**: ogni task calcola esattamente quanto dormire fino alla prossima esecuzione
 - **Task indipendenti**: scraper e checker girano separatamente senza interferire
-- **Efficienza massima**: 2 esecuzioni/giorno invece di 2880 controlli/giorno
-- **Timeout aumentati**: 30 secondi per tutte le operazioni HTTP (ottimizzato per Raspberry Pi)
-
-**Vantaggi**:
-- ✅ Filesystem condiviso (i JSON sono accessibili a tutti i componenti)
-- ✅ Setup semplicissimo (solo `TELEGRAM_BOT_TOKEN` richiesto)
-- ✅ Un solo container da monitorare
-- ✅ Resiliente a problemi di rete temporanei
+- **Efficienza massima**: 2 esecuzioni/giorno invece di controlli continui
+- **Timeout aumentati**: 30 secondi per operazioni HTTP (ottimizzato per connessioni lente)
 
 ### Dati
 
@@ -337,9 +257,9 @@ python scraper.py
 python checker.py
 ```
 
-## 🐳 Docker: Installazione su Raspberry Pi
+## 🐳 Installazione Docker
 
-Se non hai ancora Docker installato sul tuo RPi:
+Se non hai ancora Docker installato:
 
 ```bash
 # Installa Docker
@@ -361,11 +281,11 @@ docker compose version
 
 ### File Principali
 
-- `bot.py` - Bot Telegram con scheduler integrato e error handler
+- `bot.py` - Bot Telegram con scheduler integrato
 - `scraper.py` - Playwright scraper per tariffe Octopus
-- `checker.py` - Controllo e invio notifiche con formattazione intelligente
+- `checker.py` - Controllo e invio notifiche
 - `docker-compose.yml` - Orchestrazione Docker
-- `Dockerfile` - Build immagine ottimizzata per RPi
+- `Dockerfile` - Build immagine Docker
 - `requirements.txt` - Dipendenze Python
 - `.env.example` - Template configurazione
 
@@ -375,12 +295,10 @@ docker compose version
 - **Fonte**: https://octopusenergy.it/le-nostre-tariffe
 - **Automazione**: scraping ore 9:00, controllo ore 10:00 (configurabile)
 - **Utenti**: può avere solo luce, oppure luce + gas
-- **Anti-spam**: ricevi notifica solo quando le tariffe Octopus cambiano
-- **Privacy**: dati salvati localmente sul tuo Raspberry Pi/server
+- **Privacy**: dati salvati localmente
 - **Unità**: costi commercializzazione in €/anno
-- **Costo**: 100% gratuito (serve solo elettricità per RPi)
-- **Timeout**: 30 secondi per operazioni HTTP (ottimizzato per connessioni lente)
-- **Resilienza**: error handler gestisce timeout di rete senza crashare
+- **Timeout**: 30 secondi per operazioni HTTP
+- **Resilienza**: error handler gestisce timeout di rete
 
 ## 🔧 Troubleshooting
 
