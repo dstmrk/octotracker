@@ -26,12 +26,7 @@ RUN mkdir -p /app/data
 ENV TELEGRAM_BOT_TOKEN=""
 ENV SCRAPER_HOUR="9"
 ENV CHECKER_HOUR="10"
-ENV KEEPALIVE_INTERVAL_MINUTES="0"
 ENV TZ="Europe/Rome"
-
-# Healthcheck opzionale
-HEALTHCHECK --interval=5m --timeout=10s --start-period=30s --retries=3 \
-    CMD pgrep -f "python bot.py" || exit 1
 
 # Avvia il bot
 CMD ["python", "-u", "bot.py"]

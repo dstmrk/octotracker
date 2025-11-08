@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Bot Telegram OctoTracker - Tutto in uno
-Gestisce bot, scraper schedulato, checker schedulato e keep-alive
+Gestisce bot, scraper schedulato e checker schedulato
 """
 import os
 import json
@@ -36,10 +36,8 @@ USERS_FILE = DATA_DIR / "users.json"
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv('SCRAPER_HOUR', '9'))  # Default: 9:00 ora italiana
 CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italiana
-KEEPALIVE_INTERVAL = int(os.getenv('KEEPALIVE_INTERVAL_MINUTES', '5'))  # Default: 5 minuti
 
 # Configurazione webhook
-BOT_MODE = os.getenv('BOT_MODE', 'polling').lower()  # 'polling' o 'webhook'
 WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio.xyz
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
 WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
@@ -374,23 +372,6 @@ async def checker_daily_task(bot_token: str):
         print(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
         await asyncio.sleep(24 * 3600)
 
-async def keep_alive():
-    """Keep-alive per evitare che il worker vada in sleep (solo in modalità polling)"""
-    # Keep-alive non necessario in modalità webhook
-    if BOT_MODE == 'webhook':
-        print("⏸️  Keep-alive non necessario (modalità webhook)")
-        return
-
-    if KEEPALIVE_INTERVAL <= 0:
-        print("⏸️  Keep-alive disabilitato")
-        return
-
-    print(f"💓 Keep-alive attivo (ogni {KEEPALIVE_INTERVAL} minuti)")
-
-    while True:
-        await asyncio.sleep(KEEPALIVE_INTERVAL * 60)
-        print(f"💓 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Keep-alive ping")
-
 # ========== ERROR HANDLER ==========
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -411,15 +392,12 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 # ========== MAIN ==========
 
 async def post_init(application: Application) -> None:
-    """Avvia scheduler e keep-alive dopo l'inizializzazione del bot"""
+    """Avvia scheduler dopo l'inizializzazione del bot"""
     bot_token = application.bot.token
 
     # Avvia i due task giornalieri separati in background
     asyncio.create_task(scraper_daily_task())
     asyncio.create_task(checker_daily_task(bot_token))
-
-    # Avvia keep-alive in background
-    asyncio.create_task(keep_alive())
 
 def main():
     """Avvia il bot con scheduler integrato"""
@@ -428,16 +406,11 @@ def main():
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
 
     print("🤖 Avvio OctoTracker...")
-    print(f"📡 Modalità: {BOT_MODE.upper()}")
+    print(f"📡 Modalità: WEBHOOK")
     print(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
     print(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
-
-    if BOT_MODE == 'webhook':
-        print(f"🌐 Webhook URL: {WEBHOOK_URL}")
-        print(f"🔌 Porta: {WEBHOOK_PORT}")
-        print(f"💓 Keep-alive: non necessario (webhook)")
-    else:
-        print(f"💓 Keep-alive: ogni {KEEPALIVE_INTERVAL} minuti" if KEEPALIVE_INTERVAL > 0 else "💓 Keep-alive: disabilitato")
+    print(f"🌐 Webhook URL: {WEBHOOK_URL}")
+    print(f"🔌 Porta: {WEBHOOK_PORT}")
 
     # Costruisci app con timeout aumentati per connessioni lente (Raspberry Pi)
     app = (
@@ -478,27 +451,23 @@ def main():
 
     print("✅ Bot configurato!")
 
-    # Avvia in modalità webhook o polling
-    if BOT_MODE == 'webhook':
-        if not WEBHOOK_URL:
-            raise ValueError("WEBHOOK_URL richiesto per modalità webhook")
+    # Verifica webhook URL
+    if not WEBHOOK_URL:
+        raise ValueError("WEBHOOK_URL richiesto")
 
-        print(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
+    print(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
 
-        # Configura webhook con retry per Docker
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=WEBHOOK_PORT,
-            url_path=token,  # Usa il token come path per sicurezza
-            webhook_url=f"{WEBHOOK_URL}/{token}",
-            secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,  # Evita messaggi vecchi
-            bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo
-        )
-    else:
-        print("🚀 Avvio polling...")
-        app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # Configura webhook con retry per Docker
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=WEBHOOK_PORT,
+        url_path=token,  # Usa il token come path per sicurezza
+        webhook_url=f"{WEBHOOK_URL}/{token}",
+        secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True,  # Evita messaggi vecchi
+        bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo
+    )
 
 if __name__ == '__main__':
     main()

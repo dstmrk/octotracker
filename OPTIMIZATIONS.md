@@ -6,9 +6,10 @@ Questo documento traccia le ottimizzazioni identificate ma non ancora implementa
 
 ## ✅ Implementate
 
-- [x] **Scheduler efficiente** - Ridotto polling da ogni 30s a ogni 60s con sleep dinamico
+- [x] **Scheduler efficiente** - Sleep-based scheduling con esecuzione esatta a orari configurati
 - [x] **Smart number formatting** - Rimozione zeri trailing, virgola italiana
 - [x] **Notifiche intelligenti** - Gestione casi mixed (migliorato/peggiorato)
+- [x] **Webhook-only mode** - Rimosso supporto polling, semplificato codebase
 
 ---
 
@@ -205,15 +206,6 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 ---
 
-### 8. Rimuovere Keep-Alive in Polling Mode
-**Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
-
-**Problema:** Il keep-alive in modalità polling è ridondante (il bot è già sempre attivo con il polling).
-
-**Soluzione:** Disabilitare completamente in polling mode o rimuovere del tutto.
-
----
-
 ## 📊 Riepilogo Priorità
 
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
@@ -225,7 +217,6 @@ TARIFF_NAME = "Mono-oraria Fissa"
 | 5 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
 | 6 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 | 7 | Code duplication | 🟢 Bassa | Medio | Basso | Mai urgente |
-| 8 | Rimuovi keep-alive | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
