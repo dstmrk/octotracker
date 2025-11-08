@@ -13,9 +13,9 @@ services:
       - CHECKER_HOUR=${CHECKER_HOUR:-10}
       - KEEPALIVE_INTERVAL_MINUTES=${KEEPALIVE_INTERVAL_MINUTES:-0}
       - TZ=Europe/Rome
-    ports:
-      # Esponi porta webhook (necessaria solo se BOT_MODE=webhook)
-      - "8443:8443"
+    # Porta webhook - decommenta solo se usi BOT_MODE=webhook con Cloudflare Tunnel
+    # ports:
+    #   - "8443:8443"
     volumes:
       # Volume per persistenza dati
       - ./data:/app/data
