@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -17,26 +17,26 @@ def extract_price(text):
     match = re.search(r'(\d+[.,]\d+)', text.replace(',', '.'))
     return float(match.group(1)) if match else None
 
-def scrape_octopus_tariffe():
+async def scrape_octopus_tariffe():
     """Scrape tariffe mono-orarie fisse da Octopus Energy"""
     print("🔍 Avvio scraping tariffe Octopus Energy...")
 
-    with sync_playwright() as p:
+    async with async_playwright() as p:
         # Avvia browser
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
 
         try:
             # Vai alla pagina tariffe
             print("📄 Caricamento pagina...")
-            page.goto('https://octopusenergy.it/le-nostre-tariffe', wait_until='load', timeout=60000)
+            await page.goto('https://octopusenergy.it/le-nostre-tariffe', wait_until='load', timeout=60000)
 
             # Attendi caricamento contenuto aggiuntivo (per JS dinamico)
-            page.wait_for_timeout(5000)
+            await page.wait_for_timeout(5000)
 
             # Estrai tutto il testo della pagina per analisi
-            content = page.content()
-            text = page.inner_text('body')
+            content = await page.content()
+            text = await page.inner_text('body')
 
             # Cerca pattern per tariffe mono-orarie fisse
             # Questo è un approccio generico - potrebbe necessitare aggiustamenti
@@ -118,10 +118,10 @@ def scrape_octopus_tariffe():
                 print("⚠️  Pattern regex non hanno trovato tutto, provo con selettori...")
 
                 # Cerca carte/sezioni tariffe
-                cards = page.query_selector_all('[class*="card"], [class*="tariffa"], [class*="price"]')
+                cards = await page.query_selector_all('[class*="card"], [class*="tariffa"], [class*="price"]')
 
                 for card in cards:
-                    card_text = card.inner_text()
+                    card_text = await card.inner_text()
 
                     # Cerca luce
                     if 'luce' in card_text.lower() or 'elettric' in card_text.lower():
@@ -169,7 +169,7 @@ def scrape_octopus_tariffe():
 
             # Salva screenshot per debug
             screenshot_path = DATA_DIR / "last_scrape.png"
-            page.screenshot(path=str(screenshot_path))
+            await page.screenshot(path=str(screenshot_path))
             print(f"📸 Screenshot salvato: {screenshot_path}")
 
         except Exception as e:
@@ -177,7 +177,7 @@ def scrape_octopus_tariffe():
             raise
 
         finally:
-            browser.close()
+            await browser.close()
 
     # Salva risultati
     DATA_DIR.mkdir(exist_ok=True)
@@ -189,6 +189,7 @@ def scrape_octopus_tariffe():
     return tariffe_data
 
 if __name__ == '__main__':
-    result = scrape_octopus_tariffe()
+    import asyncio
+    result = asyncio.run(scrape_octopus_tariffe())
     print("\n📊 Tariffe estratte:")
     print(json.dumps(result, indent=2))

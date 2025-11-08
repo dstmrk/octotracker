@@ -300,7 +300,7 @@ async def run_scraper():
     """Esegue scraper delle tariffe"""
     print(f"🕷️  [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio scraper...")
     try:
-        result = scrape_octopus_tariffe()
+        result = await scrape_octopus_tariffe()
         print(f"✅ Scraper completato: {result}")
     except Exception as e:
         print(f"❌ Errore scraper: {e}")
