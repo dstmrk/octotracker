@@ -167,11 +167,6 @@ async def scrape_octopus_tariffe():
                             }
                             print(f"✅ Gas trovato (da card): €{tariffe_data['gas']['energia']:.4f}/Smc")
 
-            # Salva screenshot per debug
-            screenshot_path = DATA_DIR / "last_scrape.png"
-            await page.screenshot(path=str(screenshot_path))
-            print(f"📸 Screenshot salvato: {screenshot_path}")
-
         except Exception as e:
             print(f"❌ Errore durante scraping: {e}")
             raise

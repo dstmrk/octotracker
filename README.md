@@ -92,7 +92,6 @@ docker-compose up -d --build
 I dati sono salvati in `./data/`:
 - `users.json` - utenti registrati e tariffe
 - `current_rates.json` - tariffe Octopus aggiornate
-- `last_scrape.png` - screenshot debug
 
 **Backup**: Copia semplicemente la cartella `data/`!
 
@@ -412,11 +411,11 @@ ping 8.8.8.8 -c 5
 # Controlla i logs alle ore dello scraping (default: 9:00)
 docker compose logs -f
 
-# Verifica screenshot di debug
-ls -lh data/last_scrape.png
-
 # Test manuale dello scraper
 docker compose exec octotracker python scraper.py
+
+# Verifica file tariffe generato
+cat data/current_rates.json
 ```
 
 ### Container non parte
