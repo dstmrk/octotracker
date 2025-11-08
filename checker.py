@@ -156,8 +156,8 @@ def format_notification(savings, user_rates, current_rates):
         message = "⚡️ <b>Buone notizie!</b>\n"
         message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
 
-    # Mostra Luce se c'è risparmio o peggioramento in energia O commercializzazione
-    if savings['luce_energia'] or savings['luce_comm'] or savings['luce_energia_worse'] or savings['luce_comm_worse']:
+    # Mostra Luce SOLO se c'è almeno un miglioramento (anche se c'è un peggioramento nell'altra componente)
+    if savings['luce_energia'] or savings['luce_comm']:
         message += "💡 <b>Luce:</b>\n"
         # Formatta con zeri trailing rimossi
         user_energia = format_number(user_rates['luce_energia'], max_decimals=3)
@@ -187,8 +187,8 @@ def format_notification(savings, user_rates, current_rates):
 
         message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
 
-    # Mostra Gas se c'è risparmio o peggioramento in energia O commercializzazione (e se l'utente ha il gas)
-    if user_rates.get('gas_energia') is not None and (savings['gas_energia'] or savings['gas_comm'] or savings['gas_energia_worse'] or savings['gas_comm_worse']):
+    # Mostra Gas SOLO se c'è almeno un miglioramento (anche se c'è un peggioramento nell'altra componente)
+    if user_rates.get('gas_energia') is not None and (savings['gas_energia'] or savings['gas_comm']):
         message += "🔥 <b>Gas:</b>\n"
         # Formatta con zeri trailing rimossi
         user_gas_energia = format_number(user_rates['gas_energia'], max_decimals=3)
@@ -222,9 +222,8 @@ def format_notification(savings, user_rates, current_rates):
     if savings['is_mixed']:
         message += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
         message += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
-    else:
-        message += "💬 Il confronto tiene conto sia del prezzo dell'energia che del costo di commercializzazione.\n\n"
 
+    message += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
     message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
     message += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
 
