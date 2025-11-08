@@ -196,23 +196,7 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 ---
 
-### 7. Screenshot Solo in Debug Mode
-**Categoria:** Performance | **Sforzo:** Basso | **Impatto:** Basso
-
-**Problema:** Lo screenshot viene sempre salvato, anche in produzione.
-
-**Soluzione:**
-```python
-DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
-
-if DEBUG:
-    screenshot_path = DATA_DIR / "last_scrape.png"
-    page.screenshot(path=str(screenshot_path))
-```
-
----
-
-### 8. Code Duplication - Logica Luce/Gas
+### 7. Code Duplication - Logica Luce/Gas
 **Categoria:** Maintainability | **Sforzo:** Medio | **Impatto:** Basso
 
 **Problema:** La logica per controllare luce e gas è quasi identica in `checker.py`.
@@ -221,7 +205,7 @@ if DEBUG:
 
 ---
 
-### 9. Rimuovere Keep-Alive in Polling Mode
+### 8. Rimuovere Keep-Alive in Polling Mode
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Problema:** Il keep-alive in modalità polling è ridondante (il bot è già sempre attivo con il polling).
@@ -240,9 +224,8 @@ if DEBUG:
 | 4 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
 | 5 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
 | 6 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
-| 7 | Screenshot debug | 🟢 Bassa | Basso | Basso | Mai urgente |
-| 8 | Code duplication | 🟢 Bassa | Medio | Basso | Mai urgente |
-| 9 | Rimuovi keep-alive | 🟢 Bassa | Basso | Basso | Mai urgente |
+| 7 | Code duplication | 🟢 Bassa | Medio | Basso | Mai urgente |
+| 8 | Rimuovi keep-alive | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
