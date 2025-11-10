@@ -27,7 +27,7 @@ from checker import check_and_notify_users, format_number
 load_dotenv()
 
 # Stati conversazione
-LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(5)
+TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(7)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -64,13 +64,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     is_update = user_id in users
 
+    # Reset context per nuova conversazione
+    context.user_data.clear()
+
+    keyboard = [
+        [
+            InlineKeyboardButton("📊 Fissa", callback_data="tipo_fissa"),
+            InlineKeyboardButton("📈 Variabile", callback_data="tipo_variabile")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     if is_update:
         messaggio = (
             "♻️ <b>Aggiorniamo le tue tariffe!</b>\n\n"
             "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
             "con le nuove offerte di Octopus Energy.\n\n"
             "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
-            "👉 Partiamo: quanto paghi ora per la materia energia luce (€/kWh)?"
+            "👉 Iniziamo: che tipo di tariffa hai?"
         )
     else:
         messaggio = (
@@ -79,14 +90,75 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
             "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
             "Rispondi passo passo ai messaggi: ci vorrà meno di un minuto. ⚡️\n\n"
-            "👉 Iniziamo con la luce: quanto paghi per la materia energia (€/kWh)?"
+            "👉 Iniziamo: che tipo di tariffa hai?"
         )
 
-    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(messaggio, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+    return TIPO_TARIFFA
+
+async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Gestisci scelta tipo tariffa (Fissa/Variabile)"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "tipo_fissa":
+        context.user_data['is_variabile'] = False
+        context.user_data['luce_tipo'] = "Fissa"
+        context.user_data['gas_tipo'] = "Fissa"  # Se ha gas, sarà fissa
+
+        await query.edit_message_text(
+            "📊 <b>Tariffa Fissa</b>\n\n"
+            "Perfetto! Ora inserisci i dati della tua tariffa luce.\n\n"
+            "👉 Quanto paghi per la materia energia luce (€/kWh)?\n\n"
+            "💬 Esempio: 0,145",
+            parse_mode=ParseMode.HTML
+        )
+        return LUCE_ENERGIA
+
+    else:  # tipo_variabile
+        context.user_data['is_variabile'] = True
+
+        keyboard = [
+            [
+                InlineKeyboardButton("⏱️ Monoraria", callback_data="luce_mono"),
+                InlineKeyboardButton("⏱️⏱️⏱️ Trioraria", callback_data="luce_tri")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+            "📈 <b>Tariffa Variabile</b>\n\n"
+            "La tua tariffa luce è monoraria o trioraria (F1/F2/F3)?",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML
+        )
+        return LUCE_TIPO_VARIABILE
+
+async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Gestisci scelta tipo luce variabile (Monoraria/Trioraria)"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "luce_mono":
+        context.user_data['luce_tipo'] = "Variabile Monoraria"
+        tipo_msg = "monoraria (PUN Mono)"
+    else:  # luce_tri
+        context.user_data['luce_tipo'] = "Variabile Trioraria"
+        tipo_msg = "trioraria (PUN)"
+
+    # Gas variabile è sempre monorario
+    context.user_data['gas_tipo'] = "Variabile Monoraria"
+
+    await query.edit_message_text(
+        f"⚡ <b>Luce variabile {tipo_msg}</b>\n\n"
+        f"Ora inserisci lo spread della tua tariffa rispetto al PUN.\n\n"
+        f"💬 Esempio: se la tua tariffa è <b>PUN + 0,0088</b> €/kWh, scrivi <code>0,0088</code>",
+        parse_mode=ParseMode.HTML
+    )
     return LUCE_ENERGIA
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Salva costo energia luce"""
+    """Salva costo energia luce (spread o prezzo fisso)"""
     try:
         context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
@@ -95,7 +167,11 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return LUCE_COMM
     except ValueError:
-        await update.message.reply_text("❌ Inserisci un numero valido (es: 0.12)")
+        is_variabile = context.user_data.get('is_variabile', False)
+        if is_variabile:
+            await update.message.reply_text("❌ Inserisci un numero valido (es: 0,0088)")
+        else:
+            await update.message.reply_text("❌ Inserisci un numero valido (es: 0,145)")
         return LUCE_ENERGIA
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -126,16 +202,28 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     if query.data == "gas_si":
-        await query.edit_message_text(
-            "Perfetto!\n"
-            "👉 Inserisci il costo materia energia gas (€/Smc)."
-        )
+        is_variabile = context.user_data.get('is_variabile', False)
+
+        if is_variabile:
+            msg = (
+                "🔥 <b>Gas variabile</b>\n\n"
+                "Ora inserisci lo spread della tua tariffa rispetto al PSV.\n\n"
+                "💬 Esempio: se la tua tariffa è <b>PSV + 0,08</b> €/Smc, scrivi <code>0,08</code>"
+            )
+        else:
+            msg = (
+                "🔥 <b>Gas fisso</b>\n\n"
+                "Perfetto! Inserisci il costo materia energia gas (€/Smc).\n\n"
+                "💬 Esempio: 0,456"
+            )
+
+        await query.edit_message_text(msg, parse_mode=ParseMode.HTML)
         return GAS_ENERGIA
     else:
         return await salva_e_conferma(query, context, solo_luce=True)
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Salva costo energia gas"""
+    """Salva costo energia gas (spread o prezzo fisso)"""
     try:
         context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
         await update.message.reply_text(
@@ -144,7 +232,11 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return GAS_COMM
     except ValueError:
-        await update.message.reply_text("❌ Inserisci un numero valido (es: 0.45)")
+        is_variabile = context.user_data.get('is_variabile', False)
+        if is_variabile:
+            await update.message.reply_text("❌ Inserisci un numero valido (es: 0,08)")
+        else:
+            await update.message.reply_text("❌ Inserisci un numero valido (es: 0,456)")
         return GAS_ENERGIA
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,14 +263,17 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
 
     user_data = {
+        'luce_tipo': context.user_data['luce_tipo'],
         'luce_energia': context.user_data['luce_energia'],
         'luce_comm': context.user_data['luce_comm'],
     }
 
     if not solo_luce:
+        user_data['gas_tipo'] = context.user_data['gas_tipo']
         user_data['gas_energia'] = context.user_data['gas_energia']
         user_data['gas_comm'] = context.user_data['gas_comm']
     else:
+        user_data['gas_tipo'] = None
         user_data['gas_energia'] = None
         user_data['gas_comm'] = None
 
@@ -186,23 +281,42 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     save_users(users)
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(user_data['luce_energia'], max_decimals=3)
+    luce_energia_fmt = format_number(user_data['luce_energia'], max_decimals=4)
     luce_comm_fmt = format_number(user_data['luce_comm'], max_decimals=2)
+
+    # Determina label in base al tipo
+    luce_tipo = user_data['luce_tipo']
+    if luce_tipo == "Fissa":
+        luce_label = "Prezzo fisso"
+        luce_unit = "€/kWh"
+    elif luce_tipo == "Variabile Monoraria":
+        luce_label = "Spread (PUN Mono +)"
+        luce_unit = "€/kWh"
+    else:  # Variabile Trioraria
+        luce_label = "Spread (PUN +)"
+        luce_unit = "€/kWh"
 
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
         "Ecco i dati che hai inserito:\n\n"
-        f"💡 <b>Luce</b>\n"
-        f"- Materia energia: {luce_energia_fmt} €/kWh\n"
+        f"💡 <b>Luce ({luce_tipo})</b>\n"
+        f"- {luce_label}: {luce_energia_fmt} {luce_unit}\n"
         f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if not solo_luce:
-        gas_energia_fmt = format_number(user_data['gas_energia'], max_decimals=3)
+        gas_energia_fmt = format_number(user_data['gas_energia'], max_decimals=4)
         gas_comm_fmt = format_number(user_data['gas_comm'], max_decimals=2)
+
+        gas_tipo = user_data['gas_tipo']
+        if gas_tipo == "Fissa":
+            gas_label = "Prezzo fisso"
+        else:  # Variabile Monoraria
+            gas_label = "Spread (PSV +)"
+
         messaggio += (
-            f"\n🔥 <b>Gas</b>\n"
-            f"- Materia energia: {gas_energia_fmt} €/Smc\n"
+            f"\n🔥 <b>Gas ({gas_tipo})</b>\n"
+            f"- {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
@@ -236,22 +350,38 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = users[user_id]
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(data['luce_energia'], max_decimals=3)
+    luce_energia_fmt = format_number(data['luce_energia'], max_decimals=4)
     luce_comm_fmt = format_number(data['luce_comm'], max_decimals=2)
+
+    # Determina label in base al tipo (retrocompatibilità: se manca tipo, assume Fissa)
+    luce_tipo = data.get('luce_tipo', 'Fissa')
+    if luce_tipo == "Fissa":
+        luce_label = "Prezzo fisso"
+    elif luce_tipo == "Variabile Monoraria":
+        luce_label = "Spread (PUN Mono +)"
+    else:  # Variabile Trioraria
+        luce_label = "Spread (PUN +)"
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
-        f"💡 <b>Luce:</b>\n"
-        f"  - Energia: {luce_energia_fmt} €/kWh\n"
+        f"💡 <b>Luce ({luce_tipo}):</b>\n"
+        f"  - {luce_label}: {luce_energia_fmt} €/kWh\n"
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if data.get('gas_energia') is not None:
-        gas_energia_fmt = format_number(data['gas_energia'], max_decimals=3)
+        gas_energia_fmt = format_number(data['gas_energia'], max_decimals=4)
         gas_comm_fmt = format_number(data['gas_comm'], max_decimals=2)
+
+        gas_tipo = data.get('gas_tipo', 'Fissa')
+        if gas_tipo == "Fissa":
+            gas_label = "Prezzo fisso"
+        else:  # Variabile Monoraria
+            gas_label = "Spread (PSV +)"
+
         messaggio += (
-            f"\n🔥 <b>Gas:</b>\n"
-            f"  - Energia: {gas_energia_fmt} €/Smc\n"
+            f"\n🔥 <b>Gas ({gas_tipo}):</b>\n"
+            f"  - {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
@@ -431,6 +561,8 @@ def main():
             CommandHandler('update', start)
         ],
         states={
+            TIPO_TARIFFA: [CallbackQueryHandler(tipo_tariffa)],
+            LUCE_TIPO_VARIABILE: [CallbackQueryHandler(luce_tipo_variabile)],
             LUCE_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_energia)],
             LUCE_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_comm)],
             HA_GAS: [CallbackQueryHandler(ha_gas)],
