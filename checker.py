@@ -182,115 +182,129 @@ def check_better_rates(user_rates: Dict[str, Any], current_rates: Dict[str, Any]
 
     return savings
 
-def format_notification(savings: Dict[str, Any], user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> str:
-    """Formatta messaggio di notifica"""
-    # Header diverso per caso mixed vs tutto migliorato
-    if savings['is_mixed']:
-        message = "⚖️ <b>Aggiornamento tariffe Octopus Energy</b>\n"
-        message += "OctoTracker ha rilevato una variazione nelle tariffe, ma non è detto che sia automaticamente più conveniente: una delle due componenti è migliorata, l'altra è aumentata.\n\n"
+# ========== HELPER FUNCTIONS ==========
+
+def _format_header(is_mixed: bool) -> str:
+    """Formatta intestazione notifica"""
+    if is_mixed:
+        header = "⚖️ <b>Aggiornamento tariffe Octopus Energy</b>\n"
+        header += "OctoTracker ha rilevato una variazione nelle tariffe, ma non è detto che sia automaticamente più conveniente: una delle due componenti è migliorata, l'altra è aumentata.\n\n"
     else:
-        message = "⚡️ <b>Buone notizie!</b>\n"
-        message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
+        header = "⚡️ <b>Buone notizie!</b>\n"
+        header += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
+    return header
 
-    # Mostra Luce SOLO se c'è almeno un miglioramento
-    if savings['luce_energia'] or savings['luce_comm']:
-        luce_tipo = savings['luce_tipo']
-        luce_fascia = savings['luce_fascia']
+def _format_luce_section(savings: Dict[str, Any], user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> str:
+    """Formatta sezione luce della notifica"""
+    if not (savings['luce_energia'] or savings['luce_comm']):
+        return ""
 
-        tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
+    luce_tipo = savings['luce_tipo']
+    luce_fascia = savings['luce_fascia']
+    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
-        # Determina label in base al tipo
-        if luce_tipo == "fissa":
-            luce_label = "Prezzo fisso"
-        else:  # variabile
-            luce_label = "Spread (PUN +)"
+    # Determina label in base al tipo
+    luce_label = "Prezzo fisso" if luce_tipo == "fissa" else "Spread (PUN +)"
 
-        message += f"💡 <b>Luce ({tipo_display}):</b>\n"
+    section = f"💡 <b>Luce ({tipo_display}):</b>\n"
 
-        # Formatta energia con max_decimals=4 per spread (es. 0,0088)
-        user_energia = format_number(user_rates['luce']['energia'], max_decimals=4)
-        user_comm = format_number(user_rates['luce']['commercializzazione'], max_decimals=2)
+    # Formatta energia con max_decimals=4 per spread
+    user_energia = format_number(user_rates['luce']['energia'], max_decimals=4)
+    user_comm = format_number(user_rates['luce']['commercializzazione'], max_decimals=2)
+    section += f"Tua tariffa: {luce_label} {user_energia} €/kWh, Comm. {user_comm} €/anno\n"
 
-        message += f"Tua tariffa: {luce_label} {user_energia} €/kWh, Comm. {user_comm} €/anno\n"
+    # Accesso diretto nested
+    if current_rates.get('luce', {}).get(luce_tipo, {}).get(luce_fascia):
+        energia_new = current_rates['luce'][luce_tipo][luce_fascia]['energia']
+        comm_new = current_rates['luce'][luce_tipo][luce_fascia]['commercializzazione']
 
-        # Accesso diretto nested
-        if current_rates.get('luce', {}).get(luce_tipo, {}).get(luce_fascia):
-            energia_new = current_rates['luce'][luce_tipo][luce_fascia]['energia']
-            comm_new = current_rates['luce'][luce_tipo][luce_fascia]['commercializzazione']
+        energia_formatted = format_number(energia_new, max_decimals=4)
+        comm_formatted = format_number(comm_new, max_decimals=2)
 
-            energia_formatted = format_number(energia_new, max_decimals=4)
-            comm_formatted = format_number(comm_new, max_decimals=2)
+        if savings['luce_energia']:
+            energia_str = f"<b>{energia_formatted} €/kWh</b>"
+        elif savings['luce_energia_worse']:
+            energia_str = f"<u>{energia_formatted} €/kWh</u>"
+        else:
+            energia_str = f"{energia_formatted} €/kWh"
 
-            if savings['luce_energia']:
-                energia_str = f"<b>{energia_formatted} €/kWh</b>"
-            elif savings['luce_energia_worse']:
-                energia_str = f"<u>{energia_formatted} €/kWh</u>"
-            else:
-                energia_str = f"{energia_formatted} €/kWh"
+        if savings['luce_comm']:
+            comm_str = f"<b>{comm_formatted} €/anno</b>"
+        elif savings['luce_comm_worse']:
+            comm_str = f"<u>{comm_formatted} €/anno</u>"
+        else:
+            comm_str = f"{comm_formatted} €/anno"
 
-            if savings['luce_comm']:
-                comm_str = f"<b>{comm_formatted} €/anno</b>"
-            elif savings['luce_comm_worse']:
-                comm_str = f"<u>{comm_formatted} €/anno</u>"
-            else:
-                comm_str = f"{comm_formatted} €/anno"
+        section += f"Nuova tariffa: {luce_label} {energia_str}, Comm. {comm_str}\n\n"
 
-            message += f"Nuova tariffa: {luce_label} {energia_str}, Comm. {comm_str}\n\n"
+    return section
 
-    # Mostra Gas SOLO se c'è almeno un miglioramento
-    if user_rates.get('gas') is not None and (savings['gas_energia'] or savings['gas_comm']):
-        gas_tipo = savings['gas_tipo']
-        gas_fascia = savings['gas_fascia']
+def _format_gas_section(savings: Dict[str, Any], user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> str:
+    """Formatta sezione gas della notifica"""
+    if user_rates.get('gas') is None or not (savings['gas_energia'] or savings['gas_comm']):
+        return ""
 
-        tipo_display = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
+    gas_tipo = savings['gas_tipo']
+    gas_fascia = savings['gas_fascia']
+    tipo_display = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
-        # Determina label in base al tipo
-        if gas_tipo == "fissa":
-            gas_label = "Prezzo fisso"
-        else:  # variabile
-            gas_label = "Spread (PSV +)"
+    # Determina label in base al tipo
+    gas_label = "Prezzo fisso" if gas_tipo == "fissa" else "Spread (PSV +)"
 
-        message += f"🔥 <b>Gas ({tipo_display}):</b>\n"
+    section = f"🔥 <b>Gas ({tipo_display}):</b>\n"
 
-        # Formatta energia con max_decimals=4 per spread
-        user_gas_energia = format_number(user_rates['gas']['energia'], max_decimals=4)
-        user_gas_comm = format_number(user_rates['gas']['commercializzazione'], max_decimals=2)
+    # Formatta energia con max_decimals=4 per spread
+    user_gas_energia = format_number(user_rates['gas']['energia'], max_decimals=4)
+    user_gas_comm = format_number(user_rates['gas']['commercializzazione'], max_decimals=2)
+    section += f"Tua tariffa: {gas_label} {user_gas_energia} €/Smc, Comm. {user_gas_comm} €/anno\n"
 
-        message += f"Tua tariffa: {gas_label} {user_gas_energia} €/Smc, Comm. {user_gas_comm} €/anno\n"
+    # Accesso diretto nested
+    if current_rates.get('gas', {}).get(gas_tipo, {}).get(gas_fascia):
+        energia_new = current_rates['gas'][gas_tipo][gas_fascia]['energia']
+        comm_new = current_rates['gas'][gas_tipo][gas_fascia]['commercializzazione']
 
-        # Accesso diretto nested
-        if current_rates.get('gas', {}).get(gas_tipo, {}).get(gas_fascia):
-            energia_new = current_rates['gas'][gas_tipo][gas_fascia]['energia']
-            comm_new = current_rates['gas'][gas_tipo][gas_fascia]['commercializzazione']
+        energia_formatted = format_number(energia_new, max_decimals=4)
+        comm_formatted = format_number(comm_new, max_decimals=2)
 
-            energia_formatted = format_number(energia_new, max_decimals=4)
-            comm_formatted = format_number(comm_new, max_decimals=2)
+        if savings['gas_energia']:
+            energia_str = f"<b>{energia_formatted} €/Smc</b>"
+        elif savings['gas_energia_worse']:
+            energia_str = f"<u>{energia_formatted} €/Smc</u>"
+        else:
+            energia_str = f"{energia_formatted} €/Smc"
 
-            if savings['gas_energia']:
-                energia_str = f"<b>{energia_formatted} €/Smc</b>"
-            elif savings['gas_energia_worse']:
-                energia_str = f"<u>{energia_formatted} €/Smc</u>"
-            else:
-                energia_str = f"{energia_formatted} €/Smc"
+        if savings['gas_comm']:
+            comm_str = f"<b>{comm_formatted} €/anno</b>"
+        elif savings['gas_comm_worse']:
+            comm_str = f"<u>{comm_formatted} €/anno</u>"
+        else:
+            comm_str = f"{comm_formatted} €/anno"
 
-            if savings['gas_comm']:
-                comm_str = f"<b>{comm_formatted} €/anno</b>"
-            elif savings['gas_comm_worse']:
-                comm_str = f"<u>{comm_formatted} €/anno</u>"
-            else:
-                comm_str = f"{comm_formatted} €/anno"
+        section += f"Nuova tariffa: {gas_label} {energia_str}, Comm. {comm_str}\n\n"
 
-            message += f"Nuova tariffa: {gas_label} {energia_str}, Comm. {comm_str}\n\n"
+    return section
+
+def _format_footer(is_mixed: bool) -> str:
+    """Formatta footer notifica"""
+    footer = ""
 
     # Footer diverso per caso mixed
-    if savings['is_mixed']:
-        message += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
-        message += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
+    if is_mixed:
+        footer += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
+        footer += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
 
-    message += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
-    message += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
-    message += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
+    footer += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
+    footer += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
+    footer += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
 
+    return footer
+
+def format_notification(savings: Dict[str, Any], user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> str:
+    """Formatta messaggio di notifica"""
+    message = _format_header(savings['is_mixed'])
+    message += _format_luce_section(savings, user_rates, current_rates)
+    message += _format_gas_section(savings, user_rates, current_rates)
+    message += _format_footer(savings['is_mixed'])
     return message
 
 async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
