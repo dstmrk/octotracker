@@ -103,8 +103,10 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "tipo_fissa":
         context.user_data['is_variabile'] = False
-        context.user_data['luce_tipo'] = "Fissa"
-        context.user_data['gas_tipo'] = "Fissa"  # Se ha gas, sarà fissa
+        context.user_data['luce_tipo'] = "fissa"
+        context.user_data['luce_fascia'] = "monoraria"
+        context.user_data['gas_tipo'] = "fissa"  # Se ha gas, sarà fissa
+        context.user_data['gas_fascia'] = "monoraria"
 
         await query.edit_message_text(
             "📊 <b>Tariffa Fissa</b>\n\n"
@@ -140,14 +142,17 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
 
     if query.data == "luce_mono":
-        context.user_data['luce_tipo'] = "Variabile Monoraria"
+        context.user_data['luce_tipo'] = "variabile"
+        context.user_data['luce_fascia'] = "monoraria"
         tipo_msg = "monoraria (PUN)"
     else:  # luce_tri
-        context.user_data['luce_tipo'] = "Variabile Trioraria"
+        context.user_data['luce_tipo'] = "variabile"
+        context.user_data['luce_fascia'] = "trioraria"
         tipo_msg = "trioraria (PUN)"
 
     # Gas variabile è sempre monorario
-    context.user_data['gas_tipo'] = "Variabile Monoraria"
+    context.user_data['gas_tipo'] = "variabile"
+    context.user_data['gas_fascia'] = "monoraria"
 
     await query.edit_message_text(
         f"⚡ <b>Luce variabile {tipo_msg}</b>\n\n"
@@ -262,60 +267,70 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         user_id = str(update_or_query.from_user.id)
         send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
 
+    # Nuova struttura nested
     user_data = {
-        'luce_tipo': context.user_data['luce_tipo'],
-        'luce_energia': context.user_data['luce_energia'],
-        'luce_comm': context.user_data['luce_comm'],
+        'luce': {
+            'tipo': context.user_data['luce_tipo'],
+            'fascia': context.user_data['luce_fascia'],
+            'energia': context.user_data['luce_energia'],
+            'commercializzazione': context.user_data['luce_comm']
+        }
     }
 
     if not solo_luce:
-        user_data['gas_tipo'] = context.user_data['gas_tipo']
-        user_data['gas_energia'] = context.user_data['gas_energia']
-        user_data['gas_comm'] = context.user_data['gas_comm']
+        user_data['gas'] = {
+            'tipo': context.user_data['gas_tipo'],
+            'fascia': context.user_data['gas_fascia'],
+            'energia': context.user_data['gas_energia'],
+            'commercializzazione': context.user_data['gas_comm']
+        }
     else:
-        user_data['gas_tipo'] = None
-        user_data['gas_energia'] = None
-        user_data['gas_comm'] = None
+        user_data['gas'] = None
 
     users[user_id] = user_data
     save_users(users)
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(user_data['luce_energia'], max_decimals=4)
-    luce_comm_fmt = format_number(user_data['luce_comm'], max_decimals=2)
+    luce_energia_fmt = format_number(user_data['luce']['energia'], max_decimals=4)
+    luce_comm_fmt = format_number(user_data['luce']['commercializzazione'], max_decimals=2)
 
-    # Determina label in base al tipo
-    luce_tipo = user_data['luce_tipo']
-    if luce_tipo == "Fissa":
+    # Determina label in base al tipo e fascia
+    luce_tipo = user_data['luce']['tipo']
+    luce_fascia = user_data['luce']['fascia']
+
+    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
+
+    if luce_tipo == "fissa":
         luce_label = "Prezzo fisso"
         luce_unit = "€/kWh"
-    elif luce_tipo == "Variabile Monoraria":
-        luce_label = "Spread (PUN +)"
-        luce_unit = "€/kWh"
-    else:  # Variabile Trioraria
+    else:  # variabile
         luce_label = "Spread (PUN +)"
         luce_unit = "€/kWh"
 
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
         "Ecco i dati che hai inserito:\n\n"
-        f"💡 <b>Luce ({luce_tipo})</b>\n"
+        f"💡 <b>Luce ({tipo_display})</b>\n"
         f"- {luce_label}: {luce_energia_fmt} {luce_unit}\n"
         f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
     if not solo_luce:
-        gas_energia_fmt = format_number(user_data['gas_energia'], max_decimals=4)
-        gas_comm_fmt = format_number(user_data['gas_comm'], max_decimals=2)
+        gas_energia_fmt = format_number(user_data['gas']['energia'], max_decimals=4)
+        gas_comm_fmt = format_number(user_data['gas']['commercializzazione'], max_decimals=2)
 
-        gas_tipo = user_data['gas_tipo']
-        if gas_tipo == "Fissa":
+        gas_tipo = user_data['gas']['tipo']
+        gas_fascia = user_data['gas']['fascia']
+
+        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
+
+        if gas_tipo == "fissa":
             gas_label = "Prezzo fisso"
-        else:  # Variabile Monoraria
+        else:  # variabile
             gas_label = "Spread (PSV +)"
 
         messaggio += (
-            f"\n🔥 <b>Gas ({gas_tipo})</b>\n"
+            f"\n🔥 <b>Gas ({tipo_display_gas})</b>\n"
             f"- {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
@@ -350,37 +365,43 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = users[user_id]
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(data['luce_energia'], max_decimals=4)
-    luce_comm_fmt = format_number(data['luce_comm'], max_decimals=2)
+    luce_energia_fmt = format_number(data['luce']['energia'], max_decimals=4)
+    luce_comm_fmt = format_number(data['luce']['commercializzazione'], max_decimals=2)
 
-    # Determina label in base al tipo
-    luce_tipo = data['luce_tipo']
-    if luce_tipo == "Fissa":
+    # Determina label in base al tipo e fascia
+    luce_tipo = data['luce']['tipo']
+    luce_fascia = data['luce']['fascia']
+
+    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
+
+    if luce_tipo == "fissa":
         luce_label = "Prezzo fisso"
-    elif luce_tipo == "Variabile Monoraria":
-        luce_label = "Spread (PUN +)"
-    else:  # Variabile Trioraria
+    else:  # variabile
         luce_label = "Spread (PUN +)"
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
-        f"💡 <b>Luce ({luce_tipo}):</b>\n"
+        f"💡 <b>Luce ({tipo_display}):</b>\n"
         f"  - {luce_label}: {luce_energia_fmt} €/kWh\n"
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
-    if data.get('gas_energia') is not None:
-        gas_energia_fmt = format_number(data['gas_energia'], max_decimals=4)
-        gas_comm_fmt = format_number(data['gas_comm'], max_decimals=2)
+    if data.get('gas') is not None:
+        gas_energia_fmt = format_number(data['gas']['energia'], max_decimals=4)
+        gas_comm_fmt = format_number(data['gas']['commercializzazione'], max_decimals=2)
 
-        gas_tipo = data['gas_tipo']
-        if gas_tipo == "Fissa":
+        gas_tipo = data['gas']['tipo']
+        gas_fascia = data['gas']['fascia']
+
+        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
+
+        if gas_tipo == "fissa":
             gas_label = "Prezzo fisso"
-        else:  # Variabile Monoraria
+        else:  # variabile
             gas_label = "Spread (PSV +)"
 
         messaggio += (
-            f"\n🔥 <b>Gas ({gas_tipo}):</b>\n"
+            f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
             f"  - {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
