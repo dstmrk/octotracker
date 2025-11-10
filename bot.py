@@ -165,7 +165,12 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
     try:
-        context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return LUCE_ENERGIA
+
+        context.user_data['luce_energia'] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
             "💬 Esempio: 72 (se paghi 6 €/mese)"
@@ -182,7 +187,12 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se ha gas"""
     try:
-        context.user_data['luce_comm'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return LUCE_COMM
+
+        context.user_data['luce_comm'] = value
 
         keyboard = [
             [
@@ -230,7 +240,12 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
     try:
-        context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return GAS_ENERGIA
+
+        context.user_data['gas_energia'] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
             "💬 Esempio: 84 (se paghi 7 €/mese)"
@@ -247,7 +262,12 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva gas e conferma"""
     try:
-        context.user_data['gas_comm'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return GAS_COMM
+
+        context.user_data['gas_comm'] = value
         return await salva_e_conferma(update, context, solo_luce=False)
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
