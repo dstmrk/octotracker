@@ -17,10 +17,29 @@ USERS_FILE = DATA_DIR / "users.json"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
 def load_json(file_path):
-    """Carica file JSON"""
+    """Carica file JSON con gestione errori"""
     if file_path.exists():
-        with open(file_path, 'r') as f:
-            return json.load(f)
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+                if not content.strip():
+                    print(f"⚠️  {file_path.name} è vuoto")
+                    return None
+                return json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"❌ Errore parsing {file_path.name}: {e}")
+            print(f"   File location: {file_path}")
+            # Mostra prime righe del file per debug
+            try:
+                with open(file_path, 'r') as f:
+                    first_lines = f.read(200)
+                    print(f"   Prime righe: {repr(first_lines)}")
+            except Exception:
+                pass
+            return None
+        except Exception as e:
+            print(f"❌ Errore lettura {file_path.name}: {e}")
+            return None
     return None
 
 def save_users(users):
