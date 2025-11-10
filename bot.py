@@ -141,7 +141,7 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if query.data == "luce_mono":
         context.user_data['luce_tipo'] = "Variabile Monoraria"
-        tipo_msg = "monoraria (PUN Mono)"
+        tipo_msg = "monoraria (PUN)"
     else:  # luce_tri
         context.user_data['luce_tipo'] = "Variabile Trioraria"
         tipo_msg = "trioraria (PUN)"
@@ -290,7 +290,7 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
         luce_label = "Prezzo fisso"
         luce_unit = "€/kWh"
     elif luce_tipo == "Variabile Monoraria":
-        luce_label = "Spread (PUN Mono +)"
+        luce_label = "Spread (PUN +)"
         luce_unit = "€/kWh"
     else:  # Variabile Trioraria
         luce_label = "Spread (PUN +)"
@@ -358,7 +358,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if luce_tipo == "Fissa":
         luce_label = "Prezzo fisso"
     elif luce_tipo == "Variabile Monoraria":
-        luce_label = "Spread (PUN Mono +)"
+        luce_label = "Spread (PUN +)"
     else:  # Variabile Trioraria
         luce_label = "Spread (PUN +)"
 
