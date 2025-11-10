@@ -55,7 +55,17 @@ CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italia
 # Configurazione webhook
 WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio.xyz
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
-WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
+
+# Validazione WEBHOOK_SECRET obbligatorio (protezione da webhook spoofing)
+WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
+if not WEBHOOK_SECRET:
+    raise ValueError(
+        "WEBHOOK_SECRET è obbligatorio per sicurezza del webhook.\n"
+        "Genera un token sicuro con:\n"
+        "  python -c 'import secrets; print(secrets.token_urlsafe(32))'\n"
+        "Poi aggiungilo al file .env:\n"
+        "  WEBHOOK_SECRET=<token_generato>"
+    )
 
 # ========== BOT COMMANDS ==========
 
@@ -165,7 +175,12 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
     try:
-        context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return LUCE_ENERGIA
+
+        context.user_data['luce_energia'] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
             "💬 Esempio: 72 (se paghi 6 €/mese)"
@@ -182,7 +197,12 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se ha gas"""
     try:
-        context.user_data['luce_comm'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return LUCE_COMM
+
+        context.user_data['luce_comm'] = value
 
         keyboard = [
             [
@@ -230,7 +250,12 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
     try:
-        context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return GAS_ENERGIA
+
+        context.user_data['gas_energia'] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
             "💬 Esempio: 84 (se paghi 7 €/mese)"
@@ -247,7 +272,12 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva gas e conferma"""
     try:
-        context.user_data['gas_comm'] = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(',', '.'))
+        if value < 0:
+            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            return GAS_COMM
+
+        context.user_data['gas_comm'] = value
         return await salva_e_conferma(update, context, solo_luce=False)
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
@@ -506,13 +536,16 @@ async def scraper_daily_task() -> None:
     logger.info(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
-    # Loop infinito: esegui e dormi 24 ore
+    # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
         await run_scraper()
 
-        # Dormi esattamente 24 ore fino alla prossima esecuzione
-        logger.info(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
-        await asyncio.sleep(24 * 3600)
+        # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
+        seconds_until_next = calculate_seconds_until_next_run(SCRAPER_HOUR)
+        hours_until_next = seconds_until_next / 3600
+
+        logger.info(f"⏰ Prossimo scraper tra {hours_until_next:.1f} ore (alle {SCRAPER_HOUR}:00)")
+        await asyncio.sleep(seconds_until_next)
 
 async def checker_daily_task(bot_token: str) -> None:
     """Task giornaliero per il checker - si esegue una volta al giorno"""
@@ -523,13 +556,16 @@ async def checker_daily_task(bot_token: str) -> None:
     logger.info(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
-    # Loop infinito: esegui e dormi 24 ore
+    # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
         await run_checker(bot_token)
 
-        # Dormi esattamente 24 ore fino alla prossima esecuzione
-        logger.info(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
-        await asyncio.sleep(24 * 3600)
+        # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
+        seconds_until_next = calculate_seconds_until_next_run(CHECKER_HOUR)
+        hours_until_next = seconds_until_next / 3600
+
+        logger.info(f"⏰ Prossimo checker tra {hours_until_next:.1f} ore (alle {CHECKER_HOUR}:00)")
+        await asyncio.sleep(seconds_until_next)
 
 # ========== ERROR HANDLER ==========
 
@@ -576,15 +612,15 @@ def main() -> None:
     logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
     logger.info(f"🔌 Porta: {WEBHOOK_PORT}")
 
-    # Costruisci app con timeout aumentati per connessioni lente (Raspberry Pi)
+    # Costruisci app con timeout ottimizzati per bilanciare performance e affidabilità
     app = (
         Application.builder()
         .token(token)
         .post_init(post_init)
-        .connect_timeout(30.0)  # Timeout connessione (default: 5.0)
-        .read_timeout(30.0)     # Timeout lettura (default: 5.0)
-        .write_timeout(30.0)    # Timeout scrittura (default: 5.0)
-        .pool_timeout(30.0)     # Timeout pool connessioni (default: 1.0)
+        .connect_timeout(10.0)  # Timeout connessione - più breve per fail-fast (default: 5.0)
+        .read_timeout(30.0)     # Timeout lettura - alto per upload/operazioni lunghe (default: 5.0)
+        .write_timeout(15.0)    # Timeout scrittura - medio (default: 5.0)
+        .pool_timeout(10.0)     # Timeout pool connessioni - breve (default: 1.0)
         .build()
     )
 
@@ -629,7 +665,7 @@ def main() -> None:
         port=WEBHOOK_PORT,
         url_path=token,  # Usa il token come path per sicurezza
         webhook_url=f"{WEBHOOK_URL}/{token}",
-        secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
+        secret_token=WEBHOOK_SECRET,  # Validato all'avvio (protezione webhook spoofing)
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,  # Evita messaggi vecchi
         bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo

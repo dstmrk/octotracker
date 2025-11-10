@@ -7,11 +7,15 @@ Testa tutti i flussi conversazionali del bot:
 - Gestione errori con input non validi
 - Flussi completi: luce fissa, variabile mono/tri, con/senza gas
 """
+import os
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from telegram import Update, User, Message, Chat, CallbackQuery, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+
+# Mock WEBHOOK_SECRET prima di importare bot (previene ValueError)
+os.environ['WEBHOOK_SECRET'] = 'test_secret_token_for_testing_only'
 
 # Import funzioni del bot e database
 import sys
@@ -445,17 +449,19 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
 
 @pytest.mark.asyncio
 async def test_negative_values_rejected(mock_update, mock_context):
-    """Test che valori negativi vengano rifiutati (tramite ValueError)"""
-    # Nota: float("-1") funziona, quindi il bot accetta negativi
-    # Se vogliamo validazione aggiuntiva, va aggiunta al bot
+    """Test che valori negativi vengano rifiutati"""
     mock_update.message.text = "-0.5"
 
     result = await luce_energia(mock_update, mock_context)
 
-    # Il bot attuale accetta negativi (float() non solleva ValueError)
-    # Questo test documenta il comportamento attuale
-    assert result == LUCE_COMM
-    assert mock_context.user_data['luce_energia'] == -0.5
+    # Con miglioramento #10, il bot ora rifiuta negativi
+    assert result == LUCE_ENERGIA  # Rimane nello stesso stato
+    assert 'luce_energia' not in mock_context.user_data  # Valore non salvato
+
+    # Verifica messaggio di errore inviato
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "maggiore o uguale a zero" in call_args[0][0]
 
 @pytest.mark.asyncio
 async def test_very_large_numbers(mock_update, mock_context):

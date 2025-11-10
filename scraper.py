@@ -58,18 +58,21 @@ TOGGLE_RESET_WAIT_MS = 500  # Attesa dopo reset toggle
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
-def extract_price(text: str) -> Optional[float]:
-    """Estrae prezzo da testo (es: '0.123 €/kWh' -> 0.123)"""
-    match = re.search(r'(\d+[.,]\d+)', text.replace(',', '.'))
-    return float(match.group(1)) if match else None
+# Regex patterns pre-compilati per performance
+LUCE_FISSA_PATTERN = re.compile(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh')
+LUCE_VAR_MONO_PATTERN = re.compile(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh')
+LUCE_VAR_MULTI_PATTERN = re.compile(r'PUN \+ (\d+[.,]\d+)\s*€/kWh')
+GAS_FISSO_PATTERN = re.compile(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc')
+GAS_VAR_PATTERN = re.compile(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc')
+COMM_PATTERN = re.compile(r'(\d+)\s*€/anno')
 
 # ========== HELPER FUNCTIONS ==========
 
 def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
     """Estrae tariffa luce fissa dal testo"""
-    luce_fissa_match = re.search(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh', clean_text)
+    luce_fissa_match = LUCE_FISSA_PATTERN.search(clean_text)
     if luce_fissa_match:
-        comm_match = re.search(r'(\d+)\s*€/anno', clean_text)
+        comm_match = COMM_PATTERN.search(clean_text)
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
@@ -82,10 +85,10 @@ def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
 
 def _extract_luce_variabile_mono(clean_text: str) -> Optional[Dict[str, float]]:
     """Estrae tariffa luce variabile monoraria dal testo"""
-    luce_var_mono_match = re.search(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
+    luce_var_mono_match = LUCE_VAR_MONO_PATTERN.search(clean_text)
     if luce_var_mono_match:
         pun_mono_pos = clean_text.find('PUN Mono')
-        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_mono_pos:pun_mono_pos+200])
+        comm_match = COMM_PATTERN.search(clean_text[pun_mono_pos:pun_mono_pos+200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
@@ -98,7 +101,7 @@ def _extract_luce_variabile_mono(clean_text: str) -> Optional[Dict[str, float]]:
 
 async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[str, float]]:
     """Estrae tariffa luce variabile trioraria (con gestione toggle)"""
-    luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
+    luce_var_multi_match = LUCE_VAR_MULTI_PATTERN.search(clean_text)
 
     # Se non trovo "PUN +" ma trovo il toggle, faccio click
     if not luce_var_multi_match:
@@ -111,11 +114,11 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
             # Rileggi il testo
             text_after_toggle = await page.inner_text('body')
             clean_text_after = text_after_toggle.replace('\n', ' ').replace('\r', ' ')
-            luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text_after)
+            luce_var_multi_match = LUCE_VAR_MULTI_PATTERN.search(clean_text_after)
 
             if luce_var_multi_match:
                 pun_pos = clean_text_after.find('PUN +')
-                comm_match = re.search(r'(\d+)\s*€/anno', clean_text_after[pun_pos:pun_pos+200])
+                comm_match = COMM_PATTERN.search(clean_text_after[pun_pos:pun_pos+200])
                 comm = float(comm_match.group(1)) if comm_match else None
 
                 result = {
@@ -131,7 +134,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
     else:
         # Trovata direttamente
         pun_pos = clean_text.find('PUN +')
-        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_pos:pun_pos+200])
+        comm_match = COMM_PATTERN.search(clean_text[pun_pos:pun_pos+200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
@@ -145,10 +148,10 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
 
 def _extract_gas_fisso(clean_text: str) -> Optional[Dict[str, float]]:
     """Estrae tariffa gas fisso dal testo"""
-    gas_fisso_match = re.search(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc', clean_text)
+    gas_fisso_match = GAS_FISSO_PATTERN.search(clean_text)
     if gas_fisso_match:
         gas_pos = clean_text.lower().find('gas')
-        comm_matches = re.findall(r'(\d+)\s*€/anno', clean_text[gas_pos:])
+        comm_matches = COMM_PATTERN.findall(clean_text[gas_pos:])
         comm = float(comm_matches[-1]) if comm_matches else None
 
         result = {
@@ -161,10 +164,10 @@ def _extract_gas_fisso(clean_text: str) -> Optional[Dict[str, float]]:
 
 def _extract_gas_variabile(clean_text: str) -> Optional[Dict[str, float]]:
     """Estrae tariffa gas variabile dal testo"""
-    gas_var_match = re.search(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc', clean_text)
+    gas_var_match = GAS_VAR_PATTERN.search(clean_text)
     if gas_var_match:
         psv_pos = clean_text.find('PSVDAm')
-        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[psv_pos:psv_pos+200])
+        comm_match = COMM_PATTERN.search(clean_text[psv_pos:psv_pos+200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
@@ -189,12 +192,23 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
         page = await browser.new_page()
 
         try:
-            # Vai alla pagina tariffe
+            # Vai alla pagina tariffe (domcontentloaded è più veloce di load)
             logger.info("📄 Caricamento pagina...")
-            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='load', timeout=PAGE_LOAD_TIMEOUT_MS)
+            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='domcontentloaded', timeout=PAGE_LOAD_TIMEOUT_MS)
 
-            # Attendi caricamento contenuto aggiuntivo (per JS dinamico)
-            await page.wait_for_timeout(JS_DYNAMIC_WAIT_MS)
+            # Attendi dinamicamente che appaiano elementi chiave delle tariffe
+            # Cerca almeno uno dei prezzi caratteristici (€/kWh, €/Smc, €/anno)
+            try:
+                await page.wait_for_selector(
+                    'text=€/kWh, text=€/Smc, text=€/anno',  # Uno qualsiasi di questi
+                    timeout=5000,
+                    state='visible'
+                )
+                logger.debug("✅ Contenuto tariffe caricato dinamicamente")
+            except PlaywrightTimeout:
+                # Fallback: se i selettori non vengono trovati, usa wait ridotto
+                logger.warning("⚠️  Selettori tariffe non trovati, uso wait ridotto da 5s a 2s")
+                await page.wait_for_timeout(2000)
 
             # Estrai tutto il testo della pagina per analisi
             text = await page.inner_text('body')
