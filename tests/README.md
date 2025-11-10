@@ -23,7 +23,7 @@ uv run pytest tests/ -v
 
 ## Test Implementati
 
-### test_scraper.py
+### test_scraper.py (6 test)
 Verifica il formato JSON prodotto dallo scraper:
 - ✅ Struttura completa con tutte le tariffe
 - ✅ Dati parziali (solo luce o solo gas)
@@ -33,7 +33,7 @@ Verifica il formato JSON prodotto dallo scraper:
 
 **Non esegue scraping reale** - simula output possibili.
 
-### test_checker.py
+### test_checker.py (14 test)
 Verifica la logica di confronto tariffe:
 - ✅ Nessun risparmio (tariffe uguali)
 - ✅ Risparmio su energia
@@ -46,6 +46,31 @@ Verifica la logica di confronto tariffe:
 - ✅ Formato users.json con e senza last_notified_rates
 
 **Non invia notifiche reali** - verifica solo la logica.
+
+### test_bot.py (27 test)
+Verifica flussi conversazionali Telegram e gestione input:
+
+**Comandi:**
+- ✅ `/start` - registrazione nuovo utente
+- ✅ `/update` - aggiornamento tariffe (alias di /start)
+- ✅ `/status` - visualizzazione dati salvati
+- ✅ `/remove` - cancellazione dati utente
+- ✅ `/cancel` - annullamento conversazione corrente
+- ✅ `/help` - visualizzazione comandi disponibili
+
+**Flussi conversazionali:**
+- ✅ Tariffa fissa / variabile monoraria / trioraria
+- ✅ Utenti con luce + gas / solo luce
+- ✅ Salvataggio dati completo
+
+**Gestione errori input:**
+- ✅ Input non numerici (stringhe testuali)
+- ✅ Input vuoti
+- ✅ Caratteri speciali (€, virgole multiple, ecc.)
+- ✅ Valori negativi e molto grandi (documentati)
+- ✅ Separatori decimali (virgola e punto)
+
+**Non invia messaggi Telegram reali** - usa mock per simulare Update/Context.
 
 ## Strutture Dati Testate
 
@@ -100,22 +125,29 @@ Verifica la logica di confronto tariffe:
 ## Coverage
 
 I test coprono:
-- ✅ Tutti i casi di dati parziali/completi
-- ✅ Logica same-type-only comparison
-- ✅ Gestione utenti con/senza gas
-- ✅ Formato last_notified_rates (opzionale)
+- ✅ Tutti i casi di dati parziali/completi (scraper + checker)
+- ✅ Logica same-type-only comparison (checker)
+- ✅ Gestione utenti con/senza gas (checker + bot)
+- ✅ Formato last_notified_rates (checker)
 - ✅ Edge cases (dati vuoti, mismatch tipo/fascia)
+- ✅ Tutti i comandi Telegram (bot)
+- ✅ Flussi conversazionali completi (bot)
+- ✅ Validazione input utente con error handling (bot)
+
+**Totale: 47 test** (6 scraper + 14 checker + 27 bot)
 
 ## Aggiungere Nuovi Test
 
 1. Crea un nuovo file `test_*.py` nella cartella `tests/`
 2. Usa pytest (sintassi semplice con `assert`)
-3. Nomina le funzioni test con prefisso `test_`
-4. Esegui con `uv run pytest tests/ -v`
+3. Per test async del bot: usa `@pytest.mark.asyncio` e mock Update/Context
+4. Nomina le funzioni test con prefisso `test_`
+5. Esegui con `uv run pytest tests/ -v`
 
 ## Note
 
-- I test non richiedono Playwright (nessun browser)
-- I test non richiedono token Telegram (nessuna API call)
-- I test sono veloci (~0.01s totali)
+- I test non richiedono Playwright (nessun browser per scraper)
+- I test non richiedono token Telegram (mock per bot)
+- I test sono veloci (~0.85s totali per 47 test)
 - Perfetti per CI/CD pipeline
+- pytest-asyncio gestisce automaticamente i test async del bot
