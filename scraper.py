@@ -38,10 +38,14 @@ Note:
 """
 import json
 import re
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any
 from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeout
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -65,7 +69,7 @@ def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
             "energia": float(luce_fissa_match.group(1).replace(',', '.')),
             "commercializzazione": comm
         }
-        print(f"✅ Luce fissa monoraria: {result['energia']} €/kWh, comm: {comm} €/anno")
+        logger.info(f"✅ Luce fissa monoraria: {result['energia']} €/kWh, comm: {comm} €/anno")
         return result
     return None
 
@@ -81,7 +85,7 @@ def _extract_luce_variabile_mono(clean_text: str) -> Optional[Dict[str, float]]:
             "energia": float(luce_var_mono_match.group(1).replace(',', '.')),
             "commercializzazione": comm
         }
-        print(f"✅ Luce variabile monoraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        logger.info(f"✅ Luce variabile monoraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
         return result
     return None
 
@@ -93,7 +97,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
     if not luce_var_multi_match:
         toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
         if toggle:
-            print("🔄 Clic sul toggle per vedere tariffa multioraria...")
+            logger.debug("🔄 Clic sul toggle per vedere tariffa multioraria...")
             await toggle.click()
             await page.wait_for_timeout(1000)
 
@@ -111,7 +115,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
                     "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+                logger.info(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
 
                 # Riclicco per tornare allo stato iniziale
                 await toggle.click()
@@ -127,7 +131,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
             "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
             "commercializzazione": comm
         }
-        print(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        logger.info(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
         return result
 
     return None
@@ -144,7 +148,7 @@ def _extract_gas_fisso(clean_text: str) -> Optional[Dict[str, float]]:
             "energia": float(gas_fisso_match.group(1).replace(',', '.')),
             "commercializzazione": comm
         }
-        print(f"✅ Gas fisso monorario: {result['energia']} €/Smc, comm: {comm} €/anno")
+        logger.info(f"✅ Gas fisso monorario: {result['energia']} €/Smc, comm: {comm} €/anno")
         return result
     return None
 
@@ -160,7 +164,7 @@ def _extract_gas_variabile(clean_text: str) -> Optional[Dict[str, float]]:
             "energia": float(gas_var_match.group(1).replace(',', '.')),
             "commercializzazione": comm
         }
-        print(f"✅ Gas variabile monorario: PSV + {result['energia']} €/Smc, comm: {comm} €/anno")
+        logger.info(f"✅ Gas variabile monorario: PSV + {result['energia']} €/Smc, comm: {comm} €/anno")
         return result
     return None
 
@@ -170,7 +174,7 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
     Returns:
         Dict con struttura nested luce/gas → fissa/variabile → monoraria/trioraria
     """
-    print("🔍 Avvio scraping tariffe Octopus Energy...")
+    logger.info("🔍 Avvio scraping tariffe Octopus Energy...")
 
     async with async_playwright() as p:
         # Avvia browser
@@ -179,7 +183,7 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
 
         try:
             # Vai alla pagina tariffe
-            print("📄 Caricamento pagina...")
+            logger.info("📄 Caricamento pagina...")
             await page.goto('https://octopusenergy.it/le-nostre-tariffe', wait_until='load', timeout=60000)
 
             # Attendi caricamento contenuto aggiuntivo (per JS dinamico)
@@ -232,16 +236,16 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
                 tariffe_data["gas"]["variabile"]["monoraria"] = gas_variabile
 
         except PlaywrightTimeout:
-            print("⏱️  Timeout durante scraping: la pagina non ha risposto in tempo")
+            logger.error("⏱️  Timeout durante scraping: la pagina non ha risposto in tempo")
             raise
         except PlaywrightError as e:
-            print(f"❌ Errore Playwright durante scraping: {e}")
+            logger.error(f"❌ Errore Playwright durante scraping: {e}")
             raise
         except ConnectionError as e:
-            print(f"🌐 Errore di connessione durante scraping: {e}")
+            logger.error(f"🌐 Errore di connessione durante scraping: {e}")
             raise
         except Exception as e:
-            print(f"❌ Errore inatteso durante scraping: {e}")
+            logger.error(f"❌ Errore inatteso durante scraping: {e}")
             raise
 
         finally:
@@ -268,20 +272,20 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
         warnings.append("NESSUNA tariffa gas trovata")
 
     if warnings:
-        print(f"⚠️  {' | '.join(warnings)}")
-        print(f"   Il checker non potrà confrontare queste categorie")
+        logger.warning(f"⚠️  {' | '.join(warnings)}")
+        logger.warning(f"   Il checker non potrà confrontare queste categorie")
 
     # Salva risultati (anche se parziali)
     DATA_DIR.mkdir(exist_ok=True)
     with open(RATES_FILE, 'w') as f:
         json.dump(tariffe_data, f, indent=2)
 
-    print(f"💾 Tariffe salvate in {RATES_FILE}")
+    logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
 
     return tariffe_data
 
 if __name__ == '__main__':
     import asyncio
     result = asyncio.run(scrape_octopus_tariffe())
-    print("\n📊 Tariffe estratte:")
-    print(json.dumps(result, indent=2))
+    logger.info("📊 Tariffe estratte:")
+    logger.info(json.dumps(result, indent=2))
