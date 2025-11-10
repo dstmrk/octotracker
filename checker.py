@@ -24,7 +24,6 @@ MAX_DECIMALS_COST = 2  # Per costi commercializzazione (€/anno)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
-USERS_FILE = DATA_DIR / "users.json"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
 def load_json(file_path: Path) -> Optional[Dict[str, Any]]:
