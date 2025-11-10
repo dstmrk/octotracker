@@ -45,8 +45,28 @@ WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazion
 def load_users():
     """Carica dati utenti"""
     if USERS_FILE.exists():
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(USERS_FILE, 'r') as f:
+                content = f.read()
+                if not content.strip():
+                    print("⚠️  users.json è vuoto, ritorno dizionario vuoto")
+                    return {}
+                return json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"❌ Errore parsing users.json: {e}")
+            print(f"   File location: {USERS_FILE}")
+            # Crea backup del file corrotto
+            backup_file = USERS_FILE.parent / f"users.json.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            try:
+                import shutil
+                shutil.copy(USERS_FILE, backup_file)
+                print(f"   Backup creato: {backup_file}")
+            except Exception as backup_error:
+                print(f"   Impossibile creare backup: {backup_error}")
+            return {}
+        except Exception as e:
+            print(f"❌ Errore lettura users.json: {e}")
+            return {}
     return {}
 
 def save_users(users):
