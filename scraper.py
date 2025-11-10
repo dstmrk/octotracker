@@ -11,18 +11,30 @@ Estrae tariffe fisse e variabili per luce e gas:
 
 Struttura JSON salvata:
 {
-  "luce_fissa": {"tipo": "Fissa", "energia": float, "commercializzazione": float},
-  "luce_variabile_mono": {"tipo": "Variabile Monoraria", "energia": float, "commercializzazione": float},
-  "luce_variabile_multi": {"tipo": "Variabile Trioraria", "energia": float, "commercializzazione": float},
-  "gas_fisso": {"tipo": "Fissa", "energia": float, "commercializzazione": float},
-  "gas_variabile": {"tipo": "Variabile Monoraria", "energia": float, "commercializzazione": float},
+  "Luce": {
+    "Fissa": {
+      "Monoraria": {"energia": float, "commercializzazione": float}
+    },
+    "Variabile": {
+      "Monoraria": {"energia": float, "commercializzazione": float},
+      "Trioraria": {"energia": float, "commercializzazione": float}
+    }
+  },
+  "Gas": {
+    "Fissa": {
+      "Monoraria": {"energia": float, "commercializzazione": float}
+    },
+    "Variabile": {
+      "Monoraria": {"energia": float, "commercializzazione": float}
+    }
+  },
   "data_aggiornamento": "YYYY-MM-DD"
 }
 
 Note:
 - Per tariffe fisse: "energia" è il prezzo fisso (€/kWh o €/Smc)
 - Per tariffe variabili: "energia" è lo spread (da sommare a PUN/PSVDAm)
-- Il campo "tipo" indica esplicitamente la tipologia di tariffa
+- La struttura a 3 livelli permette accesso diretto: Luce/Gas → Fissa/Variabile → Monoraria/Bioraria/Trioraria
 """
 import json
 import re
@@ -61,11 +73,14 @@ async def scrape_octopus_tariffe():
 
             # Struttura dati per salvare tutte le tariffe
             tariffe_data = {
-                "luce_fissa": None,
-                "luce_variabile_mono": None,
-                "luce_variabile_multi": None,
-                "gas_fisso": None,
-                "gas_variabile": None,
+                "Luce": {
+                    "Fissa": {},
+                    "Variabile": {}
+                },
+                "Gas": {
+                    "Fissa": {},
+                    "Variabile": {}
+                },
                 "data_aggiornamento": datetime.now().strftime("%Y-%m-%d")
             }
 
@@ -81,12 +96,11 @@ async def scrape_octopus_tariffe():
                 comm_match = re.search(r'(\d+)\s*€/anno', clean_text)
                 comm = float(comm_match.group(1)) if comm_match else None
 
-                tariffe_data["luce_fissa"] = {
-                    "tipo": "Fissa",
+                tariffe_data["Luce"]["Fissa"]["Monoraria"] = {
                     "energia": float(luce_fissa_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Luce fissa: {tariffe_data['luce_fissa']['energia']} €/kWh, comm: {comm} €/anno")
+                print(f"✅ Luce fissa monoraria: {tariffe_data['Luce']['Fissa']['Monoraria']['energia']} €/kWh, comm: {comm} €/anno")
 
             # 2. LUCE VARIABILE MONORARIA (pattern: "PUN Mono + X €/kWh")
             luce_var_mono_match = re.search(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
@@ -96,12 +110,11 @@ async def scrape_octopus_tariffe():
                 comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_mono_pos:pun_mono_pos+200])
                 comm = float(comm_match.group(1)) if comm_match else None
 
-                tariffe_data["luce_variabile_mono"] = {
-                    "tipo": "Variabile Monoraria",
+                tariffe_data["Luce"]["Variabile"]["Monoraria"] = {
                     "energia": float(luce_var_mono_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Luce variabile mono: PUN Mono + {tariffe_data['luce_variabile_mono']['energia']} €/kWh, comm: {comm} €/anno")
+                print(f"✅ Luce variabile monoraria: PUN + {tariffe_data['Luce']['Variabile']['Monoraria']['energia']} €/kWh, comm: {comm} €/anno")
 
             # 3. LUCE VARIABILE MULTIORARIA (pattern: "PUN + X €/kWh" con F1, F2, F3)
             # Per vedere la tariffa multioraria, potrei dover cliccare sul toggle
@@ -127,12 +140,11 @@ async def scrape_octopus_tariffe():
                         comm_match = re.search(r'(\d+)\s*€/anno', clean_text_after[pun_pos:pun_pos+200])
                         comm = float(comm_match.group(1)) if comm_match else None
 
-                        tariffe_data["luce_variabile_multi"] = {
-                            "tipo": "Variabile Trioraria",
+                        tariffe_data["Luce"]["Variabile"]["Trioraria"] = {
                             "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
                             "commercializzazione": comm
                         }
-                        print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['energia']} €/kWh, comm: {comm} €/anno")
+                        print(f"✅ Luce variabile trioraria: PUN + {tariffe_data['Luce']['Variabile']['Trioraria']['energia']} €/kWh, comm: {comm} €/anno")
 
                     # Riclicco per tornare allo stato iniziale
                     await toggle.click()
@@ -143,12 +155,11 @@ async def scrape_octopus_tariffe():
                 comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_pos:pun_pos+200])
                 comm = float(comm_match.group(1)) if comm_match else None
 
-                tariffe_data["luce_variabile_multi"] = {
-                    "tipo": "Variabile Trioraria",
+                tariffe_data["Luce"]["Variabile"]["Trioraria"] = {
                     "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['energia']} €/kWh, comm: {comm} €/anno")
+                print(f"✅ Luce variabile trioraria: PUN + {tariffe_data['Luce']['Variabile']['Trioraria']['energia']} €/kWh, comm: {comm} €/anno")
 
             # ========== TARIFFE GAS ==========
 
@@ -161,12 +172,11 @@ async def scrape_octopus_tariffe():
                 # Prendi ultima occorrenza (potrebbe esserci più di una)
                 comm = float(comm_matches[-1]) if comm_matches else None
 
-                tariffe_data["gas_fisso"] = {
-                    "tipo": "Fissa",
+                tariffe_data["Gas"]["Fissa"]["Monoraria"] = {
                     "energia": float(gas_fisso_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Gas fisso: {tariffe_data['gas_fisso']['energia']} €/Smc, comm: {comm} €/anno")
+                print(f"✅ Gas fisso monorario: {tariffe_data['Gas']['Fissa']['Monoraria']['energia']} €/Smc, comm: {comm} €/anno")
 
             # 5. GAS VARIABILE (pattern: "PSVDAm + X €/Smc")
             gas_var_match = re.search(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc', clean_text)
@@ -176,12 +186,11 @@ async def scrape_octopus_tariffe():
                 comm_match = re.search(r'(\d+)\s*€/anno', clean_text[psv_pos:psv_pos+200])
                 comm = float(comm_match.group(1)) if comm_match else None
 
-                tariffe_data["gas_variabile"] = {
-                    "tipo": "Variabile Monoraria",
+                tariffe_data["Gas"]["Variabile"]["Monoraria"] = {
                     "energia": float(gas_var_match.group(1).replace(',', '.')),
                     "commercializzazione": comm
                 }
-                print(f"✅ Gas variabile: PSVDAm + {tariffe_data['gas_variabile']['energia']} €/Smc, comm: {comm} €/anno")
+                print(f"✅ Gas variabile monorario: PSV + {tariffe_data['Gas']['Variabile']['Monoraria']['energia']} €/Smc, comm: {comm} €/anno")
 
         except Exception as e:
             print(f"❌ Errore durante scraping: {e}")
