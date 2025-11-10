@@ -199,7 +199,31 @@ async def scrape_octopus_tariffe():
         finally:
             await browser.close()
 
-    # Salva risultati
+    # Log warning solo se manca un'intera categoria (luce o gas)
+    warnings = []
+
+    # Controlla se abbiamo almeno una tariffa luce
+    has_luce = any([
+        tariffe_data["luce"]["fissa"].get("monoraria"),
+        tariffe_data["luce"]["variabile"].get("monoraria"),
+        tariffe_data["luce"]["variabile"].get("trioraria")
+    ])
+    if not has_luce:
+        warnings.append("NESSUNA tariffa luce trovata")
+
+    # Controlla se abbiamo almeno una tariffa gas
+    has_gas = any([
+        tariffe_data["gas"]["fissa"].get("monoraria"),
+        tariffe_data["gas"]["variabile"].get("monoraria")
+    ])
+    if not has_gas:
+        warnings.append("NESSUNA tariffa gas trovata")
+
+    if warnings:
+        print(f"⚠️  {' | '.join(warnings)}")
+        print(f"   Il checker non potrà confrontare queste categorie")
+
+    # Salva risultati (anche se parziali)
     DATA_DIR.mkdir(exist_ok=True)
     with open(RATES_FILE, 'w') as f:
         json.dump(tariffe_data, f, indent=2)

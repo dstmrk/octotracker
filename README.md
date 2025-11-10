@@ -398,7 +398,6 @@ Vedi `OPTIMIZATIONS.md` per dettagli su ottimizzazioni tecniche del codice.
 
 ### Alta priorità
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
-- [ ] **Input validation** con range realistici per prezzi energia e commercializzazione
 - [ ] **Unit tests** per struttura dati nested e logica di confronto
 
 ### Media priorità
