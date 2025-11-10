@@ -1,7 +1,10 @@
 # 🔌 OctoTracker
 
 <img height="256" width="256" src="https://github.com/user-attachments/assets/95261ce6-a06e-4b3e-b980-009069568753" alt="octotracker"/>
-      
+
+[![Tests](https://github.com/dstmrk/octotracker/actions/workflows/test.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/test.yml)
+[![Docker](https://github.com/dstmrk/octotracker/actions/workflows/test.yml/badge.svg?job=docker-build)](https://github.com/dstmrk/octotracker/actions/workflows/test.yml)
+
 Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono offerte più convenienti.
 
 ## 🎯 Funzionalità
@@ -263,26 +266,29 @@ I dati sono salvati localmente in file JSON:
 Se vuoi sviluppare o testare senza Docker:
 
 ```bash
+# Installa uv (se non già installato)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Installa dipendenze
-pip install -r requirements.txt
-playwright install chromium
+uv sync
+uv run playwright install chromium
 
 # Crea .env
 cp .env.example .env
 # Modifica .env con il tuo token
 
 # Avvia bot (include scheduler)
-python bot.py
+uv run python bot.py
 ```
 
 ### Test componenti singoli
 
 ```bash
 # Test solo scraper
-python scraper.py
+uv run python scraper.py
 
 # Test solo checker
-python checker.py
+uv run python checker.py
 ```
 
 ## 🐳 Installazione Docker
@@ -314,7 +320,7 @@ docker compose version
 - `checker.py` - Controllo e invio notifiche
 - `docker-compose.yml` - Orchestrazione Docker
 - `Dockerfile` - Build immagine Docker
-- `requirements.txt` - Dipendenze Python
+- `pyproject.toml` - Dipendenze Python (gestite con uv)
 - `.env.example` - Template configurazione
 
 ## 📝 Note

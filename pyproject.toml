@@ -1,0 +1,21 @@
+[project]
+name = "octotracker"
+version = "1.0.0"
+description = "Bot Telegram per monitoraggio tariffe Octopus Energy"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "dstmrk"}
+]
+
+dependencies = [
+    "python-telegram-bot[webhooks]>=20.7",
+    "playwright>=1.48.0",
+    "python-dotenv>=1.0.0",
+    "pytest>=7.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
