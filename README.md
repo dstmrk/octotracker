@@ -400,22 +400,7 @@ docker compose up -d
 
 ## 🔮 Possibili Miglioramenti Futuri
 
-Vedi `OPTIMIZATIONS.md` per dettagli su ottimizzazioni tecniche del codice.
-
-### Alta priorità
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
-- [ ] **Unit tests** per struttura dati nested e logica di confronto
-
-### Media priorità
-- [ ] Supporto tariffe bi-orarie (F1/F23)
-- [ ] Stima risparmio annuale con grafici basati su consumi storici
-- [ ] Database esterno opzionale (PostgreSQL/SQLite) per scalabilità
-
-### Bassa priorità
-- [ ] Storico tariffe con trend
-- [ ] Notifiche personalizzate per orario preferito
-- [ ] Dashboard web per visualizzare statistiche
-- [ ] Export dati in CSV/Excel
 
 ## 📄 Licenza
 
