@@ -52,6 +52,118 @@ def extract_price(text: str) -> Optional[float]:
     match = re.search(r'(\d+[.,]\d+)', text.replace(',', '.'))
     return float(match.group(1)) if match else None
 
+# ========== HELPER FUNCTIONS ==========
+
+def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
+    """Estrae tariffa luce fissa dal testo"""
+    luce_fissa_match = re.search(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh', clean_text)
+    if luce_fissa_match:
+        comm_match = re.search(r'(\d+)\s*€/anno', clean_text)
+        comm = float(comm_match.group(1)) if comm_match else None
+
+        result = {
+            "energia": float(luce_fissa_match.group(1).replace(',', '.')),
+            "commercializzazione": comm
+        }
+        print(f"✅ Luce fissa monoraria: {result['energia']} €/kWh, comm: {comm} €/anno")
+        return result
+    return None
+
+def _extract_luce_variabile_mono(clean_text: str) -> Optional[Dict[str, float]]:
+    """Estrae tariffa luce variabile monoraria dal testo"""
+    luce_var_mono_match = re.search(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
+    if luce_var_mono_match:
+        pun_mono_pos = clean_text.find('PUN Mono')
+        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_mono_pos:pun_mono_pos+200])
+        comm = float(comm_match.group(1)) if comm_match else None
+
+        result = {
+            "energia": float(luce_var_mono_match.group(1).replace(',', '.')),
+            "commercializzazione": comm
+        }
+        print(f"✅ Luce variabile monoraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        return result
+    return None
+
+async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[str, float]]:
+    """Estrae tariffa luce variabile trioraria (con gestione toggle)"""
+    luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
+
+    # Se non trovo "PUN +" ma trovo il toggle, faccio click
+    if not luce_var_multi_match:
+        toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
+        if toggle:
+            print("🔄 Clic sul toggle per vedere tariffa multioraria...")
+            await toggle.click()
+            await page.wait_for_timeout(1000)
+
+            # Rileggi il testo
+            text_after_toggle = await page.inner_text('body')
+            clean_text_after = text_after_toggle.replace('\n', ' ').replace('\r', ' ')
+            luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text_after)
+
+            if luce_var_multi_match:
+                pun_pos = clean_text_after.find('PUN +')
+                comm_match = re.search(r'(\d+)\s*€/anno', clean_text_after[pun_pos:pun_pos+200])
+                comm = float(comm_match.group(1)) if comm_match else None
+
+                result = {
+                    "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm
+                }
+                print(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+
+                # Riclicco per tornare allo stato iniziale
+                await toggle.click()
+                await page.wait_for_timeout(500)
+                return result
+    else:
+        # Trovata direttamente
+        pun_pos = clean_text.find('PUN +')
+        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_pos:pun_pos+200])
+        comm = float(comm_match.group(1)) if comm_match else None
+
+        result = {
+            "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
+            "commercializzazione": comm
+        }
+        print(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        return result
+
+    return None
+
+def _extract_gas_fisso(clean_text: str) -> Optional[Dict[str, float]]:
+    """Estrae tariffa gas fisso dal testo"""
+    gas_fisso_match = re.search(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc', clean_text)
+    if gas_fisso_match:
+        gas_pos = clean_text.lower().find('gas')
+        comm_matches = re.findall(r'(\d+)\s*€/anno', clean_text[gas_pos:])
+        comm = float(comm_matches[-1]) if comm_matches else None
+
+        result = {
+            "energia": float(gas_fisso_match.group(1).replace(',', '.')),
+            "commercializzazione": comm
+        }
+        print(f"✅ Gas fisso monorario: {result['energia']} €/Smc, comm: {comm} €/anno")
+        return result
+    return None
+
+def _extract_gas_variabile(clean_text: str) -> Optional[Dict[str, float]]:
+    """Estrae tariffa gas variabile dal testo"""
+    gas_var_match = re.search(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc', clean_text)
+    if gas_var_match:
+        psv_pos = clean_text.find('PSVDAm')
+        comm_match = re.search(r'(\d+)\s*€/anno', clean_text[psv_pos:psv_pos+200])
+        comm = float(comm_match.group(1)) if comm_match else None
+
+        result = {
+            "energia": float(gas_var_match.group(1).replace(',', '.')),
+            "commercializzazione": comm
+        }
+        print(f"✅ Gas variabile monorario: PSV + {result['energia']} €/Smc, comm: {comm} €/anno")
+        return result
+    return None
+
 async def scrape_octopus_tariffe() -> Dict[str, Any]:
     """Scrape tariffe fisse e variabili da Octopus Energy
 
@@ -92,110 +204,32 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
             # Normalizza testo per parsing
             clean_text = text.replace('\n', ' ').replace('\r', ' ')
 
-            # ========== TARIFFE LUCE ==========
+            # ========== ESTRAZIONE TARIFFE ==========
 
-            # 1. LUCE FISSA (pattern: numero diretto + €/kWh, senza "PUN")
-            luce_fissa_match = re.search(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh', clean_text)
-            if luce_fissa_match:
-                # Cerca commercializzazione luce (prima occorrenza €/anno)
-                comm_match = re.search(r'(\d+)\s*€/anno', clean_text)
-                comm = float(comm_match.group(1)) if comm_match else None
+            # Luce fissa
+            luce_fissa = _extract_luce_fissa(clean_text)
+            if luce_fissa:
+                tariffe_data["luce"]["fissa"]["monoraria"] = luce_fissa
 
-                tariffe_data["luce"]["fissa"]["monoraria"] = {
-                    "energia": float(luce_fissa_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
-                }
-                print(f"✅ Luce fissa monoraria: {tariffe_data['luce']['fissa']['monoraria']['energia']} €/kWh, comm: {comm} €/anno")
+            # Luce variabile monoraria
+            luce_var_mono = _extract_luce_variabile_mono(clean_text)
+            if luce_var_mono:
+                tariffe_data["luce"]["variabile"]["monoraria"] = luce_var_mono
 
-            # 2. LUCE VARIABILE MONORARIA (pattern: "PUN Mono + X €/kWh")
-            luce_var_mono_match = re.search(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
-            if luce_var_mono_match:
-                # Cerca commercializzazione (cerca dopo "PUN Mono")
-                pun_mono_pos = clean_text.find('PUN Mono')
-                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_mono_pos:pun_mono_pos+200])
-                comm = float(comm_match.group(1)) if comm_match else None
+            # Luce variabile trioraria (con gestione toggle)
+            luce_var_tri = await _extract_luce_variabile_tri(page, clean_text)
+            if luce_var_tri:
+                tariffe_data["luce"]["variabile"]["trioraria"] = luce_var_tri
 
-                tariffe_data["luce"]["variabile"]["monoraria"] = {
-                    "energia": float(luce_var_mono_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
-                }
-                print(f"✅ Luce variabile monoraria: PUN + {tariffe_data['luce']['variabile']['monoraria']['energia']} €/kWh, comm: {comm} €/anno")
+            # Gas fisso
+            gas_fisso = _extract_gas_fisso(clean_text)
+            if gas_fisso:
+                tariffe_data["gas"]["fissa"]["monoraria"] = gas_fisso
 
-            # 3. LUCE VARIABILE MULTIORARIA (pattern: "PUN + X €/kWh" con F1, F2, F3)
-            # Per vedere la tariffa multioraria, potrei dover cliccare sul toggle
-            # Prima provo a cercarla direttamente nel testo
-            luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
-
-            # Se non trovo "PUN +" ma trovo il toggle, faccio click
-            if not luce_var_multi_match:
-                toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
-                if toggle:
-                    print("🔄 Clic sul toggle per vedere tariffa multioraria...")
-                    await toggle.click()
-                    await page.wait_for_timeout(1000)
-
-                    # Rileggi il testo
-                    text_after_toggle = await page.inner_text('body')
-                    clean_text_after = text_after_toggle.replace('\n', ' ').replace('\r', ' ')
-                    luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text_after)
-
-                    if luce_var_multi_match:
-                        # Cerca commercializzazione
-                        pun_pos = clean_text_after.find('PUN +')
-                        comm_match = re.search(r'(\d+)\s*€/anno', clean_text_after[pun_pos:pun_pos+200])
-                        comm = float(comm_match.group(1)) if comm_match else None
-
-                        tariffe_data["luce"]["variabile"]["trioraria"] = {
-                            "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
-                            "commercializzazione": comm
-                        }
-                        print(f"✅ Luce variabile trioraria: PUN + {tariffe_data['luce']['variabile']['trioraria']['energia']} €/kWh, comm: {comm} €/anno")
-
-                    # Riclicco per tornare allo stato iniziale
-                    await toggle.click()
-                    await page.wait_for_timeout(500)
-            else:
-                # Trovata direttamente
-                pun_pos = clean_text.find('PUN +')
-                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_pos:pun_pos+200])
-                comm = float(comm_match.group(1)) if comm_match else None
-
-                tariffe_data["luce"]["variabile"]["trioraria"] = {
-                    "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
-                }
-                print(f"✅ Luce variabile trioraria: PUN + {tariffe_data['luce']['variabile']['trioraria']['energia']} €/kWh, comm: {comm} €/anno")
-
-            # ========== TARIFFE GAS ==========
-
-            # 4. GAS FISSO (pattern: numero diretto + €/Smc, senza "PSVDAm")
-            gas_fisso_match = re.search(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc', clean_text)
-            if gas_fisso_match:
-                # Cerca commercializzazione gas (cerca "€/anno" dopo "Gas" o "Smc")
-                gas_pos = clean_text.lower().find('gas')
-                comm_matches = re.findall(r'(\d+)\s*€/anno', clean_text[gas_pos:])
-                # Prendi ultima occorrenza (potrebbe esserci più di una)
-                comm = float(comm_matches[-1]) if comm_matches else None
-
-                tariffe_data["gas"]["fissa"]["monoraria"] = {
-                    "energia": float(gas_fisso_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
-                }
-                print(f"✅ Gas fisso monorario: {tariffe_data['gas']['fissa']['monoraria']['energia']} €/Smc, comm: {comm} €/anno")
-
-            # 5. GAS VARIABILE (pattern: "PSVDAm + X €/Smc")
-            gas_var_match = re.search(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc', clean_text)
-            if gas_var_match:
-                # Cerca commercializzazione gas
-                psv_pos = clean_text.find('PSVDAm')
-                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[psv_pos:psv_pos+200])
-                comm = float(comm_match.group(1)) if comm_match else None
-
-                tariffe_data["gas"]["variabile"]["monoraria"] = {
-                    "energia": float(gas_var_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
-                }
-                print(f"✅ Gas variabile monorario: PSV + {tariffe_data['gas']['variabile']['monoraria']['energia']} €/Smc, comm: {comm} €/anno")
+            # Gas variabile
+            gas_variabile = _extract_gas_variabile(clean_text)
+            if gas_variabile:
+                tariffe_data["gas"]["variabile"]["monoraria"] = gas_variabile
 
         except Exception as e:
             print(f"❌ Errore durante scraping: {e}")
