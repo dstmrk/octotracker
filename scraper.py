@@ -1,6 +1,23 @@
 #!/usr/bin/env python3
 """
 Scraper per estrarre tariffe Octopus Energy con Playwright
+
+Estrae tariffe fisse e variabili per luce e gas:
+- Luce fissa: prezzo fisso €/kWh
+- Luce variabile mono: PUN Mono + spread
+- Luce variabile multi: PUN + spread (F1, F2, F3)
+- Gas fisso: prezzo fisso €/Smc
+- Gas variabile: PSVDAm + spread
+
+Struttura JSON salvata:
+{
+  "luce_fissa": {"energia": float, "commercializzazione": float},
+  "luce_variabile_mono": {"spread": float, "commercializzazione": float, "indice": "PUN Mono"},
+  "luce_variabile_multi": {"spread": float, "commercializzazione": float, "indice": "PUN"},
+  "gas_fisso": {"energia": float, "commercializzazione": float},
+  "gas_variabile": {"spread": float, "commercializzazione": float, "indice": "PSVDAm"},
+  "data_aggiornamento": "YYYY-MM-DD"
+}
 """
 import json
 import re
@@ -18,7 +35,7 @@ def extract_price(text):
     return float(match.group(1)) if match else None
 
 async def scrape_octopus_tariffe():
-    """Scrape tariffe mono-orarie fisse da Octopus Energy"""
+    """Scrape tariffe fisse e variabili da Octopus Energy"""
     print("🔍 Avvio scraping tariffe Octopus Energy...")
 
     async with async_playwright() as p:
@@ -35,137 +52,129 @@ async def scrape_octopus_tariffe():
             await page.wait_for_timeout(5000)
 
             # Estrai tutto il testo della pagina per analisi
-            content = await page.content()
             text = await page.inner_text('body')
 
-            # Cerca pattern per tariffe mono-orarie fisse
-            # Questo è un approccio generico - potrebbe necessitare aggiustamenti
+            # Struttura dati per salvare tutte le tariffe
             tariffe_data = {
-                "luce": None,
-                "gas": None,
+                "luce_fissa": None,
+                "luce_variabile_mono": None,
+                "luce_variabile_multi": None,
+                "gas_fisso": None,
+                "gas_variabile": None,
                 "data_aggiornamento": datetime.now().strftime("%Y-%m-%d")
             }
 
-            # Cerca sezioni luce e gas
-            # Cerca pattern comuni: "€/kWh", "€/Smc", "€/mese"
-
-            # Strategia: cerca elementi che contengono prezzi
-            # Pattern tipico: numero + €/kWh o €/Smc per energia, numero + €/mese per commercializzazione
-
-            # Estrai tutti i prezzi dalla pagina
-            # Rimuovi commenti HTML e normalizza spazi per regex
+            # Normalizza testo per parsing
             clean_text = text.replace('\n', ' ').replace('\r', ' ')
-            # Regex più tolleranti per gestire spazi/commenti HTML
-            # (?:[.,]\d+)? rende i decimali opzionali (per catturare anche numeri interi)
-            energia_luce_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*kWh', clean_text, re.IGNORECASE)
 
-            # Cerca commercializzazione luce (può essere in €/mese o €/anno)
-            # Pattern più tollerante per spazi e ordine - supporta numeri interi e decimali
-            comm_luce_mese_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*mese', clean_text, re.IGNORECASE)
-            comm_luce_anno_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*anno', clean_text, re.IGNORECASE)
+            # ========== TARIFFE LUCE ==========
 
-            energia_gas_match = re.search(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*Smc', clean_text, re.IGNORECASE)
+            # 1. LUCE FISSA (pattern: numero diretto + €/kWh, senza "PUN")
+            luce_fissa_match = re.search(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh', clean_text)
+            if luce_fissa_match:
+                # Cerca commercializzazione luce (prima occorrenza €/anno)
+                comm_match = re.search(r'(\d+)\s*€/anno', clean_text)
+                comm = float(comm_match.group(1)) if comm_match else None
 
-            # Prova anche pattern alternativi
-            if not energia_luce_match:
-                # Cerca pattern tipo "0,123 €/kWh" o "0.123€/kWh"
-                energia_luce_match = re.search(r'(\d+[.,]\d+)\s*€?\s*kWh', text.replace('\n', ' '))
-
-            # Calcola commercializzazione luce in €/anno
-            comm_luce_anno = None
-            if comm_luce_anno_match:
-                comm_luce_anno = float(comm_luce_anno_match.group(1).replace(',', '.'))
-            elif comm_luce_mese_match:
-                # Converti da €/mese a €/anno
-                comm_luce_anno = float(comm_luce_mese_match.group(1).replace(',', '.')) * 12
-                print(f"ℹ️  Commercializzazione luce convertita da €/mese a €/anno")
-
-            if energia_luce_match:
-                tariffe_data["luce"] = {
-                    "energia": float(energia_luce_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm_luce_anno,
-                    "nome_tariffa": "Mono-oraria Fissa"
+                tariffe_data["luce_fissa"] = {
+                    "energia": float(luce_fissa_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm
                 }
-                print(f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.4f}/kWh, comm: €{comm_luce_anno:.4f}/anno" if comm_luce_anno else f"✅ Luce trovata: €{tariffe_data['luce']['energia']:.4f}/kWh")
+                print(f"✅ Luce fissa: {tariffe_data['luce_fissa']['energia']} €/kWh, comm: {comm} €/anno")
 
-            if energia_gas_match:
-                # Per gas, cerca commercializzazione (può essere in €/mese o €/anno)
-                all_mese = re.findall(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*mese', clean_text, re.IGNORECASE)
-                all_anno = re.findall(r'(\d+(?:[.,]\d+)?)\s*€?\s*/?\s*anno', clean_text, re.IGNORECASE)
+            # 2. LUCE VARIABILE MONORARIA (pattern: "PUN Mono + X €/kWh")
+            luce_var_mono_match = re.search(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
+            if luce_var_mono_match:
+                # Cerca commercializzazione (cerca dopo "PUN Mono")
+                pun_mono_pos = clean_text.find('PUN Mono')
+                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_mono_pos:pun_mono_pos+200])
+                comm = float(comm_match.group(1)) if comm_match else None
 
-                comm_gas_anno = None
-                if all_anno and len(all_anno) > 1:
-                    # Seconda occorrenza di €/anno (prima è luce)
-                    comm_gas_anno = float(all_anno[1].replace(',', '.'))
-                elif all_mese and len(all_mese) > 1:
-                    # Seconda occorrenza di €/mese (prima è luce) - converti
-                    comm_gas_anno = float(all_mese[1].replace(',', '.')) * 12
-                    print(f"ℹ️  Commercializzazione gas convertita da €/mese a €/anno")
-                elif all_mese:
-                    # Solo una occorrenza di €/mese - probabilmente è gas
-                    comm_gas_anno = float(all_mese[0].replace(',', '.')) * 12
-                    print(f"ℹ️  Commercializzazione gas convertita da €/mese a €/anno")
-
-                tariffe_data["gas"] = {
-                    "energia": float(energia_gas_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm_gas_anno,
-                    "nome_tariffa": "Mono-oraria Fissa"
+                tariffe_data["luce_variabile_mono"] = {
+                    "spread": float(luce_var_mono_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm,
+                    "indice": "PUN Mono"
                 }
-                print(f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.4f}/Smc, comm: €{comm_gas_anno:.4f}/anno" if comm_gas_anno else f"✅ Gas trovato: €{tariffe_data['gas']['energia']:.4f}/Smc")
+                print(f"✅ Luce variabile mono: PUN Mono + {tariffe_data['luce_variabile_mono']['spread']} €/kWh, comm: {comm} €/anno")
 
-            # Se non troviamo nulla con regex, proviamo a cercare elementi specifici
-            if not tariffe_data["luce"] or not tariffe_data["gas"]:
-                print("⚠️  Pattern regex non hanno trovato tutto, provo con selettori...")
+            # 3. LUCE VARIABILE MULTIORARIA (pattern: "PUN + X €/kWh" con F1, F2, F3)
+            # Per vedere la tariffa multioraria, potrei dover cliccare sul toggle
+            # Prima provo a cercarla direttamente nel testo
+            luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text)
 
-                # Cerca carte/sezioni tariffe
-                cards = await page.query_selector_all('[class*="card"], [class*="tariffa"], [class*="price"]')
+            # Se non trovo "PUN +" ma trovo il toggle, faccio click
+            if not luce_var_multi_match:
+                toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
+                if toggle:
+                    print("🔄 Clic sul toggle per vedere tariffa multioraria...")
+                    await toggle.click()
+                    await page.wait_for_timeout(1000)
 
-                for card in cards:
-                    card_text = await card.inner_text()
+                    # Rileggi il testo
+                    text_after_toggle = await page.inner_text('body')
+                    clean_text_after = text_after_toggle.replace('\n', ' ').replace('\r', ' ')
+                    luce_var_multi_match = re.search(r'PUN \+ (\d+[.,]\d+)\s*€/kWh', clean_text_after)
 
-                    # Cerca luce
-                    if 'luce' in card_text.lower() or 'elettric' in card_text.lower():
-                        energia_match = re.search(r'(\d+(?:[.,]\d+)?).*?kWh', card_text, re.IGNORECASE)
-                        comm_mese_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*mese', card_text, re.IGNORECASE)
-                        comm_anno_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*anno', card_text, re.IGNORECASE)
+                    if luce_var_multi_match:
+                        # Cerca commercializzazione
+                        pun_pos = clean_text_after.find('PUN +')
+                        comm_match = re.search(r'(\d+)\s*€/anno', clean_text_after[pun_pos:pun_pos+200])
+                        comm = float(comm_match.group(1)) if comm_match else None
 
-                        if energia_match and not tariffe_data["luce"]:
-                            # Calcola commercializzazione in €/anno
-                            comm_anno = None
-                            if comm_anno_match:
-                                comm_anno = float(comm_anno_match.group(1).replace(',', '.'))
-                            elif comm_mese_match:
-                                comm_anno = float(comm_mese_match.group(1).replace(',', '.')) * 12
-                                print(f"ℹ️  Commercializzazione luce convertita da €/mese a €/anno (da card)")
+                        tariffe_data["luce_variabile_multi"] = {
+                            "spread": float(luce_var_multi_match.group(1).replace(',', '.')),
+                            "commercializzazione": comm,
+                            "indice": "PUN"
+                        }
+                        print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['spread']} €/kWh, comm: {comm} €/anno")
 
-                            tariffe_data["luce"] = {
-                                "energia": float(energia_match.group(1).replace(',', '.')),
-                                "commercializzazione": comm_anno,
-                                "nome_tariffa": "Mono-oraria Fissa"
-                            }
-                            print(f"✅ Luce trovata (da card): €{tariffe_data['luce']['energia']:.4f}/kWh")
+                    # Riclicco per tornare allo stato iniziale
+                    await toggle.click()
+                    await page.wait_for_timeout(500)
+            else:
+                # Trovata direttamente
+                pun_pos = clean_text.find('PUN +')
+                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[pun_pos:pun_pos+200])
+                comm = float(comm_match.group(1)) if comm_match else None
 
-                    # Cerca gas
-                    if 'gas' in card_text.lower():
-                        energia_match = re.search(r'(\d+(?:[.,]\d+)?).*?Smc', card_text, re.IGNORECASE)
-                        comm_mese_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*mese', card_text, re.IGNORECASE)
-                        comm_anno_match = re.search(r'(\d+(?:[.,]\d+)?).*?€?\s*/?\s*anno', card_text, re.IGNORECASE)
+                tariffe_data["luce_variabile_multi"] = {
+                    "spread": float(luce_var_multi_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm,
+                    "indice": "PUN"
+                }
+                print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['spread']} €/kWh, comm: {comm} €/anno")
 
-                        if energia_match and not tariffe_data["gas"]:
-                            # Calcola commercializzazione in €/anno
-                            comm_anno = None
-                            if comm_anno_match:
-                                comm_anno = float(comm_anno_match.group(1).replace(',', '.'))
-                            elif comm_mese_match:
-                                comm_anno = float(comm_mese_match.group(1).replace(',', '.')) * 12
-                                print(f"ℹ️  Commercializzazione gas convertita da €/mese a €/anno (da card)")
+            # ========== TARIFFE GAS ==========
 
-                            tariffe_data["gas"] = {
-                                "energia": float(energia_match.group(1).replace(',', '.')),
-                                "commercializzazione": comm_anno,
-                                "nome_tariffa": "Mono-oraria Fissa"
-                            }
-                            print(f"✅ Gas trovato (da card): €{tariffe_data['gas']['energia']:.4f}/Smc")
+            # 4. GAS FISSO (pattern: numero diretto + €/Smc, senza "PSVDAm")
+            gas_fisso_match = re.search(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc', clean_text)
+            if gas_fisso_match:
+                # Cerca commercializzazione gas (cerca "€/anno" dopo "Gas" o "Smc")
+                gas_pos = clean_text.lower().find('gas')
+                comm_matches = re.findall(r'(\d+)\s*€/anno', clean_text[gas_pos:])
+                # Prendi ultima occorrenza (potrebbe esserci più di una)
+                comm = float(comm_matches[-1]) if comm_matches else None
+
+                tariffe_data["gas_fisso"] = {
+                    "energia": float(gas_fisso_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm
+                }
+                print(f"✅ Gas fisso: {tariffe_data['gas_fisso']['energia']} €/Smc, comm: {comm} €/anno")
+
+            # 5. GAS VARIABILE (pattern: "PSVDAm + X €/Smc")
+            gas_var_match = re.search(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc', clean_text)
+            if gas_var_match:
+                # Cerca commercializzazione gas
+                psv_pos = clean_text.find('PSVDAm')
+                comm_match = re.search(r'(\d+)\s*€/anno', clean_text[psv_pos:psv_pos+200])
+                comm = float(comm_match.group(1)) if comm_match else None
+
+                tariffe_data["gas_variabile"] = {
+                    "spread": float(gas_var_match.group(1).replace(',', '.')),
+                    "commercializzazione": comm,
+                    "indice": "PSVDAm"
+                }
+                print(f"✅ Gas variabile: PSVDAm + {tariffe_data['gas_variabile']['spread']} €/Smc, comm: {comm} €/anno")
 
         except Exception as e:
             print(f"❌ Errore durante scraping: {e}")
