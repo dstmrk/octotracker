@@ -17,6 +17,10 @@ load_dotenv()
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Constants
+MAX_DECIMALS_ENERGY = 4  # Per prezzi energia e spread (es. 0.0088 €/kWh)
+MAX_DECIMALS_COST = 2  # Per costi commercializzazione (€/anno)
+
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
 USERS_FILE = DATA_DIR / "users.json"
@@ -220,8 +224,8 @@ def _format_luce_section(savings: Dict[str, Any], user_rates: Dict[str, Any], cu
     section = f"💡 <b>Luce ({tipo_display}):</b>\n"
 
     # Formatta energia con max_decimals=4 per spread
-    user_energia = format_number(user_rates['luce']['energia'], max_decimals=4)
-    user_comm = format_number(user_rates['luce']['commercializzazione'], max_decimals=2)
+    user_energia = format_number(user_rates['luce']['energia'], max_decimals=MAX_DECIMALS_ENERGY)
+    user_comm = format_number(user_rates['luce']['commercializzazione'], max_decimals=MAX_DECIMALS_COST)
     section += f"Tua tariffa: {luce_label} {user_energia} €/kWh, Comm. {user_comm} €/anno\n"
 
     # Accesso diretto nested
@@ -229,8 +233,8 @@ def _format_luce_section(savings: Dict[str, Any], user_rates: Dict[str, Any], cu
         energia_new = current_rates['luce'][luce_tipo][luce_fascia]['energia']
         comm_new = current_rates['luce'][luce_tipo][luce_fascia]['commercializzazione']
 
-        energia_formatted = format_number(energia_new, max_decimals=4)
-        comm_formatted = format_number(comm_new, max_decimals=2)
+        energia_formatted = format_number(energia_new, max_decimals=MAX_DECIMALS_ENERGY)
+        comm_formatted = format_number(comm_new, max_decimals=MAX_DECIMALS_COST)
 
         if savings['luce_energia']:
             energia_str = f"<b>{energia_formatted} €/kWh</b>"
@@ -265,8 +269,8 @@ def _format_gas_section(savings: Dict[str, Any], user_rates: Dict[str, Any], cur
     section = f"🔥 <b>Gas ({tipo_display}):</b>\n"
 
     # Formatta energia con max_decimals=4 per spread
-    user_gas_energia = format_number(user_rates['gas']['energia'], max_decimals=4)
-    user_gas_comm = format_number(user_rates['gas']['commercializzazione'], max_decimals=2)
+    user_gas_energia = format_number(user_rates['gas']['energia'], max_decimals=MAX_DECIMALS_ENERGY)
+    user_gas_comm = format_number(user_rates['gas']['commercializzazione'], max_decimals=MAX_DECIMALS_COST)
     section += f"Tua tariffa: {gas_label} {user_gas_energia} €/Smc, Comm. {user_gas_comm} €/anno\n"
 
     # Accesso diretto nested
@@ -274,8 +278,8 @@ def _format_gas_section(savings: Dict[str, Any], user_rates: Dict[str, Any], cur
         energia_new = current_rates['gas'][gas_tipo][gas_fascia]['energia']
         comm_new = current_rates['gas'][gas_tipo][gas_fascia]['commercializzazione']
 
-        energia_formatted = format_number(energia_new, max_decimals=4)
-        comm_formatted = format_number(comm_new, max_decimals=2)
+        energia_formatted = format_number(energia_new, max_decimals=MAX_DECIMALS_ENERGY)
+        comm_formatted = format_number(comm_new, max_decimals=MAX_DECIMALS_COST)
 
         if savings['gas_energia']:
             energia_str = f"<b>{energia_formatted} €/Smc</b>"

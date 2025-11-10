@@ -87,5 +87,6 @@ TARIFF_NAME = "Mono-oraria Fissa"
 - ✅ Variable rates support (tariffe PUN/PSV + spread)
 - ✅ Graceful degradation (dati parziali gestiti correttamente)
 - ✅ JSONDecodeError handling con backup automatico
+- ✅ Magic numbers extraction (timeouts, decimals, URLs estratti in costanti)
 
 Data ultima revisione: 2025-11-10
