@@ -81,12 +81,12 @@ def check_better_rates(user_rates, current_rates):
         'gas_comm_worse': False,
         'has_savings': False,
         'is_mixed': False,
-        'luce_tipo': user_rates.get('luce_tipo', 'Fissa'),
+        'luce_tipo': user_rates['luce_tipo'],
         'gas_tipo': user_rates.get('gas_tipo')
     }
 
     # Determina quale tariffa luce confrontare in base al tipo dell'utente
-    luce_tipo = user_rates.get('luce_tipo', 'Fissa')
+    luce_tipo = user_rates['luce_tipo']
 
     # Mappa tipo → chiave nel current_rates
     luce_key = None
@@ -125,7 +125,7 @@ def check_better_rates(user_rates, current_rates):
 
     # Controlla gas (solo se l'utente ha il gas)
     if user_rates.get('gas_energia') is not None:
-        gas_tipo = user_rates.get('gas_tipo', 'Fissa')
+        gas_tipo = user_rates['gas_tipo']
 
         # Mappa tipo → chiave nel current_rates
         gas_key = None
@@ -337,7 +337,7 @@ async def check_and_notify_users(bot_token: str):
             current_octopus = {}
 
             # Determina chiave luce in base al tipo dell'utente
-            luce_tipo = user_rates.get('luce_tipo', 'Fissa')
+            luce_tipo = user_rates['luce_tipo']
             luce_key = None
             if luce_tipo == "Fissa":
                 luce_key = 'luce_fissa'
@@ -352,7 +352,7 @@ async def check_and_notify_users(bot_token: str):
 
             # Aggiungi gas solo se l'utente ce l'ha
             if user_rates.get('gas_energia') is not None:
-                gas_tipo = user_rates.get('gas_tipo', 'Fissa')
+                gas_tipo = user_rates['gas_tipo']
                 gas_key = None
                 if gas_tipo == "Fissa":
                     gas_key = 'gas_fisso'

@@ -353,8 +353,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     luce_energia_fmt = format_number(data['luce_energia'], max_decimals=4)
     luce_comm_fmt = format_number(data['luce_comm'], max_decimals=2)
 
-    # Determina label in base al tipo (retrocompatibilità: se manca tipo, assume Fissa)
-    luce_tipo = data.get('luce_tipo', 'Fissa')
+    # Determina label in base al tipo
+    luce_tipo = data['luce_tipo']
     if luce_tipo == "Fissa":
         luce_label = "Prezzo fisso"
     elif luce_tipo == "Variabile Monoraria":
@@ -373,7 +373,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         gas_energia_fmt = format_number(data['gas_energia'], max_decimals=4)
         gas_comm_fmt = format_number(data['gas_comm'], max_decimals=2)
 
-        gas_tipo = data.get('gas_tipo', 'Fissa')
+        gas_tipo = data['gas_tipo']
         if gas_tipo == "Fissa":
             gas_label = "Prezzo fisso"
         else:  # Variabile Monoraria
