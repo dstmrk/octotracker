@@ -8,24 +8,34 @@ Testa tutti i flussi conversazionali del bot:
 - Flussi completi: luce fissa, variabile mono/tri, con/senza gas
 """
 import pytest
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from telegram import Update, User, Message, Chat, CallbackQuery, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-# Import funzioni del bot
+# Import funzioni del bot e database
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from bot import (
     start, tipo_tariffa, luce_tipo_variabile, luce_energia, luce_comm,
     ha_gas, gas_energia, gas_comm, status, remove_data, cancel, help_command,
-    load_users, save_users,
     TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM,
     HA_GAS, GAS_ENERGIA, GAS_COMM
 )
+from database import init_db, load_user, load_users, save_user
+import database
+import tempfile
 
 # ========== FIXTURES ==========
+
+@pytest.fixture(autouse=True)
+def temp_database(monkeypatch):
+    """Usa database temporaneo per ogni test"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        temp_db = Path(tmpdir) / "test_users.db"
+        monkeypatch.setattr(database, 'DB_FILE', temp_db)
+        init_db()
+        yield temp_db
 
 @pytest.fixture
 def mock_update():
@@ -68,22 +78,6 @@ def mock_context():
     context.user_data = {}
     return context
 
-@pytest.fixture
-def temp_users_file(tmp_path, monkeypatch):
-    """Crea file users.json temporaneo per test"""
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    users_file = data_dir / "users.json"
-
-    # Patcha il percorso del file nel modulo bot
-    monkeypatch.setattr("bot.USERS_FILE", users_file)
-
-    # Inizializza file vuoto
-    with open(users_file, 'w') as f:
-        json.dump({}, f)
-
-    return users_file
-
 # ========== TEST COMANDI BASE ==========
 
 @pytest.mark.asyncio
@@ -115,21 +109,18 @@ async def test_cancel_command(mock_update, mock_context):
     assert "annullat" in call_args[0][0].lower() or "cancellat" in call_args[0][0].lower()
 
 @pytest.mark.asyncio
-async def test_update_command(mock_update, mock_context, temp_users_file):
+async def test_update_command(mock_update, mock_context):
     """Test /update (alias di /start per aggiornare tariffe)"""
-    # Prepara dati esistenti
-    users = {
-        "123456789": {
-            "luce": {
-                "tipo": "fissa",
-                "fascia": "monoraria",
-                "energia": 0.145,
-                "commercializzazione": 72.0
-            }
+    # Prepara dati esistenti nel database
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0
         }
     }
-    with open(temp_users_file, 'w') as f:
-        json.dump(users, f)
+    save_user("123456789", user_data)
 
     # /update deve chiamare start() che riavvia registrazione
     result = await start(mock_update, mock_context)
@@ -158,8 +149,8 @@ async def test_help_command(mock_update, mock_context):
     assert "/remove" in message_text
 
 @pytest.mark.asyncio
-async def test_status_no_data(mock_update, mock_context, temp_users_file):
-    """Test /status senza dati salvati"""
+async def test_status_no_data(mock_update, mock_context):
+    """Test /status senza dati salvati (database vuoto)"""
     await status(mock_update, mock_context)
 
     mock_update.message.reply_text.assert_called_once()
@@ -167,21 +158,18 @@ async def test_status_no_data(mock_update, mock_context, temp_users_file):
     assert "Non hai ancora registrato" in call_args[0][0]
 
 @pytest.mark.asyncio
-async def test_status_with_data(mock_update, mock_context, temp_users_file):
+async def test_status_with_data(mock_update, mock_context):
     """Test /status con dati salvati"""
-    # Prepara dati utente
-    users = {
-        "123456789": {
-            "luce": {
-                "tipo": "fissa",
-                "fascia": "monoraria",
-                "energia": 0.145,
-                "commercializzazione": 72.0
-            }
+    # Prepara dati utente nel database
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0
         }
     }
-    with open(temp_users_file, 'w') as f:
-        json.dump(users, f)
+    save_user("123456789", user_data)
 
     await status(mock_update, mock_context)
 
@@ -195,29 +183,23 @@ async def test_status_with_data(mock_update, mock_context, temp_users_file):
     assert "72" in message_text
 
 @pytest.mark.asyncio
-async def test_remove_command(mock_update, mock_context, temp_users_file):
+async def test_remove_command(mock_update, mock_context):
     """Test /remove rimuove dati utente"""
-    # Prepara dati
-    users = {
-        "123456789": {
-            "luce": {
-                "tipo": "fissa",
-                "fascia": "monoraria",
-                "energia": 0.145,
-                "commercializzazione": 72.0
-            }
+    # Prepara dati nel database
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0
         }
     }
-    with open(temp_users_file, 'w') as f:
-        json.dump(users, f)
+    save_user("123456789", user_data)
 
     await remove_data(mock_update, mock_context)
 
-    # Verifica file aggiornato
-    with open(temp_users_file, 'r') as f:
-        result = json.load(f)
-
-    assert "123456789" not in result
+    # Verifica utente rimosso dal database
+    assert load_user("123456789") is None
     mock_update.message.reply_text.assert_called_once()
 
 # ========== TEST FLUSSO CONVERSAZIONE ==========
@@ -394,7 +376,7 @@ async def test_has_gas_yes(mock_callback_query, mock_context):
     mock_callback_query.callback_query.edit_message_text.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_has_gas_no(mock_callback_query, mock_context, temp_users_file):
+async def test_has_gas_no(mock_callback_query, mock_context):
     """Test flusso quando utente non ha gas"""
     mock_callback_query.callback_query.data = "gas_no"
     mock_callback_query.callback_query.from_user.id = 123456789
@@ -412,12 +394,12 @@ async def test_has_gas_no(mock_callback_query, mock_context, temp_users_file):
     # Deve salvare e terminare conversazione
     assert result == -1  # ConversationHandler.END
 
-    # Verifica salvataggio
-    users = load_users()
-    assert "123456789" in users
-    assert "luce" in users["123456789"]
+    # Verifica salvataggio nel database
+    user_data = load_user("123456789")
+    assert user_data is not None
+    assert "luce" in user_data
     # Bot salva gas: None quando utente non ha gas
-    assert users["123456789"].get("gas") is None
+    assert user_data.get("gas") is None
 
 @pytest.mark.asyncio
 async def test_gas_energia_valid_input(mock_update, mock_context):
@@ -430,7 +412,7 @@ async def test_gas_energia_valid_input(mock_update, mock_context):
     assert mock_context.user_data['gas_energia'] == 0.456
 
 @pytest.mark.asyncio
-async def test_complete_flow_fissa_with_gas(mock_update, mock_context, temp_users_file):
+async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
     """Test flusso completo: tariffa fissa con gas"""
     user_id = "123456789"
     mock_update.effective_user.id = int(user_id)
@@ -453,11 +435,11 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context, temp_user
 
     assert result == -1  # Fine conversazione
 
-    # Verifica salvataggio completo
-    users = load_users()
-    assert user_id in users
-    assert users[user_id]['luce']['energia'] == 0.145
-    assert users[user_id]['gas']['energia'] == 0.456
+    # Verifica salvataggio completo nel database
+    user_data = load_user(user_id)
+    assert user_data is not None
+    assert user_data['luce']['energia'] == 0.145
+    assert user_data['gas']['energia'] == 0.456
 
 # ========== TEST EDGE CASES ==========
 

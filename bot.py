@@ -4,7 +4,6 @@ Bot Telegram OctoTracker - Tutto in uno
 Gestisce bot, scraper schedulato e checker schedulato
 """
 import os
-import json
 import asyncio
 import logging
 from datetime import datetime, time, timedelta
@@ -26,6 +25,7 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 # Import moduli interni
 from scraper import scrape_octopus_tariffe
 from checker import check_and_notify_users, format_number
+from database import init_db, load_user, save_user, remove_user, user_exists
 
 load_dotenv()
 
@@ -48,10 +48,6 @@ logging.getLogger('httpcore').setLevel(logging.WARNING)
 # Stati conversazione
 TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(7)
 
-# File dati
-DATA_DIR = Path(__file__).parent / "data"
-USERS_FILE = DATA_DIR / "users.json"
-
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv('SCRAPER_HOUR', '9'))  # Default: 9:00 ora italiana
 CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italiana
@@ -61,53 +57,12 @@ WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
 WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
 
-def load_users() -> Dict[str, Any]:
-    """Carica dati utenti"""
-    if USERS_FILE.exists():
-        try:
-            with open(USERS_FILE, 'r') as f:
-                content = f.read()
-                if not content.strip():
-                    logger.warning("⚠️  users.json è vuoto, ritorno dizionario vuoto")
-                    return {}
-                return json.loads(content)
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ Errore parsing users.json: {e}")
-            logger.debug(f"   File location: {USERS_FILE}")
-            # Crea backup del file corrotto
-            backup_file = USERS_FILE.parent / f"users.json.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            try:
-                import shutil
-                shutil.copy(USERS_FILE, backup_file)
-                logger.info(f"   Backup creato: {backup_file}")
-            except (OSError, PermissionError) as backup_error:
-                logger.warning(f"   Impossibile creare backup: {backup_error}")
-            return {}
-        except FileNotFoundError:
-            logger.warning(f"📁 File non trovato: {USERS_FILE}")
-            return {}
-        except PermissionError:
-            logger.error(f"🔒 Permesso negato per leggere: {USERS_FILE}")
-            return {}
-        except OSError as e:
-            logger.error(f"💾 Errore I/O lettura users.json: {e}")
-            return {}
-    return {}
-
-def save_users(users: Dict[str, Any]) -> None:
-    """Salva dati utenti"""
-    DATA_DIR.mkdir(exist_ok=True)
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
-    logger.info(f"💾 Dati utenti salvati ({len(users)} utenti)")
-
 # ========== BOT COMMANDS ==========
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Avvia registrazione tariffe"""
-    users = load_users()
     user_id = str(update.effective_user.id)
-    is_update = user_id in users
+    is_update = user_exists(user_id)
 
     # Reset context per nuova conversazione
     context.user_data.clear()
@@ -300,8 +255,6 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def salva_e_conferma(update_or_query: Union[Update, Any], context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> int:
     """Salva dati utente e mostra conferma"""
-    users = load_users()
-
     # Distingui tra Update (con message) e CallbackQuery
     if hasattr(update_or_query, 'effective_user'):
         # È un Update
@@ -332,8 +285,8 @@ async def salva_e_conferma(update_or_query: Union[Update, Any], context: Context
     else:
         user_data['gas'] = None
 
-    users[user_id] = user_data
-    save_users(users)
+    # Salva utente nel database
+    save_user(user_id, user_data)
 
     # Formatta numeri rimuovendo zeri trailing
     luce_energia_fmt = format_number(user_data['luce']['energia'], max_decimals=4)
@@ -396,18 +349,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra dati salvati"""
-    users = load_users()
     user_id = str(update.effective_user.id)
+    data = load_user(user_id)
 
-    if user_id not in users:
+    if not data:
         await update.message.reply_text(
             "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
             "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
             "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
         return
-
-    data = users[user_id]
 
     # Formatta numeri rimuovendo zeri trailing
     luce_energia_fmt = format_number(data['luce']['energia'], max_decimals=4)
@@ -456,12 +407,10 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Cancella dati utente"""
-    users = load_users()
     user_id = str(update.effective_user.id)
 
-    if user_id in users:
-        del users[user_id]
-        save_users(users)
+    if user_exists(user_id):
+        remove_user(user_id)
         await update.message.reply_text(
             "✅ <b>Dati cancellati con successo</b>\n\n"
             "Tutte le informazioni che avevi registrato (tariffe e preferenze) sono state rimosse.\n"
@@ -615,6 +564,10 @@ def main() -> None:
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
+
+    # Inizializza database
+    init_db()
+    logger.info("💾 Database inizializzato")
 
     logger.info("🤖 Avvio OctoTracker...")
     logger.info(f"📡 Modalità: WEBHOOK")

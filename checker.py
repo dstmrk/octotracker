@@ -11,6 +11,7 @@ from telegram import Bot
 from telegram.error import TelegramError, NetworkError, TimedOut, RetryAfter
 from dotenv import load_dotenv
 import asyncio
+from database import load_users, save_user
 
 load_dotenv()
 
@@ -57,12 +58,6 @@ def load_json(file_path: Path) -> Optional[Dict[str, Any]]:
             logger.error(f"💾 Errore I/O lettura {file_path.name}: {e}")
             return None
     return None
-
-def save_users(users: Dict[str, Any]) -> None:
-    """Salva dati utenti"""
-    DATA_DIR.mkdir(exist_ok=True)
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
 
 def format_number(value: float, max_decimals: int = 3) -> str:
     """
@@ -345,8 +340,8 @@ async def check_and_notify_users(bot_token: str) -> None:
     logger.info("🔍 Inizio controllo tariffe...")
 
     # Carica dati
-    users = load_json(USERS_FILE)
-    current_rates = load_json(RATES_FILE)
+    users = load_users()  # Da database SQLite
+    current_rates = load_json(RATES_FILE)  # Da JSON (nessuna race condition)
 
     if not users:
         logger.warning("⚠️  Nessun utente registrato")
@@ -361,7 +356,6 @@ async def check_and_notify_users(bot_token: str) -> None:
 
     # Controlla ogni utente
     notifications_sent = 0
-    users_updated = False
 
     for user_id, user_rates in users.items():
         logger.info(f"📊 Controllo utente {user_id}...")
@@ -404,17 +398,12 @@ async def check_and_notify_users(bot_token: str) -> None:
                 success = await send_notification(bot, user_id, message)
                 if success:
                     # Aggiorna last_notified_rates per questo utente
-                    users[user_id]['last_notified_rates'] = current_octopus
-                    users_updated = True
+                    user_rates['last_notified_rates'] = current_octopus
+                    save_user(user_id, user_rates)
                     notifications_sent += 1
                     logger.info(f"  ✅ Notifica inviata e tariffe salvate")
         else:
             logger.info(f"  ℹ️  Nessun risparmio trovato")
-
-    # Salva users.json se ci sono stati aggiornamenti
-    if users_updated:
-        save_users(users)
-        logger.info(f"💾 Dati utenti aggiornati")
 
     logger.info(f"✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 

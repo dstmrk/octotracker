@@ -15,5 +15,6 @@ Tracciamento delle ottimizzazioni implementate nel progetto.
 - ✅ Graceful degradation (dati parziali gestiti correttamente)
 - ✅ JSONDecodeError handling con backup automatico
 - ✅ Magic numbers extraction (timeouts, decimals, URLs estratti in costanti)
+- ✅ SQLite database per utenti (transazioni ACID, scalabile a 1000+ utenti, zero race conditions)
 
 Data ultima revisione: 2025-11-10
