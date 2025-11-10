@@ -506,13 +506,16 @@ async def scraper_daily_task() -> None:
     logger.info(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
-    # Loop infinito: esegui e dormi 24 ore
+    # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
         await run_scraper()
 
-        # Dormi esattamente 24 ore fino alla prossima esecuzione
-        logger.info(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
-        await asyncio.sleep(24 * 3600)
+        # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
+        seconds_until_next = calculate_seconds_until_next_run(SCRAPER_HOUR)
+        hours_until_next = seconds_until_next / 3600
+
+        logger.info(f"⏰ Prossimo scraper tra {hours_until_next:.1f} ore (alle {SCRAPER_HOUR}:00)")
+        await asyncio.sleep(seconds_until_next)
 
 async def checker_daily_task(bot_token: str) -> None:
     """Task giornaliero per il checker - si esegue una volta al giorno"""
@@ -523,13 +526,16 @@ async def checker_daily_task(bot_token: str) -> None:
     logger.info(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
-    # Loop infinito: esegui e dormi 24 ore
+    # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
         await run_checker(bot_token)
 
-        # Dormi esattamente 24 ore fino alla prossima esecuzione
-        logger.info(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
-        await asyncio.sleep(24 * 3600)
+        # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
+        seconds_until_next = calculate_seconds_until_next_run(CHECKER_HOUR)
+        hours_until_next = seconds_until_next / 3600
+
+        logger.info(f"⏰ Prossimo checker tra {hours_until_next:.1f} ore (alle {CHECKER_HOUR}:00)")
+        await asyncio.sleep(seconds_until_next)
 
 # ========== ERROR HANDLER ==========
 
@@ -576,15 +582,15 @@ def main() -> None:
     logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
     logger.info(f"🔌 Porta: {WEBHOOK_PORT}")
 
-    # Costruisci app con timeout aumentati per connessioni lente (Raspberry Pi)
+    # Costruisci app con timeout ottimizzati per bilanciare performance e affidabilità
     app = (
         Application.builder()
         .token(token)
         .post_init(post_init)
-        .connect_timeout(30.0)  # Timeout connessione (default: 5.0)
-        .read_timeout(30.0)     # Timeout lettura (default: 5.0)
-        .write_timeout(30.0)    # Timeout scrittura (default: 5.0)
-        .pool_timeout(30.0)     # Timeout pool connessioni (default: 1.0)
+        .connect_timeout(10.0)  # Timeout connessione - più breve per fail-fast (default: 5.0)
+        .read_timeout(30.0)     # Timeout lettura - alto per upload/operazioni lunghe (default: 5.0)
+        .write_timeout(15.0)    # Timeout scrittura - medio (default: 5.0)
+        .pool_timeout(10.0)     # Timeout pool connessioni - breve (default: 1.0)
         .build()
     )
 
