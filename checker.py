@@ -335,7 +335,7 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
         return False
 
 async def check_and_notify_users(bot_token: str) -> None:
-    """Controlla tariffe e invia notifiche (chiamata da bot.py)"""
+    """Controlla tariffe e invia notifiche in parallelo (chiamata da bot.py)"""
     logger.info("🔍 Inizio controllo tariffe...")
 
     # Carica dati
@@ -353,8 +353,8 @@ async def check_and_notify_users(bot_token: str) -> None:
     # Inizializza bot
     bot = Bot(token=bot_token)
 
-    # Controlla ogni utente
-    notifications_sent = 0
+    # ========== FASE 1: Prepara tutte le notifiche ==========
+    notifications_to_send = []
 
     for user_id, user_rates in users.items():
         logger.info(f"📊 Controllo utente {user_id}...")
@@ -392,17 +392,47 @@ async def check_and_notify_users(bot_token: str) -> None:
             if last_notified == current_octopus:
                 logger.info(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
             else:
-                # Tariffe diverse o prima notifica - invia messaggio
+                # Tariffe diverse o prima notifica - aggiungi alla coda
                 message = format_notification(savings, user_rates, current_rates)
+                notifications_to_send.append((user_id, user_rates, current_octopus, message))
+                logger.info(f"  📤 Notifica accodata per invio")
+        else:
+            logger.info(f"  ℹ️  Nessun risparmio trovato")
+
+    # ========== FASE 2: Invia notifiche in parallelo con rate limiting ==========
+    if notifications_to_send:
+        logger.info(f"📨 Invio {len(notifications_to_send)} notifiche in parallelo (max 10 simultanee)...")
+
+        # Semaphore per limitare richieste concorrenti (rispetta rate limits Telegram)
+        semaphore = asyncio.Semaphore(10)
+
+        async def send_with_limit(user_id: str, user_rates: Dict, current_octopus: Dict, message: str) -> bool:
+            """Invia notifica con rate limiting"""
+            async with semaphore:
                 success = await send_notification(bot, user_id, message)
                 if success:
                     # Aggiorna last_notified_rates per questo utente
                     user_rates['last_notified_rates'] = current_octopus
                     save_user(user_id, user_rates)
-                    notifications_sent += 1
-                    logger.info(f"  ✅ Notifica inviata e tariffe salvate")
-        else:
-            logger.info(f"  ℹ️  Nessun risparmio trovato")
+                    logger.info(f"  ✅ Notifica inviata a {user_id}")
+                    return True
+                else:
+                    logger.warning(f"  ❌ Notifica fallita per {user_id}")
+                    return False
+
+        # Crea task per tutte le notifiche
+        tasks = [
+            send_with_limit(user_id, user_rates, current_octopus, message)
+            for user_id, user_rates, current_octopus, message in notifications_to_send
+        ]
+
+        # Esegui tutte le notifiche in parallelo (con semaphore che limita a 10 simultanee)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Conta successi (ignora eccezioni)
+        notifications_sent = sum(1 for r in results if r is True)
+    else:
+        notifications_sent = 0
 
     logger.info(f"✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 

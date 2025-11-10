@@ -40,7 +40,7 @@ def get_connection():
     conn = None
     try:
         DATA_DIR.mkdir(exist_ok=True)
-        conn = sqlite3.connect(DB_FILE)
+        conn = sqlite3.connect(DB_FILE, timeout=30.0)  # Timeout aumentato per concurrent writes
         conn.row_factory = sqlite3.Row  # Accesso per nome colonna
         yield conn
         conn.commit()

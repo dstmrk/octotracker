@@ -897,12 +897,13 @@ async def test_checker_performance():
 ### Fase 2 - Performance Critiche (2-3 ore)
 **Obiettivo**: Risoluzione colli di bottiglia principali
 
-- [ ] #5: Batching notifiche con semaphore (45 min)
+- [x] #5: Batching notifiche con semaphore (45 min) ✅ **COMPLETATO**
 - [ ] #6: Wait dinamici invece di fissi (15 min)
 - [ ] #10: Validazione input utente (30 min)
 - [ ] #14: Validare/generare WEBHOOK_SECRET (10 min)
 
 **Risultato atteso**: -90% tempo notifiche (100 utenti), dati più accurati
+**Risultato parziale**: Notifiche 10x più veloci (Semaphore(10) + SQLite timeout 30s), ultra-safe per rate limits
 
 ---
 
