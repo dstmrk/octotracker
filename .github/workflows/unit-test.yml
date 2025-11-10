@@ -6,7 +6,7 @@ on:
     paths:
       - '**.py'
       - 'pyproject.toml'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/unit-test.yml'
       - 'tests/**'
 
 jobs:
