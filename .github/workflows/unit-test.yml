@@ -1,6 +1,12 @@
 name: Unit Tests
 
 on:
+  push:
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+      - '.github/workflows/unit-test.yml'
+      - 'tests/**'
   pull_request:
     branches: [ main ]
     paths:
