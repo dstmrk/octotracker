@@ -5,6 +5,7 @@ Controlla se ci sono tariffe più convenienti e notifica gli utenti
 import os
 import json
 from pathlib import Path
+from typing import Optional, Dict, Any
 from telegram import Bot
 from dotenv import load_dotenv
 import asyncio
@@ -16,7 +17,7 @@ DATA_DIR = Path(__file__).parent / "data"
 USERS_FILE = DATA_DIR / "users.json"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
-def load_json(file_path):
+def load_json(file_path: Path) -> Optional[Dict[str, Any]]:
     """Carica file JSON con gestione errori"""
     if file_path.exists():
         try:
@@ -42,13 +43,13 @@ def load_json(file_path):
             return None
     return None
 
-def save_users(users):
+def save_users(users: Dict[str, Any]) -> None:
     """Salva dati utenti"""
     DATA_DIR.mkdir(exist_ok=True)
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
 
-def format_number(value, max_decimals=3):
+def format_number(value: float, max_decimals: int = 3) -> str:
     """
     Formatta numero con logica intelligente per i decimali:
     - Se intero (es. 72.0) → "72" (nessun decimale)
@@ -84,7 +85,7 @@ def format_number(value, max_decimals=3):
     # Sostituisci punto con virgola (stile italiano)
     return formatted.replace('.', ',')
 
-def check_better_rates(user_rates, current_rates):
+def check_better_rates(user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> Dict[str, Any]:
     """
     Confronta tariffe utente con tariffe attuali dello stesso tipo
     Ritorna dizionario con risparmi e peggioramenti trovati
@@ -181,7 +182,7 @@ def check_better_rates(user_rates, current_rates):
 
     return savings
 
-def format_notification(savings, user_rates, current_rates):
+def format_notification(savings: Dict[str, Any], user_rates: Dict[str, Any], current_rates: Dict[str, Any]) -> str:
     """Formatta messaggio di notifica"""
     # Header diverso per caso mixed vs tutto migliorato
     if savings['is_mixed']:
@@ -292,7 +293,7 @@ def format_notification(savings, user_rates, current_rates):
 
     return message
 
-async def send_notification(bot, user_id, message):
+async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
     """Invia notifica Telegram"""
     try:
         await bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
@@ -301,7 +302,7 @@ async def send_notification(bot, user_id, message):
         print(f"❌ Errore invio messaggio a {user_id}: {e}")
         return False
 
-async def check_and_notify_users(bot_token: str):
+async def check_and_notify_users(bot_token: str) -> None:
     """Controlla tariffe e invia notifiche (chiamata da bot.py)"""
     print("🔍 Inizio controllo tariffe...")
 
@@ -379,7 +380,7 @@ async def check_and_notify_users(bot_token: str):
 
     print(f"\n✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 
-async def main():
+async def main() -> None:
     """Main per esecuzione standalone"""
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:

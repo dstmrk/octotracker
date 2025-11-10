@@ -40,19 +40,24 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime
+from typing import Optional, Dict, Any
 from playwright.async_api import async_playwright
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
-def extract_price(text):
+def extract_price(text: str) -> Optional[float]:
     """Estrae prezzo da testo (es: '0.123 €/kWh' -> 0.123)"""
     match = re.search(r'(\d+[.,]\d+)', text.replace(',', '.'))
     return float(match.group(1)) if match else None
 
-async def scrape_octopus_tariffe():
-    """Scrape tariffe fisse e variabili da Octopus Energy"""
+async def scrape_octopus_tariffe() -> Dict[str, Any]:
+    """Scrape tariffe fisse e variabili da Octopus Energy
+
+    Returns:
+        Dict con struttura nested luce/gas → fissa/variabile → monoraria/trioraria
+    """
     print("🔍 Avvio scraping tariffe Octopus Energy...")
 
     async with async_playwright() as p:

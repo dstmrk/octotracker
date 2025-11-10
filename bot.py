@@ -8,6 +8,7 @@ import json
 import asyncio
 from datetime import datetime, time, timedelta
 from pathlib import Path
+from typing import Dict, Any, Union, Optional
 from warnings import filterwarnings
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.constants import ParseMode
@@ -42,7 +43,7 @@ WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
 WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
 
-def load_users():
+def load_users() -> Dict[str, Any]:
     """Carica dati utenti"""
     if USERS_FILE.exists():
         try:
@@ -69,7 +70,7 @@ def load_users():
             return {}
     return {}
 
-def save_users(users):
+def save_users(users: Dict[str, Any]) -> None:
     """Salva dati utenti"""
     DATA_DIR.mkdir(exist_ok=True)
     with open(USERS_FILE, 'w') as f:
@@ -78,7 +79,7 @@ def save_users(users):
 
 # ========== BOT COMMANDS ==========
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Avvia registrazione tariffe"""
     users = load_users()
     user_id = str(update.effective_user.id)
@@ -116,7 +117,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(messaggio, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return TIPO_TARIFFA
 
-async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo tariffa (Fissa/Variabile)"""
     query = update.callback_query
     await query.answer()
@@ -156,7 +157,7 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return LUCE_TIPO_VARIABILE
 
-async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo luce variabile (Monoraria/Trioraria)"""
     query = update.callback_query
     await query.answer()
@@ -182,7 +183,7 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     return LUCE_ENERGIA
 
-async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
     try:
         context.user_data['luce_energia'] = float(update.message.text.replace(',', '.'))
@@ -199,7 +200,7 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,145)")
         return LUCE_ENERGIA
 
-async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se ha gas"""
     try:
         context.user_data['luce_comm'] = float(update.message.text.replace(',', '.'))
@@ -221,7 +222,7 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
         return LUCE_COMM
 
-async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci risposta se ha gas"""
     query = update.callback_query
     await query.answer()
@@ -247,7 +248,7 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         return await salva_e_conferma(query, context, solo_luce=True)
 
-async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
     try:
         context.user_data['gas_energia'] = float(update.message.text.replace(',', '.'))
@@ -264,7 +265,7 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,456)")
         return GAS_ENERGIA
 
-async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva gas e conferma"""
     try:
         context.user_data['gas_comm'] = float(update.message.text.replace(',', '.'))
@@ -273,7 +274,7 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
 
-async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, solo_luce: bool):
+async def salva_e_conferma(update_or_query: Union[Update, Any], context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> int:
     """Salva dati utente e mostra conferma"""
     users = load_users()
 
@@ -364,12 +365,12 @@ async def salva_e_conferma(update_or_query, context: ContextTypes.DEFAULT_TYPE, 
     await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Annulla registrazione"""
     await update.message.reply_text("❌ Registrazione annullata. Usa /start per ricominciare.")
     return ConversationHandler.END
 
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra dati salvati"""
     users = load_users()
     user_id = str(update.effective_user.id)
@@ -429,7 +430,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
 
-async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Cancella dati utente"""
     users = load_users()
     user_id = str(update.effective_user.id)
@@ -452,7 +453,7 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra messaggio di aiuto"""
     help_text = (
         "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
@@ -471,7 +472,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ========== SCHEDULER ==========
 
-async def run_scraper():
+async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
     print(f"🕷️  [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio scraper...")
     try:
@@ -480,7 +481,7 @@ async def run_scraper():
     except Exception as e:
         print(f"❌ Errore scraper: {e}")
 
-async def run_checker(bot_token: str):
+async def run_checker(bot_token: str) -> None:
     """Esegue checker e invia notifiche"""
     print(f"🔍 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio checker...")
     try:
@@ -509,7 +510,7 @@ def calculate_seconds_until_next_run(target_hour: int) -> float:
     delta = (target - now).total_seconds()
     return delta
 
-async def scraper_daily_task():
+async def scraper_daily_task() -> None:
     """Task giornaliero per lo scraper - si esegue una volta al giorno"""
     # Calcola quanto dormire fino alla prima esecuzione
     seconds_until_run = calculate_seconds_until_next_run(SCRAPER_HOUR)
@@ -526,7 +527,7 @@ async def scraper_daily_task():
         print(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
         await asyncio.sleep(24 * 3600)
 
-async def checker_daily_task(bot_token: str):
+async def checker_daily_task(bot_token: str) -> None:
     """Task giornaliero per il checker - si esegue una volta al giorno"""
     # Calcola quanto dormire fino alla prima esecuzione
     seconds_until_run = calculate_seconds_until_next_run(CHECKER_HOUR)
@@ -570,7 +571,7 @@ async def post_init(application: Application) -> None:
     asyncio.create_task(scraper_daily_task())
     asyncio.create_task(checker_daily_task(bot_token))
 
-def main():
+def main() -> None:
     """Avvia il bot con scheduler integrato"""
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
