@@ -13,9 +13,10 @@ from warnings import filterwarnings
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
-from telegram.error import TimedOut, NetworkError
+from telegram.error import TimedOut, NetworkError, TelegramError
 from telegram.warnings import PTBUserWarning
 from dotenv import load_dotenv
+from playwright.async_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeout
 
 # Silenzia warning ConversationHandler per CallbackQueryHandler con per_message=False
 # Questo è il comportamento corretto per il nostro caso d'uso (flusso lineare, non menu interattivo)
@@ -62,11 +63,17 @@ def load_users() -> Dict[str, Any]:
                 import shutil
                 shutil.copy(USERS_FILE, backup_file)
                 print(f"   Backup creato: {backup_file}")
-            except Exception as backup_error:
+            except (OSError, PermissionError) as backup_error:
                 print(f"   Impossibile creare backup: {backup_error}")
             return {}
-        except Exception as e:
-            print(f"❌ Errore lettura users.json: {e}")
+        except FileNotFoundError:
+            print(f"📁 File non trovato: {USERS_FILE}")
+            return {}
+        except PermissionError:
+            print(f"🔒 Permesso negato per leggere: {USERS_FILE}")
+            return {}
+        except OSError as e:
+            print(f"💾 Errore I/O lettura users.json: {e}")
             return {}
     return {}
 
@@ -478,8 +485,16 @@ async def run_scraper() -> None:
     try:
         result = await scrape_octopus_tariffe()
         print(f"✅ Scraper completato: {result}")
+    except PlaywrightTimeout:
+        print(f"⏱️  Timeout scraper: la pagina non ha risposto in tempo")
+    except PlaywrightError as e:
+        print(f"❌ Errore Playwright scraper: {e}")
+    except ConnectionError as e:
+        print(f"🌐 Errore di connessione scraper: {e}")
+    except OSError as e:
+        print(f"💾 Errore I/O scraper: {e}")
     except Exception as e:
-        print(f"❌ Errore scraper: {e}")
+        print(f"❌ Errore inatteso scraper: {e}")
 
 async def run_checker(bot_token: str) -> None:
     """Esegue checker e invia notifiche"""
@@ -487,8 +502,14 @@ async def run_checker(bot_token: str) -> None:
     try:
         await check_and_notify_users(bot_token)
         print(f"✅ Checker completato")
+    except TelegramError as e:
+        print(f"❌ Errore Telegram checker: {e}")
+    except NetworkError as e:
+        print(f"🌐 Errore di rete checker: {e}")
+    except OSError as e:
+        print(f"💾 Errore I/O checker: {e}")
     except Exception as e:
-        print(f"❌ Errore checker: {e}")
+        print(f"❌ Errore inatteso checker: {e}")
 
 def calculate_seconds_until_next_run(target_hour: int) -> float:
     """
