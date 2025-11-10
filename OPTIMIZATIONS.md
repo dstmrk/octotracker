@@ -1,23 +1,8 @@
-# 🚀 Ottimizzazioni Future per OctoTracker
+# 🚀 Ottimizzazioni per OctoTracker
 
-Questo documento traccia le ottimizzazioni identificate ma non ancora implementate.
+Questo documento traccia le ottimizzazioni identificate per migliorare il codice.
 
----
-
-## ✅ Implementate
-
-- [x] **Scheduler efficiente** - Sleep-based scheduling con esecuzione esatta a orari configurati
-- [x] **Smart number formatting** - Rimozione zeri trailing, virgola italiana
-- [x] **Notifiche intelligenti** - Gestione casi mixed (migliorato/peggiorato)
-- [x] **Webhook-only mode** - Rimosso supporto polling, semplificato codebase
-- [x] **Nested structure** - Struttura JSON a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
-- [x] **Variable rates support** - Supporto tariffe variabili (PUN/PSV + spread)
-- [x] **JSONDecodeError handling** - Gestione robusta errori parsing JSON con backup automatico
-- [x] **Scraper partial data** - Warning log per tariffe non trovate, salvataggio dati parziali
-- [x] **Checker graceful degradation** - Gestione automatica current_rates parziali con `.get()`
-- [x] **Unit Tests** - Test pytest per scraper, checker, e struttura dati (21 test totali)
-- [x] **uv migration** - Migrato da pip a uv per dependency management (10-100x più veloce)
-- [x] **GitHub Actions CI** - Test automatici e Docker build su PR verso main
+**Note**: Il bot è già production-ready. Le ottimizzazioni qui elencate sono miglioramenti incrementali, non critici per il funzionamento.
 
 ---
 
@@ -58,54 +43,12 @@ class UsersCache:
 
 ## 🟡 Media Priorità
 
-### 2. Type Hints Completi
-**Categoria:** Best Practices | **Sforzo:** Alto | **Impatto:** Medio
-
-**Problema:** Nessuna funzione ha type hints completi → codice meno robusto.
-
-**Esempio:**
-```python
-from typing import Dict, Optional, TypedDict
-
-class TariffaDetail(TypedDict):
-    """Dettaglio singola tariffa"""
-    energia: float
-    commercializzazione: float
-
-class Fornitura(TypedDict, total=False):
-    """Struttura luce o gas utente"""
-    tipo: str  # "fissa" | "variabile"
-    fascia: str  # "monoraria" | "trioraria"
-    energia: float
-    commercializzazione: float
-
-class UserRates(TypedDict, total=False):
-    """Schema dati tariffe utente (nuova struttura nested)"""
-    luce: Fornitura
-    gas: Optional[Fornitura]
-    last_notified_rates: Optional[Dict[str, TariffaDetail]]
-
-def load_users() -> Dict[str, UserRates]:
-    """Carica dati utenti con type safety"""
-    # ...
-```
-
-**Benefici:**
-- Type checking con mypy
-- Autocompletion migliore
-- Documentazione implicita
-- Meno bug a runtime
-
-**File da modificare:** Tutti (`bot.py`, `checker.py`, `scraper.py`)
-
----
-
-### 3. Refactor Funzioni Lunghe
+### 1. Refactor Funzioni Lunghe
 **Categoria:** Maintainability | **Sforzo:** Alto | **Impatto:** Medio
 
 **Problema:**
-- `scrape_octopus_tariffe()` - 170 righe (troppo lunga)
-- `format_notification()` - 80+ righe (troppo lunga)
+- `scrape_octopus_tariffe()` - 184 righe (troppo lunga!)
+- `format_notification()` - 110 righe (troppo lunga!)
 
 **Soluzione:** Estrarre in funzioni più piccole:
 ```python
@@ -132,7 +75,7 @@ def extract_from_cards(page) -> tuple[Optional[TariffaData], Optional[TariffaDat
 
 ---
 
-### 4. Error Handling Specifico
+### 2. Error Handling Specifico
 **Categoria:** Best Practices | **Sforzo:** Medio | **Impatto:** Medio
 
 **Problema:** Troppi `except Exception as e` che catturano tutto.
@@ -169,7 +112,7 @@ except Exception as e:
 
 ## 🟢 Bassa Priorità
 
-### 5. Estrarre Magic Numbers/Strings
+### 3. Estrarre Magic Numbers/Strings
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Esempio:**
@@ -191,10 +134,9 @@ TARIFF_NAME = "Mono-oraria Fissa"
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
 |---|---------------|----------|--------|---------|---------|
 | 1 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
-| 2 | Type hints | 🟡 Media | Alto | Medio | Quando si aggiungono features |
-| 3 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
-| 4 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
-| 5 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
+| 2 | Refactor funzioni | 🟡 Media | Alto | Medio | Per migliorare manutenibilità |
+| 3 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
+| 4 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
@@ -204,11 +146,14 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 **Il codice attuale è già production-ready!** Queste ottimizzazioni sono miglioramenti incrementali, non critici per il funzionamento.
 
-**Note implementazioni recenti**:
-- ✅ Unit tests implementati (21 test pytest)
-- ✅ CI/CD con GitHub Actions (test automatici su PR)
+**Implementazioni completate**:
+- ✅ Unit tests (20 test pytest: scraper + checker)
+- ✅ CI/CD con GitHub Actions (unit tests + Docker build su PR)
 - ✅ Migrazione a uv (10-100x più veloce di pip)
-- Scraper/Checker già gestiscono dati parziali gracefully (warning logs + `.get()`)
-- Input validation non necessaria (mostriamo riepilogo all'utente dopo inserimento)
+- ✅ Type hints completi (tutti i file con annotazioni complete)
+- ✅ Nested JSON structure (3 livelli: utility → tipo → fascia)
+- ✅ Variable rates support (tariffe PUN/PSV + spread)
+- ✅ Graceful degradation (dati parziali gestiti correttamente)
+- ✅ JSONDecodeError handling con backup automatico
 
 Data ultima revisione: 2025-11-10
