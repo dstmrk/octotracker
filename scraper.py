@@ -192,12 +192,23 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
         page = await browser.new_page()
 
         try:
-            # Vai alla pagina tariffe
+            # Vai alla pagina tariffe (domcontentloaded è più veloce di load)
             logger.info("📄 Caricamento pagina...")
-            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='load', timeout=PAGE_LOAD_TIMEOUT_MS)
+            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='domcontentloaded', timeout=PAGE_LOAD_TIMEOUT_MS)
 
-            # Attendi caricamento contenuto aggiuntivo (per JS dinamico)
-            await page.wait_for_timeout(JS_DYNAMIC_WAIT_MS)
+            # Attendi dinamicamente che appaiano elementi chiave delle tariffe
+            # Cerca almeno uno dei prezzi caratteristici (€/kWh, €/Smc, €/anno)
+            try:
+                await page.wait_for_selector(
+                    'text=€/kWh, text=€/Smc, text=€/anno',  # Uno qualsiasi di questi
+                    timeout=5000,
+                    state='visible'
+                )
+                logger.debug("✅ Contenuto tariffe caricato dinamicamente")
+            except PlaywrightTimeout:
+                # Fallback: se i selettori non vengono trovati, usa wait ridotto
+                logger.warning("⚠️  Selettori tariffe non trovati, uso wait ridotto da 5s a 2s")
+                await page.wait_for_timeout(2000)
 
             # Estrai tutto il testo della pagina per analisi
             text = await page.inner_text('body')
