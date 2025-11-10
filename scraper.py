@@ -47,6 +47,13 @@ from playwright.async_api import async_playwright, Error as PlaywrightError, Tim
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Constants
+OCTOPUS_TARIFFE_URL = "https://octopusenergy.it/le-nostre-tariffe"
+PAGE_LOAD_TIMEOUT_MS = 60000  # Timeout caricamento pagina principale
+JS_DYNAMIC_WAIT_MS = 5000  # Attesa caricamento contenuto JS dinamico
+TOGGLE_CLICK_WAIT_MS = 1000  # Attesa dopo click toggle multioraria
+TOGGLE_RESET_WAIT_MS = 500  # Attesa dopo reset toggle
+
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
@@ -99,7 +106,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
         if toggle:
             logger.debug("🔄 Clic sul toggle per vedere tariffa multioraria...")
             await toggle.click()
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(TOGGLE_CLICK_WAIT_MS)
 
             # Rileggi il testo
             text_after_toggle = await page.inner_text('body')
@@ -119,7 +126,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
 
                 # Riclicco per tornare allo stato iniziale
                 await toggle.click()
-                await page.wait_for_timeout(500)
+                await page.wait_for_timeout(TOGGLE_RESET_WAIT_MS)
                 return result
     else:
         # Trovata direttamente
@@ -184,10 +191,10 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
         try:
             # Vai alla pagina tariffe
             logger.info("📄 Caricamento pagina...")
-            await page.goto('https://octopusenergy.it/le-nostre-tariffe', wait_until='load', timeout=60000)
+            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='load', timeout=PAGE_LOAD_TIMEOUT_MS)
 
             # Attendi caricamento contenuto aggiuntivo (per JS dinamico)
-            await page.wait_for_timeout(5000)
+            await page.wait_for_timeout(JS_DYNAMIC_WAIT_MS)
 
             # Estrai tutto il testo della pagina per analisi
             text = await page.inner_text('body')
