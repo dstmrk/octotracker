@@ -263,26 +263,29 @@ I dati sono salvati localmente in file JSON:
 Se vuoi sviluppare o testare senza Docker:
 
 ```bash
+# Installa uv (se non già installato)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Installa dipendenze
-pip install -r requirements.txt
-playwright install chromium
+uv sync
+uv run playwright install chromium
 
 # Crea .env
 cp .env.example .env
 # Modifica .env con il tuo token
 
 # Avvia bot (include scheduler)
-python bot.py
+uv run python bot.py
 ```
 
 ### Test componenti singoli
 
 ```bash
 # Test solo scraper
-python scraper.py
+uv run python scraper.py
 
 # Test solo checker
-python checker.py
+uv run python checker.py
 ```
 
 ## 🐳 Installazione Docker
@@ -314,7 +317,7 @@ docker compose version
 - `checker.py` - Controllo e invio notifiche
 - `docker-compose.yml` - Orchestrazione Docker
 - `Dockerfile` - Build immagine Docker
-- `requirements.txt` - Dipendenze Python
+- `pyproject.toml` - Dipendenze Python (gestite con uv)
 - `.env.example` - Template configurazione
 
 ## 📝 Note

@@ -7,18 +7,18 @@ Questi test verificano il formato dei dati e la logica di confronto senza esegui
 ### Opzione 1: Container Docker (Consigliata)
 ```bash
 # Esegui i test nel container con tutte le dipendenze
-docker compose exec octotracker python -m unittest discover tests -v
+docker compose exec octotracker uv run pytest tests/ -v
 
 # Oppure test specifici
-docker compose exec octotracker python -m unittest tests.test_scraper -v
-docker compose exec octotracker python -m unittest tests.test_checker -v
+docker compose exec octotracker uv run pytest tests/test_scraper.py -v
+docker compose exec octotracker uv run pytest tests/test_checker.py -v
 ```
 
 ### Opzione 2: Ambiente Locale
 Assicurati di avere tutte le dipendenze installate:
 ```bash
-pip install -r requirements.txt
-python -m unittest discover tests -v
+uv sync
+uv run pytest tests/ -v
 ```
 
 ## Test Implementati
@@ -109,9 +109,9 @@ I test coprono:
 ## Aggiungere Nuovi Test
 
 1. Crea un nuovo file `test_*.py` nella cartella `tests/`
-2. Usa `unittest.TestCase` come base class
-3. Nomina i metodi test con prefisso `test_`
-4. Esegui con `python -m unittest discover tests -v`
+2. Usa pytest (sintassi semplice con `assert`)
+3. Nomina le funzioni test con prefisso `test_`
+4. Esegui con `uv run pytest tests/ -v`
 
 ## Note
 

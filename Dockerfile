@@ -4,17 +4,18 @@ FROM python:3.11-slim
 # Directory di lavoro
 WORKDIR /app
 
-# Installa dipendenze Python con uv (molto più veloce) + Playwright in un layer
-COPY requirements.txt .
-RUN pip install --no-cache-dir uv && \
-    uv pip install --system --no-cache -r requirements.txt && \
-    playwright install chromium && \
-    playwright install-deps chromium && \
+# Installa uv (copiando binary da immagine ufficiale - metodo più veloce)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copia file dipendenze e sincronizza
+COPY pyproject.toml .
+RUN uv sync --no-dev && \
+    uv run playwright install chromium && \
+    uv run playwright install-deps chromium && \
     # Pulizia aggressiva per ridurre dimensione
     rm -rf /root/.cache/ms-playwright/webkit* /root/.cache/ms-playwright/firefox* && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.cache/pip && \
-    pip uninstall -y uv  # Rimuovi uv, non serve a runtime
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copia tutto il codice
 COPY . .
@@ -28,5 +29,5 @@ ENV SCRAPER_HOUR="9"
 ENV CHECKER_HOUR="10"
 ENV TZ="Europe/Rome"
 
-# Avvia il bot
-CMD ["python", "-u", "bot.py"]
+# Avvia il bot con uv
+CMD ["uv", "run", "python", "-u", "bot.py"]
