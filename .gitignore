@@ -4,9 +4,11 @@ venv/
 __pycache__/
 *.pyc
 
-# Data files (commentato perché servono in git per GitHub Actions)
-# data/users.json
-# data/current_rates.json
+# Data files (ignorati perché contengono dati utente)
+data/users.json
+data/current_rates.json
+# Ma non gli esempi
+!data/*.example
 
 # Playwright
 .playwright/

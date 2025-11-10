@@ -10,12 +10,99 @@ Questo documento traccia le ottimizzazioni identificate ma non ancora implementa
 - [x] **Smart number formatting** - Rimozione zeri trailing, virgola italiana
 - [x] **Notifiche intelligenti** - Gestione casi mixed (migliorato/peggiorato)
 - [x] **Webhook-only mode** - Rimosso supporto polling, semplificato codebase
+- [x] **Nested structure** - Struttura JSON a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
+- [x] **Variable rates support** - Supporto tariffe variabili (PUN/PSV + spread)
+- [x] **JSONDecodeError handling** - Gestione robusta errori parsing JSON con backup automatico
 
 ---
 
 ## 🔴 Alta Priorità
 
-### 1. Input Validation con Range Realistici
+### 1. Scraper Data Validation
+**Categoria:** Reliability | **Sforzo:** Basso | **Impatto:** Alto
+
+**Problema:** Se lo scraping fallisce parzialmente, salviamo comunque il JSON con dizionari vuoti `{}`. Il checker potrebbe crashare o inviare notifiche errate.
+
+**Soluzione:**
+```python
+def validate_scraped_data(tariffe_data: dict) -> bool:
+    """
+    Verifica che abbiamo estratto almeno le tariffe essenziali
+    Minimo richiesto: luce fissa monoraria + gas fisso monorario
+    """
+    luce_fissa = tariffe_data.get('luce', {}).get('fissa', {}).get('monoraria')
+    gas_fisso = tariffe_data.get('gas', {}).get('fissa', {}).get('monoraria')
+
+    if not luce_fissa or not gas_fisso:
+        return False
+
+    # Verifica presenza campi essenziali
+    if luce_fissa.get('energia') is None or luce_fissa.get('commercializzazione') is None:
+        return False
+    if gas_fisso.get('energia') is None or gas_fisso.get('commercializzazione') is None:
+        return False
+
+    return True
+
+# In scrape_octopus_tariffe(), prima di salvare:
+if not validate_scraped_data(tariffe_data):
+    raise ValueError("Scraping incompleto: mancano tariffe essenziali")
+```
+
+**Benefici:**
+- Previene salvataggio di dati incompleti
+- Errore chiaro se lo scraping fallisce
+- Protezione per il checker (evita KeyError)
+
+**File da modificare:** `scraper.py`
+
+---
+
+### 2. Checker Sanity Check
+**Categoria:** Reliability | **Sforzo:** Basso | **Impatto:** Medio
+
+**Problema:** Il checker non verifica se current_rates.json ha dati validi prima di confrontare.
+
+**Soluzione:**
+```python
+def validate_current_rates(current_rates: dict) -> bool:
+    """Verifica che current_rates abbia almeno alcune tariffe valide"""
+    if not current_rates or not isinstance(current_rates, dict):
+        return False
+
+    # Verifica presenza struttura minima
+    luce = current_rates.get('luce', {})
+    gas = current_rates.get('gas', {})
+
+    # Almeno una tariffa luce e una gas devono esistere
+    has_luce = any(
+        luce.get(tipo, {}).get(fascia)
+        for tipo in ['fissa', 'variabile']
+        for fascia in ['monoraria', 'trioraria']
+    )
+    has_gas = any(
+        gas.get(tipo, {}).get(fascia)
+        for tipo in ['fissa', 'variabile']
+        for fascia in ['monoraria']
+    )
+
+    return has_luce and has_gas
+
+# In check_and_notify_users(), dopo load:
+if not validate_current_rates(current_rates):
+    print("❌ current_rates.json non valido o incompleto")
+    return
+```
+
+**Benefici:**
+- Evita confronti con dati vuoti/corrotti
+- Log chiaro se il file è problematico
+
+**File da modificare:** `checker.py`
+
+---
+
+### 3. Input Validation con Range Realistici
 **Categoria:** Security | **Sforzo:** Medio | **Impatto:** Alto
 
 **Problema:** Gli utenti possono inserire valori negativi, zero, o numeri assurdi (es. 999 €/kWh).
@@ -44,7 +131,79 @@ def validate_price(value: str, price_type: str) -> Tuple[bool, Optional[float], 
 
 ---
 
-### 2. Cache In-Memory per users.json
+### 4. Unit Tests per Struttura Dati
+**Categoria:** Testing | **Sforzo:** Medio | **Impatto:** Alto
+
+**Problema:** Nessun test automatico per verificare la coerenza della struttura nested.
+
+**Soluzione:** Creare `tests/test_data_structure.py`:
+```python
+import unittest
+from pathlib import Path
+import json
+
+class TestDataStructure(unittest.TestCase):
+    """Test struttura JSON nested per current_rates e users"""
+
+    def test_current_rates_structure(self):
+        """Verifica struttura luce/gas → fissa/variabile → monoraria/trioraria"""
+        rates = {
+            "luce": {
+                "fissa": {"monoraria": {"energia": 0.145, "commercializzazione": 72.0}},
+                "variabile": {"monoraria": {"energia": 0.0088, "commercializzazione": 72.0}}
+            },
+            "gas": {
+                "fissa": {"monoraria": {"energia": 0.456, "commercializzazione": 84.0}}
+            }
+        }
+
+        # Test accesso nested
+        self.assertIn('luce', rates)
+        self.assertIn('fissa', rates['luce'])
+        self.assertIn('monoraria', rates['luce']['fissa'])
+        self.assertEqual(rates['luce']['fissa']['monoraria']['energia'], 0.145)
+
+    def test_user_structure(self):
+        """Verifica struttura utente con tipo/fascia separati"""
+        user = {
+            "luce": {
+                "tipo": "variabile",
+                "fascia": "monoraria",
+                "energia": 0.0088,
+                "commercializzazione": 72.0
+            },
+            "gas": None
+        }
+
+        self.assertEqual(user['luce']['tipo'], 'variabile')
+        self.assertEqual(user['luce']['fascia'], 'monoraria')
+        self.assertIsNone(user['gas'])
+
+    def test_last_notified_rates_structure(self):
+        """Verifica struttura last_notified_rates nested"""
+        last_notified = {
+            "luce": {"energia": 0.0088, "commercializzazione": 72.0},
+            "gas": {"energia": 0.08, "commercializzazione": 84.0}
+        }
+
+        self.assertIn('luce', last_notified)
+        self.assertIn('energia', last_notified['luce'])
+        self.assertNotIn('tipo', last_notified['luce'])  # Non serve salvare tipo
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+**Benefici:**
+- Verifica automatica struttura dati
+- Previene regressioni su refactoring
+- Documentazione struttura JSON
+
+**File da creare:** `tests/test_data_structure.py`, `tests/test_checker.py`, `tests/test_scraper.py`
+
+---
+
+### 5. Cache In-Memory per users.json
 **Categoria:** Performance | **Sforzo:** Medio | **Impatto:** Alto (solo con 50+ utenti)
 
 **Problema:** Ogni comando legge il file dal disco (load_users()).
@@ -79,7 +238,7 @@ class UsersCache:
 
 ## 🟡 Media Priorità
 
-### 3. Type Hints Completi
+### 6. Type Hints Completi
 **Categoria:** Best Practices | **Sforzo:** Alto | **Impatto:** Medio
 
 **Problema:** Nessuna funzione ha type hints completi → codice meno robusto.
@@ -88,13 +247,23 @@ class UsersCache:
 ```python
 from typing import Dict, Optional, TypedDict
 
+class TariffaDetail(TypedDict):
+    """Dettaglio singola tariffa"""
+    energia: float
+    commercializzazione: float
+
+class Fornitura(TypedDict, total=False):
+    """Struttura luce o gas utente"""
+    tipo: str  # "fissa" | "variabile"
+    fascia: str  # "monoraria" | "trioraria"
+    energia: float
+    commercializzazione: float
+
 class UserRates(TypedDict, total=False):
-    """Schema dati tariffe utente"""
-    luce_energia: float
-    luce_comm: float
-    gas_energia: Optional[float]
-    gas_comm: Optional[float]
-    last_notified_rates: Optional[Dict[str, float]]
+    """Schema dati tariffe utente (nuova struttura nested)"""
+    luce: Fornitura
+    gas: Optional[Fornitura]
+    last_notified_rates: Optional[Dict[str, TariffaDetail]]
 
 def load_users() -> Dict[str, UserRates]:
     """Carica dati utenti con type safety"""
@@ -111,7 +280,7 @@ def load_users() -> Dict[str, UserRates]:
 
 ---
 
-### 4. Refactor Funzioni Lunghe
+### 7. Refactor Funzioni Lunghe
 **Categoria:** Maintainability | **Sforzo:** Alto | **Impatto:** Medio
 
 **Problema:**
@@ -143,7 +312,7 @@ def extract_from_cards(page) -> tuple[Optional[TariffaData], Optional[TariffaDat
 
 ---
 
-### 5. Error Handling Specifico
+### 8. Error Handling Specifico
 **Categoria:** Best Practices | **Sforzo:** Medio | **Impatto:** Medio
 
 **Problema:** Troppi `except Exception as e` che catturano tutto.
@@ -180,7 +349,7 @@ except Exception as e:
 
 ## 🟢 Bassa Priorità
 
-### 6. Estrarre Magic Numbers/Strings
+### 9. Estrarre Magic Numbers/Strings
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Esempio:**
@@ -197,26 +366,19 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 ---
 
-### 7. Code Duplication - Logica Luce/Gas
-**Categoria:** Maintainability | **Sforzo:** Medio | **Impatto:** Basso
-
-**Problema:** La logica per controllare luce e gas è quasi identica in `checker.py`.
-
-**Soluzione:** Estrarre in funzione generica parametrica.
-
----
-
 ## 📊 Riepilogo Priorità
 
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
 |---|---------------|----------|--------|---------|---------|
-| 1 | Input validation | 🔴 Alta | Medio | Alto | Prossimo sprint |
-| 2 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
-| 3 | Type hints | 🟡 Media | Alto | Medio | Quando si aggiungono features |
-| 4 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
-| 5 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
-| 6 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
-| 7 | Code duplication | 🟢 Bassa | Medio | Basso | Mai urgente |
+| 1 | Scraper validation | 🔴 Alta | Basso | Alto | Prossimo sprint |
+| 2 | Checker sanity check | 🔴 Alta | Basso | Medio | Prossimo sprint |
+| 3 | Input validation range | 🔴 Alta | Medio | Alto | Prossimo sprint |
+| 4 | Unit tests struttura | 🔴 Alta | Medio | Alto | Quando si aggiungono features |
+| 5 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
+| 6 | Type hints | 🟡 Media | Alto | Medio | Quando si aggiungono features |
+| 7 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
+| 8 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
+| 9 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
@@ -227,7 +389,9 @@ TARIFF_NAME = "Mono-oraria Fissa"
 **Il codice attuale è già production-ready!** Queste ottimizzazioni sono miglioramenti incrementali, non critici per il funzionamento.
 
 Priorità suggerita:
-1. **Input validation** - Previene problemi reali
-2. Tutto il resto - Nice-to-have, implementare solo se necessario
+1. **Scraper/Checker validation** - Previene problemi reali con dati corrotti
+2. **Input validation** - UX migliore e sicurezza
+3. **Unit tests** - Prevenzione regressioni su refactoring futuri
+4. Tutto il resto - Nice-to-have, implementare solo se necessario
 
-Data ultima revisione: 2025-11-07
+Data ultima revisione: 2025-11-10

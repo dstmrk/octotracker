@@ -7,7 +7,8 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 ## 🎯 Funzionalità
 
 - **Bot Telegram 24/7** per registrare e gestire le tue tariffe (luce e gas)
-- **Scraping automatico** delle tariffe Octopus Energy (solo mono-orarie fisse)
+- **Scraping automatico** delle tariffe Octopus Energy (fisse e variabili, mono/triorarie)
+- **Supporto tariffe variabili** indicizzate a PUN (luce) e PSV (gas) + spread
 - **Notifiche intelligenti** con 3 modalità:
   - ✅ **Tutto migliorato**: conferma che la nuova tariffa conviene
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
@@ -202,31 +203,58 @@ Container Docker (sempre attivo)
 
 I dati sono salvati localmente in file JSON:
 
-**data/users.json** - Utenti e loro tariffe
+**data/users.json** - Utenti e loro tariffe (struttura nested)
 ```json
 {
   "123456789": {
-    "luce_energia": 0.12,
-    "luce_comm": 96.00,
-    "gas_energia": 0.45,
-    "gas_comm": 144.00,
-    "last_notified_rates": { ... }
+    "luce": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.0088,
+      "commercializzazione": 72.0
+    },
+    "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.456,
+      "commercializzazione": 84.0
+    },
+    "last_notified_rates": {
+      "luce": {"energia": 0.0088, "commercializzazione": 72.0},
+      "gas": {"energia": 0.456, "commercializzazione": 84.0}
+    }
   }
 }
 ```
 
-**data/current_rates.json** - Tariffe Octopus aggiornate
+**data/current_rates.json** - Tariffe Octopus aggiornate (struttura nested)
 ```json
 {
   "luce": {
-    "energia": 0.115,
-    "commercializzazione": 96.00,
-    "nome_tariffa": "Mono-oraria Fissa"
+    "fissa": {
+      "monoraria": {"energia": 0.145, "commercializzazione": 72.0}
+    },
+    "variabile": {
+      "monoraria": {"energia": 0.0088, "commercializzazione": 72.0},
+      "trioraria": {"energia": 0.0088, "commercializzazione": 72.0}
+    }
   },
-  "gas": { ... },
-  "data_aggiornamento": "2025-11-07"
+  "gas": {
+    "fissa": {
+      "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
+    },
+    "variabile": {
+      "monoraria": {"energia": 0.08, "commercializzazione": 84.0}
+    }
+  },
+  "data_aggiornamento": "2025-11-10"
 }
 ```
+
+**Nota sulla struttura**:
+- **users.json**: `tipo` indica "fissa" o "variabile", `fascia` indica "monoraria" o "trioraria"
+- **current_rates.json**: Struttura a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
+- Per tariffe variabili, `energia` rappresenta lo spread (es: PUN + 0.0088)
 
 **Persistenza**: I dati sono salvati nel volume Docker (`./data` nella cartella del progetto) e sono persistenti tra restart del container.
 
@@ -291,9 +319,12 @@ docker compose version
 
 ## 📝 Note
 
-- **Tariffe supportate**: solo mono-orarie fisse
+- **Tariffe supportate**:
+  - Luce: Fissa monoraria, Variabile monoraria (PUN + spread), Variabile trioraria (PUN + spread F1/F2/F3)
+  - Gas: Fissa monoraria, Variabile monoraria (PSV + spread)
 - **Fonte**: https://octopusenergy.it/le-nostre-tariffe
 - **Automazione**: scraping ore 9:00, controllo ore 10:00 (configurabile)
+- **Confronti**: Solo tariffe dello stesso tipo e fascia (nessun cross-type)
 - **Utenti**: può avere solo luce, oppure luce + gas
 - **Privacy**: dati salvati localmente
 - **Unità**: costi commercializzazione in €/anno
@@ -367,11 +398,12 @@ Vedi `OPTIMIZATIONS.md` per dettagli su ottimizzazioni tecniche del codice.
 
 ### Alta priorità
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
+- [ ] **Input validation** con range realistici per prezzi energia e commercializzazione
+- [ ] **Unit tests** per struttura dati nested e logica di confronto
 
 ### Media priorità
 - [ ] Supporto tariffe bi-orarie (F1/F23)
-- [ ] Supporto tariffe variabili (indicizzate)
-- [ ] Stima risparmio annuale con grafici
+- [ ] Stima risparmio annuale con grafici basati su consumi storici
 - [ ] Database esterno opzionale (PostgreSQL/SQLite) per scalabilità
 
 ### Bassa priorità
