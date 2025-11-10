@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Optional, Dict, Any
 from telegram import Bot
+from telegram.error import TelegramError, NetworkError, TimedOut, RetryAfter
 from dotenv import load_dotenv
 import asyncio
 
@@ -35,11 +36,17 @@ def load_json(file_path: Path) -> Optional[Dict[str, Any]]:
                 with open(file_path, 'r') as f:
                     first_lines = f.read(200)
                     print(f"   Prime righe: {repr(first_lines)}")
-            except Exception:
-                pass
+            except (OSError, PermissionError):
+                pass  # Debug read fallito, non critico
             return None
-        except Exception as e:
-            print(f"❌ Errore lettura {file_path.name}: {e}")
+        except FileNotFoundError:
+            print(f"📁 File non trovato: {file_path.name}")
+            return None
+        except PermissionError:
+            print(f"🔒 Permesso negato per leggere: {file_path.name}")
+            return None
+        except OSError as e:
+            print(f"💾 Errore I/O lettura {file_path.name}: {e}")
             return None
     return None
 
@@ -312,8 +319,17 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
     try:
         await bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return True
-    except Exception as e:
-        print(f"❌ Errore invio messaggio a {user_id}: {e}")
+    except RetryAfter as e:
+        print(f"⏱️  Rate limit per utente {user_id}: riprova tra {e.retry_after}s")
+        return False
+    except TimedOut:
+        print(f"⏱️  Timeout invio messaggio a {user_id}")
+        return False
+    except NetworkError as e:
+        print(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
+        return False
+    except TelegramError as e:
+        print(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
         return False
 
 async def check_and_notify_users(bot_token: str) -> None:

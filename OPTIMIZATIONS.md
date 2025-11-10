@@ -41,46 +41,9 @@ class UsersCache:
 
 ---
 
-## 🟡 Media Priorità
-
-### 1. Error Handling Specifico
-**Categoria:** Best Practices | **Sforzo:** Medio | **Impatto:** Medio
-
-**Problema:** Troppi `except Exception as e` che catturano tutto.
-
-**Esempio migliorato:**
-```python
-# Invece di:
-try:
-    result = scrape_octopus_tariffe()
-except Exception as e:  # ❌ Troppo generico
-    print(f"Errore: {e}")
-
-# Meglio:
-try:
-    result = scrape_octopus_tariffe()
-except TimeoutError:
-    print("⏱️  Timeout durante scraping")
-except PlaywrightError as e:
-    print(f"❌ Errore Playwright: {e}")
-except json.JSONDecodeError as e:
-    print(f"❌ Errore parsing JSON: {e}")
-except Exception as e:
-    print(f"❌ Errore inatteso: {e}")
-```
-
-**Benefici:**
-- Errori più chiari nei log
-- Gestione specifica per ogni tipo di errore
-- Debug più semplice
-
-**File da modificare:** Tutti
-
----
-
 ## 🟢 Bassa Priorità
 
-### 2. Estrarre Magic Numbers/Strings
+### 1. Estrarre Magic Numbers/Strings
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Esempio:**
@@ -102,8 +65,7 @@ TARIFF_NAME = "Mono-oraria Fissa"
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
 |---|---------------|----------|--------|---------|---------|
 | 1 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
-| 2 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
-| 3 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
+| 2 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
@@ -114,11 +76,12 @@ TARIFF_NAME = "Mono-oraria Fissa"
 **Il codice attuale è già production-ready!** Queste ottimizzazioni sono miglioramenti incrementali, non critici per il funzionamento.
 
 **Implementazioni completate**:
-- ✅ Unit tests (20 test pytest: scraper + checker)
+- ✅ Unit tests (47 test pytest: 6 scraper + 14 checker + 27 bot)
 - ✅ CI/CD con GitHub Actions (unit tests + Docker build su PR)
 - ✅ Migrazione a uv (10-100x più veloce di pip)
 - ✅ Type hints completi (tutti i file con annotazioni complete)
 - ✅ Refactor funzioni lunghe (scraper.py: 184→106 righe, checker.py: 110→7 righe)
+- ✅ Error handling specifico (Playwright, Telegram, File I/O con eccezioni dedicate)
 - ✅ Nested JSON structure (3 livelli: utility → tipo → fascia)
 - ✅ Variable rates support (tariffe PUN/PSV + spread)
 - ✅ Graceful degradation (dati parziali gestiti correttamente)

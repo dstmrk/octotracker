@@ -41,7 +41,7 @@ import re
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeout
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -231,8 +231,17 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
             if gas_variabile:
                 tariffe_data["gas"]["variabile"]["monoraria"] = gas_variabile
 
+        except PlaywrightTimeout:
+            print("⏱️  Timeout durante scraping: la pagina non ha risposto in tempo")
+            raise
+        except PlaywrightError as e:
+            print(f"❌ Errore Playwright durante scraping: {e}")
+            raise
+        except ConnectionError as e:
+            print(f"🌐 Errore di connessione durante scraping: {e}")
+            raise
         except Exception as e:
-            print(f"❌ Errore durante scraping: {e}")
+            print(f"❌ Errore inatteso durante scraping: {e}")
             raise
 
         finally:
