@@ -12,10 +12,10 @@ Estrae tariffe fisse e variabili per luce e gas:
 Struttura JSON salvata:
 {
   "luce_fissa": {"energia": float, "commercializzazione": float},
-  "luce_variabile_mono": {"spread": float, "commercializzazione": float, "indice": "PUN Mono"},
-  "luce_variabile_multi": {"spread": float, "commercializzazione": float, "indice": "PUN"},
+  "luce_variabile_mono": {"spread": float, "commercializzazione": float},
+  "luce_variabile_multi": {"spread": float, "commercializzazione": float},
   "gas_fisso": {"energia": float, "commercializzazione": float},
-  "gas_variabile": {"spread": float, "commercializzazione": float, "indice": "PSVDAm"},
+  "gas_variabile": {"spread": float, "commercializzazione": float},
   "data_aggiornamento": "YYYY-MM-DD"
 }
 """
@@ -92,8 +92,7 @@ async def scrape_octopus_tariffe():
 
                 tariffe_data["luce_variabile_mono"] = {
                     "spread": float(luce_var_mono_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm,
-                    "indice": "PUN Mono"
+                    "commercializzazione": comm
                 }
                 print(f"✅ Luce variabile mono: PUN Mono + {tariffe_data['luce_variabile_mono']['spread']} €/kWh, comm: {comm} €/anno")
 
@@ -123,8 +122,7 @@ async def scrape_octopus_tariffe():
 
                         tariffe_data["luce_variabile_multi"] = {
                             "spread": float(luce_var_multi_match.group(1).replace(',', '.')),
-                            "commercializzazione": comm,
-                            "indice": "PUN"
+                            "commercializzazione": comm
                         }
                         print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['spread']} €/kWh, comm: {comm} €/anno")
 
@@ -139,8 +137,7 @@ async def scrape_octopus_tariffe():
 
                 tariffe_data["luce_variabile_multi"] = {
                     "spread": float(luce_var_multi_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm,
-                    "indice": "PUN"
+                    "commercializzazione": comm
                 }
                 print(f"✅ Luce variabile multi: PUN + {tariffe_data['luce_variabile_multi']['spread']} €/kWh, comm: {comm} €/anno")
 
@@ -171,8 +168,7 @@ async def scrape_octopus_tariffe():
 
                 tariffe_data["gas_variabile"] = {
                     "spread": float(gas_var_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm,
-                    "indice": "PSVDAm"
+                    "commercializzazione": comm
                 }
                 print(f"✅ Gas variabile: PSVDAm + {tariffe_data['gas_variabile']['spread']} €/Smc, comm: {comm} €/anno")
 
