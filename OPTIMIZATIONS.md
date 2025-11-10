@@ -43,39 +43,7 @@ class UsersCache:
 
 ## 🟡 Media Priorità
 
-### 1. Refactor Funzioni Lunghe
-**Categoria:** Maintainability | **Sforzo:** Alto | **Impatto:** Medio
-
-**Problema:**
-- `scrape_octopus_tariffe()` - 184 righe (troppo lunga!)
-- `format_notification()` - 110 righe (troppo lunga!)
-
-**Soluzione:** Estrarre in funzioni più piccole:
-```python
-# scraper.py
-def extract_luce_from_text(text: str) -> Optional[TariffaData]:
-    """Estrae tariffa luce dal testo usando regex"""
-    # ...
-
-def extract_gas_from_text(text: str) -> Optional[TariffaData]:
-    """Estrae tariffa gas dal testo usando regex"""
-    # ...
-
-def extract_from_cards(page) -> tuple[Optional[TariffaData], Optional[TariffaData]]:
-    """Fallback: estrai tariffe da elementi card"""
-    # ...
-```
-
-**Benefici:**
-- Funzioni più corte e testabili
-- Responsabilità chiare
-- Più facile debug
-
-**File da modificare:** `scraper.py`, `checker.py`
-
----
-
-### 2. Error Handling Specifico
+### 1. Error Handling Specifico
 **Categoria:** Best Practices | **Sforzo:** Medio | **Impatto:** Medio
 
 **Problema:** Troppi `except Exception as e` che catturano tutto.
@@ -112,7 +80,7 @@ except Exception as e:
 
 ## 🟢 Bassa Priorità
 
-### 3. Estrarre Magic Numbers/Strings
+### 2. Estrarre Magic Numbers/Strings
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Esempio:**
@@ -134,9 +102,8 @@ TARIFF_NAME = "Mono-oraria Fissa"
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
 |---|---------------|----------|--------|---------|---------|
 | 1 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
-| 2 | Refactor funzioni | 🟡 Media | Alto | Medio | Per migliorare manutenibilità |
-| 3 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
-| 4 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
+| 2 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
+| 3 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
@@ -151,6 +118,7 @@ TARIFF_NAME = "Mono-oraria Fissa"
 - ✅ CI/CD con GitHub Actions (unit tests + Docker build su PR)
 - ✅ Migrazione a uv (10-100x più veloce di pip)
 - ✅ Type hints completi (tutti i file con annotazioni complete)
+- ✅ Refactor funzioni lunghe (scraper.py: 184→106 righe, checker.py: 110→7 righe)
 - ✅ Nested JSON structure (3 livelli: utility → tipo → fascia)
 - ✅ Variable rates support (tariffe PUN/PSV + spread)
 - ✅ Graceful degradation (dati parziali gestiti correttamente)
