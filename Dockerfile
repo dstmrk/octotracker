@@ -29,6 +29,7 @@ ENV TELEGRAM_BOT_TOKEN=""
 ENV SCRAPER_HOUR="9"
 ENV CHECKER_HOUR="10"
 ENV TZ="Europe/Rome"
+ENV LOG_LEVEL="INFO"
 
 # Avvia il bot con uv
 CMD ["uv", "run", "python", "-u", "bot.py"]

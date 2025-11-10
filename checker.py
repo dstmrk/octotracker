@@ -4,6 +4,7 @@ Controlla se ci sono tariffe più convenienti e notifica gli utenti
 """
 import os
 import json
+import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from telegram import Bot
@@ -12,6 +13,9 @@ from dotenv import load_dotenv
 import asyncio
 
 load_dotenv()
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
@@ -25,28 +29,28 @@ def load_json(file_path: Path) -> Optional[Dict[str, Any]]:
             with open(file_path, 'r') as f:
                 content = f.read()
                 if not content.strip():
-                    print(f"⚠️  {file_path.name} è vuoto")
+                    logger.warning(f"⚠️  {file_path.name} è vuoto")
                     return None
                 return json.loads(content)
         except json.JSONDecodeError as e:
-            print(f"❌ Errore parsing {file_path.name}: {e}")
-            print(f"   File location: {file_path}")
+            logger.error(f"❌ Errore parsing {file_path.name}: {e}")
+            logger.debug(f"   File location: {file_path}")
             # Mostra prime righe del file per debug
             try:
                 with open(file_path, 'r') as f:
                     first_lines = f.read(200)
-                    print(f"   Prime righe: {repr(first_lines)}")
+                    logger.debug(f"   Prime righe: {repr(first_lines)}")
             except (OSError, PermissionError):
                 pass  # Debug read fallito, non critico
             return None
         except FileNotFoundError:
-            print(f"📁 File non trovato: {file_path.name}")
+            logger.warning(f"📁 File non trovato: {file_path.name}")
             return None
         except PermissionError:
-            print(f"🔒 Permesso negato per leggere: {file_path.name}")
+            logger.error(f"🔒 Permesso negato per leggere: {file_path.name}")
             return None
         except OSError as e:
-            print(f"💾 Errore I/O lettura {file_path.name}: {e}")
+            logger.error(f"💾 Errore I/O lettura {file_path.name}: {e}")
             return None
     return None
 
@@ -320,32 +324,32 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
         await bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return True
     except RetryAfter as e:
-        print(f"⏱️  Rate limit per utente {user_id}: riprova tra {e.retry_after}s")
+        logger.warning(f"⏱️  Rate limit per utente {user_id}: riprova tra {e.retry_after}s")
         return False
     except TimedOut:
-        print(f"⏱️  Timeout invio messaggio a {user_id}")
+        logger.error(f"⏱️  Timeout invio messaggio a {user_id}")
         return False
     except NetworkError as e:
-        print(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
+        logger.error(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
         return False
     except TelegramError as e:
-        print(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
+        logger.error(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
         return False
 
 async def check_and_notify_users(bot_token: str) -> None:
     """Controlla tariffe e invia notifiche (chiamata da bot.py)"""
-    print("🔍 Inizio controllo tariffe...")
+    logger.info("🔍 Inizio controllo tariffe...")
 
     # Carica dati
     users = load_json(USERS_FILE)
     current_rates = load_json(RATES_FILE)
 
     if not users:
-        print("⚠️  Nessun utente registrato")
+        logger.warning("⚠️  Nessun utente registrato")
         return
 
     if not current_rates:
-        print("❌ Nessuna tariffa disponibile. Esegui prima scraper.py")
+        logger.error("❌ Nessuna tariffa disponibile. Esegui prima scraper.py")
         return
 
     # Inizializza bot
@@ -356,7 +360,7 @@ async def check_and_notify_users(bot_token: str) -> None:
     users_updated = False
 
     for user_id, user_rates in users.items():
-        print(f"📊 Controllo utente {user_id}...")
+        logger.info(f"📊 Controllo utente {user_id}...")
 
         savings = check_better_rates(user_rates, current_rates)
 
@@ -389,7 +393,7 @@ async def check_and_notify_users(bot_token: str) -> None:
             last_notified = user_rates.get('last_notified_rates', {})
 
             if last_notified == current_octopus:
-                print(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
+                logger.info(f"  ⏭️  Tariffe migliori già notificate in precedenza, skip")
             else:
                 # Tariffe diverse o prima notifica - invia messaggio
                 message = format_notification(savings, user_rates, current_rates)
@@ -399,16 +403,16 @@ async def check_and_notify_users(bot_token: str) -> None:
                     users[user_id]['last_notified_rates'] = current_octopus
                     users_updated = True
                     notifications_sent += 1
-                    print(f"  ✅ Notifica inviata e tariffe salvate")
+                    logger.info(f"  ✅ Notifica inviata e tariffe salvate")
         else:
-            print(f"  ℹ️  Nessun risparmio trovato")
+            logger.info(f"  ℹ️  Nessun risparmio trovato")
 
     # Salva users.json se ci sono stati aggiornamenti
     if users_updated:
         save_users(users)
-        print(f"💾 Dati utenti aggiornati")
+        logger.info(f"💾 Dati utenti aggiornati")
 
-    print(f"\n✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
+    logger.info(f"✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
 
 async def main() -> None:
     """Main per esecuzione standalone"""

@@ -82,6 +82,7 @@ TARIFF_NAME = "Mono-oraria Fissa"
 - ✅ Type hints completi (tutti i file con annotazioni complete)
 - ✅ Refactor funzioni lunghe (scraper.py: 184→106 righe, checker.py: 110→7 righe)
 - ✅ Error handling specifico (Playwright, Telegram, File I/O con eccezioni dedicate)
+- ✅ Structured logging system (livelli DEBUG/INFO/WARNING/ERROR, configurabile via ENV)
 - ✅ Nested JSON structure (3 livelli: utility → tipo → fascia)
 - ✅ Variable rates support (tariffe PUN/PSV + spread)
 - ✅ Graceful degradation (dati parziali gestiti correttamente)

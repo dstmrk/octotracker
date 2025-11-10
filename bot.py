@@ -6,6 +6,7 @@ Gestisce bot, scraper schedulato e checker schedulato
 import os
 import json
 import asyncio
+import logging
 from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import Dict, Any, Union, Optional
@@ -27,6 +28,22 @@ from scraper import scrape_octopus_tariffe
 from checker import check_and_notify_users, format_number
 
 load_dotenv()
+
+# Configurazione logging
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Setup logger per questo modulo
+logger = logging.getLogger(__name__)
+
+# Riduci verbosità librerie esterne
+logging.getLogger('telegram').setLevel(logging.WARNING)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 # Stati conversazione
 TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(7)
@@ -51,29 +68,29 @@ def load_users() -> Dict[str, Any]:
             with open(USERS_FILE, 'r') as f:
                 content = f.read()
                 if not content.strip():
-                    print("⚠️  users.json è vuoto, ritorno dizionario vuoto")
+                    logger.warning("⚠️  users.json è vuoto, ritorno dizionario vuoto")
                     return {}
                 return json.loads(content)
         except json.JSONDecodeError as e:
-            print(f"❌ Errore parsing users.json: {e}")
-            print(f"   File location: {USERS_FILE}")
+            logger.error(f"❌ Errore parsing users.json: {e}")
+            logger.debug(f"   File location: {USERS_FILE}")
             # Crea backup del file corrotto
             backup_file = USERS_FILE.parent / f"users.json.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             try:
                 import shutil
                 shutil.copy(USERS_FILE, backup_file)
-                print(f"   Backup creato: {backup_file}")
+                logger.info(f"   Backup creato: {backup_file}")
             except (OSError, PermissionError) as backup_error:
-                print(f"   Impossibile creare backup: {backup_error}")
+                logger.warning(f"   Impossibile creare backup: {backup_error}")
             return {}
         except FileNotFoundError:
-            print(f"📁 File non trovato: {USERS_FILE}")
+            logger.warning(f"📁 File non trovato: {USERS_FILE}")
             return {}
         except PermissionError:
-            print(f"🔒 Permesso negato per leggere: {USERS_FILE}")
+            logger.error(f"🔒 Permesso negato per leggere: {USERS_FILE}")
             return {}
         except OSError as e:
-            print(f"💾 Errore I/O lettura users.json: {e}")
+            logger.error(f"💾 Errore I/O lettura users.json: {e}")
             return {}
     return {}
 
@@ -82,7 +99,7 @@ def save_users(users: Dict[str, Any]) -> None:
     DATA_DIR.mkdir(exist_ok=True)
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
-    print(f"💾 Dati utenti salvati ({len(users)} utenti)")
+    logger.info(f"💾 Dati utenti salvati ({len(users)} utenti)")
 
 # ========== BOT COMMANDS ==========
 
@@ -481,35 +498,35 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
-    print(f"🕷️  [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio scraper...")
+    logger.info("🕷️  Avvio scraper...")
     try:
         result = await scrape_octopus_tariffe()
-        print(f"✅ Scraper completato: {result}")
+        logger.info(f"✅ Scraper completato: {result}")
     except PlaywrightTimeout:
-        print(f"⏱️  Timeout scraper: la pagina non ha risposto in tempo")
+        logger.error("⏱️  Timeout scraper: la pagina non ha risposto in tempo")
     except PlaywrightError as e:
-        print(f"❌ Errore Playwright scraper: {e}")
+        logger.error(f"❌ Errore Playwright scraper: {e}")
     except ConnectionError as e:
-        print(f"🌐 Errore di connessione scraper: {e}")
+        logger.error(f"🌐 Errore di connessione scraper: {e}")
     except OSError as e:
-        print(f"💾 Errore I/O scraper: {e}")
+        logger.error(f"💾 Errore I/O scraper: {e}")
     except Exception as e:
-        print(f"❌ Errore inatteso scraper: {e}")
+        logger.error(f"❌ Errore inatteso scraper: {e}")
 
 async def run_checker(bot_token: str) -> None:
     """Esegue checker e invia notifiche"""
-    print(f"🔍 [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Avvio checker...")
+    logger.info("🔍 Avvio checker...")
     try:
         await check_and_notify_users(bot_token)
-        print(f"✅ Checker completato")
+        logger.info("✅ Checker completato")
     except TelegramError as e:
-        print(f"❌ Errore Telegram checker: {e}")
+        logger.error(f"❌ Errore Telegram checker: {e}")
     except NetworkError as e:
-        print(f"🌐 Errore di rete checker: {e}")
+        logger.error(f"🌐 Errore di rete checker: {e}")
     except OSError as e:
-        print(f"💾 Errore I/O checker: {e}")
+        logger.error(f"💾 Errore I/O checker: {e}")
     except Exception as e:
-        print(f"❌ Errore inatteso checker: {e}")
+        logger.error(f"❌ Errore inatteso checker: {e}")
 
 def calculate_seconds_until_next_run(target_hour: int) -> float:
     """
@@ -537,7 +554,7 @@ async def scraper_daily_task() -> None:
     seconds_until_run = calculate_seconds_until_next_run(SCRAPER_HOUR)
     hours_until_run = seconds_until_run / 3600
 
-    print(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    logger.info(f"🕷️  Scraper schedulato per le {SCRAPER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
     # Loop infinito: esegui e dormi 24 ore
@@ -545,7 +562,7 @@ async def scraper_daily_task() -> None:
         await run_scraper()
 
         # Dormi esattamente 24 ore fino alla prossima esecuzione
-        print(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
+        logger.info(f"⏰ Prossimo scraper tra 24 ore (alle {SCRAPER_HOUR}:00)")
         await asyncio.sleep(24 * 3600)
 
 async def checker_daily_task(bot_token: str) -> None:
@@ -554,7 +571,7 @@ async def checker_daily_task(bot_token: str) -> None:
     seconds_until_run = calculate_seconds_until_next_run(CHECKER_HOUR)
     hours_until_run = seconds_until_run / 3600
 
-    print(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    logger.info(f"🔍 Checker schedulato per le {CHECKER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
     await asyncio.sleep(seconds_until_run)
 
     # Loop infinito: esegui e dormi 24 ore
@@ -562,7 +579,7 @@ async def checker_daily_task(bot_token: str) -> None:
         await run_checker(bot_token)
 
         # Dormi esattamente 24 ore fino alla prossima esecuzione
-        print(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
+        logger.info(f"⏰ Prossimo checker tra 24 ore (alle {CHECKER_HOUR}:00)")
         await asyncio.sleep(24 * 3600)
 
 # ========== ERROR HANDLER ==========
@@ -572,13 +589,14 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     error = context.error
 
     # Log dell'errore
-    print(f"❌ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Errore: {error}")
+    logger.error(f"❌ Errore: {error}")
+    # Sostituito timestamp per usare quello del logger.now().strftime('%Y-%m-%d %H:%M:%S')}] Errore: {error}")
 
     # Gestione specifica per timeout e errori di rete
     if isinstance(error, (TimedOut, NetworkError)):
-        print("⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente.")
+        logger.warning("⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente.")
     else:
-        print(f"⚠️  Tipo errore: {type(error).__name__}")
+        logger.error(f"⚠️  Tipo errore: {type(error).__name__}")
 
     # Non fare nulla - il bot continuerà a funzionare
 
@@ -598,12 +616,12 @@ def main() -> None:
     if not token:
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
 
-    print("🤖 Avvio OctoTracker...")
-    print(f"📡 Modalità: WEBHOOK")
-    print(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
-    print(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
-    print(f"🌐 Webhook URL: {WEBHOOK_URL}")
-    print(f"🔌 Porta: {WEBHOOK_PORT}")
+    logger.info("🤖 Avvio OctoTracker...")
+    logger.info(f"📡 Modalità: WEBHOOK")
+    logger.info(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
+    logger.info(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
+    logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
+    logger.info(f"🔌 Porta: {WEBHOOK_PORT}")
 
     # Costruisci app con timeout aumentati per connessioni lente (Raspberry Pi)
     app = (
@@ -644,13 +662,13 @@ def main() -> None:
     # Registra error handler per gestire timeout e errori di rete
     app.add_error_handler(error_handler)
 
-    print("✅ Bot configurato!")
+    logger.info("✅ Bot configurato!")
 
     # Verifica webhook URL
     if not WEBHOOK_URL:
         raise ValueError("WEBHOOK_URL richiesto")
 
-    print(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
+    logger.info(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
 
     # Configura webhook con retry per Docker
     app.run_webhook(
