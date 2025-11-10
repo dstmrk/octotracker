@@ -2,7 +2,7 @@
 
 <img height="256" width="256" src="https://github.com/user-attachments/assets/95261ce6-a06e-4b3e-b980-009069568753" alt="octotracker"/>
 
-[![Unit Tests](https://github.com/dstmrk/octotracker/actions/workflows/test.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/test.yml)
+[![Unit Tests](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml)
 [![Docker Build](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml)
 
 Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono offerte più convenienti.
