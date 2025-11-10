@@ -330,7 +330,7 @@ async def check_and_notify_users(bot_token: str):
         savings = check_better_rates(user_rates, current_rates)
 
         if savings['has_savings']:
-            # Costruisci oggetto con tariffe Octopus attuali (accesso diretto nested)
+            # Costruisci oggetto con tariffe Octopus attuali (struttura nested)
             current_octopus = {}
 
             # Luce: accesso diretto
@@ -338,8 +338,10 @@ async def check_and_notify_users(bot_token: str):
             luce_fascia = user_rates['luce']['fascia']
 
             if current_rates.get('luce', {}).get(luce_tipo, {}).get(luce_fascia):
-                current_octopus['luce_energia'] = current_rates['luce'][luce_tipo][luce_fascia]['energia']
-                current_octopus['luce_comm'] = current_rates['luce'][luce_tipo][luce_fascia]['commercializzazione']
+                current_octopus['luce'] = {
+                    'energia': current_rates['luce'][luce_tipo][luce_fascia]['energia'],
+                    'commercializzazione': current_rates['luce'][luce_tipo][luce_fascia]['commercializzazione']
+                }
 
             # Gas: aggiungi solo se l'utente ce l'ha
             if user_rates.get('gas') is not None:
@@ -347,8 +349,10 @@ async def check_and_notify_users(bot_token: str):
                 gas_fascia = user_rates['gas']['fascia']
 
                 if current_rates.get('gas', {}).get(gas_tipo, {}).get(gas_fascia):
-                    current_octopus['gas_energia'] = current_rates['gas'][gas_tipo][gas_fascia]['energia']
-                    current_octopus['gas_comm'] = current_rates['gas'][gas_tipo][gas_fascia]['commercializzazione']
+                    current_octopus['gas'] = {
+                        'energia': current_rates['gas'][gas_tipo][gas_fascia]['energia'],
+                        'commercializzazione': current_rates['gas'][gas_tipo][gas_fascia]['commercializzazione']
+                    }
 
             # Controlla se abbiamo già notificato queste stesse tariffe
             last_notified = user_rates.get('last_notified_rates', {})
