@@ -15,84 +15,15 @@ Questo documento traccia le ottimizzazioni identificate ma non ancora implementa
 - [x] **JSONDecodeError handling** - Gestione robusta errori parsing JSON con backup automatico
 - [x] **Scraper partial data** - Warning log per tariffe non trovate, salvataggio dati parziali
 - [x] **Checker graceful degradation** - Gestione automatica current_rates parziali con `.get()`
+- [x] **Unit Tests** - Test pytest per scraper, checker, e struttura dati (21 test totali)
+- [x] **uv migration** - Migrato da pip a uv per dependency management (10-100x più veloce)
+- [x] **GitHub Actions CI** - Test automatici e Docker build su PR verso main
 
 ---
 
 ## 🔴 Alta Priorità
 
-### 1. Unit Tests per Struttura Dati
-**Categoria:** Testing | **Sforzo:** Medio | **Impatto:** Alto
-
-**Problema:** Nessun test automatico per verificare la coerenza della struttura nested.
-
-**Soluzione:** Creare `tests/test_data_structure.py`:
-```python
-import unittest
-from pathlib import Path
-import json
-
-class TestDataStructure(unittest.TestCase):
-    """Test struttura JSON nested per current_rates e users"""
-
-    def test_current_rates_structure(self):
-        """Verifica struttura luce/gas → fissa/variabile → monoraria/trioraria"""
-        rates = {
-            "luce": {
-                "fissa": {"monoraria": {"energia": 0.145, "commercializzazione": 72.0}},
-                "variabile": {"monoraria": {"energia": 0.0088, "commercializzazione": 72.0}}
-            },
-            "gas": {
-                "fissa": {"monoraria": {"energia": 0.456, "commercializzazione": 84.0}}
-            }
-        }
-
-        # Test accesso nested
-        self.assertIn('luce', rates)
-        self.assertIn('fissa', rates['luce'])
-        self.assertIn('monoraria', rates['luce']['fissa'])
-        self.assertEqual(rates['luce']['fissa']['monoraria']['energia'], 0.145)
-
-    def test_user_structure(self):
-        """Verifica struttura utente con tipo/fascia separati"""
-        user = {
-            "luce": {
-                "tipo": "variabile",
-                "fascia": "monoraria",
-                "energia": 0.0088,
-                "commercializzazione": 72.0
-            },
-            "gas": None
-        }
-
-        self.assertEqual(user['luce']['tipo'], 'variabile')
-        self.assertEqual(user['luce']['fascia'], 'monoraria')
-        self.assertIsNone(user['gas'])
-
-    def test_last_notified_rates_structure(self):
-        """Verifica struttura last_notified_rates nested"""
-        last_notified = {
-            "luce": {"energia": 0.0088, "commercializzazione": 72.0},
-            "gas": {"energia": 0.08, "commercializzazione": 84.0}
-        }
-
-        self.assertIn('luce', last_notified)
-        self.assertIn('energia', last_notified['luce'])
-        self.assertNotIn('tipo', last_notified['luce'])  # Non serve salvare tipo
-
-if __name__ == '__main__':
-    unittest.main()
-```
-
-**Benefici:**
-- Verifica automatica struttura dati
-- Previene regressioni su refactoring
-- Documentazione struttura JSON
-
-**File da creare:** `tests/test_data_structure.py`, `tests/test_checker.py`, `tests/test_scraper.py`
-
----
-
-### 2. Cache In-Memory per users.json
+### 1. Cache In-Memory per users.json
 **Categoria:** Performance | **Sforzo:** Medio | **Impatto:** Alto (solo con 50+ utenti)
 
 **Problema:** Ogni comando legge il file dal disco (load_users()).
@@ -127,7 +58,7 @@ class UsersCache:
 
 ## 🟡 Media Priorità
 
-### 3. Type Hints Completi
+### 2. Type Hints Completi
 **Categoria:** Best Practices | **Sforzo:** Alto | **Impatto:** Medio
 
 **Problema:** Nessuna funzione ha type hints completi → codice meno robusto.
@@ -169,7 +100,7 @@ def load_users() -> Dict[str, UserRates]:
 
 ---
 
-### 4. Refactor Funzioni Lunghe
+### 3. Refactor Funzioni Lunghe
 **Categoria:** Maintainability | **Sforzo:** Alto | **Impatto:** Medio
 
 **Problema:**
@@ -201,7 +132,7 @@ def extract_from_cards(page) -> tuple[Optional[TariffaData], Optional[TariffaDat
 
 ---
 
-### 5. Error Handling Specifico
+### 4. Error Handling Specifico
 **Categoria:** Best Practices | **Sforzo:** Medio | **Impatto:** Medio
 
 **Problema:** Troppi `except Exception as e` che catturano tutto.
@@ -238,7 +169,7 @@ except Exception as e:
 
 ## 🟢 Bassa Priorità
 
-### 6. Estrarre Magic Numbers/Strings
+### 5. Estrarre Magic Numbers/Strings
 **Categoria:** Code Quality | **Sforzo:** Basso | **Impatto:** Basso
 
 **Esempio:**
@@ -259,12 +190,11 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 | # | Ottimizzazione | Priorità | Sforzo | Impatto | Quando |
 |---|---------------|----------|--------|---------|---------|
-| 1 | Unit tests struttura | 🔴 Alta | Medio | Alto | Quando si aggiungono features |
-| 2 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
-| 3 | Type hints | 🟡 Media | Alto | Medio | Quando si aggiungono features |
-| 4 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
-| 5 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
-| 6 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
+| 1 | Cache users.json | 🔴 Alta* | Medio | Alto* | Solo se 50+ utenti |
+| 2 | Type hints | 🟡 Media | Alto | Medio | Quando si aggiungono features |
+| 3 | Refactor funzioni | 🟡 Media | Alto | Medio | Se diventa difficile mantenere |
+| 4 | Error handling | 🟡 Media | Medio | Medio | Quando si debugga spesso |
+| 5 | Magic numbers | 🟢 Bassa | Basso | Basso | Mai urgente |
 
 *Solo per bot con molti utenti (50+)
 
@@ -274,11 +204,10 @@ TARIFF_NAME = "Mono-oraria Fissa"
 
 **Il codice attuale è già production-ready!** Queste ottimizzazioni sono miglioramenti incrementali, non critici per il funzionamento.
 
-Priorità suggerita:
-1. **Unit tests** - Prevenzione regressioni su refactoring futuri
-2. Tutto il resto - Nice-to-have, implementare solo se necessario
-
-**Note**:
+**Note implementazioni recenti**:
+- ✅ Unit tests implementati (21 test pytest)
+- ✅ CI/CD con GitHub Actions (test automatici su PR)
+- ✅ Migrazione a uv (10-100x più veloce di pip)
 - Scraper/Checker già gestiscono dati parziali gracefully (warning logs + `.get()`)
 - Input validation non necessaria (mostriamo riepilogo all'utente dopo inserimento)
 
