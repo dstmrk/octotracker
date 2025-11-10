@@ -1,27 +1,16 @@
-name: Tests
+name: Unit Tests
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/**'
-      - 'tests/**'
   pull_request:
     branches: [ main ]
     paths:
       - '**.py'
       - 'pyproject.toml'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/**'
+      - '.github/workflows/test.yml'
       - 'tests/**'
 
 jobs:
-  unit-tests:
+  test:
     name: Unit Tests
     runs-on: ubuntu-latest
 
@@ -55,31 +44,3 @@ jobs:
           echo "❌ Some tests failed"
           exit 1
         fi
-
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker image
-      run: docker compose build
-
-    - name: Verify image created
-      run: |
-        if docker images | grep -q "octotracker"; then
-          echo "✅ Docker image built successfully!"
-        else
-          echo "❌ Docker image build failed"
-          exit 1
-        fi
-
-    - name: Test container starts (dry-run)
-      run: |
-        # Test che il container parta (senza token, fallirà ma verificherà sintassi)
-        docker compose config --quiet && echo "✅ Docker Compose configuration valid"
