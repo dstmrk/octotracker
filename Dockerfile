@@ -7,8 +7,9 @@ WORKDIR /app
 # Installa uv (copiando binary da immagine ufficiale - metodo più veloce)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copia file dipendenze e sincronizza
+# Copia file dipendenze e package structure
 COPY pyproject.toml .
+COPY src/ ./src/
 RUN uv sync --no-dev && \
     uv run playwright install chromium && \
     uv run playwright install-deps chromium && \
