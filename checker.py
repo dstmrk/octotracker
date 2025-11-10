@@ -67,7 +67,7 @@ def format_number(value, max_decimals=3):
 
 def check_better_rates(user_rates, current_rates):
     """
-    Confronta tariffe utente con tariffe attuali
+    Confronta tariffe utente con tariffe attuali dello stesso tipo
     Ritorna dizionario con risparmi e peggioramenti trovati
     """
     savings = {
@@ -80,56 +80,84 @@ def check_better_rates(user_rates, current_rates):
         'gas_energia_worse': False,
         'gas_comm_worse': False,
         'has_savings': False,
-        'is_mixed': False
+        'is_mixed': False,
+        'luce_tipo': user_rates.get('luce_tipo', 'Fissa'),
+        'gas_tipo': user_rates.get('gas_tipo')
     }
 
-    # Controlla luce
-    if current_rates.get('luce'):
-        if current_rates['luce'].get('energia'):
-            if current_rates['luce']['energia'] < user_rates['luce_energia']:
+    # Determina quale tariffa luce confrontare in base al tipo dell'utente
+    luce_tipo = user_rates.get('luce_tipo', 'Fissa')
+
+    # Mappa tipo → chiave nel current_rates
+    luce_key = None
+    if luce_tipo == "Fissa":
+        luce_key = 'luce_fissa'
+    elif luce_tipo == "Variabile Monoraria":
+        luce_key = 'luce_variabile_mono'
+    elif luce_tipo == "Variabile Trioraria":
+        luce_key = 'luce_variabile_multi'
+
+    # Controlla luce (solo se troviamo la tariffa dello stesso tipo)
+    if luce_key and current_rates.get(luce_key):
+        luce_rate = current_rates[luce_key]
+
+        if luce_rate.get('energia') is not None:
+            if luce_rate['energia'] < user_rates['luce_energia']:
                 savings['luce_energia'] = {
                     'attuale': user_rates['luce_energia'],
-                    'nuova': current_rates['luce']['energia'],
-                    'risparmio': user_rates['luce_energia'] - current_rates['luce']['energia']
+                    'nuova': luce_rate['energia'],
+                    'risparmio': user_rates['luce_energia'] - luce_rate['energia']
                 }
                 savings['has_savings'] = True
-            elif current_rates['luce']['energia'] > user_rates['luce_energia']:
+            elif luce_rate['energia'] > user_rates['luce_energia']:
                 savings['luce_energia_worse'] = True
 
-        if current_rates['luce'].get('commercializzazione'):
-            if current_rates['luce']['commercializzazione'] < user_rates['luce_comm']:
+        if luce_rate.get('commercializzazione') is not None:
+            if luce_rate['commercializzazione'] < user_rates['luce_comm']:
                 savings['luce_comm'] = {
                     'attuale': user_rates['luce_comm'],
-                    'nuova': current_rates['luce']['commercializzazione'],
-                    'risparmio': user_rates['luce_comm'] - current_rates['luce']['commercializzazione']
+                    'nuova': luce_rate['commercializzazione'],
+                    'risparmio': user_rates['luce_comm'] - luce_rate['commercializzazione']
                 }
                 savings['has_savings'] = True
-            elif current_rates['luce']['commercializzazione'] > user_rates['luce_comm']:
+            elif luce_rate['commercializzazione'] > user_rates['luce_comm']:
                 savings['luce_comm_worse'] = True
 
     # Controlla gas (solo se l'utente ha il gas)
-    if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
-        if current_rates['gas'].get('energia'):
-            if current_rates['gas']['energia'] < user_rates['gas_energia']:
-                savings['gas_energia'] = {
-                    'attuale': user_rates['gas_energia'],
-                    'nuova': current_rates['gas']['energia'],
-                    'risparmio': user_rates['gas_energia'] - current_rates['gas']['energia']
-                }
-                savings['has_savings'] = True
-            elif current_rates['gas']['energia'] > user_rates['gas_energia']:
-                savings['gas_energia_worse'] = True
+    if user_rates.get('gas_energia') is not None:
+        gas_tipo = user_rates.get('gas_tipo', 'Fissa')
 
-        if current_rates['gas'].get('commercializzazione') and user_rates.get('gas_comm') is not None:
-            if current_rates['gas']['commercializzazione'] < user_rates['gas_comm']:
-                savings['gas_comm'] = {
-                    'attuale': user_rates['gas_comm'],
-                    'nuova': current_rates['gas']['commercializzazione'],
-                    'risparmio': user_rates['gas_comm'] - current_rates['gas']['commercializzazione']
-                }
-                savings['has_savings'] = True
-            elif current_rates['gas']['commercializzazione'] > user_rates['gas_comm']:
-                savings['gas_comm_worse'] = True
+        # Mappa tipo → chiave nel current_rates
+        gas_key = None
+        if gas_tipo == "Fissa":
+            gas_key = 'gas_fisso'
+        elif gas_tipo == "Variabile Monoraria":
+            gas_key = 'gas_variabile'
+
+        if gas_key and current_rates.get(gas_key):
+            gas_rate = current_rates[gas_key]
+
+            if gas_rate.get('energia') is not None:
+                if gas_rate['energia'] < user_rates['gas_energia']:
+                    savings['gas_energia'] = {
+                        'attuale': user_rates['gas_energia'],
+                        'nuova': gas_rate['energia'],
+                        'risparmio': user_rates['gas_energia'] - gas_rate['energia']
+                    }
+                    savings['has_savings'] = True
+                elif gas_rate['energia'] > user_rates['gas_energia']:
+                    savings['gas_energia_worse'] = True
+
+            if gas_rate.get('commercializzazione') is not None and user_rates.get('gas_comm') is not None:
+                if gas_rate['commercializzazione'] < user_rates['gas_comm']:
+                    savings['gas_comm'] = {
+                        'attuale': user_rates['gas_comm'],
+                        'nuova': gas_rate['commercializzazione'],
+                        'risparmio': user_rates['gas_comm'] - gas_rate['commercializzazione']
+                    }
+                    savings['has_savings'] = True
+                elif gas_rate['commercializzazione'] > user_rates['gas_comm']:
+                    savings['gas_comm_worse'] = True
 
     # Determina se è un caso "mixed" (una componente migliora, l'altra peggiora)
     # Per luce
@@ -156,67 +184,105 @@ def format_notification(savings, user_rates, current_rates):
         message = "⚡️ <b>Buone notizie!</b>\n"
         message += "OctoTracker ha trovato una tariffa Octopus Energy più conveniente rispetto a quella che hai attiva.\n\n"
 
-    # Mostra Luce SOLO se c'è almeno un miglioramento (anche se c'è un peggioramento nell'altra componente)
+    # Mostra Luce SOLO se c'è almeno un miglioramento
     if savings['luce_energia'] or savings['luce_comm']:
+        luce_tipo = savings['luce_tipo']
+
+        # Determina label e unità in base al tipo
+        if luce_tipo == "Fissa":
+            luce_label = "Prezzo fisso"
+        elif luce_tipo == "Variabile Monoraria":
+            luce_label = "Spread (PUN +)"
+        else:  # Variabile Trioraria
+            luce_label = "Spread (PUN +)"
+
         message += "💡 <b>Luce:</b>\n"
-        # Formatta con zeri trailing rimossi
-        user_energia = format_number(user_rates['luce_energia'], max_decimals=3)
+
+        # Formatta energia con max_decimals=4 per spread (es. 0,0088)
+        user_energia = format_number(user_rates['luce_energia'], max_decimals=4)
         user_comm = format_number(user_rates['luce_comm'], max_decimals=2)
-        message += f"Tua tariffa: {user_energia} €/kWh, {user_comm} €/anno\n"
 
-        # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
-        energia_new = current_rates['luce']['energia']
-        comm_new = current_rates['luce']['commercializzazione']
+        message += f"Tua tariffa: {luce_label} {user_energia} €/kWh, Comm. {user_comm} €/anno\n"
 
-        energia_formatted = format_number(energia_new, max_decimals=3)
-        comm_formatted = format_number(comm_new, max_decimals=2)
+        # Ottieni tariffe nuove da current_rates
+        luce_key = None
+        if luce_tipo == "Fissa":
+            luce_key = 'luce_fissa'
+        elif luce_tipo == "Variabile Monoraria":
+            luce_key = 'luce_variabile_mono'
+        else:  # Variabile Trioraria
+            luce_key = 'luce_variabile_multi'
 
-        if savings['luce_energia']:
-            energia_str = f"<b>{energia_formatted} €/kWh</b>"
-        elif savings['luce_energia_worse']:
-            energia_str = f"<u>{energia_formatted} €/kWh</u>"
-        else:
-            energia_str = f"{energia_formatted} €/kWh"
+        if luce_key and current_rates.get(luce_key):
+            energia_new = current_rates[luce_key]['energia']
+            comm_new = current_rates[luce_key]['commercializzazione']
 
-        if savings['luce_comm']:
-            comm_str = f"<b>{comm_formatted} €/anno</b>"
-        elif savings['luce_comm_worse']:
-            comm_str = f"<u>{comm_formatted} €/anno</u>"
-        else:
-            comm_str = f"{comm_formatted} €/anno"
+            energia_formatted = format_number(energia_new, max_decimals=4)
+            comm_formatted = format_number(comm_new, max_decimals=2)
 
-        message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
+            if savings['luce_energia']:
+                energia_str = f"<b>{energia_formatted} €/kWh</b>"
+            elif savings['luce_energia_worse']:
+                energia_str = f"<u>{energia_formatted} €/kWh</u>"
+            else:
+                energia_str = f"{energia_formatted} €/kWh"
 
-    # Mostra Gas SOLO se c'è almeno un miglioramento (anche se c'è un peggioramento nell'altra componente)
+            if savings['luce_comm']:
+                comm_str = f"<b>{comm_formatted} €/anno</b>"
+            elif savings['luce_comm_worse']:
+                comm_str = f"<u>{comm_formatted} €/anno</u>"
+            else:
+                comm_str = f"{comm_formatted} €/anno"
+
+            message += f"Nuova tariffa: {luce_label} {energia_str}, Comm. {comm_str}\n\n"
+
+    # Mostra Gas SOLO se c'è almeno un miglioramento
     if user_rates.get('gas_energia') is not None and (savings['gas_energia'] or savings['gas_comm']):
+        gas_tipo = savings['gas_tipo']
+
+        # Determina label in base al tipo
+        if gas_tipo == "Fissa":
+            gas_label = "Prezzo fisso"
+        else:  # Variabile Monoraria
+            gas_label = "Spread (PSV +)"
+
         message += "🔥 <b>Gas:</b>\n"
-        # Formatta con zeri trailing rimossi
-        user_gas_energia = format_number(user_rates['gas_energia'], max_decimals=3)
+
+        # Formatta energia con max_decimals=4 per spread
+        user_gas_energia = format_number(user_rates['gas_energia'], max_decimals=4)
         user_gas_comm = format_number(user_rates['gas_comm'], max_decimals=2)
-        message += f"Tua tariffa: {user_gas_energia} €/Smc, {user_gas_comm} €/anno\n"
 
-        # Formatta valori: grassetto per miglioramenti, sottolineato per peggioramenti
-        energia_new = current_rates['gas']['energia']
-        comm_new = current_rates['gas']['commercializzazione']
+        message += f"Tua tariffa: {gas_label} {user_gas_energia} €/Smc, Comm. {user_gas_comm} €/anno\n"
 
-        energia_formatted = format_number(energia_new, max_decimals=3)
-        comm_formatted = format_number(comm_new, max_decimals=2)
+        # Ottieni tariffe nuove da current_rates
+        gas_key = None
+        if gas_tipo == "Fissa":
+            gas_key = 'gas_fisso'
+        else:  # Variabile Monoraria
+            gas_key = 'gas_variabile'
 
-        if savings['gas_energia']:
-            energia_str = f"<b>{energia_formatted} €/Smc</b>"
-        elif savings['gas_energia_worse']:
-            energia_str = f"<u>{energia_formatted} €/Smc</u>"
-        else:
-            energia_str = f"{energia_formatted} €/Smc"
+        if gas_key and current_rates.get(gas_key):
+            energia_new = current_rates[gas_key]['energia']
+            comm_new = current_rates[gas_key]['commercializzazione']
 
-        if savings['gas_comm']:
-            comm_str = f"<b>{comm_formatted} €/anno</b>"
-        elif savings['gas_comm_worse']:
-            comm_str = f"<u>{comm_formatted} €/anno</u>"
-        else:
-            comm_str = f"{comm_formatted} €/anno"
+            energia_formatted = format_number(energia_new, max_decimals=4)
+            comm_formatted = format_number(comm_new, max_decimals=2)
 
-        message += f"Nuova tariffa: {energia_str}, {comm_str}\n\n"
+            if savings['gas_energia']:
+                energia_str = f"<b>{energia_formatted} €/Smc</b>"
+            elif savings['gas_energia_worse']:
+                energia_str = f"<u>{energia_formatted} €/Smc</u>"
+            else:
+                energia_str = f"{energia_formatted} €/Smc"
+
+            if savings['gas_comm']:
+                comm_str = f"<b>{comm_formatted} €/anno</b>"
+            elif savings['gas_comm_worse']:
+                comm_str = f"<u>{comm_formatted} €/anno</u>"
+            else:
+                comm_str = f"{comm_formatted} €/anno"
+
+            message += f"Nuova tariffa: {gas_label} {energia_str}, Comm. {comm_str}\n\n"
 
     # Footer diverso per caso mixed
     if savings['is_mixed']:
@@ -267,16 +333,35 @@ async def check_and_notify_users(bot_token: str):
         savings = check_better_rates(user_rates, current_rates)
 
         if savings['has_savings']:
-            # Costruisci oggetto con tariffe Octopus attuali
-            current_octopus = {
-                'luce_energia': current_rates['luce']['energia'],
-                'luce_comm': current_rates['luce']['commercializzazione']
-            }
+            # Costruisci oggetto con tariffe Octopus attuali (in base al tipo utente)
+            current_octopus = {}
 
-            # Aggiungi gas solo se l'utente ce l'ha e se sono disponibili
-            if current_rates.get('gas') and user_rates.get('gas_energia') is not None:
-                current_octopus['gas_energia'] = current_rates['gas']['energia']
-                current_octopus['gas_comm'] = current_rates['gas']['commercializzazione']
+            # Determina chiave luce in base al tipo dell'utente
+            luce_tipo = user_rates.get('luce_tipo', 'Fissa')
+            luce_key = None
+            if luce_tipo == "Fissa":
+                luce_key = 'luce_fissa'
+            elif luce_tipo == "Variabile Monoraria":
+                luce_key = 'luce_variabile_mono'
+            elif luce_tipo == "Variabile Trioraria":
+                luce_key = 'luce_variabile_multi'
+
+            if luce_key and current_rates.get(luce_key):
+                current_octopus['luce_energia'] = current_rates[luce_key]['energia']
+                current_octopus['luce_comm'] = current_rates[luce_key]['commercializzazione']
+
+            # Aggiungi gas solo se l'utente ce l'ha
+            if user_rates.get('gas_energia') is not None:
+                gas_tipo = user_rates.get('gas_tipo', 'Fissa')
+                gas_key = None
+                if gas_tipo == "Fissa":
+                    gas_key = 'gas_fisso'
+                elif gas_tipo == "Variabile Monoraria":
+                    gas_key = 'gas_variabile'
+
+                if gas_key and current_rates.get(gas_key):
+                    current_octopus['gas_energia'] = current_rates[gas_key]['energia']
+                    current_octopus['gas_comm'] = current_rates[gas_key]['commercializzazione']
 
             # Controlla se abbiamo già notificato queste stesse tariffe
             last_notified = user_rates.get('last_notified_rates', {})
