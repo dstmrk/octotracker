@@ -55,7 +55,17 @@ CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italia
 # Configurazione webhook
 WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio.xyz
 WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
-WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')  # Token segreto per validazione
+
+# Validazione WEBHOOK_SECRET obbligatorio (protezione da webhook spoofing)
+WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
+if not WEBHOOK_SECRET:
+    raise ValueError(
+        "WEBHOOK_SECRET è obbligatorio per sicurezza del webhook.\n"
+        "Genera un token sicuro con:\n"
+        "  python -c 'import secrets; print(secrets.token_urlsafe(32))'\n"
+        "Poi aggiungilo al file .env:\n"
+        "  WEBHOOK_SECRET=<token_generato>"
+    )
 
 # ========== BOT COMMANDS ==========
 
@@ -655,7 +665,7 @@ def main() -> None:
         port=WEBHOOK_PORT,
         url_path=token,  # Usa il token come path per sicurezza
         webhook_url=f"{WEBHOOK_URL}/{token}",
-        secret_token=WEBHOOK_SECRET if WEBHOOK_SECRET else None,
+        secret_token=WEBHOOK_SECRET,  # Validato all'avvio (protezione webhook spoofing)
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,  # Evita messaggi vecchi
         bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo
