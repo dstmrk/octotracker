@@ -104,7 +104,7 @@ docker-compose up -d --build
 ### Dati Persistenti
 
 I dati sono salvati in `./data/`:
-- `users.json` - utenti registrati e tariffe
+- `users.db` - database SQLite con utenti registrati e tariffe
 - `current_rates.json` - tariffe Octopus aggiornate
 
 **Backup**: Copia semplicemente la cartella `data/`!
@@ -204,31 +204,29 @@ Container Docker (sempre attivo)
 
 ### Dati
 
-I dati sono salvati localmente in file JSON:
+I dati sono salvati localmente:
 
-**data/users.json** - Utenti e loro tariffe (struttura nested)
-```json
-{
-  "123456789": {
-    "luce": {
-      "tipo": "variabile",
-      "fascia": "monoraria",
-      "energia": 0.0088,
-      "commercializzazione": 72.0
-    },
-    "gas": {
-      "tipo": "fissa",
-      "fascia": "monoraria",
-      "energia": 0.456,
-      "commercializzazione": 84.0
-    },
-    "last_notified_rates": {
-      "luce": {"energia": 0.0088, "commercializzazione": 72.0},
-      "gas": {"energia": 0.456, "commercializzazione": 84.0}
-    }
-  }
-}
-```
+**data/users.db** - Database SQLite con utenti e loro tariffe
+- Tabella `users` con campi flat per luce e gas
+- Campo `last_notified_rates` in formato JSON per tracking notifiche
+- Supporta transazioni ACID per evitare race conditions con 1000+ utenti
+- Schema:
+  ```sql
+  CREATE TABLE users (
+      user_id TEXT PRIMARY KEY,
+      luce_tipo TEXT NOT NULL,
+      luce_fascia TEXT NOT NULL,
+      luce_energia REAL NOT NULL,
+      luce_commercializzazione REAL NOT NULL,
+      gas_tipo TEXT,
+      gas_fascia TEXT,
+      gas_energia REAL,
+      gas_commercializzazione REAL,
+      last_notified_rates TEXT,  -- JSON
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  ```
 
 **data/current_rates.json** - Tariffe Octopus aggiornate (struttura nested)
 ```json
@@ -255,11 +253,13 @@ I dati sono salvati localmente in file JSON:
 ```
 
 **Nota sulla struttura**:
-- **users.json**: `tipo` indica "fissa" o "variabile", `fascia` indica "monoraria" o "trioraria"
+- **users.db**: Database SQLite con supporto transazioni ACID per scalare a 1000+ utenti
 - **current_rates.json**: Struttura a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
 - Per tariffe variabili, `energia` rappresenta lo spread (es: PUN + 0.0088)
 
 **Persistenza**: I dati sono salvati nel volume Docker (`./data` nella cartella del progetto) e sono persistenti tra restart del container.
+
+**Scalabilità**: SQLite gestisce automaticamente race conditions con locking, permettendo di scalare fino a 1000+ utenti senza perdita dati.
 
 ## 🛠️ Sviluppo Locale (senza Docker)
 
