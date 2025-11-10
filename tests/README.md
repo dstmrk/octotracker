@@ -43,7 +43,7 @@ Verifica la logica di confronto tariffe:
 - ✅ Utenti con e senza gas
 - ✅ current_rates parziali
 - ✅ current_rates completamente vuoti
-- ✅ Formato users.json con e senza last_notified_rates
+- ✅ Database SQLite con e senza last_notified_rates
 
 **Non invia notifiche reali** - verifica solo la logica.
 
@@ -98,27 +98,44 @@ Verifica flussi conversazionali Telegram e gestione input:
 }
 ```
 
-### users.json
-```json
+### users.db (SQLite)
+**Schema tabella `users`:**
+```sql
+CREATE TABLE users (
+    user_id TEXT PRIMARY KEY,
+    luce_tipo TEXT NOT NULL,
+    luce_fascia TEXT NOT NULL,
+    luce_energia REAL NOT NULL,
+    luce_commercializzazione REAL NOT NULL,
+    gas_tipo TEXT,
+    gas_fascia TEXT,
+    gas_energia REAL,
+    gas_commercializzazione REAL,
+    last_notified_rates TEXT,  -- JSON: {"luce": {...}, "gas": {...}}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Formato dict restituito da `load_user()`:**
+```python
 {
-  "123456789": {
     "luce": {
-      "tipo": "variabile",
-      "fascia": "monoraria",
-      "energia": 0.0088,
-      "commercializzazione": 72.0
+        "tipo": "variabile",
+        "fascia": "monoraria",
+        "energia": 0.0088,
+        "commercializzazione": 72.0
     },
-    "gas": {
-      "tipo": "fissa",
-      "fascia": "monoraria",
-      "energia": 0.456,
-      "commercializzazione": 84.0
+    "gas": {  # None se utente non ha gas
+        "tipo": "fissa",
+        "fascia": "monoraria",
+        "energia": 0.456,
+        "commercializzazione": 84.0
     },
-    "last_notified_rates": {
-      "luce": {"energia": 0.0088, "commercializzazione": 72.0},
-      "gas": {"energia": 0.456, "commercializzazione": 84.0}
+    "last_notified_rates": {  # Campo opzionale
+        "luce": {"energia": 0.0088, "commercializzazione": 72.0},
+        "gas": {"energia": 0.456, "commercializzazione": 84.0}
     }
-  }
 }
 ```
 

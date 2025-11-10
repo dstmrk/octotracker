@@ -6,8 +6,9 @@ uv.lock
 __pycache__/
 *.pyc
 
-# Data files (ignorati perché contengono dati utente)
+# Data files (ignorati perché contengono dati utente/tariffe)
 data/users.json
+data/users.db
 data/current_rates.json
 # Ma non gli esempi
 !data/*.example
