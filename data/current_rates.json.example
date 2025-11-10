@@ -1,0 +1,35 @@
+{
+  "luce": {
+    "fissa": {
+      "monoraria": {
+        "energia": 0.145,
+        "commercializzazione": 72.0
+      }
+    },
+    "variabile": {
+      "monoraria": {
+        "energia": 0.0088,
+        "commercializzazione": 72.0
+      },
+      "trioraria": {
+        "energia": 0.0088,
+        "commercializzazione": 72.0
+      }
+    }
+  },
+  "gas": {
+    "fissa": {
+      "monoraria": {
+        "energia": 0.456,
+        "commercializzazione": 84.0
+      }
+    },
+    "variabile": {
+      "monoraria": {
+        "energia": 0.08,
+        "commercializzazione": 84.0
+      }
+    }
+  },
+  "data_aggiornamento": "2025-01-15"
+}

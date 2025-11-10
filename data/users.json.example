@@ -1,0 +1,49 @@
+{
+  "123456789": {
+    "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+    },
+    "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.456,
+      "commercializzazione": 84.0
+    }
+  },
+  "987654321": {
+    "luce": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.0088,
+      "commercializzazione": 72.0
+    },
+    "gas": null
+  },
+  "555555555": {
+    "luce": {
+      "tipo": "variabile",
+      "fascia": "trioraria",
+      "energia": 0.0088,
+      "commercializzazione": 72.0
+    },
+    "gas": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.08,
+      "commercializzazione": 84.0
+    },
+    "last_notified_rates": {
+      "luce": {
+        "energia": 0.0088,
+        "commercializzazione": 72.0
+      },
+      "gas": {
+        "energia": 0.08,
+        "commercializzazione": 84.0
+      }
+    }
+  }
+}
