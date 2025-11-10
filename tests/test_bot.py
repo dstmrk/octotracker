@@ -2,7 +2,8 @@
 Test per bot.py - Conversazioni Telegram e comandi
 
 Testa tutti i flussi conversazionali del bot:
-- Comandi: /start, /update, /status, /remove, /cancel, /help
+- Comandi: /start, /update, /status, /remove, /help
+- Gestione comandi non riconosciuti
 - Conversazione registrazione con input validi
 - Gestione errori con input non validi
 - Flussi completi: luce fissa, variabile mono/tri, con/senza gas
@@ -18,7 +19,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from bot import (
     start, tipo_tariffa, luce_tipo_variabile, luce_energia, luce_comm,
-    ha_gas, gas_energia, gas_comm, status, remove_data, cancel, help_command,
+    ha_gas, gas_energia, gas_comm, status, remove_data, help_command, unknown_command,
     TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM,
     HA_GAS, GAS_ENERGIA, GAS_COMM
 )
@@ -97,16 +98,18 @@ async def test_start_new_user(mock_update, mock_context):
     assert isinstance(call_args[1]['reply_markup'], InlineKeyboardMarkup)
 
 @pytest.mark.asyncio
-async def test_cancel_command(mock_update, mock_context):
-    """Test /cancel cancella conversazione corrente"""
-    result = await cancel(mock_update, mock_context)
+async def test_unknown_command(mock_update, mock_context):
+    """Test comando non riconosciuto mostra messaggio di aiuto"""
+    mock_update.message.text = "/unknown"
+    await unknown_command(mock_update, mock_context)
 
-    assert result == -1  # ConversationHandler.END
     mock_update.message.reply_text.assert_called_once()
-
     call_args = mock_update.message.reply_text.call_args
-    # Verifica messaggio di annullamento
-    assert "annullat" in call_args[0][0].lower() or "cancellat" in call_args[0][0].lower()
+    message_text = call_args[0][0]
+
+    # Verifica messaggio contiene indicazioni per /help
+    assert "non riconosciuto" in message_text.lower()
+    assert "/help" in message_text
 
 @pytest.mark.asyncio
 async def test_update_command(mock_update, mock_context):
