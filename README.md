@@ -7,6 +7,15 @@
 [![Lint](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml)
 [![Docker Build](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml)
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=bugs)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=dstmrk_octotracker&metric=coverage)](https://sonarcloud.io/summary/new_code?id=dstmrk_octotracker)
+
 Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono offerte più convenienti.
 
 ## 🎯 Funzionalità

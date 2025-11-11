@@ -21,6 +21,7 @@ dev = [
     "black>=24.0.0",
     "ruff>=0.1.0",
     "pre-commit>=3.5.0",
+    "pytest-cov>=4.1.0",
 ]
 
 [build-system]
@@ -53,3 +54,26 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["octotracker"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=. --cov-report=xml --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    ".venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

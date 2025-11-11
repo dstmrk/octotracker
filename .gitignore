@@ -17,3 +17,9 @@ data/current_rates.json
 .playwright/
 playwright-report/
 test-results/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
