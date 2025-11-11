@@ -24,6 +24,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # SonarCloud needs full git history
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
@@ -47,13 +49,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-    - name: Test summary
-      if: always()
-      run: |
-        if [ $? -eq 0 ]; then
-          echo "✅ All tests passed!"
-        else
-          echo "❌ Some tests failed"
-          exit 1
-        fi
