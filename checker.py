@@ -48,8 +48,8 @@ def load_json(file_path: Path) -> dict[str, Any] | None:
                 with open(file_path) as f:
                     first_lines = f.read(200)
                     logger.debug(f"   Prime righe: {repr(first_lines)}")
-            except (OSError, PermissionError):
-                pass  # Debug read fallito, non critico
+            except OSError:
+                pass  # Debug read fallito (include PermissionError), non critico
             return None
         except FileNotFoundError:
             logger.warning(f"📁 File non trovato: {file_path.name}")
@@ -462,7 +462,9 @@ async def check_and_notify_users(bot_token: str) -> None:
 
     # Validazione dati
     if not users:
-        logger.warning(f"⚠️  Nessun utente registrato (completato in {time.time() - start_time:.2f}s)")
+        logger.warning(
+            f"⚠️  Nessun utente registrato (completato in {time.time() - start_time:.2f}s)"
+        )
         return
 
     if not current_rates:

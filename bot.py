@@ -706,8 +706,13 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 # ========== MAIN ==========
 
 
-async def post_init(application: Application) -> None:
-    """Avvia scheduler dopo l'inizializzazione del bot"""
+async def post_init(application: Application) -> None:  # noqa: RUF029
+    """Avvia scheduler dopo l'inizializzazione del bot
+
+    Note: Questa funzione deve essere async perché è richiesta dal framework
+    python-telegram-bot come callback di post_init. asyncio.create_task()
+    richiede un contesto async running.
+    """
     bot_token = application.bot.token
 
     # Avvia i due task giornalieri separati in background
