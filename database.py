@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent / "data"
 DB_FILE = DATA_DIR / "users.db"
 
+# Valori validi per validazione
+VALID_TYPES = {"fissa", "variabile"}
+VALID_FASCE_LUCE = {"monoraria", "bioraria", "trioraria"}
+VALID_FASCE_GAS = {"monoraria"}
+
 # Schema SQL
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -144,12 +149,33 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
         # Estrai dati luce (obbligatori)
         luce = user_data["luce"]
 
+        # Validazione luce
+        if luce["tipo"] not in VALID_TYPES:
+            raise ValueError(
+                f"luce.tipo non valido: '{luce['tipo']}'. Valori ammessi: {VALID_TYPES}"
+            )
+        if luce["fascia"] not in VALID_FASCE_LUCE:
+            raise ValueError(
+                f"luce.fascia non valida: '{luce['fascia']}'. Valori ammessi: {VALID_FASCE_LUCE}"
+            )
+
         # Estrai dati gas (opzionali)
         gas = user_data.get("gas")
         gas_tipo = gas["tipo"] if gas else None
         gas_fascia = gas["fascia"] if gas else None
         gas_energia = gas["energia"] if gas else None
         gas_comm = gas["commercializzazione"] if gas else None
+
+        # Validazione gas (se presente)
+        if gas is not None:
+            if gas["tipo"] not in VALID_TYPES:
+                raise ValueError(
+                    f"gas.tipo non valido: '{gas['tipo']}'. Valori ammessi: {VALID_TYPES}"
+                )
+            if gas["fascia"] not in VALID_FASCE_GAS:
+                raise ValueError(
+                    f"gas.fascia non valida: '{gas['fascia']}'. Valori ammessi: {VALID_FASCE_GAS}"
+                )
 
         # Serializza last_notified_rates se presente
         last_notified = user_data.get("last_notified_rates")
@@ -192,8 +218,19 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
         logger.debug(f"💾 Utente {user_id} salvato")
         return True
 
-    except (sqlite3.Error, KeyError) as e:
-        logger.error(f"❌ Errore salvataggio utente {user_id}: {e}")
+    except KeyError as e:
+        # Bug del codice: campo mancante in user_data
+        logger.critical(f"🐛 BUG: Campo mancante in user_data per {user_id}: {e}")
+        logger.debug(f"   user_data ricevuto: {user_data}")
+        return False
+    except ValueError as e:
+        # Validazione fallita: tipo/fascia non validi
+        logger.error(f"❌ Validazione fallita per {user_id}: {e}")
+        logger.debug(f"   user_data ricevuto: {user_data}")
+        return False
+    except sqlite3.Error as e:
+        # Problema database: connessione, lock, corruzione, etc.
+        logger.error(f"❌ Errore database salvando {user_id}: {e}")
         return False
 
 
