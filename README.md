@@ -184,7 +184,8 @@ Puoi personalizzare il comportamento tramite variabili d'ambiente nel file `.env
 | `TELEGRAM_BOT_TOKEN` | - | Token da BotFather (obbligatorio) |
 | `WEBHOOK_URL` | - | URL pubblico per webhook (obbligatorio) |
 | `WEBHOOK_PORT` | `8443` | Porta locale per webhook |
-| `WEBHOOK_SECRET` | - | Token segreto per validazione webhook (opzionale) |
+| `WEBHOOK_SECRET` | - | Token segreto per validazione webhook (obbligatorio) |
+| `HEALTH_PORT` | `8444` | Porta per health check endpoint |
 | `SCRAPER_HOUR` | `9` | Ora dello scraping (0-23, ora italiana) |
 | `CHECKER_HOUR` | `10` | Ora del controllo tariffe (0-23, ora italiana) |
 
@@ -192,6 +193,55 @@ Puoi personalizzare il comportamento tramite variabili d'ambiente nel file `.env
 ```bash
 SCRAPER_HOUR=8
 ```
+
+## 🏥 Health Check Endpoint
+
+OctoTracker espone un endpoint `/health` per monitoring e alerting:
+
+```bash
+# Accesso locale
+curl http://localhost:8444/health
+
+# Accesso remoto (via tunnel)
+curl https://tuodominio.xyz:8444/health
+```
+
+**Response JSON:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-11T10:30:00",
+  "checks": {
+    "database": {
+      "status": "ok",
+      "users_count": 42,
+      "accessible": true
+    },
+    "tariffe": {
+      "status": "ok",
+      "last_update": "2025-11-10",
+      "days_old": 1
+    },
+    "bot": {
+      "status": "ok",
+      "scheduled_tasks": {
+        "scraper": "running",
+        "checker": "running"
+      }
+    }
+  }
+}
+```
+
+**Stati:**
+- `healthy` (HTTP 200): Tutto funzionante
+- `degraded` (HTTP 200): Warning non critici (es: tariffe vecchie >3 giorni)
+- `unhealthy` (HTTP 503): Errore critico (es: database inaccessibile)
+
+**Uso con monitoring tools:**
+- **UptimeRobot**: URL = `https://tuodominio.xyz:8444/health`, Keyword = `"healthy"`
+- **Kubernetes**: `livenessProbe` su `http://localhost:8444/health`
+- **Docker**: `HEALTHCHECK CMD curl -f http://localhost:8444/health`
 
 ## ⚡️ Come Funziona
 
@@ -201,7 +251,8 @@ OctoTracker usa un **singolo container Docker** con bot e scheduler integrati:
 
 ```
 Container Docker (sempre attivo)
-├── Bot Telegram (gestisce comandi utente 24/7)
+├── Bot Telegram (webhook su porta 8443, gestisce comandi utente 24/7)
+├── Health Server (HTTP su porta 8444, endpoint /health per monitoring)
 ├── Scraper Task (indipendente, dorme 24 ore tra esecuzioni)
 ├── Checker Task (indipendente, dorme 24 ore tra esecuzioni)
 └── Error Handler (gestisce timeout di rete senza crashare)
@@ -456,7 +507,6 @@ docker compose up -d
 ## 🔮 Possibili Miglioramenti Futuri
 
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
-- [ ] **Health check endpoint**: aggiungere endpoint HTTP `/health` per monitorare lo stato del bot (es. verifica database, file tariffe, metriche utenti) - utile per monitoring con Kubernetes/Docker/Render health probes
 
 ## 📜 Licenza
 
