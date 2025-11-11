@@ -324,21 +324,17 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return GAS_COMM
 
 
-async def salva_e_conferma(
-    update_or_query: Update | Any, context: ContextTypes.DEFAULT_TYPE, solo_luce: bool
-) -> int:
-    """Salva dati utente e mostra conferma"""
-    # Distingui tra Update (con message) e CallbackQuery
-    if hasattr(update_or_query, "effective_user"):
-        # È un Update
-        user_id = str(update_or_query.effective_user.id)
-        send_message = lambda text, **kwargs: update_or_query.message.reply_text(text, **kwargs)
-    else:
-        # È un CallbackQuery
-        user_id = str(update_or_query.from_user.id)
-        send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
+def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dict[str, Any]:
+    """
+    Costruisce la struttura dati utente da salvare nel database.
 
-    # Nuova struttura nested
+    Args:
+        context: Context del conversation handler
+        solo_luce: True se l'utente ha solo luce, False se ha anche gas
+
+    Returns:
+        Dizionario con struttura nested luce/gas
+    """
     user_data = {
         "luce": {
             "tipo": context.user_data["luce_tipo"],
@@ -358,17 +354,26 @@ async def salva_e_conferma(
     else:
         user_data["gas"] = None
 
-    # Salva utente nel database
-    save_user(user_id, user_data)
+    return user_data
 
-    # Formatta numeri rimuovendo zeri trailing
+
+def _format_confirmation_message(user_data: dict[str, Any]) -> str:
+    """
+    Formatta il messaggio di conferma con i dati inseriti dall'utente.
+
+    Args:
+        user_data: Dizionario con struttura nested luce/gas
+
+    Returns:
+        Messaggio HTML formattato per Telegram
+    """
+    # Formatta numeri luce
     luce_energia_fmt = format_number(user_data["luce"]["energia"], max_decimals=4)
     luce_comm_fmt = format_number(user_data["luce"]["commercializzazione"], max_decimals=2)
 
     # Determina label in base al tipo e fascia
     luce_tipo = user_data["luce"]["tipo"]
     luce_fascia = user_data["luce"]["fascia"]
-
     tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
     if luce_tipo == "fissa":
@@ -386,13 +391,13 @@ async def salva_e_conferma(
         f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
-    if not solo_luce:
+    # Aggiungi sezione gas se presente
+    if user_data["gas"] is not None:
         gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(user_data["gas"]["commercializzazione"], max_decimals=2)
 
         gas_tipo = user_data["gas"]["tipo"]
         gas_fascia = user_data["gas"]["fascia"]
-
         tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
         if gas_tipo == "fissa":
@@ -406,11 +411,38 @@ async def salva_e_conferma(
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
+    # Aggiungi footer
     messaggio += (
         "\nTutto corretto?\n"
         "Se in futuro vuoi modificare qualcosa, puoi usare il comando /update.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
+
+    return messaggio
+
+
+async def salva_e_conferma(
+    update_or_query: Update | Any, context: ContextTypes.DEFAULT_TYPE, solo_luce: bool
+) -> int:
+    """Salva dati utente e mostra conferma"""
+    # Distingui tra Update (con message) e CallbackQuery
+    if hasattr(update_or_query, "effective_user"):
+        # È un Update
+        user_id = str(update_or_query.effective_user.id)
+        send_message = lambda text, **kwargs: update_or_query.message.reply_text(text, **kwargs)
+    else:
+        # È un CallbackQuery
+        user_id = str(update_or_query.from_user.id)
+        send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
+
+    # Costruisci struttura dati utente
+    user_data = _build_user_data(context, solo_luce)
+
+    # Salva nel database
+    save_user(user_id, user_data)
+
+    # Formatta messaggio di conferma
+    messaggio = _format_confirmation_message(user_data)
 
     await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
