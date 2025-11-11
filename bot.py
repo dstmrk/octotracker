@@ -77,7 +77,7 @@ if not WEBHOOK_SECRET:
     )
 
 # Configurazione admin (opzionale - per alert errori critici)
-ADMIN_USER_ID = os.getenv('ADMIN_USER_ID')  # ID Telegram dell'admin
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")  # ID Telegram dell'admin
 
 # ========== BOT COMMANDS ==========
 
