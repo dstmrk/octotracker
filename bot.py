@@ -56,6 +56,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
+# Costanti messaggi
+ERROR_VALUE_NEGATIVE = "❌ Il valore deve essere maggiore o uguale a zero"
+LABEL_FIXED_PRICE = "Prezzo fisso"
+
+
 # Stati conversazione
 class ConversationState(IntEnum):
     """Stati del conversation handler per registrazione tariffe"""
@@ -214,7 +219,7 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
-            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return LUCE_ENERGIA
 
         context.user_data["luce_energia"] = value
@@ -237,7 +242,7 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
-            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return LUCE_COMM
 
         context.user_data["luce_comm"] = value
@@ -291,7 +296,7 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
-            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return GAS_ENERGIA
 
         context.user_data["gas_energia"] = value
@@ -314,7 +319,7 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
-            await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return GAS_COMM
 
         context.user_data["gas_comm"] = value
@@ -377,7 +382,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
     if luce_tipo == "fissa":
-        luce_label = "Prezzo fisso"
+        luce_label = LABEL_FIXED_PRICE
         luce_unit = "€/kWh"
     else:  # variabile
         luce_label = "Spread (PUN +)"
@@ -401,7 +406,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
         if gas_tipo == "fissa":
-            gas_label = "Prezzo fisso"
+            gas_label = LABEL_FIXED_PRICE
         else:  # variabile
             gas_label = "Spread (PSV +)"
 
@@ -472,7 +477,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
     if luce_tipo == "fissa":
-        luce_label = "Prezzo fisso"
+        luce_label = LABEL_FIXED_PRICE
     else:  # variabile
         luce_label = "Spread (PUN +)"
 
@@ -493,7 +498,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
         if gas_tipo == "fissa":
-            gas_label = "Prezzo fisso"
+            gas_label = LABEL_FIXED_PRICE
         else:  # variabile
             gas_label = "Spread (PSV +)"
 
@@ -702,12 +707,24 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def post_init(application: Application) -> None:
-    """Avvia scheduler dopo l'inizializzazione del bot"""
+    """Avvia scheduler dopo l'inizializzazione del bot
+
+    Note: Questa funzione deve essere async perché è richiesta dal framework
+    python-telegram-bot come callback di post_init.
+    """
     bot_token = application.bot.token
 
     # Avvia i due task giornalieri separati in background
-    asyncio.create_task(scraper_daily_task())
-    asyncio.create_task(checker_daily_task(bot_token))
+    # Salva i task per evitare garbage collection prematura
+    scraper_task = asyncio.create_task(scraper_daily_task())
+    checker_task = asyncio.create_task(checker_daily_task(bot_token))
+
+    # Salva i task nell'application per mantenerli vivi
+    application.bot_data["scraper_task"] = scraper_task
+    application.bot_data["checker_task"] = checker_task
+
+    # Yield control per permettere all'event loop di schedulare i task
+    await asyncio.sleep(0)
 
 
 def main() -> None:

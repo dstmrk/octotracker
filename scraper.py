@@ -197,6 +197,17 @@ def _extract_gas_variabile(clean_text: str) -> dict[str, float] | None:
     return None
 
 
+def _write_rates_file(file_path: Path, data: dict[str, Any]) -> None:
+    """Helper sincrono per scrivere file JSON delle tariffe
+
+    Args:
+        file_path: Path del file da scrivere
+        data: Dati da serializzare in JSON
+    """
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 async def scrape_octopus_tariffe() -> dict[str, Any]:
     """Scrape tariffe fisse e variabili da Octopus Energy
 
@@ -324,8 +335,9 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
 
     # Salva risultati (anche se parziali)
     DATA_DIR.mkdir(exist_ok=True)
-    with open(RATES_FILE, "w") as f:
-        json.dump(tariffe_data, f, indent=2)
+
+    # Usa asyncio.to_thread per operazioni I/O sincrone in funzioni async
+    await asyncio.to_thread(_write_rates_file, RATES_FILE, tariffe_data)
 
     # Calcola metriche
     duration = time.time() - start_time

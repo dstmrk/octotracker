@@ -9,7 +9,13 @@ from pathlib import Path
 # Aggiungi parent directory al path per import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from checker import check_better_rates
+from checker import (
+    _build_current_octopus_rates,
+    _check_utility_rates,
+    _compare_rate_field,
+    _should_notify_user,
+    check_better_rates,
+)
 
 
 def test_complete_match_no_savings():
@@ -398,3 +404,187 @@ def test_user_without_gas_with_last_notified():
     assert "last_notified_rates" in user_data
     assert "luce" in user_data["last_notified_rates"]
     assert "gas" not in user_data["last_notified_rates"]
+
+
+# ========== TEST HELPER FUNCTIONS ==========
+
+
+def test_compare_rate_field_improvement():
+    """_compare_rate_field: nuova tariffa migliore"""
+    saving, is_worse = _compare_rate_field(0.145, 0.130)
+
+    assert saving is not None
+    assert saving["attuale"] == 0.145
+    assert saving["nuova"] == 0.130
+    assert abs(saving["risparmio"] - 0.015) < 0.0001
+    assert is_worse is False
+
+
+def test_compare_rate_field_worsening():
+    """_compare_rate_field: nuova tariffa peggiore"""
+    saving, is_worse = _compare_rate_field(0.130, 0.145)
+
+    assert saving is None
+    assert is_worse is True
+
+
+def test_compare_rate_field_no_change():
+    """_compare_rate_field: nessun cambiamento"""
+    saving, is_worse = _compare_rate_field(0.145, 0.145)
+
+    assert saving is None
+    assert is_worse is False
+
+
+def test_compare_rate_field_none_value():
+    """_compare_rate_field: current_value è None"""
+    saving, is_worse = _compare_rate_field(0.145, None)
+
+    assert saving is None
+    assert is_worse is False
+
+
+def test_check_utility_rates_with_savings():
+    """_check_utility_rates: trova risparmi su energia e commercializzazione"""
+    user_utility = {
+        "tipo": "fissa",
+        "fascia": "monoraria",
+        "energia": 0.145,
+        "commercializzazione": 72.0,
+    }
+
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.130,
+                    "commercializzazione": 60.0,
+                }
+            }
+        }
+    }
+
+    result = _check_utility_rates(user_utility, current_rates, "luce")
+
+    assert result["has_savings"] is True
+    assert result["energia_saving"] is not None
+    assert result["comm_saving"] is not None
+    assert result["energia_worse"] is False
+    assert result["comm_worse"] is False
+
+
+def test_check_utility_rates_no_rate_available():
+    """_check_utility_rates: tariffa non disponibile"""
+    user_utility = {
+        "tipo": "fissa",
+        "fascia": "monoraria",
+        "energia": 0.145,
+        "commercializzazione": 72.0,
+    }
+
+    current_rates = {"luce": {"fissa": {}}}  # Nessuna monoraria
+
+    result = _check_utility_rates(user_utility, current_rates, "luce")
+
+    assert result["has_savings"] is False
+    assert result["energia_saving"] is None
+    assert result["comm_saving"] is None
+
+
+def test_build_current_octopus_rates_with_luce_only():
+    """_build_current_octopus_rates: solo luce"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": None,
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 60.0}}},
+        "gas": {},
+    }
+
+    result = _build_current_octopus_rates(user_rates, current_rates)
+
+    assert "luce" in result
+    assert result["luce"]["energia"] == 0.130
+    assert result["luce"]["commercializzazione"] == 60.0
+    assert "gas" not in result
+
+
+def test_build_current_octopus_rates_with_luce_and_gas():
+    """_build_current_octopus_rates: luce e gas"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.10,
+            "commercializzazione": 84.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 60.0}}},
+        "gas": {"variabile": {"monoraria": {"energia": 0.08, "commercializzazione": 78.0}}},
+    }
+
+    result = _build_current_octopus_rates(user_rates, current_rates)
+
+    assert "luce" in result
+    assert "gas" in result
+    assert result["luce"]["energia"] == 0.130
+    assert result["gas"]["energia"] == 0.08
+
+
+def test_should_notify_user_first_notification():
+    """_should_notify_user: prima notifica (no last_notified_rates)"""
+    user_rates = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria"},
+        "gas": None,
+    }
+
+    current_octopus = {"luce": {"energia": 0.130, "commercializzazione": 60.0}}
+
+    should_notify = _should_notify_user(user_rates, current_octopus)
+
+    assert should_notify is True
+
+
+def test_should_notify_user_rates_changed():
+    """_should_notify_user: tariffe cambiate rispetto all'ultima notifica"""
+    user_rates = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria"},
+        "gas": None,
+        "last_notified_rates": {"luce": {"energia": 0.135, "commercializzazione": 65.0}},
+    }
+
+    current_octopus = {"luce": {"energia": 0.130, "commercializzazione": 60.0}}
+
+    should_notify = _should_notify_user(user_rates, current_octopus)
+
+    assert should_notify is True
+
+
+def test_should_notify_user_already_notified():
+    """_should_notify_user: già notificato con stesse tariffe"""
+    user_rates = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria"},
+        "gas": None,
+        "last_notified_rates": {"luce": {"energia": 0.130, "commercializzazione": 60.0}},
+    }
+
+    current_octopus = {"luce": {"energia": 0.130, "commercializzazione": 60.0}}
+
+    should_notify = _should_notify_user(user_rates, current_octopus)
+
+    assert should_notify is False
