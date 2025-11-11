@@ -498,6 +498,7 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "Dai un'occhiata a /help per vedere cosa puoi fare con OctoTracker."
     )
 
+
 # ========== SCHEDULER ==========
 
 
@@ -674,7 +675,7 @@ def main() -> None:
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
         fallbacks=[],
-        per_message=False  # CallbackQueryHandler non tracciato per ogni messaggio
+        per_message=False,  # CallbackQueryHandler non tracciato per ogni messaggio
     )
 
     app.add_handler(conv_handler)

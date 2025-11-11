@@ -35,7 +35,6 @@ from bot import (
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
-    cancel,
     gas_comm,
     gas_energia,
     ha_gas,
@@ -47,6 +46,7 @@ from bot import (
     start,
     status,
     tipo_tariffa,
+    unknown_command,
 )
 from database import init_db, load_user, save_user
 
