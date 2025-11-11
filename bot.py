@@ -372,11 +372,6 @@ async def salva_e_conferma(update_or_query: Union[Update, Any], context: Context
     await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Annulla registrazione"""
-    await update.message.reply_text("❌ Registrazione annullata. Usa /start per ricominciare.")
-    return ConversationHandler.END
-
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra dati salvati"""
     user_id = str(update.effective_user.id)
@@ -472,6 +467,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
+
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Gestisce comandi non riconosciuti"""
+    await update.message.reply_text(
+        "Comando non riconosciuto 🤷‍♂️\n"
+        "Dai un'occhiata a /help per vedere cosa puoi fare con OctoTracker."
+    )
 
 # ========== SCHEDULER ==========
 
@@ -639,7 +641,7 @@ def main() -> None:
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[],
         per_message=False  # CallbackQueryHandler non tracciato per ogni messaggio
     )
 
@@ -647,6 +649,9 @@ def main() -> None:
     app.add_handler(CommandHandler('status', status))
     app.add_handler(CommandHandler('remove', remove_data))
     app.add_handler(CommandHandler('help', help_command))
+
+    # Handler per comandi non riconosciuti (deve essere dopo tutti gli altri CommandHandler)
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 
     # Registra error handler per gestire timeout e errori di rete
     app.add_error_handler(error_handler)
