@@ -37,12 +37,15 @@ Note:
 - La struttura a 3 livelli permette accesso diretto: luce/gas → fissa/variabile → monoraria/bioraria/trioraria
 """
 import json
-import re
 import logging
-from pathlib import Path
+import re
 from datetime import datetime
-from typing import Optional, Dict, Any
-from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeout
+from pathlib import Path
+from typing import Any
+
+from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import TimeoutError as PlaywrightTimeout
+from playwright.async_api import async_playwright
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -59,16 +62,17 @@ DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
 # Regex patterns pre-compilati per performance
-LUCE_FISSA_PATTERN = re.compile(r'(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh')
-LUCE_VAR_MONO_PATTERN = re.compile(r'PUN Mono \+ (\d+[.,]\d+)\s*€/kWh')
-LUCE_VAR_MULTI_PATTERN = re.compile(r'PUN \+ (\d+[.,]\d+)\s*€/kWh')
-GAS_FISSO_PATTERN = re.compile(r'(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc')
-GAS_VAR_PATTERN = re.compile(r'PSVDAm \+ (\d+[.,]\d+)\s*€/Smc')
-COMM_PATTERN = re.compile(r'(\d+)\s*€/anno')
+LUCE_FISSA_PATTERN = re.compile(r"(?<!PUN\s)(?<!PUN Mono \+ )(\d+[.,]\d+)\s*€/kWh")
+LUCE_VAR_MONO_PATTERN = re.compile(r"PUN Mono \+ (\d+[.,]\d+)\s*€/kWh")
+LUCE_VAR_MULTI_PATTERN = re.compile(r"PUN \+ (\d+[.,]\d+)\s*€/kWh")
+GAS_FISSO_PATTERN = re.compile(r"(?<!PSVDAm \+ )(\d+[.,]\d+)\s*€/Smc")
+GAS_VAR_PATTERN = re.compile(r"PSVDAm \+ (\d+[.,]\d+)\s*€/Smc")
+COMM_PATTERN = re.compile(r"(\d+)\s*€/anno")
 
 # ========== HELPER FUNCTIONS ==========
 
-def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
+
+def _extract_luce_fissa(clean_text: str) -> dict[str, float] | None:
     """Estrae tariffa luce fissa dal testo"""
     luce_fissa_match = LUCE_FISSA_PATTERN.search(clean_text)
     if luce_fissa_match:
@@ -76,30 +80,34 @@ def _extract_luce_fissa(clean_text: str) -> Optional[Dict[str, float]]:
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
-            "energia": float(luce_fissa_match.group(1).replace(',', '.')),
-            "commercializzazione": comm
+            "energia": float(luce_fissa_match.group(1).replace(",", ".")),
+            "commercializzazione": comm,
         }
         logger.info(f"✅ Luce fissa monoraria: {result['energia']} €/kWh, comm: {comm} €/anno")
         return result
     return None
 
-def _extract_luce_variabile_mono(clean_text: str) -> Optional[Dict[str, float]]:
+
+def _extract_luce_variabile_mono(clean_text: str) -> dict[str, float] | None:
     """Estrae tariffa luce variabile monoraria dal testo"""
     luce_var_mono_match = LUCE_VAR_MONO_PATTERN.search(clean_text)
     if luce_var_mono_match:
-        pun_mono_pos = clean_text.find('PUN Mono')
-        comm_match = COMM_PATTERN.search(clean_text[pun_mono_pos:pun_mono_pos+200])
+        pun_mono_pos = clean_text.find("PUN Mono")
+        comm_match = COMM_PATTERN.search(clean_text[pun_mono_pos : pun_mono_pos + 200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
-            "energia": float(luce_var_mono_match.group(1).replace(',', '.')),
-            "commercializzazione": comm
+            "energia": float(luce_var_mono_match.group(1).replace(",", ".")),
+            "commercializzazione": comm,
         }
-        logger.info(f"✅ Luce variabile monoraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        logger.info(
+            f"✅ Luce variabile monoraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno"
+        )
         return result
     return None
 
-async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[str, float]]:
+
+async def _extract_luce_variabile_tri(page, clean_text: str) -> dict[str, float] | None:
     """Estrae tariffa luce variabile trioraria (con gestione toggle)"""
     luce_var_multi_match = LUCE_VAR_MULTI_PATTERN.search(clean_text)
 
@@ -112,20 +120,22 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
             await page.wait_for_timeout(TOGGLE_CLICK_WAIT_MS)
 
             # Rileggi il testo
-            text_after_toggle = await page.inner_text('body')
-            clean_text_after = text_after_toggle.replace('\n', ' ').replace('\r', ' ')
+            text_after_toggle = await page.inner_text("body")
+            clean_text_after = text_after_toggle.replace("\n", " ").replace("\r", " ")
             luce_var_multi_match = LUCE_VAR_MULTI_PATTERN.search(clean_text_after)
 
             if luce_var_multi_match:
-                pun_pos = clean_text_after.find('PUN +')
-                comm_match = COMM_PATTERN.search(clean_text_after[pun_pos:pun_pos+200])
+                pun_pos = clean_text_after.find("PUN +")
+                comm_match = COMM_PATTERN.search(clean_text_after[pun_pos : pun_pos + 200])
                 comm = float(comm_match.group(1)) if comm_match else None
 
                 result = {
-                    "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
-                    "commercializzazione": comm
+                    "energia": float(luce_var_multi_match.group(1).replace(",", ".")),
+                    "commercializzazione": comm,
                 }
-                logger.info(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+                logger.info(
+                    f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno"
+                )
 
                 # Riclicco per tornare allo stato iniziale
                 await toggle.click()
@@ -133,52 +143,59 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> Optional[Dict[st
                 return result
     else:
         # Trovata direttamente
-        pun_pos = clean_text.find('PUN +')
-        comm_match = COMM_PATTERN.search(clean_text[pun_pos:pun_pos+200])
+        pun_pos = clean_text.find("PUN +")
+        comm_match = COMM_PATTERN.search(clean_text[pun_pos : pun_pos + 200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
-            "energia": float(luce_var_multi_match.group(1).replace(',', '.')),
-            "commercializzazione": comm
+            "energia": float(luce_var_multi_match.group(1).replace(",", ".")),
+            "commercializzazione": comm,
         }
-        logger.info(f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno")
+        logger.info(
+            f"✅ Luce variabile trioraria: PUN + {result['energia']} €/kWh, comm: {comm} €/anno"
+        )
         return result
 
     return None
 
-def _extract_gas_fisso(clean_text: str) -> Optional[Dict[str, float]]:
+
+def _extract_gas_fisso(clean_text: str) -> dict[str, float] | None:
     """Estrae tariffa gas fisso dal testo"""
     gas_fisso_match = GAS_FISSO_PATTERN.search(clean_text)
     if gas_fisso_match:
-        gas_pos = clean_text.lower().find('gas')
+        gas_pos = clean_text.lower().find("gas")
         comm_matches = COMM_PATTERN.findall(clean_text[gas_pos:])
         comm = float(comm_matches[-1]) if comm_matches else None
 
         result = {
-            "energia": float(gas_fisso_match.group(1).replace(',', '.')),
-            "commercializzazione": comm
+            "energia": float(gas_fisso_match.group(1).replace(",", ".")),
+            "commercializzazione": comm,
         }
         logger.info(f"✅ Gas fisso monorario: {result['energia']} €/Smc, comm: {comm} €/anno")
         return result
     return None
 
-def _extract_gas_variabile(clean_text: str) -> Optional[Dict[str, float]]:
+
+def _extract_gas_variabile(clean_text: str) -> dict[str, float] | None:
     """Estrae tariffa gas variabile dal testo"""
     gas_var_match = GAS_VAR_PATTERN.search(clean_text)
     if gas_var_match:
-        psv_pos = clean_text.find('PSVDAm')
-        comm_match = COMM_PATTERN.search(clean_text[psv_pos:psv_pos+200])
+        psv_pos = clean_text.find("PSVDAm")
+        comm_match = COMM_PATTERN.search(clean_text[psv_pos : psv_pos + 200])
         comm = float(comm_match.group(1)) if comm_match else None
 
         result = {
-            "energia": float(gas_var_match.group(1).replace(',', '.')),
-            "commercializzazione": comm
+            "energia": float(gas_var_match.group(1).replace(",", ".")),
+            "commercializzazione": comm,
         }
-        logger.info(f"✅ Gas variabile monorario: PSV + {result['energia']} €/Smc, comm: {comm} €/anno")
+        logger.info(
+            f"✅ Gas variabile monorario: PSV + {result['energia']} €/Smc, comm: {comm} €/anno"
+        )
         return result
     return None
 
-async def scrape_octopus_tariffe() -> Dict[str, Any]:
+
+async def scrape_octopus_tariffe() -> dict[str, Any]:
     """Scrape tariffe fisse e variabili da Octopus Energy
 
     Returns:
@@ -194,15 +211,17 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
         try:
             # Vai alla pagina tariffe (domcontentloaded è più veloce di load)
             logger.info("📄 Caricamento pagina...")
-            await page.goto(OCTOPUS_TARIFFE_URL, wait_until='domcontentloaded', timeout=PAGE_LOAD_TIMEOUT_MS)
+            await page.goto(
+                OCTOPUS_TARIFFE_URL, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT_MS
+            )
 
             # Attendi dinamicamente che appaiano elementi chiave delle tariffe
             # Cerca almeno uno dei prezzi caratteristici (€/kWh, €/Smc, €/anno)
             try:
                 await page.wait_for_selector(
-                    'text=€/kWh, text=€/Smc, text=€/anno',  # Uno qualsiasi di questi
+                    "text=€/kWh, text=€/Smc, text=€/anno",  # Uno qualsiasi di questi
                     timeout=5000,
-                    state='visible'
+                    state="visible",
                 )
                 logger.debug("✅ Contenuto tariffe caricato dinamicamente")
             except PlaywrightTimeout:
@@ -211,23 +230,17 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
                 await page.wait_for_timeout(2000)
 
             # Estrai tutto il testo della pagina per analisi
-            text = await page.inner_text('body')
+            text = await page.inner_text("body")
 
             # Struttura dati per salvare tutte le tariffe
             tariffe_data = {
-                "luce": {
-                    "fissa": {},
-                    "variabile": {}
-                },
-                "gas": {
-                    "fissa": {},
-                    "variabile": {}
-                },
-                "data_aggiornamento": datetime.now().strftime("%Y-%m-%d")
+                "luce": {"fissa": {}, "variabile": {}},
+                "gas": {"fissa": {}, "variabile": {}},
+                "data_aggiornamento": datetime.now().strftime("%Y-%m-%d"),
             }
 
             # Normalizza testo per parsing
-            clean_text = text.replace('\n', ' ').replace('\r', ' ')
+            clean_text = text.replace("\n", " ").replace("\r", " ")
 
             # ========== ESTRAZIONE TARIFFE ==========
 
@@ -276,37 +289,43 @@ async def scrape_octopus_tariffe() -> Dict[str, Any]:
     warnings = []
 
     # Controlla se abbiamo almeno una tariffa luce
-    has_luce = any([
-        tariffe_data["luce"]["fissa"].get("monoraria"),
-        tariffe_data["luce"]["variabile"].get("monoraria"),
-        tariffe_data["luce"]["variabile"].get("trioraria")
-    ])
+    has_luce = any(
+        [
+            tariffe_data["luce"]["fissa"].get("monoraria"),
+            tariffe_data["luce"]["variabile"].get("monoraria"),
+            tariffe_data["luce"]["variabile"].get("trioraria"),
+        ]
+    )
     if not has_luce:
         warnings.append("NESSUNA tariffa luce trovata")
 
     # Controlla se abbiamo almeno una tariffa gas
-    has_gas = any([
-        tariffe_data["gas"]["fissa"].get("monoraria"),
-        tariffe_data["gas"]["variabile"].get("monoraria")
-    ])
+    has_gas = any(
+        [
+            tariffe_data["gas"]["fissa"].get("monoraria"),
+            tariffe_data["gas"]["variabile"].get("monoraria"),
+        ]
+    )
     if not has_gas:
         warnings.append("NESSUNA tariffa gas trovata")
 
     if warnings:
         logger.warning(f"⚠️  {' | '.join(warnings)}")
-        logger.warning(f"   Il checker non potrà confrontare queste categorie")
+        logger.warning("   Il checker non potrà confrontare queste categorie")
 
     # Salva risultati (anche se parziali)
     DATA_DIR.mkdir(exist_ok=True)
-    with open(RATES_FILE, 'w') as f:
+    with open(RATES_FILE, "w") as f:
         json.dump(tariffe_data, f, indent=2)
 
     logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
 
     return tariffe_data
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import asyncio
+
     result = asyncio.run(scrape_octopus_tariffe())
     logger.info("📊 Tariffe estratte:")
     logger.info(json.dumps(result, indent=2))

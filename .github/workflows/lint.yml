@@ -1,16 +1,16 @@
-name: Unit Tests
+name: Lint
 
 on:
   push:
     paths:
       - '**.py'
       - 'pyproject.toml'
-      - '.github/workflows/unit-test.yml'
-      - 'tests/**'
+      - '.github/workflows/lint.yml'
+      - '.pre-commit-config.yaml'
 
 jobs:
-  test:
-    name: Unit Tests
+  lint:
+    name: Lint (Black + Ruff)
     runs-on: ubuntu-latest
 
     steps:
@@ -29,17 +29,21 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Install dependencies
-      run: uv sync
+      run: uv sync --extra dev
 
-    - name: Run pytest
-      run: uv run pytest tests/ -v --tb=short
+    - name: Run Black (check only)
+      run: uv run black --check --diff .
 
-    - name: Test summary
+    - name: Run Ruff (check only)
+      run: uv run ruff check .
+
+    - name: Lint summary
       if: always()
       run: |
         if [ $? -eq 0 ]; then
-          echo "✅ All tests passed!"
+          echo "✅ All lint checks passed!"
         else
-          echo "❌ Some tests failed"
+          echo "❌ Lint checks failed"
+          echo "Run locally: 'black .' and 'ruff check --fix .'"
           exit 1
         fi
