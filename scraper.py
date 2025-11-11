@@ -40,6 +40,7 @@ import json
 import logging
 import os
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -116,7 +117,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> dict[str, float]
     if not luce_var_multi_match:
         toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
         if toggle:
-            logger.debug("🔄 Clic sul toggle per vedere tariffa multioraria...")
+            logger.debug("Clic sul toggle per vedere tariffa multioraria")
             await toggle.click()
             await page.wait_for_timeout(TOGGLE_CLICK_WAIT_MS)
 
@@ -202,6 +203,7 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
     Returns:
         Dict con struttura nested luce/gas → fissa/variabile → monoraria/trioraria
     """
+    start_time = time.time()  # Inizia tracking tempo
     logger.info("🔍 Avvio scraping tariffe Octopus Energy...")
 
     async with async_playwright() as p:
@@ -224,7 +226,7 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
                     timeout=5000,
                     state="visible",
                 )
-                logger.debug("✅ Contenuto tariffe caricato dinamicamente")
+                logger.debug("Contenuto tariffe caricato dinamicamente")
             except PlaywrightTimeout:
                 # Fallback: se il selettore non viene trovato, usa wait ridotto
                 logger.warning("⚠️  Contenuto tariffe non trovato, uso wait ridotto da 5s a 2s")
@@ -271,16 +273,22 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
                 tariffe_data["gas"]["variabile"]["monoraria"] = gas_variabile
 
         except PlaywrightTimeout:
-            logger.error("⏱️  Timeout durante scraping: la pagina non ha risposto in tempo")
+            duration = time.time() - start_time
+            logger.error(
+                f"⏱️  Timeout durante scraping dopo {duration:.2f}s: la pagina non ha risposto in tempo"
+            )
             raise
         except PlaywrightError as e:
-            logger.error(f"❌ Errore Playwright durante scraping: {e}")
+            duration = time.time() - start_time
+            logger.error(f"❌ Errore Playwright durante scraping dopo {duration:.2f}s: {e}")
             raise
         except ConnectionError as e:
-            logger.error(f"🌐 Errore di connessione durante scraping: {e}")
+            duration = time.time() - start_time
+            logger.error(f"🌐 Errore di connessione durante scraping dopo {duration:.2f}s: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ Errore inatteso durante scraping: {e}")
+            duration = time.time() - start_time
+            logger.error(f"❌ Errore inatteso durante scraping dopo {duration:.2f}s: {e}")
             raise
 
         finally:
@@ -319,6 +327,20 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
     with open(RATES_FILE, "w") as f:
         json.dump(tariffe_data, f, indent=2)
 
+    # Calcola metriche
+    duration = time.time() - start_time
+
+    # Conta tariffe trovate
+    rates_count = {
+        "luce_fissa": bool(tariffe_data["luce"]["fissa"].get("monoraria")),
+        "luce_var_mono": bool(tariffe_data["luce"]["variabile"].get("monoraria")),
+        "luce_var_tri": bool(tariffe_data["luce"]["variabile"].get("trioraria")),
+        "gas_fisso": bool(tariffe_data["gas"]["fissa"].get("monoraria")),
+        "gas_var": bool(tariffe_data["gas"]["variabile"].get("monoraria")),
+    }
+    total_found = sum(rates_count.values())
+
+    logger.info(f"✅ Scraper completato in {duration:.2f}s - Trovate {total_found}/5 tariffe")
     logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
 
     return tariffe_data

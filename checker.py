@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -361,6 +362,7 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
 
 async def check_and_notify_users(bot_token: str) -> None:
     """Controlla tariffe e invia notifiche in parallelo (chiamata da bot.py)"""
+    start_time = time.time()  # Inizia tracking tempo
     logger.info("🔍 Inizio controllo tariffe...")
 
     # Carica dati
@@ -368,11 +370,15 @@ async def check_and_notify_users(bot_token: str) -> None:
     current_rates = load_json(RATES_FILE)  # Da JSON (nessuna race condition)
 
     if not users:
-        logger.warning("⚠️  Nessun utente registrato")
+        duration = time.time() - start_time
+        logger.warning(f"⚠️  Nessun utente registrato (completato in {duration:.2f}s)")
         return
 
     if not current_rates:
-        logger.error("❌ Nessuna tariffa disponibile. Esegui prima scraper.py")
+        duration = time.time() - start_time
+        logger.error(
+            f"❌ Nessuna tariffa disponibile dopo {duration:.2f}s. Esegui prima scraper.py"
+        )
         return
 
     # Inizializza bot
@@ -467,7 +473,12 @@ async def check_and_notify_users(bot_token: str) -> None:
     else:
         notifications_sent = 0
 
-    logger.info(f"✅ Controllo completato. Notifiche inviate: {notifications_sent}/{len(users)}")
+    # Calcola metriche
+    duration = time.time() - start_time
+
+    logger.info(
+        f"✅ Checker completato in {duration:.2f}s - Notifiche: {notifications_sent}/{len(users)}"
+    )
 
 
 async def main() -> None:
