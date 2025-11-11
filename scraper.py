@@ -38,6 +38,7 @@ Note:
 """
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -216,17 +217,17 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
             )
 
             # Attendi dinamicamente che appaiano elementi chiave delle tariffe
-            # Cerca almeno uno dei prezzi caratteristici (€/kWh, €/Smc, €/anno)
+            # Cerca il testo "€/anno" che appare sempre nella commercializzazione
             try:
                 await page.wait_for_selector(
-                    "text=€/kWh, text=€/Smc, text=€/anno",  # Uno qualsiasi di questi
+                    "text=€/anno",
                     timeout=5000,
                     state="visible",
                 )
                 logger.debug("✅ Contenuto tariffe caricato dinamicamente")
             except PlaywrightTimeout:
-                # Fallback: se i selettori non vengono trovati, usa wait ridotto
-                logger.warning("⚠️  Selettori tariffe non trovati, uso wait ridotto da 5s a 2s")
+                # Fallback: se il selettore non viene trovato, usa wait ridotto
+                logger.warning("⚠️  Contenuto tariffe non trovato, uso wait ridotto da 5s a 2s")
                 await page.wait_for_timeout(2000)
 
             # Estrai tutto il testo della pagina per analisi
@@ -325,6 +326,13 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
 
 if __name__ == "__main__":
     import asyncio
+
+    # Configura logging per esecuzione standalone (usa env var LOG_LEVEL)
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=getattr(logging, LOG_LEVEL, logging.INFO),
+        format="%(message)s",  # Formato semplice per output CLI
+    )
 
     result = asyncio.run(scrape_octopus_tariffe())
     logger.info("📊 Tariffe estratte:")
