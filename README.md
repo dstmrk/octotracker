@@ -447,6 +447,7 @@ docker compose up -d
 ## 🔮 Possibili Miglioramenti Futuri
 
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
+- [ ] **Health check endpoint**: aggiungere endpoint HTTP `/health` per monitorare lo stato del bot (es. verifica database, file tariffe, metriche utenti) - utile per monitoring con Kubernetes/Docker/Render health probes
 
 ## 📜 Licenza
 
