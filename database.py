@@ -113,7 +113,7 @@ def load_users() -> dict[str, Any]:
                 user_id = row["user_id"]
                 users[user_id] = _row_to_dict(row)
 
-            logger.debug(f"📂 Caricati {len(users)} utenti dal database")
+            logger.debug(f"Caricati {len(users)} utenti dal database")
             return users
 
     except sqlite3.Error as e:
@@ -215,7 +215,7 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                 ),
             )
 
-        logger.debug(f"💾 Utente {user_id} salvato")
+        logger.debug(f"Utente {user_id} salvato nel database")
         return True
 
     except KeyError as e:

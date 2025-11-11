@@ -117,7 +117,7 @@ async def _extract_luce_variabile_tri(page, clean_text: str) -> dict[str, float]
     if not luce_var_multi_match:
         toggle = await page.query_selector('input[type="checkbox"][role="switch"]')
         if toggle:
-            logger.debug("🔄 Clic sul toggle per vedere tariffa multioraria...")
+            logger.debug("Clic sul toggle per vedere tariffa multioraria")
             await toggle.click()
             await page.wait_for_timeout(TOGGLE_CLICK_WAIT_MS)
 
@@ -226,7 +226,7 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
                     timeout=5000,
                     state="visible",
                 )
-                logger.debug("✅ Contenuto tariffe caricato dinamicamente")
+                logger.debug("Contenuto tariffe caricato dinamicamente")
             except PlaywrightTimeout:
                 # Fallback: se il selettore non viene trovato, usa wait ridotto
                 logger.warning("⚠️  Contenuto tariffe non trovato, uso wait ridotto da 5s a 2s")
