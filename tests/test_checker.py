@@ -19,36 +19,28 @@ def test_complete_match_no_savings():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.456,
-            "commercializzazione": 84.0
-        }
+            "commercializzazione": 84.0,
+        },
     }
 
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.145, "commercializzazione": 72.0}
-            }
-        },
-        "gas": {
-            "fissa": {
-                "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
-            }
-        }
+        "luce": {"fissa": {"monoraria": {"energia": 0.145, "commercializzazione": 72.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.456, "commercializzazione": 84.0}}},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
-    assert savings['has_savings'] is False
-    assert savings['luce_energia'] is None
-    assert savings['luce_comm'] is None
-    assert savings['gas_energia'] is None
-    assert savings['gas_comm'] is None
+    assert savings["has_savings"] is False
+    assert savings["luce_energia"] is None
+    assert savings["luce_comm"] is None
+    assert savings["gas_energia"] is None
+    assert savings["gas_comm"] is None
 
 
 def test_luce_energy_savings():
@@ -58,27 +50,23 @@ def test_luce_energy_savings():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.130, "commercializzazione": 72.0}
-            }
-        },
-        "gas": {}
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}},
+        "gas": {},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
-    assert savings['has_savings'] is True
-    assert savings['luce_energia'] is not None
-    assert savings['luce_energia']['attuale'] == 0.145
-    assert savings['luce_energia']['nuova'] == 0.130
-    assert abs(savings['luce_energia']['risparmio'] - 0.015) < 0.0001
+    assert savings["has_savings"] is True
+    assert savings["luce_energia"] is not None
+    assert savings["luce_energia"]["attuale"] == 0.145
+    assert savings["luce_energia"]["nuova"] == 0.130
+    assert abs(savings["luce_energia"]["risparmio"] - 0.015) < 0.0001
 
 
 def test_mixed_luce_better_worse():
@@ -88,26 +76,22 @@ def test_mixed_luce_better_worse():
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.010,
-            "commercializzazione": 60.0
+            "commercializzazione": 60.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     current_rates = {
-        "luce": {
-            "variabile": {
-                "monoraria": {"energia": 0.0088, "commercializzazione": 72.0}
-            }
-        },
-        "gas": {}
+        "luce": {"variabile": {"monoraria": {"energia": 0.0088, "commercializzazione": 72.0}}},
+        "gas": {},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
-    assert savings['has_savings'] is True
-    assert savings['luce_energia'] is not None
-    assert savings['luce_comm_worse'] is True
-    assert savings['is_mixed'] is True
+    assert savings["has_savings"] is True
+    assert savings["luce_energia"] is not None
+    assert savings["luce_comm_worse"] is True
+    assert savings["is_mixed"] is True
 
 
 def test_no_cross_type_comparison_fissa_vs_variabile():
@@ -117,26 +101,24 @@ def test_no_cross_type_comparison_fissa_vs_variabile():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     current_rates = {
         "luce": {
             "fissa": {},  # Vuoto
-            "variabile": {
-                "monoraria": {"energia": 0.0088, "commercializzazione": 72.0}
-            }
+            "variabile": {"monoraria": {"energia": 0.0088, "commercializzazione": 72.0}},
         },
-        "gas": {}
+        "gas": {},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Non deve confrontare fissa con variabile
-    assert savings['has_savings'] is False
-    assert savings['luce_energia'] is None
+    assert savings["has_savings"] is False
+    assert savings["luce_energia"] is None
 
 
 def test_no_cross_fascia_comparison_mono_vs_tri():
@@ -146,26 +128,26 @@ def test_no_cross_fascia_comparison_mono_vs_tri():
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.010,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     current_rates = {
         "luce": {
             "variabile": {
                 "monoraria": {},  # Vuoto
-                "trioraria": {"energia": 0.0088, "commercializzazione": 72.0}
+                "trioraria": {"energia": 0.0088, "commercializzazione": 72.0},
             }
         },
-        "gas": {}
+        "gas": {},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Non deve confrontare monoraria con trioraria
-    assert savings['has_savings'] is False
-    assert savings['luce_energia'] is None
+    assert savings["has_savings"] is False
+    assert savings["luce_energia"] is None
 
 
 def test_user_with_gas_partial_current_rates():
@@ -175,37 +157,30 @@ def test_user_with_gas_partial_current_rates():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.456,
-            "commercializzazione": 84.0
-        }
+            "commercializzazione": 84.0,
+        },
     }
 
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.130, "commercializzazione": 72.0}
-            }
-        },
-        "gas": {
-            "fissa": {},  # Gas non disponibile
-            "variabile": {}
-        }
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}},
+        "gas": {"fissa": {}, "variabile": {}},  # Gas non disponibile
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Deve trovare risparmio luce
-    assert savings['has_savings'] is True
-    assert savings['luce_energia'] is not None
+    assert savings["has_savings"] is True
+    assert savings["luce_energia"] is not None
 
     # Gas non confrontato (non disponibile)
-    assert savings['gas_energia'] is None
-    assert savings['gas_comm'] is None
+    assert savings["gas_energia"] is None
+    assert savings["gas_comm"] is None
 
 
 def test_user_without_gas():
@@ -215,34 +190,26 @@ def test_user_without_gas():
             "tipo": "variabile",
             "fascia": "trioraria",
             "energia": 0.010,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     current_rates = {
-        "luce": {
-            "variabile": {
-                "trioraria": {"energia": 0.0088, "commercializzazione": 60.0}
-            }
-        },
-        "gas": {
-            "fissa": {
-                "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
-            }
-        }
+        "luce": {"variabile": {"trioraria": {"energia": 0.0088, "commercializzazione": 60.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.456, "commercializzazione": 84.0}}},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Deve trovare risparmio luce
-    assert savings['has_savings'] is True
-    assert savings['luce_energia'] is not None
-    assert savings['luce_comm'] is not None
+    assert savings["has_savings"] is True
+    assert savings["luce_energia"] is not None
+    assert savings["luce_comm"] is not None
 
     # Gas non deve essere confrontato
-    assert savings['gas_energia'] is None
-    assert savings['gas_comm'] is None
+    assert savings["gas_energia"] is None
+    assert savings["gas_comm"] is None
 
 
 def test_empty_current_rates():
@@ -252,28 +219,19 @@ def test_empty_current_rates():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
-    current_rates = {
-        "luce": {
-            "fissa": {},
-            "variabile": {}
-        },
-        "gas": {
-            "fissa": {},
-            "variabile": {}
-        }
-    }
+    current_rates = {"luce": {"fissa": {}, "variabile": {}}, "gas": {"fissa": {}, "variabile": {}}}
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Nessun risparmio trovato (niente da confrontare)
-    assert savings['has_savings'] is False
-    assert savings['luce_energia'] is None
-    assert savings['luce_comm'] is None
+    assert savings["has_savings"] is False
+    assert savings["luce_energia"] is None
+    assert savings["luce_comm"] is None
 
 
 def test_both_luce_and_gas_savings():
@@ -283,37 +241,29 @@ def test_both_luce_and_gas_savings():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.10,
-            "commercializzazione": 90.0
-        }
+            "commercializzazione": 90.0,
+        },
     }
 
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.130, "commercializzazione": 60.0}
-            }
-        },
-        "gas": {
-            "variabile": {
-                "monoraria": {"energia": 0.08, "commercializzazione": 84.0}
-            }
-        }
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 60.0}}},
+        "gas": {"variabile": {"monoraria": {"energia": 0.08, "commercializzazione": 84.0}}},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Risparmio su tutto
-    assert savings['has_savings'] is True
-    assert savings['luce_energia'] is not None
-    assert savings['luce_comm'] is not None
-    assert savings['gas_energia'] is not None
-    assert savings['gas_comm'] is not None
+    assert savings["has_savings"] is True
+    assert savings["luce_energia"] is not None
+    assert savings["luce_comm"] is not None
+    assert savings["gas_energia"] is not None
+    assert savings["gas_comm"] is not None
 
 
 def test_tipo_and_fascia_in_savings():
@@ -323,36 +273,28 @@ def test_tipo_and_fascia_in_savings():
             "tipo": "variabile",
             "fascia": "trioraria",
             "energia": 0.010,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.456,
-            "commercializzazione": 84.0
-        }
+            "commercializzazione": 84.0,
+        },
     }
 
     current_rates = {
-        "luce": {
-            "variabile": {
-                "trioraria": {"energia": 0.0088, "commercializzazione": 72.0}
-            }
-        },
-        "gas": {
-            "fissa": {
-                "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
-            }
-        }
+        "luce": {"variabile": {"trioraria": {"energia": 0.0088, "commercializzazione": 72.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.456, "commercializzazione": 84.0}}},
     }
 
     savings = check_better_rates(user_rates, current_rates)
 
     # Verifica tipo e fascia memorizzati correttamente
-    assert savings['luce_tipo'] == 'variabile'
-    assert savings['luce_fascia'] == 'trioraria'
-    assert savings['gas_tipo'] == 'fissa'
-    assert savings['gas_fascia'] == 'monoraria'
+    assert savings["luce_tipo"] == "variabile"
+    assert savings["luce_fascia"] == "trioraria"
+    assert savings["gas_tipo"] == "fissa"
+    assert savings["gas_fascia"] == "monoraria"
 
 
 def test_user_with_gas_no_notifications():
@@ -362,26 +304,26 @@ def test_user_with_gas_no_notifications():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.456,
-            "commercializzazione": 84.0
-        }
+            "commercializzazione": 84.0,
+        },
     }
 
     # Verifica struttura base
-    assert 'luce' in user_data
-    assert 'gas' in user_data
-    assert user_data['gas'] is not None
+    assert "luce" in user_data
+    assert "gas" in user_data
+    assert user_data["gas"] is not None
 
     # Verifica campi luce
-    assert set(user_data['luce'].keys()) == {'tipo', 'fascia', 'energia', 'commercializzazione'}
+    assert set(user_data["luce"].keys()) == {"tipo", "fascia", "energia", "commercializzazione"}
 
     # Verifica campi gas
-    assert set(user_data['gas'].keys()) == {'tipo', 'fascia', 'energia', 'commercializzazione'}
+    assert set(user_data["gas"].keys()) == {"tipo", "fascia", "energia", "commercializzazione"}
 
 
 def test_user_without_gas_no_notifications():
@@ -391,15 +333,15 @@ def test_user_without_gas_no_notifications():
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.0088,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
-        "gas": None
+        "gas": None,
     }
 
     # Verifica struttura
-    assert 'luce' in user_data
-    assert 'gas' in user_data
-    assert user_data['gas'] is None
+    assert "luce" in user_data
+    assert "gas" in user_data
+    assert user_data["gas"] is None
 
 
 def test_user_with_last_notified_rates():
@@ -409,37 +351,34 @@ def test_user_with_last_notified_rates():
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.010,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": {
             "tipo": "variabile",
             "fascia": "monoraria",
             "energia": 0.10,
-            "commercializzazione": 84.0
+            "commercializzazione": 84.0,
         },
         "last_notified_rates": {
-            "luce": {
-                "energia": 0.0088,
-                "commercializzazione": 72.0
-            },
-            "gas": {
-                "energia": 0.08,
-                "commercializzazione": 84.0
-            }
-        }
+            "luce": {"energia": 0.0088, "commercializzazione": 72.0},
+            "gas": {"energia": 0.08, "commercializzazione": 84.0},
+        },
     }
 
     # Verifica struttura last_notified_rates
-    assert 'last_notified_rates' in user_data
-    assert 'luce' in user_data['last_notified_rates']
-    assert 'gas' in user_data['last_notified_rates']
+    assert "last_notified_rates" in user_data
+    assert "luce" in user_data["last_notified_rates"]
+    assert "gas" in user_data["last_notified_rates"]
 
     # Verifica che last_notified non contenga tipo/fascia (ridondanti)
-    assert 'tipo' not in user_data['last_notified_rates']['luce']
-    assert 'fascia' not in user_data['last_notified_rates']['luce']
+    assert "tipo" not in user_data["last_notified_rates"]["luce"]
+    assert "fascia" not in user_data["last_notified_rates"]["luce"]
 
     # Verifica campi corretti
-    assert set(user_data['last_notified_rates']['luce'].keys()) == {'energia', 'commercializzazione'}
+    assert set(user_data["last_notified_rates"]["luce"].keys()) == {
+        "energia",
+        "commercializzazione",
+    }
 
 
 def test_user_without_gas_with_last_notified():
@@ -449,18 +388,13 @@ def test_user_without_gas_with_last_notified():
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         },
         "gas": None,
-        "last_notified_rates": {
-            "luce": {
-                "energia": 0.130,
-                "commercializzazione": 60.0
-            }
-        }
+        "last_notified_rates": {"luce": {"energia": 0.130, "commercializzazione": 60.0}},
     }
 
     # last_notified_rates può avere solo luce
-    assert 'last_notified_rates' in user_data
-    assert 'luce' in user_data['last_notified_rates']
-    assert 'gas' not in user_data['last_notified_rates']
+    assert "last_notified_rates" in user_data
+    assert "luce" in user_data["last_notified_rates"]
+    assert "gas" not in user_data["last_notified_rates"]

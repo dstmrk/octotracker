@@ -7,39 +7,60 @@ Testa tutti i flussi conversazionali del bot:
 - Gestione errori con input non validi
 - Flussi completi: luce fissa, variabile mono/tri, con/senza gas
 """
+
 import os
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-from telegram import Update, User, Message, Chat, CallbackQuery, InlineKeyboardMarkup
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from telegram import CallbackQuery, InlineKeyboardMarkup, Message, Update, User
 from telegram.ext import ContextTypes
 
 # Mock WEBHOOK_SECRET prima di importare bot (previene ValueError)
-os.environ['WEBHOOK_SECRET'] = 'test_secret_token_for_testing_only'
+os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
 
 # Import funzioni del bot e database
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from bot import (
-    start, tipo_tariffa, luce_tipo_variabile, luce_energia, luce_comm,
-    ha_gas, gas_energia, gas_comm, status, remove_data, cancel, help_command,
-    TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM,
-    HA_GAS, GAS_ENERGIA, GAS_COMM
-)
-from database import init_db, load_user, load_users, save_user
-import database
 import tempfile
 
+import database
+from bot import (
+    GAS_COMM,
+    GAS_ENERGIA,
+    HA_GAS,
+    LUCE_COMM,
+    LUCE_ENERGIA,
+    LUCE_TIPO_VARIABILE,
+    TIPO_TARIFFA,
+    cancel,
+    gas_comm,
+    gas_energia,
+    ha_gas,
+    help_command,
+    luce_comm,
+    luce_energia,
+    luce_tipo_variabile,
+    remove_data,
+    start,
+    status,
+    tipo_tariffa,
+)
+from database import init_db, load_user, save_user
+
 # ========== FIXTURES ==========
+
 
 @pytest.fixture(autouse=True)
 def temp_database(monkeypatch):
     """Usa database temporaneo per ogni test"""
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_db = Path(tmpdir) / "test_users.db"
-        monkeypatch.setattr(database, 'DB_FILE', temp_db)
+        monkeypatch.setattr(database, "DB_FILE", temp_db)
         init_db()
         yield temp_db
+
 
 @pytest.fixture
 def mock_update():
@@ -56,6 +77,7 @@ def mock_update():
     update.callback_query = None
 
     return update
+
 
 @pytest.fixture
 def mock_callback_query():
@@ -75,6 +97,7 @@ def mock_callback_query():
 
     return update
 
+
 @pytest.fixture
 def mock_context():
     """Crea mock ContextTypes.DEFAULT_TYPE"""
@@ -82,7 +105,9 @@ def mock_context():
     context.user_data = {}
     return context
 
+
 # ========== TEST COMANDI BASE ==========
+
 
 @pytest.mark.asyncio
 async def test_start_new_user(mock_update, mock_context):
@@ -97,8 +122,9 @@ async def test_start_new_user(mock_update, mock_context):
     assert "Benvenuto" in call_args[0][0]
 
     # Verifica keyboard con Fissa/Variabile
-    assert 'reply_markup' in call_args[1]
-    assert isinstance(call_args[1]['reply_markup'], InlineKeyboardMarkup)
+    assert "reply_markup" in call_args[1]
+    assert isinstance(call_args[1]["reply_markup"], InlineKeyboardMarkup)
+
 
 @pytest.mark.asyncio
 async def test_cancel_command(mock_update, mock_context):
@@ -112,6 +138,7 @@ async def test_cancel_command(mock_update, mock_context):
     # Verifica messaggio di annullamento
     assert "annullat" in call_args[0][0].lower() or "cancellat" in call_args[0][0].lower()
 
+
 @pytest.mark.asyncio
 async def test_update_command(mock_update, mock_context):
     """Test /update (alias di /start per aggiornare tariffe)"""
@@ -121,7 +148,7 @@ async def test_update_command(mock_update, mock_context):
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         }
     }
     save_user("123456789", user_data)
@@ -138,6 +165,7 @@ async def test_update_command(mock_update, mock_context):
     # Può contenere "Aggiorniamo" o simile se è update, o "Benvenuto" se nuovo
     assert "tipo di tariffa" in message_text.lower()
 
+
 @pytest.mark.asyncio
 async def test_help_command(mock_update, mock_context):
     """Test /help mostra comandi disponibili"""
@@ -152,6 +180,7 @@ async def test_help_command(mock_update, mock_context):
     assert "/status" in message_text
     assert "/remove" in message_text
 
+
 @pytest.mark.asyncio
 async def test_status_no_data(mock_update, mock_context):
     """Test /status senza dati salvati (database vuoto)"""
@@ -160,6 +189,7 @@ async def test_status_no_data(mock_update, mock_context):
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args
     assert "Non hai ancora registrato" in call_args[0][0]
+
 
 @pytest.mark.asyncio
 async def test_status_with_data(mock_update, mock_context):
@@ -170,7 +200,7 @@ async def test_status_with_data(mock_update, mock_context):
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         }
     }
     save_user("123456789", user_data)
@@ -186,6 +216,7 @@ async def test_status_with_data(mock_update, mock_context):
     assert "0,145" in message_text or "0.145" in message_text
     assert "72" in message_text
 
+
 @pytest.mark.asyncio
 async def test_remove_command(mock_update, mock_context):
     """Test /remove rimuove dati utente"""
@@ -195,7 +226,7 @@ async def test_remove_command(mock_update, mock_context):
             "tipo": "fissa",
             "fascia": "monoraria",
             "energia": 0.145,
-            "commercializzazione": 72.0
+            "commercializzazione": 72.0,
         }
     }
     save_user("123456789", user_data)
@@ -206,7 +237,9 @@ async def test_remove_command(mock_update, mock_context):
     assert load_user("123456789") is None
     mock_update.message.reply_text.assert_called_once()
 
+
 # ========== TEST FLUSSO CONVERSAZIONE ==========
+
 
 @pytest.mark.asyncio
 async def test_tipo_tariffa_fissa(mock_callback_query, mock_context):
@@ -216,12 +249,13 @@ async def test_tipo_tariffa_fissa(mock_callback_query, mock_context):
     result = await tipo_tariffa(mock_callback_query, mock_context)
 
     assert result == LUCE_ENERGIA
-    assert mock_context.user_data['is_variabile'] is False
-    assert mock_context.user_data['luce_tipo'] == "fissa"
-    assert mock_context.user_data['luce_fascia'] == "monoraria"
+    assert mock_context.user_data["is_variabile"] is False
+    assert mock_context.user_data["luce_tipo"] == "fissa"
+    assert mock_context.user_data["luce_fascia"] == "monoraria"
 
     mock_callback_query.callback_query.answer.assert_called_once()
     mock_callback_query.callback_query.edit_message_text.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_tipo_tariffa_variabile(mock_callback_query, mock_context):
@@ -231,9 +265,10 @@ async def test_tipo_tariffa_variabile(mock_callback_query, mock_context):
     result = await tipo_tariffa(mock_callback_query, mock_context)
 
     assert result == LUCE_TIPO_VARIABILE
-    assert mock_context.user_data['is_variabile'] is True
+    assert mock_context.user_data["is_variabile"] is True
 
     mock_callback_query.callback_query.answer.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_luce_tipo_variabile_mono(mock_callback_query, mock_context):
@@ -243,9 +278,10 @@ async def test_luce_tipo_variabile_mono(mock_callback_query, mock_context):
     result = await luce_tipo_variabile(mock_callback_query, mock_context)
 
     assert result == LUCE_ENERGIA
-    assert mock_context.user_data['luce_tipo'] == "variabile"
-    assert mock_context.user_data['luce_fascia'] == "monoraria"
-    assert mock_context.user_data['gas_tipo'] == "variabile"
+    assert mock_context.user_data["luce_tipo"] == "variabile"
+    assert mock_context.user_data["luce_fascia"] == "monoraria"
+    assert mock_context.user_data["gas_tipo"] == "variabile"
+
 
 @pytest.mark.asyncio
 async def test_luce_tipo_variabile_tri(mock_callback_query, mock_context):
@@ -255,10 +291,12 @@ async def test_luce_tipo_variabile_tri(mock_callback_query, mock_context):
     result = await luce_tipo_variabile(mock_callback_query, mock_context)
 
     assert result == LUCE_ENERGIA
-    assert mock_context.user_data['luce_tipo'] == "variabile"
-    assert mock_context.user_data['luce_fascia'] == "trioraria"
+    assert mock_context.user_data["luce_tipo"] == "variabile"
+    assert mock_context.user_data["luce_fascia"] == "trioraria"
+
 
 # ========== TEST INPUT VALIDI ==========
+
 
 @pytest.mark.asyncio
 async def test_luce_energia_valid_input(mock_update, mock_context):
@@ -268,8 +306,9 @@ async def test_luce_energia_valid_input(mock_update, mock_context):
     result = await luce_energia(mock_update, mock_context)
 
     assert result == LUCE_COMM
-    assert mock_context.user_data['luce_energia'] == 0.145
+    assert mock_context.user_data["luce_energia"] == 0.145
     mock_update.message.reply_text.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_luce_energia_dot_separator(mock_update, mock_context):
@@ -279,7 +318,8 @@ async def test_luce_energia_dot_separator(mock_update, mock_context):
     result = await luce_energia(mock_update, mock_context)
 
     assert result == LUCE_COMM
-    assert mock_context.user_data['luce_energia'] == 0.145
+    assert mock_context.user_data["luce_energia"] == 0.145
+
 
 @pytest.mark.asyncio
 async def test_luce_comm_valid_input(mock_update, mock_context):
@@ -289,16 +329,18 @@ async def test_luce_comm_valid_input(mock_update, mock_context):
     result = await luce_comm(mock_update, mock_context)
 
     assert result == HA_GAS
-    assert mock_context.user_data['luce_comm'] == 72.0
+    assert mock_context.user_data["luce_comm"] == 72.0
     mock_update.message.reply_text.assert_called_once()
 
+
 # ========== TEST INPUT NON VALIDI ==========
+
 
 @pytest.mark.asyncio
 async def test_luce_energia_invalid_string(mock_update, mock_context):
     """Test input non numerico per energia luce"""
     mock_update.message.text = "abc"
-    mock_context.user_data['is_variabile'] = False
+    mock_context.user_data["is_variabile"] = False
 
     result = await luce_energia(mock_update, mock_context)
 
@@ -310,28 +352,31 @@ async def test_luce_energia_invalid_string(mock_update, mock_context):
     assert "❌" in call_args[0][0]
     assert "valido" in call_args[0][0].lower()
 
+
 @pytest.mark.asyncio
 async def test_luce_energia_empty_string(mock_update, mock_context):
     """Test input vuoto per energia luce"""
     mock_update.message.text = ""
-    mock_context.user_data['is_variabile'] = False
+    mock_context.user_data["is_variabile"] = False
 
     result = await luce_energia(mock_update, mock_context)
 
     assert result == LUCE_ENERGIA
     mock_update.message.reply_text.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_luce_energia_special_chars(mock_update, mock_context):
     """Test input con caratteri speciali"""
     mock_update.message.text = "0,14€"
-    mock_context.user_data['is_variabile'] = False
+    mock_context.user_data["is_variabile"] = False
 
     result = await luce_energia(mock_update, mock_context)
 
     # ValueError perché € non è valido
     assert result == LUCE_ENERGIA
     mock_update.message.reply_text.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_luce_comm_invalid_input(mock_update, mock_context):
@@ -345,16 +390,18 @@ async def test_luce_comm_invalid_input(mock_update, mock_context):
     call_args = mock_update.message.reply_text.call_args
     assert "❌" in call_args[0][0]
 
+
 @pytest.mark.asyncio
 async def test_gas_energia_invalid_input(mock_update, mock_context):
     """Test input non valido per energia gas"""
     mock_update.message.text = "invalid"
-    mock_context.user_data['is_variabile'] = False
+    mock_context.user_data["is_variabile"] = False
 
     result = await gas_energia(mock_update, mock_context)
 
     assert result == GAS_ENERGIA
     mock_update.message.reply_text.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_gas_comm_invalid_input(mock_update, mock_context):
@@ -366,18 +413,21 @@ async def test_gas_comm_invalid_input(mock_update, mock_context):
     assert result == GAS_COMM
     mock_update.message.reply_text.assert_called_once()
 
+
 # ========== TEST FLUSSI COMPLETI ==========
+
 
 @pytest.mark.asyncio
 async def test_has_gas_yes(mock_callback_query, mock_context):
     """Test flusso quando utente ha gas"""
     mock_callback_query.callback_query.data = "gas_si"
-    mock_context.user_data['is_variabile'] = False
+    mock_context.user_data["is_variabile"] = False
 
     result = await ha_gas(mock_callback_query, mock_context)
 
     assert result == GAS_ENERGIA
     mock_callback_query.callback_query.edit_message_text.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_has_gas_no(mock_callback_query, mock_context):
@@ -387,10 +437,10 @@ async def test_has_gas_no(mock_callback_query, mock_context):
 
     # Setup dati luce
     mock_context.user_data = {
-        'luce_tipo': 'fissa',
-        'luce_fascia': 'monoraria',
-        'luce_energia': 0.145,
-        'luce_comm': 72.0
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": 0.145,
+        "luce_comm": 72.0,
     }
 
     result = await ha_gas(mock_callback_query, mock_context)
@@ -405,6 +455,7 @@ async def test_has_gas_no(mock_callback_query, mock_context):
     # Bot salva gas: None quando utente non ha gas
     assert user_data.get("gas") is None
 
+
 @pytest.mark.asyncio
 async def test_gas_energia_valid_input(mock_update, mock_context):
     """Test input valido per energia gas"""
@@ -413,7 +464,8 @@ async def test_gas_energia_valid_input(mock_update, mock_context):
     result = await gas_energia(mock_update, mock_context)
 
     assert result == GAS_COMM
-    assert mock_context.user_data['gas_energia'] == 0.456
+    assert mock_context.user_data["gas_energia"] == 0.456
+
 
 @pytest.mark.asyncio
 async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
@@ -423,14 +475,14 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
 
     # Setup context con tutti i dati
     mock_context.user_data = {
-        'luce_tipo': 'fissa',
-        'luce_fascia': 'monoraria',
-        'luce_energia': 0.145,
-        'luce_comm': 72.0,
-        'gas_tipo': 'fissa',
-        'gas_fascia': 'monoraria',
-        'gas_energia': 0.456,
-        'gas_comm': 84.0
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": 0.145,
+        "luce_comm": 72.0,
+        "gas_tipo": "fissa",
+        "gas_fascia": "monoraria",
+        "gas_energia": 0.456,
+        "gas_comm": 84.0,
     }
 
     # Simula ultimo step (gas_comm)
@@ -442,10 +494,12 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
     # Verifica salvataggio completo nel database
     user_data = load_user(user_id)
     assert user_data is not None
-    assert user_data['luce']['energia'] == 0.145
-    assert user_data['gas']['energia'] == 0.456
+    assert user_data["luce"]["energia"] == 0.145
+    assert user_data["gas"]["energia"] == 0.456
+
 
 # ========== TEST EDGE CASES ==========
+
 
 @pytest.mark.asyncio
 async def test_negative_values_rejected(mock_update, mock_context):
@@ -456,12 +510,13 @@ async def test_negative_values_rejected(mock_update, mock_context):
 
     # Con miglioramento #10, il bot ora rifiuta negativi
     assert result == LUCE_ENERGIA  # Rimane nello stesso stato
-    assert 'luce_energia' not in mock_context.user_data  # Valore non salvato
+    assert "luce_energia" not in mock_context.user_data  # Valore non salvato
 
     # Verifica messaggio di errore inviato
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args
     assert "maggiore o uguale a zero" in call_args[0][0]
+
 
 @pytest.mark.asyncio
 async def test_very_large_numbers(mock_update, mock_context):
@@ -472,7 +527,8 @@ async def test_very_large_numbers(mock_update, mock_context):
 
     # Il bot accetta qualunque numero valido
     assert result == LUCE_COMM
-    assert mock_context.user_data['luce_energia'] == 999999.99
+    assert mock_context.user_data["luce_energia"] == 999999.99
+
 
 @pytest.mark.asyncio
 async def test_zero_values(mock_update, mock_context):
@@ -482,4 +538,4 @@ async def test_zero_values(mock_update, mock_context):
     result = await luce_energia(mock_update, mock_context)
 
     assert result == LUCE_COMM
-    assert mock_context.user_data['luce_energia'] == 0.0
+    assert mock_context.user_data["luce_energia"] == 0.0

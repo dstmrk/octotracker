@@ -3,61 +3,70 @@
 Bot Telegram OctoTracker - Tutto in uno
 Gestisce bot, scraper schedulato e checker schedulato
 """
-import os
 import asyncio
 import logging
-from datetime import datetime, time, timedelta
-from pathlib import Path
-from typing import Dict, Any, Union, Optional
+import os
+from datetime import datetime, timedelta
+from typing import Any
 from warnings import filterwarnings
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
-from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, ConversationHandler
-from telegram.error import TimedOut, NetworkError, TelegramError
-from telegram.warnings import PTBUserWarning
+
 from dotenv import load_dotenv
-from playwright.async_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeout
+from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import TimeoutError as PlaywrightTimeout
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
+from telegram.error import NetworkError, TelegramError, TimedOut
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
+from telegram.warnings import PTBUserWarning
 
 # Silenzia warning ConversationHandler per CallbackQueryHandler con per_message=False
 # Questo è il comportamento corretto per il nostro caso d'uso (flusso lineare, non menu interattivo)
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 # Import moduli interni
-from scraper import scrape_octopus_tariffe
 from checker import check_and_notify_users, format_number
-from database import init_db, load_user, save_user, remove_user, user_exists
+from database import init_db, load_user, remove_user, save_user, user_exists
+from scraper import scrape_octopus_tariffe
 
 load_dotenv()
 
 # Configurazione logging
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 # Setup logger per questo modulo
 logger = logging.getLogger(__name__)
 
 # Riduci verbosità librerie esterne
-logging.getLogger('telegram').setLevel(logging.WARNING)
-logging.getLogger('httpx').setLevel(logging.WARNING)
-logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger("telegram").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 # Stati conversazione
 TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(7)
 
 # Configurazione scheduler
-SCRAPER_HOUR = int(os.getenv('SCRAPER_HOUR', '9'))  # Default: 9:00 ora italiana
-CHECKER_HOUR = int(os.getenv('CHECKER_HOUR', '10'))  # Default: 10:00 ora italiana
+SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
+CHECKER_HOUR = int(os.getenv("CHECKER_HOUR", "10"))  # Default: 10:00 ora italiana
 
 # Configurazione webhook
-WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')  # Es: https://octotracker.tuodominio.xyz
-WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8443'))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")  # Es: https://octotracker.tuodominio.xyz
+WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8443"))
 
 # Validazione WEBHOOK_SECRET obbligatorio (protezione da webhook spoofing)
-WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 if not WEBHOOK_SECRET:
     raise ValueError(
         "WEBHOOK_SECRET è obbligatorio per sicurezza del webhook.\n"
@@ -68,6 +77,7 @@ if not WEBHOOK_SECRET:
     )
 
 # ========== BOT COMMANDS ==========
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Avvia registrazione tariffe"""
@@ -80,7 +90,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     keyboard = [
         [
             InlineKeyboardButton("📊 Fissa", callback_data="tipo_fissa"),
-            InlineKeyboardButton("📈 Variabile", callback_data="tipo_variabile")
+            InlineKeyboardButton("📈 Variabile", callback_data="tipo_variabile"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -106,34 +116,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(messaggio, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
     return TIPO_TARIFFA
 
+
 async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo tariffa (Fissa/Variabile)"""
     query = update.callback_query
     await query.answer()
 
     if query.data == "tipo_fissa":
-        context.user_data['is_variabile'] = False
-        context.user_data['luce_tipo'] = "fissa"
-        context.user_data['luce_fascia'] = "monoraria"
-        context.user_data['gas_tipo'] = "fissa"  # Se ha gas, sarà fissa
-        context.user_data['gas_fascia'] = "monoraria"
+        context.user_data["is_variabile"] = False
+        context.user_data["luce_tipo"] = "fissa"
+        context.user_data["luce_fascia"] = "monoraria"
+        context.user_data["gas_tipo"] = "fissa"  # Se ha gas, sarà fissa
+        context.user_data["gas_fascia"] = "monoraria"
 
         await query.edit_message_text(
             "📊 <b>Tariffa Fissa</b>\n\n"
             "Perfetto! Ora inserisci i dati della tua tariffa luce.\n\n"
             "👉 Quanto paghi per la materia energia luce (€/kWh)?\n\n"
             "💬 Esempio: 0,145",
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
         )
         return LUCE_ENERGIA
 
     else:  # tipo_variabile
-        context.user_data['is_variabile'] = True
+        context.user_data["is_variabile"] = True
 
         keyboard = [
             [
                 InlineKeyboardButton("⏱️ Monoraria", callback_data="luce_mono"),
-                InlineKeyboardButton("⏱️⏱️⏱️ Trioraria", callback_data="luce_tri")
+                InlineKeyboardButton("⏱️⏱️⏱️ Trioraria", callback_data="luce_tri"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -142,9 +153,10 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             "📈 <b>Tariffa Variabile</b>\n\n"
             "La tua tariffa luce è monoraria o trioraria (F1/F2/F3)?",
             reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
         )
         return LUCE_TIPO_VARIABILE
+
 
 async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo luce variabile (Monoraria/Trioraria)"""
@@ -152,74 +164,76 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
 
     if query.data == "luce_mono":
-        context.user_data['luce_tipo'] = "variabile"
-        context.user_data['luce_fascia'] = "monoraria"
+        context.user_data["luce_tipo"] = "variabile"
+        context.user_data["luce_fascia"] = "monoraria"
         tipo_msg = "monoraria (PUN)"
     else:  # luce_tri
-        context.user_data['luce_tipo'] = "variabile"
-        context.user_data['luce_fascia'] = "trioraria"
+        context.user_data["luce_tipo"] = "variabile"
+        context.user_data["luce_fascia"] = "trioraria"
         tipo_msg = "trioraria (PUN)"
 
     # Gas variabile è sempre monorario
-    context.user_data['gas_tipo'] = "variabile"
-    context.user_data['gas_fascia'] = "monoraria"
+    context.user_data["gas_tipo"] = "variabile"
+    context.user_data["gas_fascia"] = "monoraria"
 
     await query.edit_message_text(
         f"⚡ <b>Luce variabile {tipo_msg}</b>\n\n"
         f"Ora inserisci lo spread della tua tariffa rispetto al PUN.\n\n"
         f"💬 Esempio: se la tua tariffa è <b>PUN + 0,0088</b> €/kWh, scrivi <code>0,0088</code>",
-        parse_mode=ParseMode.HTML
+        parse_mode=ParseMode.HTML,
     )
     return LUCE_ENERGIA
+
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
     try:
-        value = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
             return LUCE_ENERGIA
 
-        context.user_data['luce_energia'] = value
+        context.user_data["luce_energia"] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
             "💬 Esempio: 72 (se paghi 6 €/mese)"
         )
         return LUCE_COMM
     except ValueError:
-        is_variabile = context.user_data.get('is_variabile', False)
+        is_variabile = context.user_data.get("is_variabile", False)
         if is_variabile:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,0088)")
         else:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,145)")
         return LUCE_ENERGIA
 
+
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se ha gas"""
     try:
-        value = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
             return LUCE_COMM
 
-        context.user_data['luce_comm'] = value
+        context.user_data["luce_comm"] = value
 
         keyboard = [
             [
                 InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
-                InlineKeyboardButton("❌ No", callback_data="gas_no")
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?",
-            reply_markup=reply_markup
+            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
         )
         return HA_GAS
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
         return LUCE_COMM
+
 
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci risposta se ha gas"""
@@ -227,7 +241,7 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
 
     if query.data == "gas_si":
-        is_variabile = context.user_data.get('is_variabile', False)
+        is_variabile = context.user_data.get("is_variabile", False)
 
         if is_variabile:
             msg = (
@@ -247,46 +261,51 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     else:
         return await salva_e_conferma(query, context, solo_luce=True)
 
+
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
     try:
-        value = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
             return GAS_ENERGIA
 
-        context.user_data['gas_energia'] = value
+        context.user_data["gas_energia"] = value
         await update.message.reply_text(
             "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
             "💬 Esempio: 84 (se paghi 7 €/mese)"
         )
         return GAS_COMM
     except ValueError:
-        is_variabile = context.user_data.get('is_variabile', False)
+        is_variabile = context.user_data.get("is_variabile", False)
         if is_variabile:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,08)")
         else:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,456)")
         return GAS_ENERGIA
 
+
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva gas e conferma"""
     try:
-        value = float(update.message.text.replace(',', '.'))
+        value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text("❌ Il valore deve essere maggiore o uguale a zero")
             return GAS_COMM
 
-        context.user_data['gas_comm'] = value
+        context.user_data["gas_comm"] = value
         return await salva_e_conferma(update, context, solo_luce=False)
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
 
-async def salva_e_conferma(update_or_query: Union[Update, Any], context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> int:
+
+async def salva_e_conferma(
+    update_or_query: Update | Any, context: ContextTypes.DEFAULT_TYPE, solo_luce: bool
+) -> int:
     """Salva dati utente e mostra conferma"""
     # Distingui tra Update (con message) e CallbackQuery
-    if hasattr(update_or_query, 'effective_user'):
+    if hasattr(update_or_query, "effective_user"):
         # È un Update
         user_id = str(update_or_query.effective_user.id)
         send_message = lambda text, **kwargs: update_or_query.message.reply_text(text, **kwargs)
@@ -297,34 +316,34 @@ async def salva_e_conferma(update_or_query: Union[Update, Any], context: Context
 
     # Nuova struttura nested
     user_data = {
-        'luce': {
-            'tipo': context.user_data['luce_tipo'],
-            'fascia': context.user_data['luce_fascia'],
-            'energia': context.user_data['luce_energia'],
-            'commercializzazione': context.user_data['luce_comm']
+        "luce": {
+            "tipo": context.user_data["luce_tipo"],
+            "fascia": context.user_data["luce_fascia"],
+            "energia": context.user_data["luce_energia"],
+            "commercializzazione": context.user_data["luce_comm"],
         }
     }
 
     if not solo_luce:
-        user_data['gas'] = {
-            'tipo': context.user_data['gas_tipo'],
-            'fascia': context.user_data['gas_fascia'],
-            'energia': context.user_data['gas_energia'],
-            'commercializzazione': context.user_data['gas_comm']
+        user_data["gas"] = {
+            "tipo": context.user_data["gas_tipo"],
+            "fascia": context.user_data["gas_fascia"],
+            "energia": context.user_data["gas_energia"],
+            "commercializzazione": context.user_data["gas_comm"],
         }
     else:
-        user_data['gas'] = None
+        user_data["gas"] = None
 
     # Salva utente nel database
     save_user(user_id, user_data)
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(user_data['luce']['energia'], max_decimals=4)
-    luce_comm_fmt = format_number(user_data['luce']['commercializzazione'], max_decimals=2)
+    luce_energia_fmt = format_number(user_data["luce"]["energia"], max_decimals=4)
+    luce_comm_fmt = format_number(user_data["luce"]["commercializzazione"], max_decimals=2)
 
     # Determina label in base al tipo e fascia
-    luce_tipo = user_data['luce']['tipo']
-    luce_fascia = user_data['luce']['fascia']
+    luce_tipo = user_data["luce"]["tipo"]
+    luce_fascia = user_data["luce"]["fascia"]
 
     tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
@@ -344,11 +363,11 @@ async def salva_e_conferma(update_or_query: Union[Update, Any], context: Context
     )
 
     if not solo_luce:
-        gas_energia_fmt = format_number(user_data['gas']['energia'], max_decimals=4)
-        gas_comm_fmt = format_number(user_data['gas']['commercializzazione'], max_decimals=2)
+        gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
+        gas_comm_fmt = format_number(user_data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = user_data['gas']['tipo']
-        gas_fascia = user_data['gas']['fascia']
+        gas_tipo = user_data["gas"]["tipo"]
+        gas_fascia = user_data["gas"]["fascia"]
 
         tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
@@ -372,10 +391,12 @@ async def salva_e_conferma(update_or_query: Union[Update, Any], context: Context
     await send_message(messaggio, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Annulla registrazione"""
     await update.message.reply_text("❌ Registrazione annullata. Usa /start per ricominciare.")
     return ConversationHandler.END
+
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra dati salvati"""
@@ -391,12 +412,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(data['luce']['energia'], max_decimals=4)
-    luce_comm_fmt = format_number(data['luce']['commercializzazione'], max_decimals=2)
+    luce_energia_fmt = format_number(data["luce"]["energia"], max_decimals=4)
+    luce_comm_fmt = format_number(data["luce"]["commercializzazione"], max_decimals=2)
 
     # Determina label in base al tipo e fascia
-    luce_tipo = data['luce']['tipo']
-    luce_fascia = data['luce']['fascia']
+    luce_tipo = data["luce"]["tipo"]
+    luce_fascia = data["luce"]["fascia"]
 
     tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
 
@@ -412,12 +433,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
-    if data.get('gas') is not None:
-        gas_energia_fmt = format_number(data['gas']['energia'], max_decimals=4)
-        gas_comm_fmt = format_number(data['gas']['commercializzazione'], max_decimals=2)
+    if data.get("gas") is not None:
+        gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
+        gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = data['gas']['tipo']
-        gas_fascia = data['gas']['fascia']
+        gas_tipo = data["gas"]["tipo"]
+        gas_fascia = data["gas"]["fascia"]
 
         tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
 
@@ -435,6 +456,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
 
+
 async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Cancella dati utente"""
     user_id = str(update.effective_user.id)
@@ -447,7 +469,7 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "Da questo momento non riceverai più notifiche da OctoTracker.\n\n"
             "🐙 Ti ringrazio per averlo provato!\n\n"
             "Se in futuro vuoi ricominciare a monitorare le tariffe, ti basta usare il comando /start.",
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
         )
     else:
         await update.message.reply_text(
@@ -455,6 +477,7 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
             "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
+
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mostra messaggio di aiuto"""
@@ -473,7 +496,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
 
+
 # ========== SCHEDULER ==========
+
 
 async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
@@ -492,6 +517,7 @@ async def run_scraper() -> None:
     except Exception as e:
         logger.error(f"❌ Errore inatteso scraper: {e}")
 
+
 async def run_checker(bot_token: str) -> None:
     """Esegue checker e invia notifiche"""
     logger.info("🔍 Avvio checker...")
@@ -506,6 +532,7 @@ async def run_checker(bot_token: str) -> None:
         logger.error(f"💾 Errore I/O checker: {e}")
     except Exception as e:
         logger.error(f"❌ Errore inatteso checker: {e}")
+
 
 def calculate_seconds_until_next_run(target_hour: int) -> float:
     """
@@ -527,6 +554,7 @@ def calculate_seconds_until_next_run(target_hour: int) -> float:
     delta = (target - now).total_seconds()
     return delta
 
+
 async def scraper_daily_task() -> None:
     """Task giornaliero per lo scraper - si esegue una volta al giorno"""
     # Calcola quanto dormire fino alla prima esecuzione
@@ -546,6 +574,7 @@ async def scraper_daily_task() -> None:
 
         logger.info(f"⏰ Prossimo scraper tra {hours_until_next:.1f} ore (alle {SCRAPER_HOUR}:00)")
         await asyncio.sleep(seconds_until_next)
+
 
 async def checker_daily_task(bot_token: str) -> None:
     """Task giornaliero per il checker - si esegue una volta al giorno"""
@@ -567,7 +596,9 @@ async def checker_daily_task(bot_token: str) -> None:
         logger.info(f"⏰ Prossimo checker tra {hours_until_next:.1f} ore (alle {CHECKER_HOUR}:00)")
         await asyncio.sleep(seconds_until_next)
 
+
 # ========== ERROR HANDLER ==========
+
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Gestisce errori senza crashare il bot"""
@@ -579,13 +610,17 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Gestione specifica per timeout e errori di rete
     if isinstance(error, (TimedOut, NetworkError)):
-        logger.warning("⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente.")
+        logger.warning(
+            "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+        )
     else:
         logger.error(f"⚠️  Tipo errore: {type(error).__name__}")
 
     # Non fare nulla - il bot continuerà a funzionare
 
+
 # ========== MAIN ==========
+
 
 async def post_init(application: Application) -> None:
     """Avvia scheduler dopo l'inizializzazione del bot"""
@@ -595,9 +630,10 @@ async def post_init(application: Application) -> None:
     asyncio.create_task(scraper_daily_task())
     asyncio.create_task(checker_daily_task(bot_token))
 
+
 def main() -> None:
     """Avvia il bot con scheduler integrato"""
-    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise ValueError("TELEGRAM_BOT_TOKEN non impostato")
 
@@ -606,7 +642,7 @@ def main() -> None:
     logger.info("💾 Database inizializzato")
 
     logger.info("🤖 Avvio OctoTracker...")
-    logger.info(f"📡 Modalità: WEBHOOK")
+    logger.info("📡 Modalità: WEBHOOK")
     logger.info(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
     logger.info(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
     logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
@@ -618,18 +654,15 @@ def main() -> None:
         .token(token)
         .post_init(post_init)
         .connect_timeout(10.0)  # Timeout connessione - più breve per fail-fast (default: 5.0)
-        .read_timeout(30.0)     # Timeout lettura - alto per upload/operazioni lunghe (default: 5.0)
-        .write_timeout(15.0)    # Timeout scrittura - medio (default: 5.0)
-        .pool_timeout(10.0)     # Timeout pool connessioni - breve (default: 1.0)
+        .read_timeout(30.0)  # Timeout lettura - alto per upload/operazioni lunghe (default: 5.0)
+        .write_timeout(15.0)  # Timeout scrittura - medio (default: 5.0)
+        .pool_timeout(10.0)  # Timeout pool connessioni - breve (default: 1.0)
         .build()
     )
 
     # Handler conversazione registrazione
     conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler('start', start),
-            CommandHandler('update', start)
-        ],
+        entry_points=[CommandHandler("start", start), CommandHandler("update", start)],
         states={
             TIPO_TARIFFA: [CallbackQueryHandler(tipo_tariffa)],
             LUCE_TIPO_VARIABILE: [CallbackQueryHandler(luce_tipo_variabile)],
@@ -639,14 +672,14 @@ def main() -> None:
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
-        per_message=False  # CallbackQueryHandler non tracciato per ogni messaggio
+        fallbacks=[CommandHandler("cancel", cancel)],
+        per_message=False,  # CallbackQueryHandler non tracciato per ogni messaggio
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler('status', status))
-    app.add_handler(CommandHandler('remove', remove_data))
-    app.add_handler(CommandHandler('help', help_command))
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("remove", remove_data))
+    app.add_handler(CommandHandler("help", help_command))
 
     # Registra error handler per gestire timeout e errori di rete
     app.add_error_handler(error_handler)
@@ -668,8 +701,9 @@ def main() -> None:
         secret_token=WEBHOOK_SECRET,  # Validato all'avvio (protezione webhook spoofing)
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,  # Evita messaggi vecchi
-        bootstrap_retries=3  # Retry se setWebhook fallisce al primo tentativo
+        bootstrap_retries=3,  # Retry se setWebhook fallisce al primo tentativo
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

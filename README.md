@@ -3,6 +3,7 @@
 <img height="256" width="256" src="https://github.com/user-attachments/assets/95261ce6-a06e-4b3e-b980-009069568753" alt="octotracker"/>
 
 [![Unit Tests](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml)
+[![Lint](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml)
 [![Docker Build](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml)
 
 Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono offerte più convenienti.
@@ -270,7 +271,7 @@ Se vuoi sviluppare o testare senza Docker:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Installa dipendenze
-uv sync
+uv sync --extra dev
 uv run playwright install chromium
 
 # Crea .env
@@ -281,6 +282,47 @@ cp .env.example .env
 uv run python bot.py
 ```
 
+### Code Quality Tools
+
+Il progetto usa **Black** (formatter) e **Ruff** (linter) per mantenere alta la qualità del codice.
+
+#### Setup Pre-commit Hooks (Consigliato)
+
+I pre-commit hooks formattano automaticamente il codice prima di ogni commit:
+
+```bash
+# Installa pre-commit hooks
+uv run pre-commit install
+
+# Ora ad ogni git commit:
+# 1. Black formatta il codice automaticamente
+# 2. Ruff controlla e auto-fixa problemi risolvibili
+# 3. Commit procede solo se tutto è ok
+```
+
+#### Comandi Manuali
+
+Se preferisci eseguire i check manualmente:
+
+```bash
+# Formatta tutto il codice con Black
+uv run black .
+
+# Controlla e auto-fixa problemi con Ruff
+uv run ruff check --fix .
+
+# Solo controllo (senza modifiche)
+uv run black --check .
+uv run ruff check .
+```
+
+#### GitHub Actions
+
+I check di linting e testing girano automaticamente ad ogni push:
+- ✅ **Unit Tests** - pytest su tutti i test
+- ✅ **Lint** - black + ruff verificano la qualità del codice
+- ✅ **Docker Build** - build dell'immagine (solo su PR)
+
 ### Test componenti singoli
 
 ```bash
@@ -289,6 +331,9 @@ uv run python scraper.py
 
 # Test solo checker
 uv run python checker.py
+
+# Run unit tests
+uv run pytest tests/ -v
 ```
 
 ## 🐳 Installazione Docker
