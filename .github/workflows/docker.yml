@@ -9,6 +9,14 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/docker.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/docker.yml'
 
 jobs:
   build:
@@ -22,8 +30,19 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
     - name: Build Docker image
       run: docker compose build
+      env:
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
 
     - name: Verify image created
       run: |

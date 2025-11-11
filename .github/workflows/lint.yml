@@ -1,7 +1,15 @@
 name: Lint
 
 on:
+  pull_request:
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+      - '.github/workflows/lint.yml'
+      - '.pre-commit-config.yaml'
   push:
+    branches:
+      - main
     paths:
       - '**.py'
       - 'pyproject.toml'
