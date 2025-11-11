@@ -2,6 +2,7 @@
 
 <img height="256" width="256" src="https://github.com/user-attachments/assets/95261ce6-a06e-4b3e-b980-009069568753" alt="octotracker"/>
 
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Unit Tests](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/unit-test.yml)
 [![Lint](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/lint.yml)
 [![Docker Build](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml/badge.svg)](https://github.com/dstmrk/octotracker/actions/workflows/docker.yml)
@@ -447,9 +448,9 @@ docker compose up -d
 
 - [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
 
-## 📄 Licenza
+## 📜 Licenza
 
-MIT
+Questo progetto usa la Licenza MIT– guarda il file [LICENSE](LICENSE) per dettagli.
 
 ---
 
