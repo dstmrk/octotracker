@@ -55,9 +55,7 @@ class TestHealthHandler:
 
     def test_get_degraded(self):
         """Test GET /health con sistema degraded"""
-        handler = HealthHandler(
-            application=MagicMock(), request=MagicMock(), application_data={}
-        )
+        handler = HealthHandler(application=MagicMock(), request=MagicMock(), application_data={})
         handler.set_status = Mock()
         handler.set_header = Mock()
         handler.write = Mock()
@@ -76,9 +74,7 @@ class TestHealthHandler:
 
     def test_get_unhealthy(self):
         """Test GET /health con sistema unhealthy"""
-        handler = HealthHandler(
-            application=MagicMock(), request=MagicMock(), application_data={}
-        )
+        handler = HealthHandler(application=MagicMock(), request=MagicMock(), application_data={})
         handler.set_status = Mock()
         handler.set_header = Mock()
         handler.write = Mock()
@@ -97,9 +93,7 @@ class TestHealthHandler:
 
     def test_get_exception(self):
         """Test GET /health con exception"""
-        handler = HealthHandler(
-            application=MagicMock(), request=MagicMock(), application_data={}
-        )
+        handler = HealthHandler(application=MagicMock(), request=MagicMock(), application_data={})
         handler.set_status = Mock()
         handler.set_header = Mock()
         handler.write = Mock()
