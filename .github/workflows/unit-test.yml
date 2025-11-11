@@ -7,13 +7,6 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/unit-test.yml'
       - 'tests/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - '.github/workflows/unit-test.yml'
-      - 'tests/**'
 
 jobs:
   test:

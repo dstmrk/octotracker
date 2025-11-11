@@ -7,13 +7,6 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/lint.yml'
       - '.pre-commit-config.yaml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - '.github/workflows/lint.yml'
-      - '.pre-commit-config.yaml'
 
 jobs:
   lint:
