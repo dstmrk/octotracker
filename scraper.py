@@ -38,6 +38,7 @@ Note:
 """
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -325,6 +326,13 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
 
 if __name__ == "__main__":
     import asyncio
+
+    # Configura logging per esecuzione standalone (usa env var LOG_LEVEL)
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=getattr(logging, LOG_LEVEL, logging.INFO),
+        format="%(message)s",  # Formato semplice per output CLI
+    )
 
     result = asyncio.run(scrape_octopus_tariffe())
     logger.info("📊 Tariffe estratte:")
