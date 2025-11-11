@@ -15,7 +15,7 @@ from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeout
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
-from telegram.error import NetworkError, TelegramError, TimedOut
+from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -75,6 +75,9 @@ if not WEBHOOK_SECRET:
         "Poi aggiungilo al file .env:\n"
         "  WEBHOOK_SECRET=<token_generato>"
     )
+
+# Configurazione admin (opzionale - per alert errori critici)
+ADMIN_USER_ID = os.getenv('ADMIN_USER_ID')  # ID Telegram dell'admin
 
 # ========== BOT COMMANDS ==========
 
@@ -603,22 +606,43 @@ async def checker_daily_task(bot_token: str) -> None:
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Gestisce errori senza crashare il bot"""
+    """Gestisce errori con retry, alert admin e logging migliorato"""
     error = context.error
 
-    # Log dell'errore
-    logger.error(f"❌ Errore: {error}")
-    # Sostituito timestamp per usare quello del logger.now().strftime('%Y-%m-%d %H:%M:%S')}] Errore: {error}")
+    # Log base con stack trace completo
+    logger.error(f"❌ Errore: {error}", exc_info=True)
 
-    # Gestione specifica per timeout e errori di rete
+    # Gestione per tipo di errore
     if isinstance(error, (TimedOut, NetworkError)):
+        # Errori temporanei - python-telegram-bot gestisce retry automaticamente
         logger.warning(
             "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
         )
-    else:
-        logger.error(f"⚠️  Tipo errore: {type(error).__name__}")
 
-    # Non fare nulla - il bot continuerà a funzionare
+    elif isinstance(error, RetryAfter):
+        # Rate limit di Telegram - dobbiamo aspettare
+        logger.warning(f"⏱️  Rate limit: attendo {error.retry_after}s")
+        await asyncio.sleep(error.retry_after)
+
+    else:
+        # Errore non gestito - potenzialmente critico
+        logger.error(f"⚠️  Errore non gestito: {type(error).__name__}")
+
+        # Invia alert all'admin se configurato
+        if ADMIN_USER_ID and context.application:
+            try:
+                error_msg = (
+                    f"🚨 <b>Errore Bot OctoTracker</b>\n\n"
+                    f"<b>Tipo:</b> {type(error).__name__}\n"
+                    f"<b>Messaggio:</b> {str(error)[:200]}\n"
+                    f"<b>Update:</b> {update}"
+                )
+                await context.application.bot.send_message(
+                    chat_id=ADMIN_USER_ID, text=error_msg, parse_mode=ParseMode.HTML
+                )
+                logger.info(f"📨 Alert errore inviato all'admin {ADMIN_USER_ID}")
+            except Exception as e:
+                logger.error(f"❌ Errore invio alert admin: {e}")
 
 
 # ========== MAIN ==========
