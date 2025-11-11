@@ -105,102 +105,193 @@ def check_better_rates(user_rates: dict[str, Any], current_rates: dict[str, Any]
     Confronta tariffe utente con tariffe attuali dello stesso tipo
     Ritorna dizionario con risparmi e peggioramenti trovati
     """
-    savings = {
-        "luce_energia": None,
-        "luce_comm": None,
-        "gas_energia": None,
-        "gas_comm": None,
-        "luce_energia_worse": False,
-        "luce_comm_worse": False,
-        "gas_energia_worse": False,
-        "gas_comm_worse": False,
-        "has_savings": False,
-        "is_mixed": False,
-        "luce_tipo": user_rates["luce"]["tipo"],
-        "luce_fascia": user_rates["luce"]["fascia"],
-        "gas_tipo": user_rates["gas"]["tipo"] if user_rates.get("gas") else None,
-        "gas_fascia": user_rates["gas"]["fascia"] if user_rates.get("gas") else None,
-    }
+    # Confronta luce
+    luce_result = _check_utility_rates(user_rates["luce"], current_rates, "luce")
 
-    # Accesso diretto con struttura nested
-    luce_tipo = user_rates["luce"]["tipo"]
-    luce_fascia = user_rates["luce"]["fascia"]
-
-    # Controlla luce (accesso diretto alla tariffa)
-    if current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia):
-        luce_rate = current_rates["luce"][luce_tipo][luce_fascia]
-
-        if luce_rate.get("energia") is not None:
-            if luce_rate["energia"] < user_rates["luce"]["energia"]:
-                savings["luce_energia"] = {
-                    "attuale": user_rates["luce"]["energia"],
-                    "nuova": luce_rate["energia"],
-                    "risparmio": user_rates["luce"]["energia"] - luce_rate["energia"],
-                }
-                savings["has_savings"] = True
-            elif luce_rate["energia"] > user_rates["luce"]["energia"]:
-                savings["luce_energia_worse"] = True
-
-        if luce_rate.get("commercializzazione") is not None:
-            if luce_rate["commercializzazione"] < user_rates["luce"]["commercializzazione"]:
-                savings["luce_comm"] = {
-                    "attuale": user_rates["luce"]["commercializzazione"],
-                    "nuova": luce_rate["commercializzazione"],
-                    "risparmio": user_rates["luce"]["commercializzazione"]
-                    - luce_rate["commercializzazione"],
-                }
-                savings["has_savings"] = True
-            elif luce_rate["commercializzazione"] > user_rates["luce"]["commercializzazione"]:
-                savings["luce_comm_worse"] = True
-
-    # Controlla gas (solo se l'utente ha il gas)
-    if user_rates.get("gas") is not None:
-        gas_tipo = user_rates["gas"]["tipo"]
-        gas_fascia = user_rates["gas"]["fascia"]
-
-        if current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia):
-            gas_rate = current_rates["gas"][gas_tipo][gas_fascia]
-
-            if gas_rate.get("energia") is not None:
-                if gas_rate["energia"] < user_rates["gas"]["energia"]:
-                    savings["gas_energia"] = {
-                        "attuale": user_rates["gas"]["energia"],
-                        "nuova": gas_rate["energia"],
-                        "risparmio": user_rates["gas"]["energia"] - gas_rate["energia"],
-                    }
-                    savings["has_savings"] = True
-                elif gas_rate["energia"] > user_rates["gas"]["energia"]:
-                    savings["gas_energia_worse"] = True
-
-            if gas_rate.get("commercializzazione") is not None:
-                if gas_rate["commercializzazione"] < user_rates["gas"]["commercializzazione"]:
-                    savings["gas_comm"] = {
-                        "attuale": user_rates["gas"]["commercializzazione"],
-                        "nuova": gas_rate["commercializzazione"],
-                        "risparmio": user_rates["gas"]["commercializzazione"]
-                        - gas_rate["commercializzazione"],
-                    }
-                    savings["has_savings"] = True
-                elif gas_rate["commercializzazione"] > user_rates["gas"]["commercializzazione"]:
-                    savings["gas_comm_worse"] = True
+    # Confronta gas (se presente)
+    has_gas = user_rates.get("gas") is not None
+    gas_result = (
+        _check_utility_rates(user_rates["gas"], current_rates, "gas")
+        if has_gas
+        else {
+            "energia_saving": None,
+            "comm_saving": None,
+            "energia_worse": False,
+            "comm_worse": False,
+            "has_savings": False,
+        }
+    )
 
     # Determina se è un caso "mixed" (una componente migliora, l'altra peggiora)
-    # Per luce
-    luce_has_improvement = savings["luce_energia"] or savings["luce_comm"]
-    luce_has_worsening = savings["luce_energia_worse"] or savings["luce_comm_worse"]
+    luce_has_improvement = luce_result["energia_saving"] or luce_result["comm_saving"]
+    luce_has_worsening = luce_result["energia_worse"] or luce_result["comm_worse"]
+    gas_has_improvement = gas_result["energia_saving"] or gas_result["comm_saving"]
+    gas_has_worsening = gas_result["energia_worse"] or gas_result["comm_worse"]
 
-    # Per gas
-    gas_has_improvement = savings["gas_energia"] or savings["gas_comm"]
-    gas_has_worsening = savings["gas_energia_worse"] or savings["gas_comm_worse"]
+    is_mixed = (luce_has_improvement and luce_has_worsening) or (
+        gas_has_improvement and gas_has_worsening
+    )
 
-    # È mixed se almeno una componente (luce o gas) ha sia miglioramenti che peggioramenti
-    if (luce_has_improvement and luce_has_worsening) or (gas_has_improvement and gas_has_worsening):
-        savings["is_mixed"] = True
-
-    return savings
+    # Costruisci risultato finale
+    return {
+        "luce_energia": luce_result["energia_saving"],
+        "luce_comm": luce_result["comm_saving"],
+        "gas_energia": gas_result["energia_saving"],
+        "gas_comm": gas_result["comm_saving"],
+        "luce_energia_worse": luce_result["energia_worse"],
+        "luce_comm_worse": luce_result["comm_worse"],
+        "gas_energia_worse": gas_result["energia_worse"],
+        "gas_comm_worse": gas_result["comm_worse"],
+        "has_savings": luce_result["has_savings"] or gas_result["has_savings"],
+        "is_mixed": is_mixed,
+        "luce_tipo": user_rates["luce"]["tipo"],
+        "luce_fascia": user_rates["luce"]["fascia"],
+        "gas_tipo": user_rates["gas"]["tipo"] if has_gas else None,
+        "gas_fascia": user_rates["gas"]["fascia"] if has_gas else None,
+    }
 
 
 # ========== HELPER FUNCTIONS ==========
+
+
+def _compare_rate_field(
+    user_value: float, current_value: float | None
+) -> tuple[dict[str, float] | None, bool]:
+    """Confronta un singolo campo tariffa (energia o commercializzazione)
+
+    Args:
+        user_value: Valore attuale dell'utente
+        current_value: Valore della nuova tariffa (None se non disponibile)
+
+    Returns:
+        Tuple (risparmio_dict, is_worse)
+        - risparmio_dict: Dict con attuale/nuova/risparmio se c'è miglioramento, altrimenti None
+        - is_worse: True se la nuova tariffa è peggiore, False altrimenti
+    """
+    if current_value is None:
+        return None, False
+
+    if current_value < user_value:
+        # Miglioramento
+        return {
+            "attuale": user_value,
+            "nuova": current_value,
+            "risparmio": user_value - current_value,
+        }, False
+    elif current_value > user_value:
+        # Peggioramento
+        return None, True
+
+    # Nessun cambiamento
+    return None, False
+
+
+def _check_utility_rates(
+    user_utility: dict[str, Any],
+    current_rates: dict[str, Any],
+    utility_name: str,
+) -> dict[str, Any]:
+    """Confronta tariffe luce o gas e ritorna risparmi/peggioramenti
+
+    Args:
+        user_utility: Tariffe utente per luce/gas con tipo, fascia, energia, commercializzazione
+        current_rates: Tariffe correnti complete
+        utility_name: "luce" o "gas"
+
+    Returns:
+        Dict con campi: energia_saving, comm_saving, energia_worse, comm_worse, has_savings
+    """
+    result = {
+        "energia_saving": None,
+        "comm_saving": None,
+        "energia_worse": False,
+        "comm_worse": False,
+        "has_savings": False,
+    }
+
+    tipo = user_utility["tipo"]
+    fascia = user_utility["fascia"]
+
+    # Accedi alla tariffa corrente specifica
+    utility_rate = current_rates.get(utility_name, {}).get(tipo, {}).get(fascia)
+    if not utility_rate:
+        return result
+
+    # Confronta energia
+    energia_saving, energia_worse = _compare_rate_field(
+        user_utility["energia"], utility_rate.get("energia")
+    )
+    result["energia_saving"] = energia_saving
+    result["energia_worse"] = energia_worse
+    if energia_saving:
+        result["has_savings"] = True
+
+    # Confronta commercializzazione
+    comm_saving, comm_worse = _compare_rate_field(
+        user_utility["commercializzazione"], utility_rate.get("commercializzazione")
+    )
+    result["comm_saving"] = comm_saving
+    result["comm_worse"] = comm_worse
+    if comm_saving:
+        result["has_savings"] = True
+
+    return result
+
+
+def _build_current_octopus_rates(
+    user_rates: dict[str, Any], current_rates: dict[str, Any]
+) -> dict[str, dict[str, float]]:
+    """Costruisce oggetto con tariffe Octopus attuali per l'utente
+
+    Args:
+        user_rates: Tariffe utente con tipo e fascia
+        current_rates: Tariffe correnti complete
+
+    Returns:
+        Dict con luce (e gas se presente) con energia e commercializzazione
+    """
+    result = {}
+
+    # Luce
+    luce_tipo = user_rates["luce"]["tipo"]
+    luce_fascia = user_rates["luce"]["fascia"]
+    luce_rate = current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia)
+
+    if luce_rate:
+        result["luce"] = {
+            "energia": luce_rate["energia"],
+            "commercializzazione": luce_rate["commercializzazione"],
+        }
+
+    # Gas (se l'utente ce l'ha)
+    if user_rates.get("gas"):
+        gas_tipo = user_rates["gas"]["tipo"]
+        gas_fascia = user_rates["gas"]["fascia"]
+        gas_rate = current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia)
+
+        if gas_rate:
+            result["gas"] = {
+                "energia": gas_rate["energia"],
+                "commercializzazione": gas_rate["commercializzazione"],
+            }
+
+    return result
+
+
+def _should_notify_user(
+    user_rates: dict[str, Any], current_octopus: dict[str, dict[str, float]]
+) -> bool:
+    """Controlla se l'utente dovrebbe essere notificato
+
+    Args:
+        user_rates: Tariffe utente incluso last_notified_rates
+        current_octopus: Tariffe Octopus correnti per questo utente
+
+    Returns:
+        True se dobbiamo notificare, False se già notificato in precedenza
+    """
+    last_notified = user_rates.get("last_notified_rates", {})
+    return last_notified != current_octopus
 
 
 def _format_header(is_mixed: bool) -> str:
@@ -362,22 +453,22 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
 
 async def check_and_notify_users(bot_token: str) -> None:
     """Controlla tariffe e invia notifiche in parallelo (chiamata da bot.py)"""
-    start_time = time.time()  # Inizia tracking tempo
+    start_time = time.time()
     logger.info("🔍 Inizio controllo tariffe...")
 
     # Carica dati
-    users = load_users()  # Da database SQLite
-    current_rates = load_json(RATES_FILE)  # Da JSON (nessuna race condition)
+    users = load_users()
+    current_rates = load_json(RATES_FILE)
 
+    # Validazione dati
     if not users:
-        duration = time.time() - start_time
-        logger.warning(f"⚠️  Nessun utente registrato (completato in {duration:.2f}s)")
+        logger.warning(f"⚠️  Nessun utente registrato (completato in {time.time() - start_time:.2f}s)")
         return
 
     if not current_rates:
-        duration = time.time() - start_time
         logger.error(
-            f"❌ Nessuna tariffa disponibile dopo {duration:.2f}s. Esegui prima scraper.py"
+            f"❌ Nessuna tariffa disponibile dopo {time.time() - start_time:.2f}s. "
+            "Esegui prima scraper.py"
         )
         return
 
@@ -392,47 +483,22 @@ async def check_and_notify_users(bot_token: str) -> None:
 
         savings = check_better_rates(user_rates, current_rates)
 
-        if savings["has_savings"]:
-            # Costruisci oggetto con tariffe Octopus attuali (struttura nested)
-            current_octopus = {}
-
-            # Luce: accesso diretto
-            luce_tipo = user_rates["luce"]["tipo"]
-            luce_fascia = user_rates["luce"]["fascia"]
-
-            if current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia):
-                current_octopus["luce"] = {
-                    "energia": current_rates["luce"][luce_tipo][luce_fascia]["energia"],
-                    "commercializzazione": current_rates["luce"][luce_tipo][luce_fascia][
-                        "commercializzazione"
-                    ],
-                }
-
-            # Gas: aggiungi solo se l'utente ce l'ha
-            if user_rates.get("gas") is not None:
-                gas_tipo = user_rates["gas"]["tipo"]
-                gas_fascia = user_rates["gas"]["fascia"]
-
-                if current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia):
-                    current_octopus["gas"] = {
-                        "energia": current_rates["gas"][gas_tipo][gas_fascia]["energia"],
-                        "commercializzazione": current_rates["gas"][gas_tipo][gas_fascia][
-                            "commercializzazione"
-                        ],
-                    }
-
-            # Controlla se abbiamo già notificato queste stesse tariffe
-            last_notified = user_rates.get("last_notified_rates", {})
-
-            if last_notified == current_octopus:
-                logger.info("  ⏭️  Tariffe migliori già notificate in precedenza, skip")
-            else:
-                # Tariffe diverse o prima notifica - aggiungi alla coda
-                message = format_notification(savings, user_rates, current_rates)
-                notifications_to_send.append((user_id, user_rates, current_octopus, message))
-                logger.info("  📤 Notifica accodata per invio")
-        else:
+        if not savings["has_savings"]:
             logger.info("  ℹ️  Nessun risparmio trovato")
+            continue
+
+        # Costruisci tariffe Octopus correnti per questo utente
+        current_octopus = _build_current_octopus_rates(user_rates, current_rates)
+
+        # Controlla se già notificato
+        if not _should_notify_user(user_rates, current_octopus):
+            logger.info("  ⏭️  Tariffe migliori già notificate in precedenza, skip")
+            continue
+
+        # Accoda notifica
+        message = format_notification(savings, user_rates, current_rates)
+        notifications_to_send.append((user_id, user_rates, current_octopus, message))
+        logger.info("  📤 Notifica accodata per invio")
 
     # ========== FASE 2: Invia notifiche in parallelo con rate limiting ==========
     if notifications_to_send:
