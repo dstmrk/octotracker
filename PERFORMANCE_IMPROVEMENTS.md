@@ -923,8 +923,8 @@ async def test_checker_performance():
 ### Fase 4 - Code Quality (opzionale, 4-5 ore)
 **Obiettivo**: Codice più manutenibile
 
-- [ ] #8: Enum per stati conversazione (15 min)
-- [ ] #9: Refactoring `salva_e_conferma()` (30 min)
+- [x] #8: Enum per stati conversazione (15 min)
+- [x] #9: Refactoring `salva_e_conferma()` (30 min)
 - [ ] #13: Standardizzare logging (30 min)
 - [ ] #18: Test integrazione (2 ore)
 - [ ] #19: Test performance (1 ora)
