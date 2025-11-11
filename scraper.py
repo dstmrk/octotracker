@@ -217,17 +217,17 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
             )
 
             # Attendi dinamicamente che appaiano elementi chiave delle tariffe
-            # Cerca almeno uno dei prezzi caratteristici (€/kWh, €/Smc, €/anno)
+            # Cerca il testo "€/anno" che appare sempre nella commercializzazione
             try:
                 await page.wait_for_selector(
-                    "text=€/kWh, text=€/Smc, text=€/anno",  # Uno qualsiasi di questi
+                    "text=€/anno",
                     timeout=5000,
                     state="visible",
                 )
                 logger.debug("✅ Contenuto tariffe caricato dinamicamente")
             except PlaywrightTimeout:
-                # Fallback: se i selettori non vengono trovati, usa wait ridotto
-                logger.warning("⚠️  Selettori tariffe non trovati, uso wait ridotto da 5s a 2s")
+                # Fallback: se il selettore non viene trovato, usa wait ridotto
+                logger.warning("⚠️  Contenuto tariffe non trovato, uso wait ridotto da 5s a 2s")
                 await page.wait_for_timeout(2000)
 
             # Estrai tutto il testo della pagina per analisi
