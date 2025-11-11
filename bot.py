@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
+from enum import IntEnum
 from typing import Any
 from warnings import filterwarnings
 
@@ -54,8 +55,28 @@ logging.getLogger("telegram").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
+
 # Stati conversazione
-TIPO_TARIFFA, LUCE_TIPO_VARIABILE, LUCE_ENERGIA, LUCE_COMM, HA_GAS, GAS_ENERGIA, GAS_COMM = range(7)
+class ConversationState(IntEnum):
+    """Stati del conversation handler per registrazione tariffe"""
+
+    TIPO_TARIFFA = 0
+    LUCE_TIPO_VARIABILE = 1
+    LUCE_ENERGIA = 2
+    LUCE_COMM = 3
+    HA_GAS = 4
+    GAS_ENERGIA = 5
+    GAS_COMM = 6
+
+
+# Backward compatibility: mantieni le costanti per i test e il codice esistente
+TIPO_TARIFFA = ConversationState.TIPO_TARIFFA
+LUCE_TIPO_VARIABILE = ConversationState.LUCE_TIPO_VARIABILE
+LUCE_ENERGIA = ConversationState.LUCE_ENERGIA
+LUCE_COMM = ConversationState.LUCE_COMM
+HA_GAS = ConversationState.HA_GAS
+GAS_ENERGIA = ConversationState.GAS_ENERGIA
+GAS_COMM = ConversationState.GAS_COMM
 
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
