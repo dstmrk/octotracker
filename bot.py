@@ -35,6 +35,7 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 # Import moduli interni
 from checker import check_and_notify_users, format_number
 from database import init_db, load_user, remove_user, save_user, user_exists
+from health_handler import HealthHandler
 from scraper import scrape_octopus_tariffe
 
 load_dotenv()
@@ -791,7 +792,7 @@ def main() -> None:
 
     logger.info(f"🚀 Avvio webhook su {WEBHOOK_URL}...")
 
-    # Configura webhook con retry per Docker
+    # Configura webhook con retry per Docker + health endpoint
     app.run_webhook(
         listen="0.0.0.0",
         port=WEBHOOK_PORT,
@@ -801,6 +802,10 @@ def main() -> None:
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,  # Evita messaggi vecchi
         bootstrap_retries=3,  # Retry se setWebhook fallisce al primo tentativo
+        # Custom handlers: health endpoint per monitoring
+        custom_handlers=[
+            (r"/health", HealthHandler, {"application_data": app.bot_data}),
+        ],
     )
 
 
