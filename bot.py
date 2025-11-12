@@ -640,6 +640,32 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
+    # Aggiungi consumi luce se presenti
+    consumo_f1 = user_data["luce"].get("consumo_f1")
+    if consumo_f1 is not None:
+        consumo_f2 = user_data["luce"].get("consumo_f2")
+        consumo_f3 = user_data["luce"].get("consumo_f3")
+
+        if luce_fascia == "monoraria":
+            messaggio += f"- Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
+
+        elif luce_fascia == "bioraria":
+            totale = consumo_f1 + consumo_f2
+            messaggio += (
+                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
+            )
+
+        elif luce_fascia == "trioraria":
+            totale = consumo_f1 + consumo_f2 + consumo_f3
+            messaggio += (
+                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
+                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
+            )
+
     # Aggiungi sezione gas se presente
     if user_data["gas"] is not None:
         gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
@@ -659,6 +685,13 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
             f"- {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
+
+        # Aggiungi consumo gas se presente
+        consumo_gas = user_data["gas"].get("consumo_annuo")
+        if consumo_gas is not None:
+            messaggio += (
+                f"- Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
+            )
 
     # Aggiungi footer
     messaggio += (
