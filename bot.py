@@ -70,6 +70,9 @@ class ConversationState(IntEnum):
     LUCE_ENERGIA = 2
     LUCE_COMM = 3
     VUOI_CONSUMI_LUCE = 7
+    LUCE_CONSUMO_F1 = 8
+    LUCE_CONSUMO_F2 = 9
+    LUCE_CONSUMO_F3 = 10
     HA_GAS = 4
     GAS_ENERGIA = 5
     GAS_COMM = 6
@@ -81,6 +84,9 @@ LUCE_TIPO_VARIABILE = ConversationState.LUCE_TIPO_VARIABILE
 LUCE_ENERGIA = ConversationState.LUCE_ENERGIA
 LUCE_COMM = ConversationState.LUCE_COMM
 VUOI_CONSUMI_LUCE = ConversationState.VUOI_CONSUMI_LUCE
+LUCE_CONSUMO_F1 = ConversationState.LUCE_CONSUMO_F1
+LUCE_CONSUMO_F2 = ConversationState.LUCE_CONSUMO_F2
+LUCE_CONSUMO_F3 = ConversationState.LUCE_CONSUMO_F3
 HA_GAS = ConversationState.HA_GAS
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
@@ -275,23 +281,26 @@ async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await query.answer()
 
     if query.data == "consumi_luce_si":
-        # TODO: In futuro andrà a LUCE_CONSUMO per raccogliere i dati
-        # Per ora saltiamo direttamente a chiedere se ha gas
-        await query.edit_message_text(
-            "⚠️ Funzionalità in arrivo! Per ora procediamo con le tariffe.\n\n"
-            "Hai anche una fornitura gas attiva con Octopus Energy?"
-        )
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
-                InlineKeyboardButton("❌ No", callback_data="gas_no"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.message.reply_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
-        )
-        return HA_GAS
+        # Inizia raccolta consumi in base alla fascia
+        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
+
+        if luce_fascia == "monoraria":
+            messaggio = (
+                "Inserisci il tuo consumo annuo totale di energia elettrica in kWh.\n\n"
+                "💬 Esempio: 2700"
+            )
+        elif luce_fascia == "trioraria":
+            messaggio = (
+                "Inserisci il tuo consumo annuo in fascia F1 in kWh.\n\n"
+                "(F1 = feriali 8–19)\n\n"
+                "💬 Esempio: 900"
+            )
+        else:
+            # Fallback (non dovrebbe mai succedere)
+            messaggio = "Inserisci il tuo consumo annuo in kWh."
+
+        await query.edit_message_text(messaggio, parse_mode=ParseMode.HTML)
+        return LUCE_CONSUMO_F1
     else:
         # Non vuole inserire consumi, vai direttamente a chiedere se ha gas
         keyboard = [
@@ -305,6 +314,127 @@ async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
         )
         return HA_GAS
+
+
+async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F1 luce e procedi in base alla fascia"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F1
+
+        # Validazione range (500-15000 per monoraria totale, 100-5000 per singola fascia)
+        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
+        if luce_fascia == "monoraria":
+            if value < 500 or value > 15000:
+                await update.message.reply_text(
+                    "⚠️ Il valore sembra fuori dal range tipico (500-15000 kWh/anno).\n"
+                    "Inserisci un valore valido."
+                )
+                return LUCE_CONSUMO_F1
+        else:  # trioraria
+            if value < 100 or value > 5000:
+                await update.message.reply_text(
+                    "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
+                    "Inserisci un valore valido."
+                )
+                return LUCE_CONSUMO_F1
+
+        context.user_data["luce_consumo_f1"] = value
+
+        # Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
+        if luce_fascia == "monoraria":
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                    InlineKeyboardButton("❌ No", callback_data="gas_no"),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(
+                "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+            )
+            return HA_GAS
+
+        # Se trioraria, chiedi F2
+        await update.message.reply_text(
+            "Ora inserisci il tuo consumo annuo in fascia F2 in kWh.\n\n"
+            "(F2 = feriali 7–8 e 19–23, sabato 7–23)\n\n"
+            "💬 Esempio: 900"
+        )
+        return LUCE_CONSUMO_F2
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 2700)")
+        return LUCE_CONSUMO_F1
+
+
+async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F2 luce (solo trioraria)"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F2
+
+        # Validazione range
+        if value < 100 or value > 5000:
+            await update.message.reply_text(
+                "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
+                "Inserisci un valore valido."
+            )
+            return LUCE_CONSUMO_F2
+
+        context.user_data["luce_consumo_f2"] = value
+
+        # Chiedi F3
+        await update.message.reply_text(
+            "Infine, inserisci il tuo consumo annuo in fascia F3 in kWh.\n\n"
+            "(F3 = notte, domeniche e festivi)\n\n"
+            "💬 Esempio: 900"
+        )
+        return LUCE_CONSUMO_F3
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
+        return LUCE_CONSUMO_F2
+
+
+async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F3 luce (solo trioraria) e vai a HA_GAS"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F3
+
+        # Validazione range
+        if value < 100 or value > 5000:
+            await update.message.reply_text(
+                "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
+                "Inserisci un valore valido."
+            )
+            return LUCE_CONSUMO_F3
+
+        context.user_data["luce_consumo_f3"] = value
+
+        # Consumi luce completati, vai a chiedere se ha gas
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+        )
+        return HA_GAS
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
+        return LUCE_CONSUMO_F3
 
 
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -392,6 +522,14 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
         }
     }
 
+    # Aggiungi consumi luce se presenti
+    if "luce_consumo_f1" in context.user_data:
+        user_data["luce"]["consumo_f1"] = context.user_data["luce_consumo_f1"]
+    if "luce_consumo_f2" in context.user_data:
+        user_data["luce"]["consumo_f2"] = context.user_data["luce_consumo_f2"]
+    if "luce_consumo_f3" in context.user_data:
+        user_data["luce"]["consumo_f3"] = context.user_data["luce_consumo_f3"]
+
     if not solo_luce:
         user_data["gas"] = {
             "tipo": context.user_data["gas_tipo"],
@@ -399,6 +537,9 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
             "energia": context.user_data["gas_energia"],
             "commercializzazione": context.user_data["gas_comm"],
         }
+        # Aggiungi consumo gas se presente
+        if "gas_consumo_annuo" in context.user_data:
+            user_data["gas"]["consumo_annuo"] = context.user_data["gas_consumo_annuo"]
     else:
         user_data["gas"] = None
 
@@ -882,6 +1023,9 @@ def main() -> None:
             LUCE_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_energia)],
             LUCE_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_comm)],
             VUOI_CONSUMI_LUCE: [CallbackQueryHandler(vuoi_consumi_luce)],
+            LUCE_CONSUMO_F1: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f1)],
+            LUCE_CONSUMO_F2: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f2)],
+            LUCE_CONSUMO_F3: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f3)],
             HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
