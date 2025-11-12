@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from checker import (
     _build_current_octopus_rates,
-    _calculate_estimated_savings,
+    _calculate_utility_savings,
     _check_utility_rates,
     _compare_rate_field,
     _format_footer,
@@ -810,7 +810,14 @@ def test_format_footer_mixed():
     """_format_footer con caso mixed"""
     from checker import _format_footer
 
-    result = _format_footer(is_mixed=True)
+    result = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
 
     assert "📊" in result
     assert "convenienza dipende" in result
@@ -820,7 +827,14 @@ def test_format_footer_savings():
     """_format_footer con risparmi"""
     from checker import _format_footer
 
-    result = _format_footer(is_mixed=False)
+    result = _format_footer(
+        luce_is_mixed=False,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=True,
+    )
 
     assert "🔧" in result
     assert "/update" in result
@@ -844,6 +858,8 @@ def test_format_notification():
         "gas_energia_worse": False,
         "gas_comm_worse": False,
         "is_mixed": False,
+        "luce_is_mixed": False,
+        "gas_is_mixed": False,
     }
 
     user_rates = {
@@ -1111,12 +1127,6 @@ def test_load_json_os_error():
 
 def test_calculate_estimated_savings_monoraria_luce_only():
     """Test calcolo risparmio con consumi luce monoraria"""
-    savings = {
-        "luce_tipo": "fissa",
-        "luce_fascia": "monoraria",
-        "gas_tipo": None,
-        "gas_fascia": None,
-    }
     user_rates = {
         "luce": {
             "tipo": "fissa",
@@ -1138,7 +1148,7 @@ def test_calculate_estimated_savings_monoraria_luce_only():
         }
     }
 
-    risparmio = _calculate_estimated_savings(savings, user_rates, current_rates)
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
 
     # Risparmio = (0.145 - 0.130) * 2700 + (72 - 65) = 40.5 + 7 = 47.5
     assert risparmio is not None
@@ -1147,12 +1157,6 @@ def test_calculate_estimated_savings_monoraria_luce_only():
 
 def test_calculate_estimated_savings_trioraria():
     """Test calcolo risparmio con consumi luce trioraria"""
-    savings = {
-        "luce_tipo": "variabile",
-        "luce_fascia": "trioraria",
-        "gas_tipo": None,
-        "gas_fascia": None,
-    }
     user_rates = {
         "luce": {
             "tipo": "variabile",
@@ -1176,7 +1180,7 @@ def test_calculate_estimated_savings_trioraria():
         }
     }
 
-    risparmio = _calculate_estimated_savings(savings, user_rates, current_rates)
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
 
     # Risparmio energia = (0.025 - 0.020) * (900 + 850 + 950) = 0.005 * 2700 = 13.5
     # Aumento comm = 72 - 85 = -13
@@ -1186,13 +1190,7 @@ def test_calculate_estimated_savings_trioraria():
 
 
 def test_calculate_estimated_savings_with_gas():
-    """Test calcolo risparmio con luce e gas"""
-    savings = {
-        "luce_tipo": "fissa",
-        "luce_fascia": "monoraria",
-        "gas_tipo": "fissa",
-        "gas_fascia": "monoraria",
-    }
+    """Test calcolo risparmio con luce e gas (separato per utility)"""
     user_rates = {
         "luce": {
             "tipo": "fissa",
@@ -1210,35 +1208,25 @@ def test_calculate_estimated_savings_with_gas():
         },
     }
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.130, "commercializzazione": 65.0}
-            }
-        },
-        "gas": {
-            "fissa": {
-                "monoraria": {"energia": 0.420, "commercializzazione": 80.0}
-            }
-        },
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
     }
 
-    risparmio = _calculate_estimated_savings(savings, user_rates, current_rates)
+    # Calcola separatamente per luce e gas
+    risparmio_luce = _calculate_utility_savings("luce", user_rates, current_rates)
+    risparmio_gas = _calculate_utility_savings("gas", user_rates, current_rates)
 
     # Luce: (0.145-0.130)*2700 + (72-65) = 40.5 + 7 = 47.5
+    assert risparmio_luce is not None
+    assert risparmio_luce == pytest.approx(47.5, abs=0.1)
+
     # Gas: (0.456-0.420)*1200 + (84-80) = 43.2 + 4 = 47.2
-    # Totale: 47.5 + 47.2 = 94.7
-    assert risparmio is not None
-    assert risparmio == pytest.approx(94.7, abs=0.1)
+    assert risparmio_gas is not None
+    assert risparmio_gas == pytest.approx(47.2, abs=0.1)
 
 
 def test_calculate_estimated_savings_negative():
     """Test calcolo con risparmio negativo (aumento costo)"""
-    savings = {
-        "luce_tipo": "fissa",
-        "luce_fascia": "monoraria",
-        "gas_tipo": None,
-        "gas_fascia": None,
-    }
     user_rates = {
         "luce": {
             "tipo": "fissa",
@@ -1260,7 +1248,7 @@ def test_calculate_estimated_savings_negative():
         }
     }
 
-    risparmio = _calculate_estimated_savings(savings, user_rates, current_rates)
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
 
     # Risparmio = (0.130-0.145)*2700 + (65-72) = -40.5 - 7 = -47.5
     assert risparmio is not None
@@ -1269,12 +1257,6 @@ def test_calculate_estimated_savings_negative():
 
 def test_calculate_estimated_savings_no_consumption():
     """Test calcolo senza consumi → None"""
-    savings = {
-        "luce_tipo": "fissa",
-        "luce_fascia": "monoraria",
-        "gas_tipo": None,
-        "gas_fascia": None,
-    }
     user_rates = {
         "luce": {
             "tipo": "fissa",
@@ -1285,14 +1267,10 @@ def test_calculate_estimated_savings_no_consumption():
         "gas": None,
     }
     current_rates = {
-        "luce": {
-            "fissa": {
-                "monoraria": {"energia": 0.130, "commercializzazione": 65.0}
-            }
-        }
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}}
     }
 
-    risparmio = _calculate_estimated_savings(savings, user_rates, current_rates)
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
 
     assert risparmio is None
 
@@ -1302,7 +1280,14 @@ def test_calculate_estimated_savings_no_consumption():
 
 def test_format_footer_mixed_without_consumption():
     """Test footer MIXED senza consumi"""
-    footer = _format_footer(is_mixed=True, estimated_savings=None)
+    footer = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
 
     assert "📊 In questi casi la convenienza dipende dai tuoi consumi" in footer
     assert "Se vuoi una stima più precisa" in footer
@@ -1311,15 +1296,31 @@ def test_format_footer_mixed_without_consumption():
 
 def test_format_footer_mixed_with_consumption():
     """Test footer MIXED con consumi e risparmio positivo"""
-    footer = _format_footer(is_mixed=True, estimated_savings=47.5)
+    footer = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=47.5,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
 
-    assert "💰 In base ai tuoi consumi, stimiamo un risparmio di circa 47,50 €/anno" in footer
+    assert (
+        "💰 In base ai tuoi consumi di luce, stimiamo un risparmio di circa 47,50 €/anno" in footer
+    )
     assert "📊 In questi casi" not in footer  # Non deve apparire il messaggio generico
 
 
 def test_format_footer_not_mixed():
     """Test footer NON MIXED (nessuna menzione consumi)"""
-    footer = _format_footer(is_mixed=False, estimated_savings=None)
+    footer = _format_footer(
+        luce_is_mixed=False,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=True,
+    )
 
     assert "📊" not in footer
     assert "💰" not in footer
@@ -1333,9 +1334,10 @@ def test_format_footer_not_mixed():
 @pytest.mark.asyncio
 async def test_check_and_notify_skip_mixed_negative_savings():
     """Test che caso MIXED con risparmio negativo viene skippato"""
-    import tempfile
     import json
-    from unittest.mock import AsyncMock, MagicMock, patch
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
     from telegram import Bot
 
     # User con consumi che porterebbe a risparmio negativo
@@ -1376,7 +1378,7 @@ async def test_check_and_notify_skip_mixed_negative_savings():
         with patch("checker.load_users", return_value=users):
             with patch("checker.RATES_FILE", Path(rates_file)):
                 mock_bot = AsyncMock(spec=Bot)
-                
+
                 await check_and_notify_users("fake_token")
 
                 # Verifica che NON sia stata inviata alcuna notifica
@@ -1388,9 +1390,10 @@ async def test_check_and_notify_skip_mixed_negative_savings():
 @pytest.mark.asyncio
 async def test_check_and_notify_send_mixed_positive_savings():
     """Test che caso MIXED con risparmio positivo viene inviato"""
-    import tempfile
     import json
+    import tempfile
     from unittest.mock import AsyncMock, patch
+
     from telegram import Bot
 
     # User con consumi che porta a risparmio positivo
@@ -1435,16 +1438,16 @@ async def test_check_and_notify_send_mixed_positive_savings():
                     MockBot.return_value = mock_bot_instance
                     mock_bot_instance.send_message = AsyncMock()
 
-                    with patch("checker.save_user") as mock_save:
+                    with patch("checker.save_user"):
                         await check_and_notify_users("fake_token")
 
                         # Verifica che sia stata inviata una notifica
                         mock_bot_instance.send_message.assert_called_once()
-                        
+
                         # Verifica che il messaggio contenga la stima
                         call_args = mock_bot_instance.send_message.call_args
                         message_text = call_args.kwargs["text"]
-                        assert "💰 In base ai tuoi consumi" in message_text
+                        assert "💰 In base ai tuoi consumi di luce" in message_text
                         assert "27,50 €/anno" in message_text
     finally:
         Path(rates_file).unlink()

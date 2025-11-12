@@ -26,8 +26,10 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 - **Notifiche intelligenti** con 3 modalità:
   - ✅ **Tutto migliorato**: conferma che la nuova tariffa conviene
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
+  - 💰 **Calcolo risparmio stimato**: valutazione separata luce/gas basata sui tuoi consumi reali
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
+- **Consumi opzionali**: inserisci i tuoi kWh/anno e Smc/anno per calcoli precisi nei casi ambigui
 - **Webhook mode**: risposte istantanee tramite Cloudflare Tunnel
 - **Persistenza dati** tramite Docker volumes
 - **Scheduler ottimizzato**: task indipendenti che dormono 24 ore tra esecuzioni
@@ -150,8 +152,9 @@ Nuova tariffa: 0.138 €/kWh, 60 €/anno
 ```
 
 ### ⚖️ Caso 2: Mix Migliorato/Peggiorato
-Quando una componente migliora ma l'altra peggiora (caso ambiguo):
+Quando una componente migliora ma l'altra peggiora (caso ambiguo), OctoTracker usa i tuoi consumi per valutare **separatamente** luce e gas:
 
+**Con consumi inseriti** (via `/update`):
 ```
 ⚖️ Aggiornamento tariffe Octopus Energy
 ...una delle due componenti è migliorata, l'altra è aumentata.
@@ -161,9 +164,25 @@ Tua tariffa: 0.145 €/kWh, 60 €/anno
 Nuova tariffa: 0.138 €/kWh, 84 €/anno
               (grassetto)  (sottolineato)
 
-📊 In questi casi la convenienza dipende dai tuoi consumi.
-Ti consiglio di fare una verifica in base ai kWh che usi...
+💰 In base ai tuoi consumi di luce, stimiamo un risparmio di circa 47,50 €/anno.
 ```
+
+**Senza consumi**:
+```
+📊 In questi casi la convenienza dipende dai tuoi consumi.
+Se vuoi una stima più precisa, puoi indicare i tuoi consumi usando il comando /update.
+```
+
+**Logica di valutazione per-utility** (luce e gas indipendenti):
+- ✅ **Non-MIXED con risparmio** → Notifica sempre
+- ⚖️ **MIXED senza consumi** → Notifica con suggerimento di inserire consumi
+- 📊 **MIXED con consumi e risparmio > 0** → Notifica con stima risparmio
+- ❌ **MIXED con consumi e risparmio ≤ 0** → NON notifica quella utility
+
+**Esempi**:
+- Luce MIXED con +30€, Gas MIXED con -20€ → Mostra solo luce
+- Luce non-MIXED (conveniente), Gas MIXED con -15€ → Mostra solo luce
+- Luce MIXED con -10€, Gas MIXED con -5€ → Nessuna notifica
 
 **Legenda**:
 - **Grassetto** = valore migliorato 📉
@@ -280,11 +299,15 @@ I dati sono salvati localmente:
       luce_fascia TEXT NOT NULL,
       luce_energia REAL NOT NULL,
       luce_commercializzazione REAL NOT NULL,
+      luce_consumo_f1 REAL,           -- kWh/anno (F1 per trioraria, totale per mono/bioraria)
+      luce_consumo_f2 REAL,           -- kWh/anno (solo trioraria)
+      luce_consumo_f3 REAL,           -- kWh/anno (solo trioraria)
       gas_tipo TEXT,
       gas_fascia TEXT,
       gas_energia REAL,
       gas_commercializzazione REAL,
-      last_notified_rates TEXT,  -- JSON
+      gas_consumo_annuo REAL,         -- Smc/anno
+      last_notified_rates TEXT,       -- JSON
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
@@ -506,7 +529,7 @@ docker compose up -d
 
 ## 🔮 Possibili Miglioramenti Futuri
 
-- [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
+- [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
 
 ## 📜 Licenza
 

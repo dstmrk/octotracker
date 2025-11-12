@@ -122,15 +122,17 @@ def check_better_rates(user_rates: dict[str, Any], current_rates: dict[str, Any]
         }
     )
 
-    # Determina se è un caso "mixed" (una componente migliora, l'altra peggiora)
+    # Determina se è un caso "mixed" PER FORNITURA (una componente migliora, l'altra peggiora)
     luce_has_improvement = luce_result["energia_saving"] or luce_result["comm_saving"]
     luce_has_worsening = luce_result["energia_worse"] or luce_result["comm_worse"]
+    luce_is_mixed = luce_has_improvement and luce_has_worsening
+
     gas_has_improvement = gas_result["energia_saving"] or gas_result["comm_saving"]
     gas_has_worsening = gas_result["energia_worse"] or gas_result["comm_worse"]
+    gas_is_mixed = gas_has_improvement and gas_has_worsening
 
-    is_mixed = (luce_has_improvement and luce_has_worsening) or (
-        gas_has_improvement and gas_has_worsening
-    )
+    # Mantieni is_mixed globale per backward compatibility
+    is_mixed = luce_is_mixed or gas_is_mixed
 
     # Costruisci risultato finale
     return {
@@ -144,6 +146,8 @@ def check_better_rates(user_rates: dict[str, Any], current_rates: dict[str, Any]
         "gas_comm_worse": gas_result["comm_worse"],
         "has_savings": luce_result["has_savings"] or gas_result["has_savings"],
         "is_mixed": is_mixed,
+        "luce_is_mixed": luce_is_mixed,
+        "gas_is_mixed": gas_is_mixed,
         "luce_tipo": user_rates["luce"]["tipo"],
         "luce_fascia": user_rates["luce"]["fascia"],
         "gas_tipo": user_rates["gas"]["tipo"] if has_gas else None,
@@ -405,90 +409,190 @@ def _format_gas_section(
     return section
 
 
-def _calculate_estimated_savings(
-    savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
+def _calculate_utility_savings(
+    utility_type: str, user_rates: dict[str, Any], current_rates: dict[str, Any]
 ) -> float | None:
     """
-    Calcola il risparmio stimato annuo in € basato sui consumi dell'utente.
+    Calcola il risparmio stimato annuo in € per una singola utility (luce o gas).
 
     Args:
-        savings: Dizionario con risparmi/peggioramenti
+        utility_type: "luce" o "gas"
         user_rates: Dati utente (tariffe e consumi)
         current_rates: Tariffe correnti Octopus
 
     Returns:
         Risparmio stimato in €/anno (positivo = risparmio, negativo = aumento)
-        None se l'utente non ha inserito consumi
+        None se l'utente non ha inserito consumi per questa utility
     """
-    # Verifica se l'utente ha inserito consumi
-    luce_consumo_f1 = user_rates["luce"].get("consumo_f1")
-    gas_consumo = user_rates.get("gas", {}).get("consumo_annuo") if user_rates.get("gas") else None
-
-    if luce_consumo_f1 is None and gas_consumo is None:
-        return None
-
-    risparmio_totale = 0.0
-
-    # Calcola risparmio luce
-    if luce_consumo_f1 is not None:
-        luce_tipo = savings["luce_tipo"]
-        luce_fascia = savings["luce_fascia"]
+    if utility_type == "luce":
+        # Verifica consumi luce
+        luce_consumo_f1 = user_rates["luce"].get("consumo_f1")
+        if luce_consumo_f1 is None:
+            return None
 
         # Calcola consumo totale luce
         luce_consumo_f2 = user_rates["luce"].get("consumo_f2", 0)
         luce_consumo_f3 = user_rates["luce"].get("consumo_f3", 0)
-        consumo_totale_luce = luce_consumo_f1 + luce_consumo_f2 + luce_consumo_f3
+        consumo_totale = luce_consumo_f1 + luce_consumo_f2 + luce_consumo_f3
 
-        # Ottieni tariffe attuali e nuove
-        user_luce_energia = user_rates["luce"]["energia"]
-        user_luce_comm = user_rates["luce"]["commercializzazione"]
+        # Ottieni tipo e fascia
+        tipo = user_rates["luce"]["tipo"]
+        fascia = user_rates["luce"]["fascia"]
 
-        if current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia):
-            new_luce_energia = current_rates["luce"][luce_tipo][luce_fascia]["energia"]
-            new_luce_comm = current_rates["luce"][luce_tipo][luce_fascia]["commercializzazione"]
+        # Tariffe attuali utente
+        user_energia = user_rates["luce"]["energia"]
+        user_comm = user_rates["luce"]["commercializzazione"]
 
-            # Risparmio = (tariffa_attuale - tariffa_nuova) * consumo
-            risparmio_energia_luce = (user_luce_energia - new_luce_energia) * consumo_totale_luce
-            risparmio_comm_luce = user_luce_comm - new_luce_comm
+        # Nuove tariffe Octopus
+        if not current_rates.get("luce", {}).get(tipo, {}).get(fascia):
+            return None
 
-            risparmio_totale += risparmio_energia_luce + risparmio_comm_luce
+        new_energia = current_rates["luce"][tipo][fascia]["energia"]
+        new_comm = current_rates["luce"][tipo][fascia]["commercializzazione"]
 
-    # Calcola risparmio gas
-    if gas_consumo is not None and user_rates.get("gas"):
-        gas_tipo = savings["gas_tipo"]
-        gas_fascia = savings["gas_fascia"]
+        # Calcola risparmio
+        risparmio_energia = (user_energia - new_energia) * consumo_totale
+        risparmio_comm = user_comm - new_comm
 
-        user_gas_energia = user_rates["gas"]["energia"]
-        user_gas_comm = user_rates["gas"]["commercializzazione"]
+        return risparmio_energia + risparmio_comm
 
-        if current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia):
-            new_gas_energia = current_rates["gas"][gas_tipo][gas_fascia]["energia"]
-            new_gas_comm = current_rates["gas"][gas_tipo][gas_fascia]["commercializzazione"]
+    elif utility_type == "gas":
+        # Verifica che l'utente abbia il gas
+        if not user_rates.get("gas"):
+            return None
 
-            risparmio_energia_gas = (user_gas_energia - new_gas_energia) * gas_consumo
-            risparmio_comm_gas = user_gas_comm - new_gas_comm
+        # Verifica consumi gas
+        gas_consumo = user_rates["gas"].get("consumo_annuo")
+        if gas_consumo is None:
+            return None
 
-            risparmio_totale += risparmio_energia_gas + risparmio_comm_gas
+        # Ottieni tipo e fascia
+        tipo = user_rates["gas"]["tipo"]
+        fascia = user_rates["gas"]["fascia"]
 
-    return risparmio_totale
+        # Tariffe attuali utente
+        user_energia = user_rates["gas"]["energia"]
+        user_comm = user_rates["gas"]["commercializzazione"]
+
+        # Nuove tariffe Octopus
+        if not current_rates.get("gas", {}).get(tipo, {}).get(fascia):
+            return None
+
+        new_energia = current_rates["gas"][tipo][fascia]["energia"]
+        new_comm = current_rates["gas"][tipo][fascia]["commercializzazione"]
+
+        # Calcola risparmio
+        risparmio_energia = (user_energia - new_energia) * gas_consumo
+        risparmio_comm = user_comm - new_comm
+
+        return risparmio_energia + risparmio_comm
+
+    return None
 
 
-def _format_footer(is_mixed: bool, estimated_savings: float | None = None) -> str:
-    """Formatta footer notifica"""
+def _should_show_utility(
+    utility_type: str,
+    savings: dict[str, Any],
+    user_rates: dict[str, Any],
+    current_rates: dict[str, Any],
+) -> tuple[bool, float | None]:
+    """
+    Determina se mostrare una utility (luce o gas) nel messaggio di notifica.
+
+    Logica:
+    - Non mixed (ha savings) → MOSTRA sempre
+    - Mixed senza consumi → MOSTRA (con suggerimento)
+    - Mixed con consumi:
+      - Risparmio > 0 → MOSTRA (con stima)
+      - Risparmio ≤ 0 → NON MOSTRA
+
+    Args:
+        utility_type: "luce" o "gas"
+        savings: Dizionario con risparmi/peggioramenti
+        user_rates: Dati utente
+        current_rates: Tariffe correnti Octopus
+
+    Returns:
+        (should_show, estimated_savings)
+        - should_show: True se va inclusa nel messaggio
+        - estimated_savings: risparmio stimato (solo per mixed con consumi)
+    """
+    if utility_type == "luce":
+        is_mixed = savings["luce_is_mixed"]
+        has_savings = savings["luce_energia"] or savings["luce_comm"]
+    elif utility_type == "gas":
+        # Se utente non ha gas, non mostrare
+        if not user_rates.get("gas"):
+            return False, None
+
+        is_mixed = savings["gas_is_mixed"]
+        has_savings = savings["gas_energia"] or savings["gas_comm"]
+    else:
+        return False, None
+
+    # Non mixed con savings → mostra sempre
+    if not is_mixed and has_savings:
+        return True, None
+
+    # Mixed → calcola risparmio se ci sono consumi
+    if is_mixed:
+        estimated_savings = _calculate_utility_savings(utility_type, user_rates, current_rates)
+
+        if estimated_savings is None:
+            # Nessun consumo → mostra con suggerimento
+            return True, None
+
+        # Ha consumi → mostra solo se risparmio > 0
+        return estimated_savings > 0, estimated_savings
+
+    # Nessun savings → non mostrare
+    return False, None
+
+
+def _format_footer(
+    luce_is_mixed: bool,
+    gas_is_mixed: bool,
+    luce_estimated_savings: float | None,
+    gas_estimated_savings: float | None,
+    show_luce: bool,
+    show_gas: bool,
+) -> str:
+    """Formatta footer notifica con gestione per-utility"""
     footer = ""
 
-    # Footer diverso per caso mixed
-    if is_mixed:
-        if estimated_savings is None:
-            # Utente non ha inserito consumi
+    # Lista delle utility mixed mostrate nel messaggio
+    mixed_utilities = []
+    if show_luce and luce_is_mixed:
+        mixed_utilities.append(("luce", luce_estimated_savings))
+    if show_gas and gas_is_mixed:
+        mixed_utilities.append(("gas", gas_estimated_savings))
+
+    # Se ci sono utility mixed, aggiungi messaggio appropriato
+    if mixed_utilities:
+        # Verifica se ci sono utility mixed senza consumi
+        has_missing_consumption = any(savings is None for _, savings in mixed_utilities)
+        # Verifica se ci sono utility mixed con consumi
+        has_consumption = any(savings is not None for _, savings in mixed_utilities)
+
+        if has_missing_consumption and not has_consumption:
+            # Tutte le utility mixed non hanno consumi
             footer += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
             footer += "Se vuoi una stima più precisa, puoi indicare i tuoi consumi usando il comando /update.\n\n"
-        else:
-            # Utente ha consumi, mostra stima
-            risparmio_formatted = format_number(
-                abs(estimated_savings), max_decimals=MAX_DECIMALS_COST
-            )
-            footer += f"💰 In base ai tuoi consumi, stimiamo un risparmio di circa {risparmio_formatted} €/anno.\n\n"
+        elif has_consumption:
+            # Almeno una utility ha consumi → mostra stime
+            for utility_type, savings in mixed_utilities:
+                if savings is not None:
+                    risparmio_formatted = format_number(
+                        abs(savings), max_decimals=MAX_DECIMALS_COST
+                    )
+                    utility_label = "luce" if utility_type == "luce" else "gas"
+                    footer += f"💰 In base ai tuoi consumi di {utility_label}, stimiamo un risparmio di circa {risparmio_formatted} €/anno.\n"
+
+            # Se una utility mixed non ha consumi, aggiungi suggerimento
+            if has_missing_consumption:
+                footer += "\n📊 Per una stima ancora più precisa, puoi indicare tutti i tuoi consumi con /update.\n"
+
+            footer += "\n"
 
     footer += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
     footer += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
@@ -498,18 +602,45 @@ def _format_footer(is_mixed: bool, estimated_savings: float | None = None) -> st
 
 
 def format_notification(
-    savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
+    savings: dict[str, Any],
+    user_rates: dict[str, Any],
+    current_rates: dict[str, Any],
+    show_luce: bool = True,
+    show_gas: bool = True,
+    luce_estimated_savings: float | None = None,
+    gas_estimated_savings: float | None = None,
 ) -> str:
-    """Formatta messaggio di notifica"""
-    # Calcola risparmio stimato se è un caso mixed
-    estimated_savings = None
-    if savings["is_mixed"]:
-        estimated_savings = _calculate_estimated_savings(savings, user_rates, current_rates)
+    """
+    Formatta messaggio di notifica.
 
-    message = _format_header(savings["is_mixed"])
-    message += _format_luce_section(savings, user_rates, current_rates)
-    message += _format_gas_section(savings, user_rates, current_rates)
-    message += _format_footer(savings["is_mixed"], estimated_savings)
+    Args:
+        savings: Dizionario con risparmi/peggioramenti
+        user_rates: Dati utente
+        current_rates: Tariffe correnti
+        show_luce: Se True, include sezione luce
+        show_gas: Se True, include sezione gas
+        luce_estimated_savings: Risparmio stimato luce (per mixed)
+        gas_estimated_savings: Risparmio stimato gas (per mixed)
+    """
+    # Determina se mostrare header mixed
+    is_mixed = savings["is_mixed"]
+
+    message = _format_header(is_mixed)
+
+    # Aggiungi sezioni solo per le utility da mostrare
+    if show_luce:
+        message += _format_luce_section(savings, user_rates, current_rates)
+    if show_gas:
+        message += _format_gas_section(savings, user_rates, current_rates)
+
+    message += _format_footer(
+        luce_is_mixed=savings["luce_is_mixed"],
+        gas_is_mixed=savings["gas_is_mixed"],
+        luce_estimated_savings=luce_estimated_savings,
+        gas_estimated_savings=gas_estimated_savings,
+        show_luce=show_luce,
+        show_gas=show_gas,
+    )
     return message
 
 
@@ -578,17 +709,37 @@ async def check_and_notify_users(bot_token: str) -> None:
             logger.info("  ⏭️  Tariffe migliori già notificate in precedenza, skip")
             continue
 
-        # Se è un caso MIXED con consumi, verifica se conviene davvero
-        if savings["is_mixed"]:
-            estimated_savings = _calculate_estimated_savings(savings, user_rates, current_rates)
-            if estimated_savings is not None and estimated_savings <= 0:
-                logger.info(
-                    f"  ⏭️  Caso MIXED: risparmio stimato negativo ({estimated_savings:.2f} €/anno), skip notifica"
-                )
-                continue
+        # Valuta separatamente luce e gas per determinare cosa mostrare
+        show_luce, luce_savings = _should_show_utility("luce", savings, user_rates, current_rates)
+        show_gas, gas_savings = _should_show_utility("gas", savings, user_rates, current_rates)
+
+        # Skip se nessuna utility è conveniente
+        if not show_luce and not show_gas:
+            logger.info("  ⏭️  Nessuna fornitura conveniente da mostrare, skip")
+            if savings["luce_is_mixed"] and luce_savings is not None:
+                logger.info(f"     Luce MIXED: risparmio stimato {luce_savings:.2f} €/anno (≤ 0)")
+            if savings["gas_is_mixed"] and gas_savings is not None:
+                logger.info(f"     Gas MIXED: risparmio stimato {gas_savings:.2f} €/anno (≤ 0)")
+            continue
+
+        # Log quali utility vengono mostrate
+        utilities_shown = []
+        if show_luce:
+            utilities_shown.append("luce")
+        if show_gas:
+            utilities_shown.append("gas")
+        logger.info(f"  📋 Forniture da mostrare: {', '.join(utilities_shown)}")
 
         # Accoda notifica
-        message = format_notification(savings, user_rates, current_rates)
+        message = format_notification(
+            savings,
+            user_rates,
+            current_rates,
+            show_luce=show_luce,
+            show_gas=show_gas,
+            luce_estimated_savings=luce_savings,
+            gas_estimated_savings=gas_savings,
+        )
         notifications_to_send.append((user_id, user_rates, current_octopus, message))
         logger.info("  📤 Notifica accodata per invio")
 
