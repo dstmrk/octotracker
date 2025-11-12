@@ -454,9 +454,13 @@ async def salva_e_conferma(
     return ConversationHandler.END
 
 
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Mostra dati salvati"""
     user_id = str(update.effective_user.id)
+
+    # Pulisci eventuali dati di conversazione in corso
+    context.user_data.clear()
+
     data = load_user(user_id)
 
     if not data:
@@ -465,7 +469,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
             "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
-        return
+        return ConversationHandler.END
 
     # Formatta numeri rimuovendo zeri trailing
     luce_energia_fmt = format_number(data["luce"]["energia"], max_decimals=4)
@@ -511,11 +515,15 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
 
 
-async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancella dati utente"""
     user_id = str(update.effective_user.id)
+
+    # Pulisci eventuali dati di conversazione in corso
+    context.user_data.clear()
 
     if user_exists(user_id):
         remove_user(user_id)
@@ -534,9 +542,14 @@ async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
         )
 
+    return ConversationHandler.END
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Mostra messaggio di aiuto"""
+    # Pulisci eventuali dati di conversazione in corso
+    context.user_data.clear()
+
     help_text = (
         "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
         "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
@@ -546,11 +559,27 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "• /update – Aggiorna le tariffe che hai impostato\n"
         "• /status – Mostra le tariffe e lo stato attuale\n"
         "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
+        "• /cancel – Annulla la registrazione in corso\n"
         "• /help – Mostra questo messaggio di aiuto\n\n"
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
+
+
+async def cancel_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Annulla la conversazione in corso e resetta lo stato"""
+    await update.message.reply_text(
+        "❌ <b>Registrazione annullata</b>\n\n"
+        "Nessun problema! Hai annullato la procedura di registrazione.\n\n"
+        "Quando vuoi riprovarci, usa il comando /start.\n"
+        "Se hai bisogno di aiuto, puoi usare /help.",
+        parse_mode=ParseMode.HTML,
+    )
+    # Pulisci i dati della conversazione
+    context.user_data.clear()
+    return ConversationHandler.END
 
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -805,11 +834,17 @@ def main() -> None:
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel_conversation),
+            CommandHandler("remove", remove_data),
+            CommandHandler("help", help_command),
+            CommandHandler("status", status),
+        ],
         per_message=False,  # CallbackQueryHandler non tracciato per ogni messaggio
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("cancel", cancel_conversation))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("remove", remove_data))
     app.add_handler(CommandHandler("help", help_command))

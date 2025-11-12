@@ -35,6 +35,7 @@ from bot import (
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
+    cancel_conversation,
     gas_comm,
     gas_energia,
     ha_gas,
@@ -48,6 +49,7 @@ from bot import (
     tipo_tariffa,
     unknown_command,
 )
+from telegram.ext import ConversationHandler
 from database import init_db, load_user, save_user
 
 # ========== FIXTURES ==========
@@ -234,11 +236,103 @@ async def test_remove_command(mock_update, mock_context):
     }
     save_user("123456789", user_data)
 
-    await remove_data(mock_update, mock_context)
+    result = await remove_data(mock_update, mock_context)
 
     # Verifica utente rimosso dal database
     assert load_user("123456789") is None
     mock_update.message.reply_text.assert_called_once()
+    # Verifica che restituisce END per uscire dalla conversazione
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
+async def test_cancel_command(mock_update, mock_context):
+    """Test /cancel annulla la conversazione in corso"""
+    # Simula una conversazione in corso
+    mock_context.user_data["luce_energia"] = 0.145
+    mock_context.user_data["is_variabile"] = False
+
+    result = await cancel_conversation(mock_update, mock_context)
+
+    # Verifica che il context sia stato pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica che restituisce END per uscire dalla conversazione
+    assert result == ConversationHandler.END
+    # Verifica che il messaggio di cancellazione sia stato inviato
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "annullat" in message_text.lower()
+
+
+@pytest.mark.asyncio
+async def test_cancel_command_no_conversation(mock_update, mock_context):
+    """Test /cancel quando non c'è una conversazione in corso"""
+    # Context vuoto
+    assert len(mock_context.user_data) == 0
+
+    result = await cancel_conversation(mock_update, mock_context)
+
+    # Deve comunque funzionare e restituire END
+    assert result == ConversationHandler.END
+    mock_update.message.reply_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_remove_command_clears_conversation_context(mock_update, mock_context):
+    """Test /remove pulisce il context della conversazione"""
+    # Simula conversazione in corso + dati salvati
+    mock_context.user_data["luce_energia"] = 0.145
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    result = await remove_data(mock_update, mock_context)
+
+    # Verifica context pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica utente rimosso
+    assert load_user("123456789") is None
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
+async def test_help_command_clears_conversation_context(mock_update, mock_context):
+    """Test /help pulisce il context e termina la conversazione"""
+    # Simula conversazione in corso
+    mock_context.user_data["luce_energia"] = 0.145
+    mock_context.user_data["is_variabile"] = False
+
+    result = await help_command(mock_update, mock_context)
+
+    # Verifica context pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica che restituisce END
+    assert result == ConversationHandler.END
+    # Verifica che /cancel sia menzionato nel messaggio di help
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "/cancel" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_command_clears_conversation_context(mock_update, mock_context):
+    """Test /status pulisce il context e termina la conversazione"""
+    # Simula conversazione in corso
+    mock_context.user_data["luce_energia"] = 0.145
+
+    result = await status(mock_update, mock_context)
+
+    # Verifica context pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica che restituisce END
+    assert result == ConversationHandler.END
 
 
 # ========== TEST FLUSSO CONVERSAZIONE ==========
