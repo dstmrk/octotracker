@@ -836,9 +836,7 @@ def main() -> None:
         },
         fallbacks=[
             CommandHandler("cancel", cancel_conversation),
-            CommandHandler("remove", remove_data),
             CommandHandler("help", help_command),
-            CommandHandler("status", status),
         ],
         per_message=False,  # CallbackQueryHandler non tracciato per ogni messaggio
     )

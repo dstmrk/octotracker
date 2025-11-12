@@ -279,32 +279,8 @@ async def test_cancel_command_no_conversation(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
-async def test_remove_command_clears_conversation_context(mock_update, mock_context):
-    """Test /remove pulisce il context della conversazione"""
-    # Simula conversazione in corso + dati salvati
-    mock_context.user_data["luce_energia"] = 0.145
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.145,
-            "commercializzazione": 72.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    result = await remove_data(mock_update, mock_context)
-
-    # Verifica context pulito
-    assert len(mock_context.user_data) == 0
-    # Verifica utente rimosso
-    assert load_user("123456789") is None
-    assert result == ConversationHandler.END
-
-
-@pytest.mark.asyncio
 async def test_help_command_clears_conversation_context(mock_update, mock_context):
-    """Test /help pulisce il context e termina la conversazione"""
+    """Test /help come fallback: pulisce il context e termina la conversazione"""
     # Simula conversazione in corso
     mock_context.user_data["luce_energia"] = 0.145
     mock_context.user_data["is_variabile"] = False
@@ -319,20 +295,6 @@ async def test_help_command_clears_conversation_context(mock_update, mock_contex
     call_args = mock_update.message.reply_text.call_args
     message_text = call_args[0][0]
     assert "/cancel" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_command_clears_conversation_context(mock_update, mock_context):
-    """Test /status pulisce il context e termina la conversazione"""
-    # Simula conversazione in corso
-    mock_context.user_data["luce_energia"] = 0.145
-
-    result = await status(mock_update, mock_context)
-
-    # Verifica context pulito
-    assert len(mock_context.user_data) == 0
-    # Verifica che restituisce END
-    assert result == ConversationHandler.END
 
 
 # ========== TEST FLUSSO CONVERSAZIONE ==========
