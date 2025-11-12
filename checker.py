@@ -405,14 +405,90 @@ def _format_gas_section(
     return section
 
 
-def _format_footer(is_mixed: bool) -> str:
+def _calculate_estimated_savings(
+    savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
+) -> float | None:
+    """
+    Calcola il risparmio stimato annuo in € basato sui consumi dell'utente.
+
+    Args:
+        savings: Dizionario con risparmi/peggioramenti
+        user_rates: Dati utente (tariffe e consumi)
+        current_rates: Tariffe correnti Octopus
+
+    Returns:
+        Risparmio stimato in €/anno (positivo = risparmio, negativo = aumento)
+        None se l'utente non ha inserito consumi
+    """
+    # Verifica se l'utente ha inserito consumi
+    luce_consumo_f1 = user_rates["luce"].get("consumo_f1")
+    gas_consumo = user_rates.get("gas", {}).get("consumo_annuo") if user_rates.get("gas") else None
+
+    if luce_consumo_f1 is None and gas_consumo is None:
+        return None
+
+    risparmio_totale = 0.0
+
+    # Calcola risparmio luce
+    if luce_consumo_f1 is not None:
+        luce_tipo = savings["luce_tipo"]
+        luce_fascia = savings["luce_fascia"]
+
+        # Calcola consumo totale luce
+        luce_consumo_f2 = user_rates["luce"].get("consumo_f2", 0)
+        luce_consumo_f3 = user_rates["luce"].get("consumo_f3", 0)
+        consumo_totale_luce = luce_consumo_f1 + luce_consumo_f2 + luce_consumo_f3
+
+        # Ottieni tariffe attuali e nuove
+        user_luce_energia = user_rates["luce"]["energia"]
+        user_luce_comm = user_rates["luce"]["commercializzazione"]
+
+        if current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia):
+            new_luce_energia = current_rates["luce"][luce_tipo][luce_fascia]["energia"]
+            new_luce_comm = current_rates["luce"][luce_tipo][luce_fascia]["commercializzazione"]
+
+            # Risparmio = (tariffa_attuale - tariffa_nuova) * consumo
+            risparmio_energia_luce = (user_luce_energia - new_luce_energia) * consumo_totale_luce
+            risparmio_comm_luce = user_luce_comm - new_luce_comm
+
+            risparmio_totale += risparmio_energia_luce + risparmio_comm_luce
+
+    # Calcola risparmio gas
+    if gas_consumo is not None and user_rates.get("gas"):
+        gas_tipo = savings["gas_tipo"]
+        gas_fascia = savings["gas_fascia"]
+
+        user_gas_energia = user_rates["gas"]["energia"]
+        user_gas_comm = user_rates["gas"]["commercializzazione"]
+
+        if current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia):
+            new_gas_energia = current_rates["gas"][gas_tipo][gas_fascia]["energia"]
+            new_gas_comm = current_rates["gas"][gas_tipo][gas_fascia]["commercializzazione"]
+
+            risparmio_energia_gas = (user_gas_energia - new_gas_energia) * gas_consumo
+            risparmio_comm_gas = user_gas_comm - new_gas_comm
+
+            risparmio_totale += risparmio_energia_gas + risparmio_comm_gas
+
+    return risparmio_totale
+
+
+def _format_footer(is_mixed: bool, estimated_savings: float | None = None) -> str:
     """Formatta footer notifica"""
     footer = ""
 
     # Footer diverso per caso mixed
     if is_mixed:
-        footer += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
-        footer += "Ti consiglio di fare una verifica in base ai kWh/Smc che usi mediamente ogni anno, puoi trovare i dati nelle tue bollette.\n\n"
+        if estimated_savings is None:
+            # Utente non ha inserito consumi
+            footer += "📊 In questi casi la convenienza dipende dai tuoi consumi.\n"
+            footer += "Se vuoi una stima più precisa, puoi indicare i tuoi consumi usando il comando /update.\n\n"
+        else:
+            # Utente ha consumi, mostra stima
+            risparmio_formatted = format_number(
+                abs(estimated_savings), max_decimals=MAX_DECIMALS_COST
+            )
+            footer += f"💰 In base ai tuoi consumi, stimiamo un risparmio di circa {risparmio_formatted} €/anno.\n\n"
 
     footer += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
     footer += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
@@ -425,10 +501,15 @@ def format_notification(
     savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
 ) -> str:
     """Formatta messaggio di notifica"""
+    # Calcola risparmio stimato se è un caso mixed
+    estimated_savings = None
+    if savings["is_mixed"]:
+        estimated_savings = _calculate_estimated_savings(savings, user_rates, current_rates)
+
     message = _format_header(savings["is_mixed"])
     message += _format_luce_section(savings, user_rates, current_rates)
     message += _format_gas_section(savings, user_rates, current_rates)
-    message += _format_footer(savings["is_mixed"])
+    message += _format_footer(savings["is_mixed"], estimated_savings)
     return message
 
 
@@ -496,6 +577,15 @@ async def check_and_notify_users(bot_token: str) -> None:
         if not _should_notify_user(user_rates, current_octopus):
             logger.info("  ⏭️  Tariffe migliori già notificate in precedenza, skip")
             continue
+
+        # Se è un caso MIXED con consumi, verifica se conviene davvero
+        if savings["is_mixed"]:
+            estimated_savings = _calculate_estimated_savings(savings, user_rates, current_rates)
+            if estimated_savings is not None and estimated_savings <= 0:
+                logger.info(
+                    f"  ⏭️  Caso MIXED: risparmio stimato negativo ({estimated_savings:.2f} €/anno), skip notifica"
+                )
+                continue
 
         # Accoda notifica
         message = format_notification(savings, user_rates, current_rates)
