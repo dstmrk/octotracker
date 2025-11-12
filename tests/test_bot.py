@@ -30,11 +30,11 @@ import database
 from bot import (
     GAS_COMM,
     GAS_ENERGIA,
-    HA_GAS,
     LUCE_COMM,
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
+    VUOI_CONSUMI_LUCE,
     gas_comm,
     gas_energia,
     ha_gas,
@@ -491,7 +491,7 @@ async def test_luce_comm_valid_input(mock_update, mock_context):
 
     result = await luce_comm(mock_update, mock_context)
 
-    assert result == HA_GAS
+    assert result == VUOI_CONSUMI_LUCE
     assert mock_context.user_data["luce_comm"] == 72.0
     mock_update.message.reply_text.assert_called_once()
 

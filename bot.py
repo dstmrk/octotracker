@@ -69,6 +69,7 @@ class ConversationState(IntEnum):
     LUCE_TIPO_VARIABILE = 1
     LUCE_ENERGIA = 2
     LUCE_COMM = 3
+    VUOI_CONSUMI_LUCE = 7
     HA_GAS = 4
     GAS_ENERGIA = 5
     GAS_COMM = 6
@@ -79,6 +80,7 @@ TIPO_TARIFFA = ConversationState.TIPO_TARIFFA
 LUCE_TIPO_VARIABILE = ConversationState.LUCE_TIPO_VARIABILE
 LUCE_ENERGIA = ConversationState.LUCE_ENERGIA
 LUCE_COMM = ConversationState.LUCE_COMM
+VUOI_CONSUMI_LUCE = ConversationState.VUOI_CONSUMI_LUCE
 HA_GAS = ConversationState.HA_GAS
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
@@ -239,7 +241,7 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva costo commercializzazione luce e chiedi se ha gas"""
+    """Salva costo commercializzazione luce e chiedi se vuole inserire consumi"""
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
@@ -250,19 +252,59 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
         keyboard = [
             [
-                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
-                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+            "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
+            "💡 Serve solo per valutare meglio quando una tariffa può convenirti.",
+            reply_markup=reply_markup,
         )
-        return HA_GAS
+        return VUOI_CONSUMI_LUCE
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
         return LUCE_COMM
+
+
+async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Gestisci risposta se vuole inserire consumi luce"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "consumi_luce_si":
+        # TODO: In futuro andrà a LUCE_CONSUMO per raccogliere i dati
+        # Per ora saltiamo direttamente a chiedere se ha gas
+        await query.edit_message_text(
+            "⚠️ Funzionalità in arrivo! Per ora procediamo con le tariffe.\n\n"
+            "Hai anche una fornitura gas attiva con Octopus Energy?"
+        )
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.message.reply_text(
+            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+        )
+        return HA_GAS
+    else:
+        # Non vuole inserire consumi, vai direttamente a chiedere se ha gas
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+        )
+        return HA_GAS
 
 
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -839,6 +881,7 @@ def main() -> None:
             LUCE_TIPO_VARIABILE: [CallbackQueryHandler(luce_tipo_variabile)],
             LUCE_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_energia)],
             LUCE_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_comm)],
+            VUOI_CONSUMI_LUCE: [CallbackQueryHandler(vuoi_consumi_luce)],
             HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
