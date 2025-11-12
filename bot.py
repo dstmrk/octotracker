@@ -76,6 +76,8 @@ class ConversationState(IntEnum):
     HA_GAS = 4
     GAS_ENERGIA = 5
     GAS_COMM = 6
+    VUOI_CONSUMI_GAS = 11
+    GAS_CONSUMO = 12
 
 
 # Backward compatibility: mantieni le costanti per i test e il codice esistente
@@ -90,6 +92,8 @@ LUCE_CONSUMO_F3 = ConversationState.LUCE_CONSUMO_F3
 HA_GAS = ConversationState.HA_GAS
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
+VUOI_CONSUMI_GAS = ConversationState.VUOI_CONSUMI_GAS
+GAS_CONSUMO = ConversationState.GAS_CONSUMO
 
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
@@ -488,7 +492,7 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva gas e conferma"""
+    """Salva commercializzazione gas e chiedi se vuole inserire consumi"""
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
@@ -496,10 +500,66 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             return GAS_COMM
 
         context.user_data["gas_comm"] = value
-        return await salva_e_conferma(update, context, solo_luce=False)
+
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
+            "🔥 Serve solo per valutare meglio quando una tariffa può convenirti.",
+            reply_markup=reply_markup,
+        )
+        return VUOI_CONSUMI_GAS
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
+
+
+async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Gestisci risposta se vuole inserire consumi gas"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "consumi_gas_si":
+        # Chiedi consumo gas
+        await query.edit_message_text(
+            "Inserisci il tuo consumo annuo di gas in Smc.\n\n" "💬 Esempio: 1200"
+        )
+        return GAS_CONSUMO
+    else:
+        # Non vuole inserire consumi, salva e conferma
+        return await salva_e_conferma(query, context, solo_luce=False)
+
+
+async def gas_consumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo gas e vai a conferma"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return GAS_CONSUMO
+
+        # Validazione range (100-3000 Smc/anno)
+        if value < 100 or value > 3000:
+            await update.message.reply_text(
+                "⚠️ Il valore sembra fuori dal range tipico (100-3000 Smc/anno).\n"
+                "Inserisci un valore valido."
+            )
+            return GAS_CONSUMO
+
+        context.user_data["gas_consumo_annuo"] = value
+
+        # Consumi completati, salva e conferma
+        return await salva_e_conferma(update, context, solo_luce=False)
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 1200)")
+        return GAS_CONSUMO
 
 
 def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dict[str, Any]:
@@ -1029,6 +1089,8 @@ def main() -> None:
             HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
+            VUOI_CONSUMI_GAS: [CallbackQueryHandler(vuoi_consumi_gas)],
+            GAS_CONSUMO: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_consumo)],
         },
         fallbacks=[],
         per_message=False,  # CallbackQueryHandler non tracciato per ogni messaggio

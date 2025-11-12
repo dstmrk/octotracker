@@ -34,6 +34,7 @@ from bot import (
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
+    VUOI_CONSUMI_GAS,
     VUOI_CONSUMI_LUCE,
     gas_comm,
     gas_energia,
@@ -47,6 +48,7 @@ from bot import (
     status,
     tipo_tariffa,
     unknown_command,
+    vuoi_consumi_gas,
 )
 from database import init_db, load_user, save_user
 
@@ -648,9 +650,26 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
         "gas_comm": 84.0,
     }
 
-    # Simula ultimo step (gas_comm)
+    # Simula step gas_comm
     mock_update.message.text = "84"
     result = await gas_comm(mock_update, mock_context)
+
+    assert result == VUOI_CONSUMI_GAS  # Chiede se vuole indicare consumo gas
+
+    # Simula risposta "No" alla domanda consumo gas
+    # Usa SimpleNamespace per avere attributi semplici senza auto-mocking
+    from types import SimpleNamespace
+
+    mock_user = SimpleNamespace(id=int(user_id))
+    mock_query = MagicMock(spec=CallbackQuery)
+    mock_query.data = "consumi_gas_no"
+    mock_query.answer = AsyncMock()
+    mock_query.edit_message_text = AsyncMock()
+    mock_query.from_user = mock_user
+
+    mock_update.callback_query = mock_query
+
+    result = await vuoi_consumi_gas(mock_update, mock_context)
 
     assert result == -1  # Fine conversazione
 
