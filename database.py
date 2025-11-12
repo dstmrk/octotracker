@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS users (
     gas_fascia TEXT,
     gas_energia REAL,
     gas_commercializzazione REAL,
+    luce_consumo_f1 REAL,
+    luce_consumo_f2 REAL,
+    luce_consumo_f3 REAL,
+    gas_consumo_annuo REAL,
     last_notified_rates TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -82,6 +86,14 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
         }
     }
 
+    # Aggiungi consumi luce se presenti
+    if row["luce_consumo_f1"] is not None:
+        user_data["luce"]["consumo_f1"] = row["luce_consumo_f1"]
+    if row["luce_consumo_f2"] is not None:
+        user_data["luce"]["consumo_f2"] = row["luce_consumo_f2"]
+    if row["luce_consumo_f3"] is not None:
+        user_data["luce"]["consumo_f3"] = row["luce_consumo_f3"]
+
     # Aggiungi gas solo se presente
     if row["gas_tipo"]:
         user_data["gas"] = {
@@ -90,6 +102,9 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
             "energia": row["gas_energia"],
             "commercializzazione": row["gas_commercializzazione"],
         }
+        # Aggiungi consumo gas se presente
+        if row["gas_consumo_annuo"] is not None:
+            user_data["gas"]["consumo_annuo"] = row["gas_consumo_annuo"]
 
     # Aggiungi last_notified_rates se presente
     if row["last_notified_rates"]:
@@ -159,12 +174,18 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                 f"luce.fascia non valida: '{luce['fascia']}'. Valori ammessi: {VALID_FASCE_LUCE}"
             )
 
+        # Estrai consumi luce (opzionali)
+        luce_consumo_f1 = luce.get("consumo_f1")
+        luce_consumo_f2 = luce.get("consumo_f2")
+        luce_consumo_f3 = luce.get("consumo_f3")
+
         # Estrai dati gas (opzionali)
         gas = user_data.get("gas")
         gas_tipo = gas["tipo"] if gas else None
         gas_fascia = gas["fascia"] if gas else None
         gas_energia = gas["energia"] if gas else None
         gas_comm = gas["commercializzazione"] if gas else None
+        gas_consumo = gas.get("consumo_annuo") if gas else None
 
         # Validazione gas (se presente)
         if gas is not None:
@@ -187,8 +208,9 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                 INSERT INTO users (
                     user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
                     gas_tipo, gas_fascia, gas_energia, gas_commercializzazione,
+                    luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, gas_consumo_annuo,
                     last_notified_rates, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(user_id) DO UPDATE SET
                     luce_tipo = excluded.luce_tipo,
                     luce_fascia = excluded.luce_fascia,
@@ -198,6 +220,10 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     gas_fascia = excluded.gas_fascia,
                     gas_energia = excluded.gas_energia,
                     gas_commercializzazione = excluded.gas_commercializzazione,
+                    luce_consumo_f1 = excluded.luce_consumo_f1,
+                    luce_consumo_f2 = excluded.luce_consumo_f2,
+                    luce_consumo_f3 = excluded.luce_consumo_f3,
+                    gas_consumo_annuo = excluded.gas_consumo_annuo,
                     last_notified_rates = excluded.last_notified_rates,
                     updated_at = CURRENT_TIMESTAMP
             """,
@@ -211,6 +237,10 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     gas_fascia,
                     gas_energia,
                     gas_comm,
+                    luce_consumo_f1,
+                    luce_consumo_f2,
+                    luce_consumo_f3,
+                    gas_consumo,
                     last_notified_json,
                 ),
             )

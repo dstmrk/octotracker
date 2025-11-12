@@ -489,6 +489,37 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
+    # Mostra consumi luce se presenti
+    consumo_f1 = data["luce"].get("consumo_f1")
+    if consumo_f1 is not None:
+        consumo_f2 = data["luce"].get("consumo_f2")
+        consumo_f3 = data["luce"].get("consumo_f3")
+
+        if luce_fascia == "monoraria":
+            # Solo totale
+            messaggio += (
+                f"  - Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
+            )
+
+        elif luce_fascia == "bioraria":
+            # Totale + breakdown F1 e F23
+            totale = consumo_f1 + consumo_f2
+            messaggio += (
+                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
+            )
+
+        elif luce_fascia == "trioraria":
+            # Totale + breakdown F1, F2, F3
+            totale = consumo_f1 + consumo_f2 + consumo_f3
+            messaggio += (
+                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
+                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
+            )
+
     if data.get("gas") is not None:
         gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
@@ -508,6 +539,13 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             f"  - {gas_label}: {gas_energia_fmt} €/Smc\n"
             f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
+
+        # Mostra consumo gas se presente
+        consumo_gas = data["gas"].get("consumo_annuo")
+        if consumo_gas is not None:
+            messaggio += (
+                f"  - Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
+            )
 
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)

@@ -221,6 +221,166 @@ async def test_status_with_data(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
+async def test_status_with_consumption_monoraria(mock_update, mock_context):
+    """Test /status mostra consumi per tariffa monoraria"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "consumo_f1": 2700.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    # Verifica presenza consumo monoraria
+    assert "Consumo:" in message_text
+    assert "2700" in message_text
+    assert "kWh/anno" in message_text
+    # Non deve mostrare breakdown fasce per monoraria
+    assert "F1:" not in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_with_consumption_bioraria(mock_update, mock_context):
+    """Test /status mostra consumi per tariffa bioraria"""
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "bioraria",
+            "energia": 0.015,
+            "commercializzazione": 80.0,
+            "consumo_f1": 1200.0,
+            "consumo_f2": 1500.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    # Verifica presenza consumo bioraria con breakdown
+    assert "Consumo:" in message_text
+    assert "2700" in message_text  # Totale
+    assert "kWh/anno" in message_text
+    assert "F1: 1200 kWh" in message_text
+    assert "F23: 1500 kWh" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_with_consumption_trioraria(mock_update, mock_context):
+    """Test /status mostra consumi per tariffa trioraria"""
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "trioraria",
+            "energia": 0.012,
+            "commercializzazione": 96.0,
+            "consumo_f1": 900.0,
+            "consumo_f2": 900.0,
+            "consumo_f3": 900.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    # Verifica presenza consumo trioraria con breakdown
+    assert "Consumo:" in message_text
+    assert "2700" in message_text  # Totale
+    assert "kWh/anno" in message_text
+    assert "F1: 900 kWh" in message_text
+    assert "F2: 900 kWh" in message_text
+    assert "F3: 900 kWh" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_with_consumption_gas(mock_update, mock_context):
+    """Test /status mostra consumo gas"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.140,
+            "commercializzazione": 70.0,
+            "consumo_f1": 2500.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.350,
+            "commercializzazione": 120.0,
+            "consumo_annuo": 1200.0,
+        },
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    # Verifica presenza consumo luce
+    assert "2500" in message_text
+    assert "kWh/anno" in message_text
+
+    # Verifica presenza consumo gas
+    assert "1200" in message_text
+    assert "Smc/anno" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_backward_compat_no_consumption(mock_update, mock_context):
+    """Test /status funziona anche senza consumi (retrocompatibilità)"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            # Nessun campo consumo
+        },
+        "gas": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.025,
+            "commercializzazione": 100.0,
+            # Nessun campo consumo
+        },
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    # Verifica presenza tariffe (funziona senza consumi)
+    assert "Luce" in message_text
+    assert "0,145" in message_text or "0.145" in message_text
+    assert "Gas" in message_text
+
+    # Verifica che NON ci sia la riga "Consumo:"
+    assert "Consumo:" not in message_text
+
+
+@pytest.mark.asyncio
 async def test_remove_command(mock_update, mock_context):
     """Test /remove rimuove dati utente"""
     # Prepara dati nel database
