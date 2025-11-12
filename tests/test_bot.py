@@ -10,21 +10,20 @@ Testa tutti i flussi conversazionali del bot:
 """
 
 import os
+import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from telegram import CallbackQuery, InlineKeyboardMarkup, Message, Update, User
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 
 # Mock WEBHOOK_SECRET prima di importare bot (previene ValueError)
 os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
 
 # Import funzioni del bot e database
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import tempfile
 
 import database
 from bot import (
@@ -49,7 +48,6 @@ from bot import (
     tipo_tariffa,
     unknown_command,
 )
-from telegram.ext import ConversationHandler
 from database import init_db, load_user, save_user
 
 # ========== FIXTURES ==========
