@@ -46,7 +46,7 @@ jobs:
 
     - name: SonarCloud Scan
       # Skip SonarCloud for Dependabot PRs (secrets not available for security)
-      if: secrets.SONAR_TOKEN != ''
+      if: github.actor != 'dependabot[bot]'
       uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
