@@ -29,18 +29,24 @@ import tempfile
 import database
 from bot import (
     GAS_COMM,
+    GAS_CONSUMO,
     GAS_ENERGIA,
+    HA_GAS,
     LUCE_COMM,
+    LUCE_CONSUMO_F1,
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
     VUOI_CONSUMI_GAS,
     VUOI_CONSUMI_LUCE,
+    _format_confirmation_message,
     gas_comm,
+    gas_consumo,
     gas_energia,
     ha_gas,
     help_command,
     luce_comm,
+    luce_consumo_f1,
     luce_energia,
     luce_tipo_variabile,
     remove_data,
@@ -49,6 +55,7 @@ from bot import (
     tipo_tariffa,
     unknown_command,
     vuoi_consumi_gas,
+    vuoi_consumi_luce,
 )
 from database import init_db, load_user, save_user
 
@@ -721,3 +728,205 @@ async def test_zero_values(mock_update, mock_context):
 
     assert result == LUCE_COMM
     assert mock_context.user_data["luce_energia"] == 0.0
+
+# ========== TEST CONFIRMATION MESSAGE WITH CONSUMPTION ==========
+
+
+def test_format_confirmation_message_with_luce_monoraria_consumption():
+    """Test messaggio di conferma con consumo luce monoraria"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "consumo_f1": 2700.0,
+        },
+        "gas": None,
+    }
+
+    message = _format_confirmation_message(user_data)
+
+    assert "Consumo: <b>2700</b> kWh/anno" in message
+    assert "Abbiamo finito!" in message
+    assert "Luce (Fissa Monoraria)" in message
+
+
+def test_format_confirmation_message_with_luce_trioraria_consumption():
+    """Test messaggio di conferma con consumo luce trioraria"""
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "trioraria",
+            "energia": 0.025,
+            "commercializzazione": 72.0,
+            "consumo_f1": 900.0,
+            "consumo_f2": 850.0,
+            "consumo_f3": 950.0,
+        },
+        "gas": None,
+    }
+
+    message = _format_confirmation_message(user_data)
+
+    assert "Consumo: <b>2700</b> kWh/anno" in message
+    assert "F1: 900 kWh" in message
+    assert "F2: 850 kWh" in message
+    assert "F3: 950 kWh" in message
+    assert "Luce (Variabile Trioraria)" in message
+
+
+def test_format_confirmation_message_with_gas_consumption():
+    """Test messaggio di conferma con consumo gas"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.456,
+            "commercializzazione": 84.0,
+            "consumo_annuo": 1200.0,
+        },
+    }
+
+    message = _format_confirmation_message(user_data)
+
+    assert "Consumo: <b>1200</b> Smc/anno" in message
+    assert "Gas (Fissa Monoraria)" in message
+
+
+def test_format_confirmation_message_without_consumption():
+    """Test messaggio di conferma senza consumi (backward compatibility)"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": None,
+    }
+
+    message = _format_confirmation_message(user_data)
+
+    assert "Consumo" not in message
+    assert "Abbiamo finito!" in message
+
+
+# ========== TEST CONSUMPTION COLLECTION FLOW ==========
+
+
+@pytest.mark.asyncio
+async def test_vuoi_consumi_luce_yes_monoraria(mock_update, mock_context):
+    """Test risposta Sì a domanda consumi luce monoraria"""
+    mock_context.user_data = {"luce_fascia": "monoraria"}
+
+    mock_query = MagicMock(spec=CallbackQuery)
+    mock_query.data = "consumi_luce_si"
+    mock_query.answer = AsyncMock()
+    mock_query.edit_message_text = AsyncMock()
+    mock_update.callback_query = mock_query
+
+    result = await vuoi_consumi_luce(mock_update, mock_context)
+
+    assert result == LUCE_CONSUMO_F1
+    mock_query.edit_message_text.assert_called_once()
+    call_args = mock_query.edit_message_text.call_args[0][0]
+    assert "consumo annuo totale di energia elettrica" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_monoraria_valid(mock_update, mock_context):
+    """Test inserimento consumo luce monoraria valido"""
+    mock_context.user_data = {"luce_fascia": "monoraria"}
+    mock_update.message.text = "2700"
+
+    result = await luce_consumo_f1(mock_update, mock_context)
+
+    assert mock_context.user_data["luce_consumo_f1"] == 2700.0
+    # Per monoraria dovrebbe andare a HA_GAS
+    assert result == HA_GAS
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_out_of_range(mock_update, mock_context):
+    """Test inserimento consumo luce fuori range"""
+    mock_context.user_data = {"luce_fascia": "monoraria"}
+    mock_update.message.text = "100000"  # Troppo alto
+
+    result = await luce_consumo_f1(mock_update, mock_context)
+
+    assert result == LUCE_CONSUMO_F1  # Rimane nello stesso stato
+    assert "luce_consumo_f1" not in mock_context.user_data
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args[0][0]
+    assert "fuori dal range" in call_args
+
+
+@pytest.mark.asyncio
+async def test_vuoi_consumi_gas_yes(mock_update, mock_context):
+    """Test risposta Sì a domanda consumi gas"""
+    from types import SimpleNamespace
+
+    user_id = "123456789"
+    mock_user = SimpleNamespace(id=int(user_id))
+    mock_query = MagicMock(spec=CallbackQuery)
+    mock_query.data = "consumi_gas_si"
+    mock_query.answer = AsyncMock()
+    mock_query.edit_message_text = AsyncMock()
+    mock_query.from_user = mock_user
+    mock_update.callback_query = mock_query
+
+    result = await vuoi_consumi_gas(mock_update, mock_context)
+
+    assert result == GAS_CONSUMO
+    mock_query.edit_message_text.assert_called_once()
+    call_args = mock_query.edit_message_text.call_args[0][0]
+    assert "consumo annuo di gas in Smc" in call_args
+
+
+@pytest.mark.asyncio
+async def test_gas_consumo_valid(mock_update, mock_context):
+    """Test inserimento consumo gas valido"""
+    user_id = "123456789"
+    mock_update.effective_user.id = int(user_id)
+    mock_context.user_data = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": 0.145,
+        "luce_comm": 72.0,
+        "gas_tipo": "fissa",
+        "gas_fascia": "monoraria",
+        "gas_energia": 0.456,
+        "gas_comm": 84.0,
+    }
+    mock_update.message.text = "1200"
+
+    result = await gas_consumo(mock_update, mock_context)
+
+    assert mock_context.user_data["gas_consumo_annuo"] == 1200.0
+    assert result == -1  # Fine conversazione
+
+    # Verifica salvataggio nel database
+    user_data = load_user(user_id)
+    assert user_data is not None
+    assert user_data["gas"]["consumo_annuo"] == 1200.0
+
+
+@pytest.mark.asyncio
+async def test_gas_consumo_out_of_range(mock_update, mock_context):
+    """Test inserimento consumo gas fuori range"""
+    mock_update.message.text = "5000"  # Troppo alto
+
+    result = await gas_consumo(mock_update, mock_context)
+
+    assert result == GAS_CONSUMO  # Rimane nello stesso stato
+    assert "gas_consumo_annuo" not in mock_context.user_data
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args[0][0]
+    assert "fuori dal range" in call_args
