@@ -36,6 +36,7 @@ Note:
 - Per tariffe variabili: "energia" è lo spread (da sommare a PUN/PSVDAm)
 - La struttura a 3 livelli permette accesso diretto: luce/gas → fissa/variabile → monoraria/bioraria/trioraria
 """
+import asyncio
 import json
 import logging
 import os
@@ -359,8 +360,6 @@ async def scrape_octopus_tariffe() -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     # Configura logging per esecuzione standalone (usa env var LOG_LEVEL)
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(

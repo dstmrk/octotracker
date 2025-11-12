@@ -4,6 +4,20 @@ Unit tests per scraper.py
 Verifica formato JSON output senza eseguire scraping reale
 """
 import json
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+
+import pytest
+
+from scraper import (
+    _extract_gas_fisso,
+    _extract_gas_variabile,
+    _extract_luce_fissa,
+    _extract_luce_variabile_mono,
+    _extract_luce_variabile_tri,
+    _write_rates_file,
+    scrape_octopus_tariffe,
+)
 
 
 def test_complete_data_structure():
@@ -159,3 +173,237 @@ def test_json_serializable():
     json_str = json.dumps(tariffe_data, indent=2)
     parsed = json.loads(json_str)
     assert tariffe_data == parsed
+
+
+# ========== TESTS FOR EXTRACTION FUNCTIONS ==========
+
+
+def test_extract_luce_fissa_found():
+    """Test estrazione luce fissa quando trovata"""
+    text = "Tariffa luce fissa 0.1078 €/kWh con commercializzazione 72 €/anno"
+    result = _extract_luce_fissa(text)
+
+    assert result is not None
+    assert result["energia"] == 0.1078
+    assert result["commercializzazione"] == 72.0
+
+
+def test_extract_luce_fissa_not_found():
+    """Test estrazione luce fissa quando non trovata"""
+    text = "Tariffa luce variabile PUN Mono + 0.0088 €/kWh"
+    result = _extract_luce_fissa(text)
+
+    assert result is None
+
+
+def test_extract_luce_fissa_comma_separator():
+    """Test estrazione luce fissa con virgola come separatore decimale"""
+    text = "Tariffa luce fissa 0,1078 €/kWh con commercializzazione 72 €/anno"
+    result = _extract_luce_fissa(text)
+
+    assert result is not None
+    assert result["energia"] == 0.1078
+    assert result["commercializzazione"] == 72.0
+
+
+def test_extract_luce_variabile_mono_found():
+    """Test estrazione luce variabile monoraria quando trovata"""
+    text = "Tariffa luce variabile PUN Mono + 0.0088 €/kWh con commercializzazione 72 €/anno"
+    result = _extract_luce_variabile_mono(text)
+
+    assert result is not None
+    assert result["energia"] == 0.0088
+    assert result["commercializzazione"] == 72.0
+
+
+def test_extract_luce_variabile_mono_not_found():
+    """Test estrazione luce variabile monoraria quando non trovata"""
+    text = "Tariffa luce fissa 0.1078 €/kWh"
+    result = _extract_luce_variabile_mono(text)
+
+    assert result is None
+
+
+def test_extract_gas_fisso_found():
+    """Test estrazione gas fisso quando trovato"""
+    text = "Tariffa gas fisso 0.39 €/Smc con commercializzazione 84 €/anno"
+    result = _extract_gas_fisso(text)
+
+    assert result is not None
+    assert result["energia"] == 0.39
+    assert result["commercializzazione"] == 84.0
+
+
+def test_extract_gas_fisso_not_found():
+    """Test estrazione gas fisso quando non trovato"""
+    text = "Tariffa gas variabile PSVDAm + 0.08 €/Smc"
+    result = _extract_gas_fisso(text)
+
+    assert result is None
+
+
+def test_extract_gas_variabile_found():
+    """Test estrazione gas variabile quando trovato"""
+    text = "Tariffa gas variabile PSVDAm + 0.08 €/Smc con commercializzazione 84 €/anno"
+    result = _extract_gas_variabile(text)
+
+    assert result is not None
+    assert result["energia"] == 0.08
+    assert result["commercializzazione"] == 84.0
+
+
+def test_extract_gas_variabile_not_found():
+    """Test estrazione gas variabile quando non trovato"""
+    text = "Tariffa gas fisso 0.39 €/Smc"
+    result = _extract_gas_variabile(text)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_extract_luce_variabile_tri_found_directly():
+    """Test estrazione luce variabile trioraria trovata direttamente"""
+    page_mock = AsyncMock()
+    text = "Tariffa luce variabile PUN + 0.0088 €/kWh con commercializzazione 72 €/anno"
+
+    result = await _extract_luce_variabile_tri(page_mock, text)
+
+    assert result is not None
+    assert result["energia"] == 0.0088
+    assert result["commercializzazione"] == 72.0
+    # Il toggle non dovrebbe essere cercato
+    page_mock.query_selector.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_extract_luce_variabile_tri_with_toggle():
+    """Test estrazione luce variabile trioraria con click su toggle"""
+    page_mock = AsyncMock()
+    toggle_mock = AsyncMock()
+
+    # Simula che il toggle esista
+    page_mock.query_selector.return_value = toggle_mock
+
+    # Simula testo dopo il click sul toggle
+    page_mock.inner_text.return_value = (
+        "Tariffa luce variabile PUN + 0.0088 €/kWh con commercializzazione 72 €/anno"
+    )
+
+    # Testo iniziale senza "PUN +"
+    text = "Tariffa luce variabile monoraria"
+
+    result = await _extract_luce_variabile_tri(page_mock, text)
+
+    assert result is not None
+    assert result["energia"] == 0.0088
+    assert result["commercializzazione"] == 72.0
+
+    # Verifica che il toggle sia stato cliccato 2 volte (apertura e chiusura)
+    assert toggle_mock.click.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_extract_luce_variabile_tri_not_found():
+    """Test estrazione luce variabile trioraria quando non trovata"""
+    page_mock = AsyncMock()
+    page_mock.query_selector.return_value = None
+    text = "Tariffa luce fissa"
+
+    result = await _extract_luce_variabile_tri(page_mock, text)
+
+    assert result is None
+
+
+def test_write_rates_file():
+    """Test scrittura file tariffe"""
+    test_path = Path("/tmp/test_rates.json")
+    test_data = {"luce": {"fissa": {"monoraria": {"energia": 0.1078}}}}
+
+    with patch("builtins.open", mock_open()) as mock_file:
+        _write_rates_file(test_path, test_data)
+
+        # Verifica che il file sia stato aperto in scrittura
+        mock_file.assert_called_once_with(test_path, "w")
+
+        # Verifica che json.dump sia stato chiamato (indirettamente verificato dal write)
+        handle = mock_file()
+        handle.write.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_scrape_octopus_tariffe_success():
+    """Test scraping completo con successo"""
+
+    # Simula testo della pagina con tutte le tariffe
+    page_text = """
+    Luce fissa monoraria 0.1078 €/kWh commercializzazione 72 €/anno
+    Luce variabile PUN Mono + 0.0088 €/kWh commercializzazione 72 €/anno
+    Luce variabile PUN + 0.0088 €/kWh commercializzazione 72 €/anno
+    Gas fisso 0.39 €/Smc commercializzazione 84 €/anno
+    Gas variabile PSVDAm + 0.08 €/Smc commercializzazione 84 €/anno
+    """
+
+    # Mock playwright context manager
+    mock_page = MagicMock()
+    mock_page.goto = AsyncMock()
+    mock_page.wait_for_selector = AsyncMock()
+    mock_page.inner_text = AsyncMock(return_value=page_text)
+    mock_page.query_selector = AsyncMock(return_value=None)
+
+    mock_browser = MagicMock()
+    mock_browser.new_page = AsyncMock(return_value=mock_page)
+    mock_browser.close = AsyncMock()
+
+    mock_playwright_instance = MagicMock()
+    mock_playwright_instance.chromium.launch = AsyncMock(return_value=mock_browser)
+
+    mock_playwright_ctx = MagicMock()
+    mock_playwright_ctx.__aenter__ = AsyncMock(return_value=mock_playwright_instance)
+    mock_playwright_ctx.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("scraper.async_playwright", return_value=mock_playwright_ctx):
+        with patch("scraper.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
+            with patch("scraper.DATA_DIR") as mock_data_dir:
+                mock_data_dir.mkdir = MagicMock()
+
+                result = await scrape_octopus_tariffe()
+
+                # Verifica struttura risultato
+                assert "luce" in result
+                assert "gas" in result
+                assert "data_aggiornamento" in result
+
+                # Verifica che le tariffe siano state estratte
+                assert result["luce"]["fissa"].get("monoraria") is not None
+                assert result["luce"]["variabile"].get("monoraria") is not None
+                assert result["gas"]["fissa"].get("monoraria") is not None
+                assert result["gas"]["variabile"].get("monoraria") is not None
+
+                # Verifica che il file sia stato scritto
+                mock_to_thread.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_scrape_octopus_tariffe_timeout():
+    """Test scraping con timeout"""
+
+    from playwright.async_api import TimeoutError as PlaywrightTimeout
+
+    # Mock page con timeout
+    mock_page = MagicMock()
+    mock_page.goto = AsyncMock(side_effect=PlaywrightTimeout("Timeout"))
+
+    mock_browser = MagicMock()
+    mock_browser.new_page = AsyncMock(return_value=mock_page)
+    mock_browser.close = AsyncMock()
+
+    mock_playwright_instance = MagicMock()
+    mock_playwright_instance.chromium.launch = AsyncMock(return_value=mock_browser)
+
+    mock_playwright_ctx = MagicMock()
+    mock_playwright_ctx.__aenter__ = AsyncMock(return_value=mock_playwright_instance)
+    mock_playwright_ctx.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("scraper.async_playwright", return_value=mock_playwright_ctx):
+        with pytest.raises(PlaywrightTimeout):
+            await scrape_octopus_tariffe()
