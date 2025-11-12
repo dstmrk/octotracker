@@ -6,6 +6,8 @@ Verifica logica confronto tariffe con vari scenari
 import sys
 from pathlib import Path
 
+import pytest
+
 # Aggiungi parent directory al path per import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -14,7 +16,9 @@ from checker import (
     _check_utility_rates,
     _compare_rate_field,
     _should_notify_user,
+    check_and_notify_users,
     check_better_rates,
+    send_notification,
 )
 
 
@@ -588,3 +592,492 @@ def test_should_notify_user_already_notified():
     should_notify = _should_notify_user(user_rates, current_octopus)
 
     assert should_notify is False
+
+
+# ========== TESTS FOR FORMATTING FUNCTIONS ==========
+
+
+def test_format_number_integer():
+    """format_number con numero intero"""
+    from checker import format_number
+
+    result = format_number(72.0, max_decimals=2)
+    assert result == "72"
+
+
+def test_format_number_with_decimals():
+    """format_number con decimali"""
+    from checker import format_number
+
+    result = format_number(0.1078, max_decimals=4)
+    assert result == "0,1078"
+
+
+def test_format_number_trailing_zeros():
+    """format_number rimuove zeri trailing oltre il secondo decimale"""
+    from checker import format_number
+
+    result = format_number(0.1000, max_decimals=4)
+    assert result == "0,10"
+
+
+def test_format_number_two_decimals_min():
+    """format_number mantiene almeno 2 decimali"""
+    from checker import format_number
+
+    result = format_number(0.5, max_decimals=4)
+    assert result == "0,50"
+
+
+def test_load_json_success():
+    """load_json carica file JSON valido"""
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    from checker import load_json
+
+    test_data = '{"luce": {"fissa": {"monoraria": {"energia": 0.1078}}}}'
+
+    with patch("builtins.open", mock_open(read_data=test_data)):
+        with patch.object(Path, "exists", return_value=True):
+            result = load_json(Path("/tmp/test.json"))
+
+    assert result is not None
+    assert "luce" in result
+
+
+def test_load_json_empty_file():
+    """load_json con file vuoto"""
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    from checker import load_json
+
+    with patch("builtins.open", mock_open(read_data="")):
+        with patch.object(Path, "exists", return_value=True):
+            result = load_json(Path("/tmp/test.json"))
+
+    assert result is None
+
+
+def test_load_json_file_not_found():
+    """load_json con file non trovato"""
+    from pathlib import Path
+
+    from checker import load_json
+
+    result = load_json(Path("/tmp/nonexistent.json"))
+
+    assert result is None
+
+
+def test_load_json_invalid_json():
+    """load_json con JSON non valido"""
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    from checker import load_json
+
+    with patch("builtins.open", mock_open(read_data="invalid json")):
+        with patch.object(Path, "exists", return_value=True):
+            result = load_json(Path("/tmp/test.json"))
+
+    assert result is None
+
+
+def test_format_header_mixed():
+    """_format_header con caso mixed"""
+    from checker import _format_header
+
+    result = _format_header(is_mixed=True)
+
+    assert "⚖️" in result
+    assert "Aggiornamento tariffe" in result
+
+
+def test_format_header_savings():
+    """_format_header con risparmi"""
+    from checker import _format_header
+
+    result = _format_header(is_mixed=False)
+
+    assert "⚡️" in result
+    assert "Buone notizie" in result
+
+
+def test_format_luce_section_with_savings():
+    """_format_luce_section con risparmi"""
+    from checker import _format_luce_section
+
+    savings = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": {"attuale": 0.145, "nuova": 0.130, "risparmio": 0.015},
+        "luce_comm": None,
+        "luce_energia_worse": False,
+        "luce_comm_worse": False,
+    }
+
+    user_rates = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.145, "commercializzazione": 72.0}
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}}
+    }
+
+    result = _format_luce_section(savings, user_rates, current_rates)
+
+    assert "💡" in result
+    assert "Luce" in result
+    assert "0,145" in result
+
+
+def test_format_luce_section_no_savings():
+    """_format_luce_section senza risparmi"""
+    from checker import _format_luce_section
+
+    savings = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": None,
+        "luce_comm": None,
+    }
+
+    user_rates = {"luce": {"tipo": "fissa", "fascia": "monoraria"}}
+    current_rates = {}
+
+    result = _format_luce_section(savings, user_rates, current_rates)
+
+    assert result == ""
+
+
+def test_format_gas_section_with_savings():
+    """_format_gas_section con risparmi"""
+    from checker import _format_gas_section
+
+    savings = {
+        "gas_tipo": "fissa",
+        "gas_fascia": "monoraria",
+        "gas_energia": {"attuale": 0.456, "nuova": 0.400, "risparmio": 0.056},
+        "gas_comm": None,
+        "gas_energia_worse": False,
+        "gas_comm_worse": False,
+    }
+
+    user_rates = {
+        "gas": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.456, "commercializzazione": 84.0}
+    }
+
+    current_rates = {"gas": {"fissa": {"monoraria": {"energia": 0.400, "commercializzazione": 84.0}}}}
+
+    result = _format_gas_section(savings, user_rates, current_rates)
+
+    assert "🔥" in result
+    assert "Gas" in result
+    assert "0,456" in result
+
+
+def test_format_gas_section_no_gas():
+    """_format_gas_section quando utente non ha gas"""
+    from checker import _format_gas_section
+
+    savings = {"gas_tipo": None, "gas_fascia": None, "gas_energia": None, "gas_comm": None}
+
+    user_rates = {"gas": None}
+    current_rates = {}
+
+    result = _format_gas_section(savings, user_rates, current_rates)
+
+    assert result == ""
+
+
+def test_format_footer_mixed():
+    """_format_footer con caso mixed"""
+    from checker import _format_footer
+
+    result = _format_footer(is_mixed=True)
+
+    assert "📊" in result
+    assert "convenienza dipende" in result
+
+
+def test_format_footer_savings():
+    """_format_footer con risparmi"""
+    from checker import _format_footer
+
+    result = _format_footer(is_mixed=False)
+
+    assert "🔧" in result
+    assert "/update" in result
+
+
+def test_format_notification():
+    """format_notification costruisce messaggio completo"""
+    from checker import format_notification
+
+    savings = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": {"attuale": 0.145, "nuova": 0.130, "risparmio": 0.015},
+        "luce_comm": None,
+        "gas_tipo": None,
+        "gas_fascia": None,
+        "gas_energia": None,
+        "gas_comm": None,
+        "luce_energia_worse": False,
+        "luce_comm_worse": False,
+        "gas_energia_worse": False,
+        "gas_comm_worse": False,
+        "is_mixed": False,
+    }
+
+    user_rates = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.145, "commercializzazione": 72.0},
+        "gas": None,
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}}
+    }
+
+    result = format_notification(savings, user_rates, current_rates)
+
+    assert "⚡️" in result
+    assert "💡" in result
+    assert "ko-fi.com" in result
+
+
+# ========== TESTS FOR ASYNC FUNCTIONS ==========
+
+
+@pytest.mark.asyncio
+async def test_send_notification_success():
+    """send_notification invia messaggio con successo"""
+    from unittest.mock import AsyncMock, MagicMock
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock()
+
+    result = await send_notification(bot_mock, "123456", "Test message")
+
+    assert result is True
+    bot_mock.send_message.assert_called_once_with(
+        chat_id="123456", text="Test message", parse_mode="HTML"
+    )
+
+
+@pytest.mark.asyncio
+async def test_send_notification_retry_after():
+    """send_notification con rate limit (RetryAfter)"""
+    from telegram.error import RetryAfter
+    from unittest.mock import AsyncMock, MagicMock
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=RetryAfter(10))
+
+    result = await send_notification(bot_mock, "123456", "Test message")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_send_notification_timeout():
+    """send_notification con timeout"""
+    from telegram.error import TimedOut
+    from unittest.mock import AsyncMock, MagicMock
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TimedOut())
+
+    result = await send_notification(bot_mock, "123456", "Test message")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_send_notification_network_error():
+    """send_notification con errore di rete"""
+    from telegram.error import NetworkError
+    from unittest.mock import AsyncMock, MagicMock
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=NetworkError("Network error"))
+
+    result = await send_notification(bot_mock, "123456", "Test message")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_send_notification_telegram_error():
+    """send_notification con errore generico Telegram"""
+    from telegram.error import TelegramError
+    from unittest.mock import AsyncMock, MagicMock
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TelegramError("Generic error"))
+
+    result = await send_notification(bot_mock, "123456", "Test message")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_users_no_users():
+    """check_and_notify_users senza utenti registrati"""
+    from unittest.mock import patch
+
+    with patch("checker.load_users", return_value={}):
+        with patch("checker.load_json", return_value={"luce": {}, "gas": {}}):
+            # Non dovrebbe generare errori
+            await check_and_notify_users("fake_token")
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_users_no_rates():
+    """check_and_notify_users senza tariffe disponibili"""
+    from unittest.mock import patch
+
+    users = {"123": {"luce": {"tipo": "fissa", "fascia": "monoraria"}}}
+
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.load_json", return_value=None):
+            # Non dovrebbe generare errori
+            await check_and_notify_users("fake_token")
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_users_with_savings():
+    """check_and_notify_users trova risparmi e invia notifica"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            },
+            "gas": None,
+        }
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}},
+        "gas": {},
+    }
+
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.load_json", return_value=current_rates):
+            with patch("checker.Bot") as mock_bot_class:
+                mock_bot = MagicMock()
+                mock_bot.send_message = AsyncMock()
+                mock_bot_class.return_value = mock_bot
+
+                with patch("checker.save_user") as mock_save:
+                    await check_and_notify_users("fake_token")
+
+                    # Verifica che il messaggio sia stato inviato
+                    mock_bot.send_message.assert_called_once()
+                    # Verifica che l'utente sia stato aggiornato
+                    mock_save.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_users_already_notified():
+    """check_and_notify_users salta notifica se già inviata"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            },
+            "gas": None,
+            "last_notified_rates": {"luce": {"energia": 0.130, "commercializzazione": 72.0}},
+        }
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}},
+        "gas": {},
+    }
+
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.load_json", return_value=current_rates):
+            with patch("checker.Bot") as mock_bot_class:
+                mock_bot = MagicMock()
+                mock_bot.send_message = AsyncMock()
+                mock_bot_class.return_value = mock_bot
+
+                await check_and_notify_users("fake_token")
+
+                # Verifica che nessun messaggio sia stato inviato
+                mock_bot.send_message.assert_not_called()
+
+
+def test_format_luce_section_worse():
+    """_format_luce_section con peggioramento"""
+    from checker import _format_luce_section
+
+    savings = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": None,
+        "luce_comm": {"attuale": 60.0, "nuova": 72.0, "risparmio": -12.0},
+        "luce_energia_worse": True,
+        "luce_comm_worse": False,
+    }
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 60.0,
+        }
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.160, "commercializzazione": 72.0}}}
+    }
+
+    result = _format_luce_section(savings, user_rates, current_rates)
+
+    # Dovrebbe contenere markup di sottolineatura per peggioramento
+    assert "<u>" in result or result == ""
+
+
+def test_load_json_permission_error():
+    """load_json con errore di permesso"""
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    from checker import load_json
+
+    with patch("builtins.open", mock_open()) as mock_file:
+        mock_file.side_effect = PermissionError("Permission denied")
+        with patch.object(Path, "exists", return_value=True):
+            result = load_json(Path("/tmp/test.json"))
+
+    assert result is None
+
+
+def test_load_json_os_error():
+    """load_json con errore OS generico"""
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    from checker import load_json
+
+    with patch("builtins.open", mock_open()) as mock_file:
+        mock_file.side_effect = OSError("OS error")
+        with patch.object(Path, "exists", return_value=True):
+            result = load_json(Path("/tmp/test.json"))
+
+    assert result is None

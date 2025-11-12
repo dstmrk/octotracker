@@ -558,8 +558,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     # Configura logging per esecuzione standalone (usa env var LOG_LEVEL)
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
