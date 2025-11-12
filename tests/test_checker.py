@@ -719,7 +719,12 @@ def test_format_luce_section_with_savings():
     }
 
     user_rates = {
-        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.145, "commercializzazione": 72.0}
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
     }
 
     current_rates = {
@@ -766,10 +771,17 @@ def test_format_gas_section_with_savings():
     }
 
     user_rates = {
-        "gas": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.456, "commercializzazione": 84.0}
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.456,
+            "commercializzazione": 84.0,
+        }
     }
 
-    current_rates = {"gas": {"fissa": {"monoraria": {"energia": 0.400, "commercializzazione": 84.0}}}}
+    current_rates = {
+        "gas": {"fissa": {"monoraria": {"energia": 0.400, "commercializzazione": 84.0}}}
+    }
 
     result = _format_gas_section(savings, user_rates, current_rates)
 
@@ -833,7 +845,12 @@ def test_format_notification():
     }
 
     user_rates = {
-        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.145, "commercializzazione": 72.0},
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
         "gas": None,
     }
 
@@ -870,8 +887,9 @@ async def test_send_notification_success():
 @pytest.mark.asyncio
 async def test_send_notification_retry_after():
     """send_notification con rate limit (RetryAfter)"""
-    from telegram.error import RetryAfter
     from unittest.mock import AsyncMock, MagicMock
+
+    from telegram.error import RetryAfter
 
     bot_mock = MagicMock()
     bot_mock.send_message = AsyncMock(side_effect=RetryAfter(10))
@@ -884,8 +902,9 @@ async def test_send_notification_retry_after():
 @pytest.mark.asyncio
 async def test_send_notification_timeout():
     """send_notification con timeout"""
-    from telegram.error import TimedOut
     from unittest.mock import AsyncMock, MagicMock
+
+    from telegram.error import TimedOut
 
     bot_mock = MagicMock()
     bot_mock.send_message = AsyncMock(side_effect=TimedOut())
@@ -898,8 +917,9 @@ async def test_send_notification_timeout():
 @pytest.mark.asyncio
 async def test_send_notification_network_error():
     """send_notification con errore di rete"""
-    from telegram.error import NetworkError
     from unittest.mock import AsyncMock, MagicMock
+
+    from telegram.error import NetworkError
 
     bot_mock = MagicMock()
     bot_mock.send_message = AsyncMock(side_effect=NetworkError("Network error"))
@@ -912,8 +932,9 @@ async def test_send_notification_network_error():
 @pytest.mark.asyncio
 async def test_send_notification_telegram_error():
     """send_notification con errore generico Telegram"""
-    from telegram.error import TelegramError
     from unittest.mock import AsyncMock, MagicMock
+
+    from telegram.error import TelegramError
 
     bot_mock = MagicMock()
     bot_mock.send_message = AsyncMock(side_effect=TelegramError("Generic error"))

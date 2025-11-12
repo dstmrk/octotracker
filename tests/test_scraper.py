@@ -333,7 +333,6 @@ def test_write_rates_file():
 @pytest.mark.asyncio
 async def test_scrape_octopus_tariffe_success():
     """Test scraping completo con successo"""
-    from unittest.mock import Mock
 
     # Simula testo della pagina con tutte le tariffe
     page_text = """
@@ -387,8 +386,8 @@ async def test_scrape_octopus_tariffe_success():
 @pytest.mark.asyncio
 async def test_scrape_octopus_tariffe_timeout():
     """Test scraping con timeout"""
+
     from playwright.async_api import TimeoutError as PlaywrightTimeout
-    from unittest.mock import Mock
 
     # Mock page con timeout
     mock_page = MagicMock()
