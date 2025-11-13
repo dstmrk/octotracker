@@ -42,7 +42,7 @@ jobs:
       run: uv sync --extra dev
 
     - name: Run pytest with coverage
-      run: uv run pytest tests/ -v --tb=short
+      run: uv run pytest tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
 
     - name: SonarCloud Scan
       # Skip SonarCloud for Dependabot PRs (secrets not available for security)

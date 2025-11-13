@@ -7,13 +7,12 @@ import json
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 import pytest
 
 from data_reader import (
     _build_arera_url,
-    _download_xml,
     _extract_componente_impresa,
     _fetch_service_data,
     _parse_arera_xml,
@@ -23,7 +22,6 @@ from data_reader import (
     _write_rates_file,
     fetch_octopus_tariffe,
 )
-
 
 # ========== URL BUILDING TESTS ==========
 
@@ -408,7 +406,7 @@ async def test_fetch_octopus_tariffe_success():
         }
     }
 
-    with patch("data_reader._fetch_service_data") as mock_fetch:
+    with patch("data_reader._fetch_service_data"):
         with patch("data_reader.asyncio.to_thread") as mock_to_thread:
             # Mock parallel fetches
             async def side_effect(func, *args):
