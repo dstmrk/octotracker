@@ -11,8 +11,8 @@ services:
       # Genera con: python -c 'import secrets; print(secrets.token_urlsafe(32))'
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - HEALTH_PORT=${HEALTH_PORT:-8444}
-      - SCRAPER_HOUR=${SCRAPER_HOUR:-9}
-      - CHECKER_HOUR=${CHECKER_HOUR:-10}
+      - SCRAPER_HOUR=${SCRAPER_HOUR:-11}
+      - CHECKER_HOUR=${CHECKER_HOUR:-12}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=Europe/Rome
     ports:
