@@ -214,9 +214,10 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         return None
 
     # Log per debugging
-    nome_offerta = offerta_elem.find(".//NOME_OFFERTA")
-    nome = nome_offerta.text if nome_offerta is not None else "N/A"
-    logger.info(f"✅ {nome} ({tipo_offerta} {tipo_fascia}): energia={energia} €/kWh, comm={commercializzazione} €/anno")
+    if tipo_offerta == "fissa":
+        logger.info(f"✅ Luce fissa {tipo_fascia}: {energia} €/kWh, comm: {commercializzazione} €/anno")
+    else:
+        logger.info(f"✅ Luce variabile {tipo_fascia}: PUN + {energia} €/kWh, comm: {commercializzazione} €/anno")
 
     return tipo_offerta, tipo_fascia, {
         "energia": energia,
@@ -274,9 +275,10 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
         return None
 
     # Log per debugging
-    nome_offerta = offerta_elem.find(".//NOME_OFFERTA")
-    nome = nome_offerta.text if nome_offerta is not None else "N/A"
-    logger.info(f"✅ {nome} ({tipo_offerta} monoraria): energia={energia} €/Smc, comm={commercializzazione} €/anno")
+    if tipo_offerta == "fissa":
+        logger.info(f"✅ Gas fisso monorario: {energia} €/Smc, comm: {commercializzazione} €/anno")
+    else:
+        logger.info(f"✅ Gas variabile monorario: PSV + {energia} €/Smc, comm: {commercializzazione} €/anno")
 
     return tipo_offerta, {
         "energia": energia,
@@ -510,7 +512,7 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
     await asyncio.to_thread(_write_rates_file, RATES_FILE, tariffe_data)
 
     duration = time.time() - start_time
-    logger.info(f"✅ Lettura completata in {duration:.2f}s - Trovate {total_found}/5 tariffe")
+    logger.info(f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe")
     logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
 
     return tariffe_data
