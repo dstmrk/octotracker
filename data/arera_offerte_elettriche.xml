@@ -7,18 +7,15 @@
         </IdentificativiOfferta>
         <DettaglioOfferta>
             <TIPO_MERCATO>01</TIPO_MERCATO>
-            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>
             <TIPO_CLIENTE>01</TIPO_CLIENTE>
             <TIPO_OFFERTA>02</TIPO_OFFERTA>
             <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>
-            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>
         </DettaglioOfferta>
         <TipoPrezzo>
             <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>
         </TipoPrezzo>
         <ComponenteImpresa>
             <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>
-            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>01</MACROAREA>
             <IntervalloPrezzi>
@@ -28,7 +25,6 @@
         </ComponenteImpresa>
         <ComponenteImpresa>
             <NOME>Spread</NOME>
-            <DESCRIZIONE>Spread</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>04</MACROAREA>
             <IntervalloPrezzi>
@@ -55,18 +51,15 @@
         </IdentificativiOfferta>
         <DettaglioOfferta>
             <TIPO_MERCATO>01</TIPO_MERCATO>
-            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>
             <TIPO_CLIENTE>01</TIPO_CLIENTE>
             <TIPO_OFFERTA>02</TIPO_OFFERTA>
             <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>
-            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>
         </DettaglioOfferta>
         <TipoPrezzo>
             <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
         </TipoPrezzo>
         <ComponenteImpresa>
             <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>
-            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>01</MACROAREA>
             <IntervalloPrezzi>
@@ -76,7 +69,6 @@
         </ComponenteImpresa>
         <ComponenteImpresa>
             <NOME>Spread</NOME>
-            <DESCRIZIONE>Spread</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>04</MACROAREA>
             <IntervalloPrezzi>
@@ -93,18 +85,15 @@
         </IdentificativiOfferta>
         <DettaglioOfferta>
             <TIPO_MERCATO>01</TIPO_MERCATO>
-            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>
             <TIPO_CLIENTE>01</TIPO_CLIENTE>
             <TIPO_OFFERTA>01</TIPO_OFFERTA>
             <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>
-            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>
         </DettaglioOfferta>
         <TipoPrezzo>
             <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
         </TipoPrezzo>
         <ComponenteImpresa>
             <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>
-            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>01</MACROAREA>
             <IntervalloPrezzi>
@@ -114,7 +103,6 @@
         </ComponenteImpresa>
         <ComponenteImpresa>
             <NOME>Prezzo</NOME>
-            <DESCRIZIONE>Prezzo</DESCRIZIONE>
             <TIPOLOGIA>01</TIPOLOGIA>
             <MACROAREA>04</MACROAREA>
             <IntervalloPrezzi>
@@ -123,15 +111,5 @@
                 <UNITA_MISURA>03</UNITA_MISURA>
             </IntervalloPrezzi>
         </ComponenteImpresa>
-    </offerta>
-    <offerta>
-        <IdentificativiOfferta>
-            <PIVA_UTENTE>00000000000</PIVA_UTENTE>
-            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>
-        </IdentificativiOfferta>
-        <DettaglioOfferta>
-            <TIPO_MERCATO>01</TIPO_MERCATO>
-            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>
-        </DettaglioOfferta>
     </offerta>
 </ListaOfferteMercatoLibero>

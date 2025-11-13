@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ListaOfferteMercatoLibero xmlns="http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01">
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>02</TIPO_MERCATO>
+            <TIPO_CLIENTE>01</TIPO_CLIENTE>
+            <TIPO_OFFERTA>01</TIPO_OFFERTA>
+            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>
+        </DettaglioOfferta>
+        <ComponenteImpresa>
+            <NOME>Corrispettivo di commercializzazione</NOME>
+            <TIPOLOGIA>01</TIPOLOGIA>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>84.000000</PREZZO>
+                <UNITA_MISURA>01</UNITA_MISURA>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <NOME>Prezzo</NOME>
+            <TIPOLOGIA>01</TIPOLOGIA>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.390000</PREZZO>
+                <UNITA_MISURA>04</UNITA_MISURA>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>02</TIPO_MERCATO>
+            <TIPO_CLIENTE>01</TIPO_CLIENTE>
+            <TIPO_OFFERTA>02</TIPO_OFFERTA>
+            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>
+        </DettaglioOfferta>
+        <ComponenteImpresa>
+            <NOME>Corrispettivo di commercializzazione</NOME>
+            <TIPOLOGIA>01</TIPOLOGIA>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>84.000000</PREZZO>
+                <UNITA_MISURA>01</UNITA_MISURA>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <NOME>Spread</NOME>
+            <TIPOLOGIA>01</TIPOLOGIA>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.080000</PREZZO>
+                <UNITA_MISURA>04</UNITA_MISURA>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+</ListaOfferteMercatoLibero>
