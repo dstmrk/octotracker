@@ -12,8 +12,6 @@ from typing import Any
 from warnings import filterwarnings
 
 from dotenv import load_dotenv
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import TimeoutError as PlaywrightTimeout
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
@@ -34,8 +32,8 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
+from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
-from scraper import scrape_octopus_tariffe
 
 load_dotenv()
 
@@ -865,12 +863,8 @@ async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
     logger.info("🕷️  Avvio scraper...")
     try:
-        result = await scrape_octopus_tariffe()
+        result = await fetch_octopus_tariffe()
         logger.info(f"✅ Scraper completato: {result}")
-    except PlaywrightTimeout:
-        logger.error("⏱️  Timeout scraper: la pagina non ha risposto in tempo")
-    except PlaywrightError as e:
-        logger.error(f"❌ Errore Playwright scraper: {e}")
     except ConnectionError as e:
         logger.error(f"🌐 Errore di connessione scraper: {e}")
     except OSError as e:

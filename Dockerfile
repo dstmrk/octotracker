@@ -11,10 +11,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml .
 COPY src/ ./src/
 RUN uv sync --no-dev && \
-    uv run playwright install chromium && \
-    uv run playwright install-deps chromium && \
-    # Pulizia aggressiva per ridurre dimensione
-    rm -rf /root/.cache/ms-playwright/webkit* /root/.cache/ms-playwright/firefox* && \
+    # Pulizia per ridurre dimensione
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

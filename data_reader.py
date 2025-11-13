@@ -53,9 +53,6 @@ REQUEST_TIMEOUT = 30  # Timeout per richieste HTTP (secondi)
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
-LOCAL_XML_FILE_E = DATA_DIR / "arera_offerte_elettriche.xml"  # File XML luce come fallback
-LOCAL_XML_FILE_G = DATA_DIR / "arera_offerte_gas.xml"  # File XML gas come fallback
-CACHE_METADATA_FILE = DATA_DIR / "arera_cache_metadata.json"  # Metadata del file in cache
 
 
 def _build_arera_url(date: datetime, service: str = "E") -> str:
@@ -140,11 +137,13 @@ def _extract_componente_impresa(offerta_elem: ET.Element, macroarea: str) -> dic
                 unita_elem = intervallo.find("UNITA_MISURA")
 
                 if prezzo_elem is not None:
-                    intervalli.append({
-                        "prezzo": float(prezzo_elem.text),
-                        "fascia": fascia_elem.text if fascia_elem is not None else None,
-                        "unita_misura": unita_elem.text if unita_elem is not None else None,
-                    })
+                    intervalli.append(
+                        {
+                            "prezzo": float(prezzo_elem.text),
+                            "fascia": fascia_elem.text if fascia_elem is not None else None,
+                            "unita_misura": unita_elem.text if unita_elem is not None else None,
+                        }
+                    )
 
             if intervalli:
                 result["intervalli"] = intervalli
@@ -210,19 +209,29 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         energia = comp_energia["intervalli"][0]["prezzo"]
 
     if energia is None:
-        logger.warning(f"Energia non trovata per offerta {offerta_elem.find('.//NOME_OFFERTA').text}")
+        logger.warning(
+            f"Energia non trovata per offerta {offerta_elem.find('.//NOME_OFFERTA').text}"
+        )
         return None
 
     # Log per debugging
     if tipo_offerta == "fissa":
-        logger.info(f"✅ Luce fissa {tipo_fascia}: {energia} €/kWh, comm: {commercializzazione} €/anno")
+        logger.info(
+            f"✅ Luce fissa {tipo_fascia}: {energia} €/kWh, comm: {commercializzazione} €/anno"
+        )
     else:
-        logger.info(f"✅ Luce variabile {tipo_fascia}: PUN + {energia} €/kWh, comm: {commercializzazione} €/anno")
+        logger.info(
+            f"✅ Luce variabile {tipo_fascia}: PUN + {energia} €/kWh, comm: {commercializzazione} €/anno"
+        )
 
-    return tipo_offerta, tipo_fascia, {
-        "energia": energia,
-        "commercializzazione": commercializzazione,
-    }
+    return (
+        tipo_offerta,
+        tipo_fascia,
+        {
+            "energia": energia,
+            "commercializzazione": commercializzazione,
+        },
+    )
 
 
 def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]] | None:
@@ -271,14 +280,18 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
         energia = comp_energia["intervalli"][0]["prezzo"]
 
     if energia is None:
-        logger.warning(f"Energia non trovata per offerta gas {offerta_elem.find('.//NOME_OFFERTA').text}")
+        logger.warning(
+            f"Energia non trovata per offerta gas {offerta_elem.find('.//NOME_OFFERTA').text}"
+        )
         return None
 
     # Log per debugging
     if tipo_offerta == "fissa":
         logger.info(f"✅ Gas fisso monorario: {energia} €/Smc, comm: {commercializzazione} €/anno")
     else:
-        logger.info(f"✅ Gas variabile monorario: PSV + {energia} €/Smc, comm: {commercializzazione} €/anno")
+        logger.info(
+            f"✅ Gas variabile monorario: PSV + {energia} €/Smc, comm: {commercializzazione} €/anno"
+        )
 
     return tipo_offerta, {
         "energia": energia,
@@ -330,62 +343,6 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     return tariffe_data
 
 
-def _get_cache_file(service: str) -> Path:
-    """Restituisce il path del file cache per il servizio specificato
-
-    Args:
-        service: "E" per elettrico, "G" per gas
-
-    Returns:
-        Path del file cache
-    """
-    return LOCAL_XML_FILE_E if service == "E" else LOCAL_XML_FILE_G
-
-
-def _save_cache(xml_content: str, source_date: datetime, service: str) -> None:
-    """Salva il file XML in cache locale con metadata
-
-    Args:
-        xml_content: Contenuto XML da salvare
-        source_date: Data del file XML (dalla URL ARERA)
-        service: "E" per elettrico, "G" per gas
-    """
-    # Salva XML
-    cache_file = _get_cache_file(service)
-    cache_file.write_text(xml_content, encoding="utf-8")
-
-    # Carica metadata esistenti o creane di nuovi
-    if CACHE_METADATA_FILE.exists():
-        metadata = json.loads(CACHE_METADATA_FILE.read_text(encoding="utf-8"))
-    else:
-        metadata = {}
-
-    # Aggiorna metadata per questo servizio
-    metadata[service] = {
-        "source_date": source_date.strftime("%Y-%m-%d"),
-        "download_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    }
-
-    CACHE_METADATA_FILE.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-
-    logger.debug(f"Cache salvata: {cache_file}")
-
-
-def _load_cache_metadata(service: str) -> dict[str, Any] | None:
-    """Carica metadata del file in cache per un servizio specifico
-
-    Args:
-        service: "E" per elettrico, "G" per gas
-
-    Returns:
-        Dict con metadata o None se non esiste
-    """
-    if CACHE_METADATA_FILE.exists():
-        all_metadata = json.loads(CACHE_METADATA_FILE.read_text(encoding="utf-8"))
-        return all_metadata.get(service)
-    return None
-
-
 def _write_rates_file(file_path: Path, data: dict[str, Any]) -> None:
     """Helper sincrono per scrivere file JSON delle tariffe
 
@@ -397,7 +354,9 @@ def _write_rates_file(file_path: Path, data: dict[str, Any]) -> None:
         json.dump(data, f, indent=2)
 
 
-def _fetch_service_data(service: str, max_days_back: int = 7) -> tuple[dict[str, Any], datetime | None, bool]:
+def _fetch_service_data(
+    service: str, max_days_back: int = 7
+) -> tuple[dict[str, Any], datetime | None]:
     """Scarica e parsea dati per un singolo servizio (luce o gas)
 
     Args:
@@ -405,13 +364,11 @@ def _fetch_service_data(service: str, max_days_back: int = 7) -> tuple[dict[str,
         max_days_back: Numero massimo di giorni indietro da provare
 
     Returns:
-        Tupla (dati_parsati, source_date, used_cache)
+        Tupla (dati_parsati, source_date)
     """
     service_name = "elettricità" if service == "E" else "gas"
     xml_content = None
-    last_error = None
     source_date = None
-    used_cache = False
 
     # Prova a scaricare il file, partendo da oggi e andando indietro
     for days_back in range(max_days_back + 1):
@@ -428,38 +385,23 @@ def _fetch_service_data(service: str, max_days_back: int = 7) -> tuple[dict[str,
             xml_content = _download_xml(url)
             source_date = target_date
             logger.info(f"✅ File {service_name} scaricato (data: {date_str})")
-
-            # Salva in cache
-            _save_cache(xml_content, source_date, service)
             break
 
         except Exception as e:
-            last_error = e
             # Log solo errori non HTTP
             if not hasattr(e, "code"):
-                logger.debug(f"⚠️  Errore download {service_name} per {target_date.strftime('%Y-%m-%d')}: {e}")
+                logger.debug(
+                    f"⚠️  Errore download {service_name} per {target_date.strftime('%Y-%m-%d')}: {e}"
+                )
             continue
 
     if xml_content is None:
-        # Fallback: usa file cache
-        cache_file = _get_cache_file(service)
-        if cache_file.exists():
-            cache_metadata = _load_cache_metadata(service)
-            cache_date_str = cache_metadata.get("source_date", "sconosciuta") if cache_metadata else "sconosciuta"
-
-            logger.info(f"⚙️  Uso cache {service_name} (data: {cache_date_str})")
-            xml_content = cache_file.read_text(encoding="utf-8")
-            used_cache = True
-
-            if cache_metadata and cache_metadata.get("source_date"):
-                source_date = datetime.strptime(cache_metadata["source_date"], "%Y-%m-%d")
-        else:
-            logger.warning(f"⚠️  Nessun dato {service_name} disponibile (download fallito e cache assente)")
-            return {}, None, False
+        logger.warning(f"⚠️  Nessun dato {service_name} disponibile (download fallito)")
+        return {}, None
 
     # Parsea XML
     parsed_data = _parse_arera_xml(xml_content, service)
-    return parsed_data, source_date, used_cache
+    return parsed_data, source_date
 
 
 async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
@@ -476,8 +418,8 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
     logger.info("🔍 Avvio lettura tariffe Octopus da ARERA Open Data...")
 
     # Scarica e parsea dati luce e gas in parallelo
-    data_luce, date_luce, cache_luce = await asyncio.to_thread(_fetch_service_data, "E", max_days_back)
-    data_gas, date_gas, cache_gas = await asyncio.to_thread(_fetch_service_data, "G", max_days_back)
+    data_luce, date_luce = await asyncio.to_thread(_fetch_service_data, "E", max_days_back)
+    data_gas, date_gas = await asyncio.to_thread(_fetch_service_data, "G", max_days_back)
 
     # Combina i risultati
     tariffe_data = {
@@ -494,8 +436,6 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
         else:
             fonte_date = date_luce or date_gas
         tariffe_data["data_fonte_xml"] = fonte_date.strftime("%Y-%m-%d")
-
-    tariffe_data["used_cache"] = cache_luce or cache_gas
 
     # Conta tariffe trovate
     rates_count = {
