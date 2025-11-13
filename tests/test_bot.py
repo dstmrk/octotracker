@@ -783,6 +783,7 @@ async def test_zero_values(mock_update, mock_context):
     assert result == LUCE_COMM
     assert mock_context.user_data["luce_energia"] == 0.0
 
+
 # ========== TEST CONFIRMATION MESSAGE WITH CONSUMPTION ==========
 
 
