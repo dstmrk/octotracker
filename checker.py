@@ -314,6 +314,7 @@ def _format_utility_section(
     current_rates: dict[str, Any],
     emoji: str,
     unit: str,
+    estimated_savings: float | None = None,
 ) -> str:
     """Formatta sezione utility (luce o gas) della notifica
 
@@ -324,6 +325,7 @@ def _format_utility_section(
         current_rates: Tariffe correnti
         emoji: Emoji da usare (💡 per luce, 🔥 per gas)
         unit: Unità di misura energia (€/kWh per luce, €/Smc per gas)
+        estimated_savings: Risparmio stimato in €/anno (solo per utility mixed con consumi)
 
     Returns:
         Stringa HTML formattata per la sezione utility
@@ -387,13 +389,22 @@ def _format_utility_section(
         else:
             comm_str = f"{comm_formatted} €/anno"
 
-        section += f"Nuova tariffa: {label} {energia_str}, Comm. {comm_str}\n\n"
+        section += f"Nuova tariffa: {label} {energia_str}, Comm. {comm_str}\n"
 
+    # Aggiungi stima risparmio se disponibile (per utility mixed con consumi)
+    if estimated_savings is not None:
+        risparmio_formatted = format_number(abs(estimated_savings), max_decimals=MAX_DECIMALS_COST)
+        section += f"💰 In base ai tuoi consumi di {utility_name}, stimiamo un risparmio di circa {risparmio_formatted} €/anno.\n"
+
+    section += "\n"
     return section
 
 
 def _format_luce_section(
-    savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
+    savings: dict[str, Any],
+    user_rates: dict[str, Any],
+    current_rates: dict[str, Any],
+    estimated_savings: float | None = None,
 ) -> str:
     """Formatta sezione luce della notifica"""
     return _format_utility_section(
@@ -403,11 +414,15 @@ def _format_luce_section(
         current_rates=current_rates,
         emoji="💡",
         unit="€/kWh",
+        estimated_savings=estimated_savings,
     )
 
 
 def _format_gas_section(
-    savings: dict[str, Any], user_rates: dict[str, Any], current_rates: dict[str, Any]
+    savings: dict[str, Any],
+    user_rates: dict[str, Any],
+    current_rates: dict[str, Any],
+    estimated_savings: float | None = None,
 ) -> str:
     """Formatta sezione gas della notifica"""
     return _format_utility_section(
@@ -417,6 +432,7 @@ def _format_gas_section(
         current_rates=current_rates,
         emoji="🔥",
         unit="€/Smc",
+        estimated_savings=estimated_savings,
     )
 
 
@@ -578,18 +594,20 @@ def _get_mixed_utilities(
 
 
 def _format_savings_estimates(mixed_utilities: list[tuple[str, float | None]]) -> str:
-    """Formatta le stime di risparmio per utility con consumi"""
-    result = ""
-    for utility_type, savings in mixed_utilities:
-        if savings is not None:
-            risparmio_formatted = format_number(abs(savings), max_decimals=MAX_DECIMALS_COST)
-            utility_label = "luce" if utility_type == "luce" else "gas"
-            result += f"💰 In base ai tuoi consumi di {utility_label}, stimiamo un risparmio di circa {risparmio_formatted} €/anno.\n"
-    return result
+    """Formatta le stime di risparmio per utility con consumi
+
+    NOTA: Le stime di risparmio sono ora mostrate inline nelle sezioni utility,
+    quindi questa funzione restituisce una stringa vuota.
+    """
+    return ""
 
 
 def _format_mixed_consumption_message(mixed_utilities: list[tuple[str, float | None]]) -> str:
-    """Formatta messaggio consumi per utility mixed"""
+    """Formatta messaggio consumi per utility mixed
+
+    NOTA: Le stime di risparmio sono ora mostrate inline nelle sezioni utility,
+    quindi questa funzione mostra solo i suggerimenti per le utility senza consumi.
+    """
     if not mixed_utilities:
         return ""
 
@@ -603,16 +621,11 @@ def _format_mixed_consumption_message(mixed_utilities: list[tuple[str, float | N
             "Se vuoi una stima più precisa, puoi indicare i tuoi consumi usando il comando /update.\n\n"
         )
 
-    if has_consumption:
-        # Almeno una utility ha consumi → mostra stime
-        result = _format_savings_estimates(mixed_utilities)
+    if has_consumption and has_missing_consumption:
+        # Alcune utility hanno consumi, altre no → suggerisci di aggiungere tutti i consumi
+        return "📊 Per una stima ancora più precisa, puoi indicare tutti i tuoi consumi con /update.\n\n"
 
-        # Se una utility mixed non ha consumi, aggiungi suggerimento
-        if has_missing_consumption:
-            result += "\n📊 Per una stima ancora più precisa, puoi indicare tutti i tuoi consumi con /update.\n"
-
-        return result + "\n"
-
+    # Tutte le utility hanno consumi → le stime sono già mostrate inline, nessun messaggio aggiuntivo
     return ""
 
 
@@ -670,9 +683,9 @@ def format_notification(
 
     # Aggiungi sezioni solo per le utility da mostrare
     if show_luce:
-        message += _format_luce_section(savings, user_rates, current_rates)
+        message += _format_luce_section(savings, user_rates, current_rates, luce_estimated_savings)
     if show_gas:
-        message += _format_gas_section(savings, user_rates, current_rates)
+        message += _format_gas_section(savings, user_rates, current_rates, gas_estimated_savings)
 
     message += _format_footer(
         luce_is_mixed=savings["luce_is_mixed"],
