@@ -48,6 +48,8 @@ logger = logging.getLogger(__name__)
 # Constants
 OCTOPUS_PIVA = "01771990445"  # P.IVA Octopus Energy Italia
 ARERA_BASE_URL = "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML"
+SERVICE_NAME_ELECTRICITY = "elettricità"  # Nome servizio per elettricità
+SERVICE_NAME_GAS = "gas"  # Nome servizio per gas
 REQUEST_TIMEOUT = 30  # Timeout per richieste HTTP (secondi)
 
 # File dati
@@ -299,6 +301,58 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     }
 
 
+def _empty_structure(service: str) -> dict[str, Any]:
+    """Ritorna struttura vuota per un servizio
+
+    Args:
+        service: Tipo servizio - "E" per elettrico, "G" per gas
+
+    Returns:
+        Dict con struttura vuota (luce o gas)
+    """
+    if service == "E":
+        return {"luce": {"fissa": {}, "variabile": {}}}
+    elif service == "G":
+        return {"gas": {"fissa": {}, "variabile": {}}}
+    return {}
+
+
+def _process_electricity_offers(offerte: list) -> dict[str, Any]:
+    """Processa offerte elettricità e ritorna struttura dati
+
+    Args:
+        offerte: Lista elementi XML offerta
+
+    Returns:
+        Dict con struttura luce (fissa/variabile con fasce)
+    """
+    tariffe_luce = {"fissa": {}, "variabile": {}}
+    for offerta in offerte:
+        parsed = _parse_offerta_luce(offerta)
+        if parsed:
+            tipo_offerta, tipo_fascia, dati = parsed
+            tariffe_luce[tipo_offerta][tipo_fascia] = dati
+    return {"luce": tariffe_luce}
+
+
+def _process_gas_offers(offerte: list) -> dict[str, Any]:
+    """Processa offerte gas e ritorna struttura dati
+
+    Args:
+        offerte: Lista elementi XML offerta
+
+    Returns:
+        Dict con struttura gas (fissa/variabile monoraria)
+    """
+    tariffe_gas = {"fissa": {}, "variabile": {}}
+    for offerta in offerte:
+        parsed = _parse_offerta_gas(offerta)
+        if parsed:
+            tipo_offerta, dati = parsed
+            tariffe_gas[tipo_offerta]["monoraria"] = dati
+    return {"gas": tariffe_gas}
+
+
 def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     """Parsea XML ARERA ed estrae tariffe Octopus
 
@@ -309,38 +363,33 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     Returns:
         Dict con struttura parziale (solo luce o solo gas)
     """
-    root = ET.fromstring(xml_content)
+    # Parse XML con gestione errori robusta
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as e:
+        service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
+        logger.error(f"❌ XML malformato per {service_name}: {e}")
+        logger.debug(f"   Primi 500 caratteri: {xml_content[:500]}")
+        return _empty_structure(service)
+    except Exception as e:
+        service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
+        logger.error(f"❌ Errore inaspettato parsing XML {service_name}: {type(e).__name__}: {e}")
+        return _empty_structure(service)
 
     # Rimuovi namespace per semplificare il parsing
     _remove_namespace(root)
 
-    # Struttura dati per salvare tariffe
-    tariffe_data = {}
-
     # Trova tutte le offerte
     offerte = root.findall(".//offerta")
-
     logger.debug(f"Trovate {len(offerte)} offerte nel file XML")
 
+    # Processa offerte in base al servizio
     if service == "E":
-        # Parsea offerte luce
-        tariffe_data["luce"] = {"fissa": {}, "variabile": {}}
-        for offerta in offerte:
-            parsed = _parse_offerta_luce(offerta)
-            if parsed:
-                tipo_offerta, tipo_fascia, dati = parsed
-                tariffe_data["luce"][tipo_offerta][tipo_fascia] = dati
-
+        return _process_electricity_offers(offerte)
     elif service == "G":
-        # Parsea offerte gas
-        tariffe_data["gas"] = {"fissa": {}, "variabile": {}}
-        for offerta in offerte:
-            parsed = _parse_offerta_gas(offerta)
-            if parsed:
-                tipo_offerta, dati = parsed
-                tariffe_data["gas"][tipo_offerta]["monoraria"] = dati
+        return _process_gas_offers(offerte)
 
-    return tariffe_data
+    return {}
 
 
 def _write_rates_file(file_path: Path, data: dict[str, Any]) -> None:
@@ -366,7 +415,7 @@ def _fetch_service_data(
     Returns:
         Tupla (dati_parsati, source_date)
     """
-    service_name = "elettricità" if service == "E" else "gas"
+    service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
     xml_content = None
     source_date = None
 
