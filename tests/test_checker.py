@@ -1295,7 +1295,11 @@ def test_format_footer_mixed_without_consumption():
 
 
 def test_format_footer_mixed_with_consumption():
-    """Test footer MIXED con consumi e risparmio positivo"""
+    """Test footer MIXED con consumi e risparmio positivo
+
+    NOTA: Le stime di risparmio sono ora mostrate inline nelle sezioni utility,
+    quindi il footer non dovrebbe più contenere il messaggio "💰 In base ai tuoi consumi...".
+    """
     footer = _format_footer(
         luce_is_mixed=True,
         gas_is_mixed=False,
@@ -1305,9 +1309,8 @@ def test_format_footer_mixed_with_consumption():
         show_gas=False,
     )
 
-    assert (
-        "💰 In base ai tuoi consumi di luce, stimiamo un risparmio di circa 47,50 €/anno" in footer
-    )
+    # Le stime sono ora inline nelle sezioni, quindi non devono apparire nel footer
+    assert "💰 In base ai tuoi consumi" not in footer
     assert "📊 In questi casi" not in footer  # Non deve apparire il messaggio generico
 
 
