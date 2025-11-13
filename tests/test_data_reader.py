@@ -526,9 +526,7 @@ def test_data_types():
     assert isinstance(tariffe_data["luce"]["fissa"]["monoraria"]["energia"], float)
 
     # commercializzazione must be float
-    assert isinstance(
-        tariffe_data["luce"]["fissa"]["monoraria"]["commercializzazione"], float
-    )
+    assert isinstance(tariffe_data["luce"]["fissa"]["monoraria"]["commercializzazione"], float)
 
     # data_aggiornamento must be string
     assert isinstance(tariffe_data["data_aggiornamento"], str)
