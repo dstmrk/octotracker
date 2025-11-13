@@ -59,6 +59,8 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # Costanti messaggi
 ERROR_VALUE_NEGATIVE = "❌ Il valore deve essere maggiore o uguale a zero"
 LABEL_FIXED_PRICE = "Prezzo fisso"
+MSG_HAS_GAS = "Hai anche una fornitura gas attiva con Octopus Energy?"
+MSG_GAS_CONSUMO = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
 
 
 # Stati conversazione
@@ -314,9 +316,7 @@ async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
-        )
+        await query.edit_message_text(MSG_HAS_GAS, reply_markup=reply_markup)
         return HA_GAS
 
 
@@ -328,26 +328,10 @@ async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return LUCE_CONSUMO_F1
 
-        # Validazione range (500-15000 per monoraria totale, 100-5000 per singola fascia)
-        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
-        if luce_fascia == "monoraria":
-            if value < 500 or value > 15000:
-                await update.message.reply_text(
-                    "⚠️ Il valore sembra fuori dal range tipico (500-15000 kWh/anno).\n"
-                    "Inserisci un valore valido."
-                )
-                return LUCE_CONSUMO_F1
-        else:  # trioraria
-            if value < 100 or value > 5000:
-                await update.message.reply_text(
-                    "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
-                    "Inserisci un valore valido."
-                )
-                return LUCE_CONSUMO_F1
-
         context.user_data["luce_consumo_f1"] = value
 
         # Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
+        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
         if luce_fascia == "monoraria":
             keyboard = [
                 [
@@ -356,9 +340,7 @@ async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await update.message.reply_text(
-                "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
-            )
+            await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
             return HA_GAS
 
         # Se trioraria, chiedi F2
@@ -380,14 +362,6 @@ async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_CONSUMO_F2
-
-        # Validazione range
-        if value < 100 or value > 5000:
-            await update.message.reply_text(
-                "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
-                "Inserisci un valore valido."
-            )
             return LUCE_CONSUMO_F2
 
         context.user_data["luce_consumo_f2"] = value
@@ -413,14 +387,6 @@ async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_text(ERROR_VALUE_NEGATIVE)
             return LUCE_CONSUMO_F3
 
-        # Validazione range
-        if value < 100 or value > 5000:
-            await update.message.reply_text(
-                "⚠️ Il valore sembra fuori dal range tipico per fascia (100-5000 kWh/anno).\n"
-                "Inserisci un valore valido."
-            )
-            return LUCE_CONSUMO_F3
-
         context.user_data["luce_consumo_f3"] = value
 
         # Consumi luce completati, vai a chiedere se ha gas
@@ -431,9 +397,7 @@ async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
-        )
+        await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
         return HA_GAS
 
     except ValueError:
@@ -527,9 +491,7 @@ async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if query.data == "consumi_gas_si":
         # Chiedi consumo gas
-        await query.edit_message_text(
-            "Inserisci il tuo consumo annuo di gas in Smc.\n\n" "💬 Esempio: 1200"
-        )
+        await query.edit_message_text(MSG_GAS_CONSUMO)
         return GAS_CONSUMO
     else:
         # Non vuole inserire consumi, salva e conferma
@@ -542,14 +504,6 @@ async def gas_consumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         value = float(update.message.text.replace(",", "."))
         if value < 0:
             await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return GAS_CONSUMO
-
-        # Validazione range (100-3000 Smc/anno)
-        if value < 100 or value > 3000:
-            await update.message.reply_text(
-                "⚠️ Il valore sembra fuori dal range tipico (100-3000 Smc/anno).\n"
-                "Inserisci un valore valido."
-            )
             return GAS_CONSUMO
 
         context.user_data["gas_consumo_annuo"] = value

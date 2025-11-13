@@ -913,21 +913,6 @@ async def test_luce_consumo_f1_monoraria_valid(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
-async def test_luce_consumo_f1_out_of_range(mock_update, mock_context):
-    """Test inserimento consumo luce fuori range"""
-    mock_context.user_data = {"luce_fascia": "monoraria"}
-    mock_update.message.text = "100000"  # Troppo alto
-
-    result = await luce_consumo_f1(mock_update, mock_context)
-
-    assert result == LUCE_CONSUMO_F1  # Rimane nello stesso stato
-    assert "luce_consumo_f1" not in mock_context.user_data
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args[0][0]
-    assert "fuori dal range" in call_args
-
-
-@pytest.mark.asyncio
 async def test_vuoi_consumi_gas_yes(mock_update, mock_context):
     """Test risposta Sì a domanda consumi gas"""
     from types import SimpleNamespace
@@ -975,20 +960,6 @@ async def test_gas_consumo_valid(mock_update, mock_context):
     user_data = load_user(user_id)
     assert user_data is not None
     assert user_data["gas"]["consumo_annuo"] == 1200.0
-
-
-@pytest.mark.asyncio
-async def test_gas_consumo_out_of_range(mock_update, mock_context):
-    """Test inserimento consumo gas fuori range"""
-    mock_update.message.text = "5000"  # Troppo alto
-
-    result = await gas_consumo(mock_update, mock_context)
-
-    assert result == GAS_CONSUMO  # Rimane nello stesso stato
-    assert "gas_consumo_annuo" not in mock_context.user_data
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args[0][0]
-    assert "fuori dal range" in call_args
 
 
 # ========== TEST ERROR HANDLING AND EDGE CASES ==========
@@ -1060,27 +1031,6 @@ async def test_luce_consumo_f1_negative():
 
 
 @pytest.mark.asyncio
-async def test_luce_consumo_f1_trioraria_out_of_range():
-    """Test valore fuori range per consumo F1 trioraria"""
-    update = MagicMock(spec=Update)
-    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
-
-    message = AsyncMock(spec=Message)
-    message.text = "50"  # Troppo basso
-    message.reply_text = AsyncMock()
-    update.message = message
-
-    context.user_data = {"luce_fascia": "trioraria"}
-
-    result = await luce_consumo_f1(update, context)
-
-    assert result == LUCE_CONSUMO_F1
-    message.reply_text.assert_called_once()
-    call_args = message.reply_text.call_args[0][0]
-    assert "fuori dal range" in call_args
-
-
-@pytest.mark.asyncio
 async def test_luce_consumo_f1_value_error():
     """Test ValueError per input non numerico F1"""
     update = MagicMock(spec=Update)
@@ -1145,27 +1095,6 @@ async def test_luce_consumo_f2_negative():
 
 
 @pytest.mark.asyncio
-async def test_luce_consumo_f2_out_of_range():
-    """Test valore fuori range per consumo F2"""
-    update = MagicMock(spec=Update)
-    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
-
-    message = AsyncMock(spec=Message)
-    message.text = "6000"  # Troppo alto
-    message.reply_text = AsyncMock()
-    update.message = message
-
-    context.user_data = {}
-
-    result = await luce_consumo_f2(update, context)
-
-    assert result == LUCE_CONSUMO_F2
-    message.reply_text.assert_called_once()
-    call_args = message.reply_text.call_args[0][0]
-    assert "fuori dal range" in call_args
-
-
-@pytest.mark.asyncio
 async def test_luce_consumo_f2_value_error():
     """Test ValueError per input non numerico F2"""
     update = MagicMock(spec=Update)
@@ -1227,27 +1156,6 @@ async def test_luce_consumo_f3_negative():
     message.reply_text.assert_called_once()
     call_args = message.reply_text.call_args[0][0]
     assert "maggiore o uguale a zero" in call_args.lower()
-
-
-@pytest.mark.asyncio
-async def test_luce_consumo_f3_out_of_range():
-    """Test valore fuori range per consumo F3"""
-    update = MagicMock(spec=Update)
-    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
-
-    message = AsyncMock(spec=Message)
-    message.text = "50"  # Troppo basso
-    message.reply_text = AsyncMock()
-    update.message = message
-
-    context.user_data = {}
-
-    result = await luce_consumo_f3(update, context)
-
-    assert result == LUCE_CONSUMO_F3
-    message.reply_text.assert_called_once()
-    call_args = message.reply_text.call_args[0][0]
-    assert "fuori dal range" in call_args
 
 
 @pytest.mark.asyncio
