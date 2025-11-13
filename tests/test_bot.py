@@ -33,6 +33,8 @@ from bot import (
     HA_GAS,
     LUCE_COMM,
     LUCE_CONSUMO_F1,
+    LUCE_CONSUMO_F2,
+    LUCE_CONSUMO_F3,
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
     TIPO_TARIFFA,
@@ -47,6 +49,8 @@ from bot import (
     help_command,
     luce_comm,
     luce_consumo_f1,
+    luce_consumo_f2,
+    luce_consumo_f3,
     luce_energia,
     luce_tipo_variabile,
     remove_data,
@@ -985,3 +989,389 @@ async def test_gas_consumo_out_of_range(mock_update, mock_context):
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "fuori dal range" in call_args
+
+
+# ========== TEST ERROR HANDLING AND EDGE CASES ==========
+
+
+@pytest.mark.asyncio
+async def test_vuoi_consumi_luce_no():
+    """Test quando l'utente non vuole inserire i consumi luce"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    query = AsyncMock(spec=CallbackQuery)
+    query.data = "consumi_luce_no"
+    query.answer = AsyncMock()
+    query.edit_message_text = AsyncMock()
+    update.callback_query = query
+
+    context.user_data = {}
+
+    result = await vuoi_consumi_luce(update, context)
+
+    assert result == HA_GAS
+    query.answer.assert_called_once()
+    query.edit_message_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_vuoi_consumi_luce_yes_trioraria():
+    """Test quando l'utente vuole inserire consumi luce trioraria"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    query = AsyncMock(spec=CallbackQuery)
+    query.data = "consumi_luce_si"
+    query.answer = AsyncMock()
+    query.edit_message_text = AsyncMock()
+    update.callback_query = query
+
+    context.user_data = {"luce_fascia": "trioraria"}
+
+    result = await vuoi_consumi_luce(update, context)
+
+    assert result == LUCE_CONSUMO_F1
+    query.answer.assert_called_once()
+    # Verifica che il messaggio menzioni F1
+    call_args = query.edit_message_text.call_args[0][0]
+    assert "F1" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_negative():
+    """Test valore negativo per consumo F1"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "-100"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"luce_fascia": "monoraria"}
+
+    result = await luce_consumo_f1(update, context)
+
+    assert result == LUCE_CONSUMO_F1
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "maggiore o uguale a zero" in call_args.lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_trioraria_out_of_range():
+    """Test valore fuori range per consumo F1 trioraria"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "50"  # Troppo basso
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"luce_fascia": "trioraria"}
+
+    result = await luce_consumo_f1(update, context)
+
+    assert result == LUCE_CONSUMO_F1
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "fuori dal range" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_value_error():
+    """Test ValueError per input non numerico F1"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "abc"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"luce_fascia": "monoraria"}
+
+    result = await luce_consumo_f1(update, context)
+
+    assert result == LUCE_CONSUMO_F1
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "numero valido" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_trioraria_valid():
+    """Test valore valido F1 trioraria che va a F2"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "900"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"luce_fascia": "trioraria"}
+
+    result = await luce_consumo_f1(update, context)
+
+    assert result == LUCE_CONSUMO_F2
+    assert context.user_data["luce_consumo_f1"] == 900.0
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "F2" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f2_negative():
+    """Test valore negativo per consumo F2"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "-100"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f2(update, context)
+
+    assert result == LUCE_CONSUMO_F2
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "maggiore o uguale a zero" in call_args.lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f2_out_of_range():
+    """Test valore fuori range per consumo F2"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "6000"  # Troppo alto
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f2(update, context)
+
+    assert result == LUCE_CONSUMO_F2
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "fuori dal range" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f2_value_error():
+    """Test ValueError per input non numerico F2"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "xyz"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f2(update, context)
+
+    assert result == LUCE_CONSUMO_F2
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "numero valido" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f2_valid():
+    """Test valore valido F2 che va a F3"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "850"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f2(update, context)
+
+    assert result == LUCE_CONSUMO_F3
+    assert context.user_data["luce_consumo_f2"] == 850.0
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "F3" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f3_negative():
+    """Test valore negativo per consumo F3"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "-100"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f3(update, context)
+
+    assert result == LUCE_CONSUMO_F3
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "maggiore o uguale a zero" in call_args.lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f3_out_of_range():
+    """Test valore fuori range per consumo F3"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "50"  # Troppo basso
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f3(update, context)
+
+    assert result == LUCE_CONSUMO_F3
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "fuori dal range" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f3_value_error():
+    """Test ValueError per input non numerico F3"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "invalid"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f3(update, context)
+
+    assert result == LUCE_CONSUMO_F3
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "numero valido" in call_args
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f3_valid():
+    """Test valore valido F3 che va a HA_GAS"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "950"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await luce_consumo_f3(update, context)
+
+    assert result == HA_GAS
+    assert context.user_data["luce_consumo_f3"] == 950.0
+    message.reply_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_gas_energia_negative():
+    """Test valore negativo per gas energia"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "-0.5"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await gas_energia(update, context)
+
+    assert result == GAS_ENERGIA
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "maggiore o uguale a zero" in call_args.lower()
+
+
+@pytest.mark.asyncio
+async def test_gas_energia_value_error_variabile():
+    """Test ValueError per gas energia variabile"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "invalid"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"is_variabile": True}
+
+    result = await gas_energia(update, context)
+
+    assert result == GAS_ENERGIA
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "numero valido" in call_args
+    assert "0,08" in call_args  # Esempio per variabile
+
+
+@pytest.mark.asyncio
+async def test_gas_energia_value_error_fissa():
+    """Test ValueError per gas energia fissa"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "invalid"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {"is_variabile": False}
+
+    result = await gas_energia(update, context)
+
+    assert result == GAS_ENERGIA
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "numero valido" in call_args
+    assert "0,456" in call_args  # Esempio per fissa
+
+
+@pytest.mark.asyncio
+async def test_gas_comm_negative():
+    """Test valore negativo per gas commercializzazione"""
+    update = MagicMock(spec=Update)
+    context = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
+
+    message = AsyncMock(spec=Message)
+    message.text = "-50"
+    message.reply_text = AsyncMock()
+    update.message = message
+
+    context.user_data = {}
+
+    result = await gas_comm(update, context)
+
+    assert result == GAS_COMM
+    message.reply_text.assert_called_once()
+    call_args = message.reply_text.call_args[0][0]
+    assert "maggiore o uguale a zero" in call_args.lower()
