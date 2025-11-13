@@ -13,8 +13,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from checker import (
     _build_current_octopus_rates,
+    _calculate_utility_savings,
     _check_utility_rates,
     _compare_rate_field,
+    _format_footer,
     _should_notify_user,
     check_and_notify_users,
     check_better_rates,
@@ -808,7 +810,14 @@ def test_format_footer_mixed():
     """_format_footer con caso mixed"""
     from checker import _format_footer
 
-    result = _format_footer(is_mixed=True)
+    result = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
 
     assert "📊" in result
     assert "convenienza dipende" in result
@@ -818,7 +827,14 @@ def test_format_footer_savings():
     """_format_footer con risparmi"""
     from checker import _format_footer
 
-    result = _format_footer(is_mixed=False)
+    result = _format_footer(
+        luce_is_mixed=False,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=True,
+    )
 
     assert "🔧" in result
     assert "/update" in result
@@ -842,6 +858,8 @@ def test_format_notification():
         "gas_energia_worse": False,
         "gas_comm_worse": False,
         "is_mixed": False,
+        "luce_is_mixed": False,
+        "gas_is_mixed": False,
     }
 
     user_rates = {
@@ -1102,3 +1120,652 @@ def test_load_json_os_error():
             result = load_json(Path("/tmp/test.json"))
 
     assert result is None
+
+
+# ========== TEST CONSUMPTION-BASED SAVINGS CALCULATION ==========
+
+
+def test_calculate_estimated_savings_monoraria_luce_only():
+    """Test calcolo risparmio con consumi luce monoraria"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "consumo_f1": 2700.0,  # kWh/anno
+        },
+        "gas": None,
+    }
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.130,  # Risparmio 0.015 €/kWh
+                    "commercializzazione": 65.0,  # Risparmio 7 €/anno
+                }
+            }
+        }
+    }
+
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
+
+    # Risparmio = (0.145 - 0.130) * 2700 + (72 - 65) = 40.5 + 7 = 47.5
+    assert risparmio is not None
+    assert risparmio == pytest.approx(47.5, abs=0.1)
+
+
+def test_calculate_estimated_savings_trioraria():
+    """Test calcolo risparmio con consumi luce trioraria"""
+    user_rates = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "trioraria",
+            "energia": 0.025,
+            "commercializzazione": 72.0,
+            "consumo_f1": 900.0,
+            "consumo_f2": 850.0,
+            "consumo_f3": 950.0,
+        },
+        "gas": None,
+    }
+    current_rates = {
+        "luce": {
+            "variabile": {
+                "trioraria": {
+                    "energia": 0.020,  # Risparmio 0.005 €/kWh
+                    "commercializzazione": 85.0,  # Aumento 13 €/anno
+                }
+            }
+        }
+    }
+
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
+
+    # Risparmio energia = (0.025 - 0.020) * (900 + 850 + 950) = 0.005 * 2700 = 13.5
+    # Aumento comm = 72 - 85 = -13
+    # Totale = 13.5 - 13 = 0.5
+    assert risparmio is not None
+    assert risparmio == pytest.approx(0.5, abs=0.1)
+
+
+def test_calculate_estimated_savings_with_gas():
+    """Test calcolo risparmio con luce e gas (separato per utility)"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "consumo_f1": 2700.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.456,
+            "commercializzazione": 84.0,
+            "consumo_annuo": 1200.0,
+        },
+    }
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+
+    # Calcola separatamente per luce e gas
+    risparmio_luce = _calculate_utility_savings("luce", user_rates, current_rates)
+    risparmio_gas = _calculate_utility_savings("gas", user_rates, current_rates)
+
+    # Luce: (0.145-0.130)*2700 + (72-65) = 40.5 + 7 = 47.5
+    assert risparmio_luce is not None
+    assert risparmio_luce == pytest.approx(47.5, abs=0.1)
+
+    # Gas: (0.456-0.420)*1200 + (84-80) = 43.2 + 4 = 47.2
+    assert risparmio_gas is not None
+    assert risparmio_gas == pytest.approx(47.2, abs=0.1)
+
+
+def test_calculate_estimated_savings_negative():
+    """Test calcolo con risparmio negativo (aumento costo)"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.130,
+            "commercializzazione": 65.0,
+            "consumo_f1": 2700.0,
+        },
+        "gas": None,
+    }
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.145,  # Peggioramento
+                    "commercializzazione": 72.0,  # Peggioramento
+                }
+            }
+        }
+    }
+
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
+
+    # Risparmio = (0.130-0.145)*2700 + (65-72) = -40.5 - 7 = -47.5
+    assert risparmio is not None
+    assert risparmio == pytest.approx(-47.5, abs=0.1)
+
+
+def test_calculate_estimated_savings_no_consumption():
+    """Test calcolo senza consumi → None"""
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": None,
+    }
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}}
+    }
+
+    risparmio = _calculate_utility_savings("luce", user_rates, current_rates)
+
+    assert risparmio is None
+
+
+# ========== TEST FOOTER WITH CONSUMPTION ==========
+
+
+def test_format_footer_mixed_without_consumption():
+    """Test footer MIXED senza consumi"""
+    footer = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
+
+    assert "📊 In questi casi la convenienza dipende dai tuoi consumi" in footer
+    assert "Se vuoi una stima più precisa" in footer
+    assert "/update" in footer
+
+
+def test_format_footer_mixed_with_consumption():
+    """Test footer MIXED con consumi e risparmio positivo"""
+    footer = _format_footer(
+        luce_is_mixed=True,
+        gas_is_mixed=False,
+        luce_estimated_savings=47.5,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=False,
+    )
+
+    assert (
+        "💰 In base ai tuoi consumi di luce, stimiamo un risparmio di circa 47,50 €/anno" in footer
+    )
+    assert "📊 In questi casi" not in footer  # Non deve apparire il messaggio generico
+
+
+def test_format_footer_not_mixed():
+    """Test footer NON MIXED (nessuna menzione consumi)"""
+    footer = _format_footer(
+        luce_is_mixed=False,
+        gas_is_mixed=False,
+        luce_estimated_savings=None,
+        gas_estimated_savings=None,
+        show_luce=True,
+        show_gas=True,
+    )
+
+    assert "📊" not in footer
+    assert "💰" not in footer
+    assert "consumi" not in footer
+    assert "🔧 Se vuoi aggiornare" in footer
+
+
+# ========== TEST CHECK_AND_NOTIFY SKIP MIXED WITH NEGATIVE SAVINGS ==========
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_skip_mixed_negative_savings():
+    """Test che caso MIXED con risparmio negativo viene skippato"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi che porterebbe a risparmio negativo
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.130,  # Tariffa attuale bassa
+                "commercializzazione": 65.0,
+                "consumo_f1": 2700.0,
+            },
+            "gas": None,
+        }
+    }
+
+    # Nuove tariffe peggiori (caso MIXED: una migliora, una peggiora)
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.125,  # Migliora di 0.005
+                    "commercializzazione": 85.0,  # Peggiora di 20
+                }
+            }
+        }
+    }
+
+    # Risparmio energia: (0.130-0.125)*2700 = 13.5
+    # Aumento comm: 65-85 = -20
+    # Totale: 13.5-20 = -6.5 (negativo, deve skippare)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                mock_bot = AsyncMock(spec=Bot)
+
+                await check_and_notify_users("fake_token")
+
+                # Verifica che NON sia stata inviata alcuna notifica
+                mock_bot.send_message.assert_not_called()
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_send_mixed_positive_savings():
+    """Test che caso MIXED con risparmio positivo viene inviato"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi che porta a risparmio positivo
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,  # Tariffa attuale alta
+                "commercializzazione": 72.0,
+                "consumo_f1": 2700.0,
+            },
+            "gas": None,
+        }
+    }
+
+    # Nuove tariffe (caso MIXED)
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.130,  # Migliora di 0.015
+                    "commercializzazione": 85.0,  # Peggiora di 13
+                }
+            }
+        }
+    }
+
+    # Risparmio energia: (0.145-0.130)*2700 = 40.5
+    # Aumento comm: 72-85 = -13
+    # Totale: 40.5-13 = 27.5 (positivo, deve inviare)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga la stima
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💰 In base ai tuoi consumi di luce" in message_text
+                        assert "27,50 €/anno" in message_text
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_both_utilities_non_mixed():
+    """Test che entrambe le utility non-MIXED vengono mostrate"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con luce e gas, entrambe non-MIXED con risparmio
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.456,
+                "commercializzazione": 84.0,
+            },
+        }
+    }
+
+    # Nuove tariffe entrambe migliorano
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_both_utilities_mixed_with_savings():
+    """Test che entrambe le utility MIXED con risparmio positivo vengono mostrate"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi per entrambe
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+                "consumo_f1": 2700.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.456,
+                "commercializzazione": 84.0,
+                "consumo_annuo": 1200.0,
+            },
+        }
+    }
+
+    # Nuove tariffe entrambe MIXED con risparmio positivo
+    # Luce: energia migliora, comm peggiora → risparmio 27.5 €/anno
+    # Gas: energia migliora, comm peggiora → risparmio 39.2 €/anno
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 85.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga ENTRAMBE le stime
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        assert "💰 In base ai tuoi consumi di luce" in message_text
+                        assert "27,50 €/anno" in message_text
+                        assert "💰 In base ai tuoi consumi di gas" in message_text
+                        assert "39,20 €/anno" in message_text
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_both_utilities_mixed_without_consumption():
+    """Test che entrambe le utility MIXED senza consumi vengono mostrate con suggerimento"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User senza consumi
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.456,
+                "commercializzazione": 84.0,
+            },
+        }
+    }
+
+    # Nuove tariffe entrambe MIXED
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 85.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni e suggerimento
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        assert (
+                            "📊 In questi casi la convenienza dipende dai tuoi consumi"
+                            in message_text
+                        )
+                        assert "/update" in message_text
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_luce_non_mixed_gas_mixed_positive():
+    """Test luce non-MIXED + gas MIXED con risparmio positivo → mostra entrambe"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi gas
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.456,
+                "commercializzazione": 84.0,
+                "consumo_annuo": 1200.0,
+            },
+        }
+    }
+
+    # Luce non-MIXED (tutto migliora), Gas MIXED con risparmio positivo
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        # Gas dovrebbe avere la stima
+                        assert "💰 In base ai tuoi consumi di gas" in message_text
+    finally:
+        Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_luce_mixed_negative_gas_non_mixed():
+    """Test luce MIXED con risparmio negativo + gas non-MIXED → mostra solo gas"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi luce
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+                "consumo_f1": 2700.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.456,
+                "commercializzazione": 84.0,
+            },
+        }
+    }
+
+    # Luce MIXED con risparmio negativo, Gas non-MIXED conveniente
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.140, "commercializzazione": 95.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+                    mock_bot_instance.send_message = AsyncMock()
+
+                    with patch("checker.save_user"):
+                        await check_and_notify_users("fake_token")
+
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
+
+                        # Verifica che il messaggio contenga SOLO gas
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        # Verifica che non ci sia la sezione luce (cerca sia emoji che parola)
+                        assert not ("💡" in message_text and "Luce" in message_text)
+                        assert "🔥" in message_text and "Gas" in message_text
+    finally:
+        Path(rates_file).unlink()
