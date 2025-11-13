@@ -32,6 +32,7 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
+from constants import ERROR_VALUE_NEGATIVE, LABEL_FIXED_PRICE
 from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
 
@@ -54,9 +55,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-# Costanti messaggi
-ERROR_VALUE_NEGATIVE = "❌ Il valore deve essere maggiore o uguale a zero"
-LABEL_FIXED_PRICE = "Prezzo fisso"
+# Costanti messaggi (specifiche per bot)
 MSG_HAS_GAS = "Hai anche una fornitura gas attiva con Octopus Energy?"
 MSG_GAS_CONSUMO = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
 

@@ -14,16 +14,13 @@ from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
+from constants import MAX_DECIMALS_COST, MAX_DECIMALS_ENERGY
 from database import load_users, save_user
 
 load_dotenv()
 
 # Setup logger
 logger = logging.getLogger(__name__)
-
-# Constants
-MAX_DECIMALS_ENERGY = 4  # Per prezzi energia e spread (es. 0.0088 €/kWh)
-MAX_DECIMALS_COST = 2  # Per costi commercializzazione (€/anno)
 
 # File dati
 DATA_DIR = Path(__file__).parent / "data"
