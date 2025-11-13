@@ -32,9 +32,10 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
-from constants import ERROR_VALUE_NEGATIVE, LABEL_FIXED_PRICE
+from constants import ERROR_VALUE_NEGATIVE
 from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
+from formatters import format_utility_header
 
 load_dotenv()
 
@@ -571,17 +572,8 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     luce_energia_fmt = format_number(user_data["luce"]["energia"], max_decimals=4)
     luce_comm_fmt = format_number(user_data["luce"]["commercializzazione"], max_decimals=2)
 
-    # Determina label in base al tipo e fascia
-    luce_tipo = user_data["luce"]["tipo"]
-    luce_fascia = user_data["luce"]["fascia"]
-    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
-
-    if luce_tipo == "fissa":
-        luce_label = LABEL_FIXED_PRICE
-        luce_unit = "€/kWh"
-    else:  # variabile
-        luce_label = "Spread (PUN +)"
-        luce_unit = "€/kWh"
+    # Formatta header luce
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", user_data["luce"], "💡")
 
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
@@ -596,6 +588,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     if consumo_f1 is not None:
         consumo_f2 = user_data["luce"].get("consumo_f2")
         consumo_f3 = user_data["luce"].get("consumo_f3")
+        luce_fascia = user_data["luce"]["fascia"]
 
         if luce_fascia == "monoraria":
             messaggio += f"- Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
@@ -622,18 +615,12 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(user_data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = user_data["gas"]["tipo"]
-        gas_fascia = user_data["gas"]["fascia"]
-        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
-
-        if gas_tipo == "fissa":
-            gas_label = LABEL_FIXED_PRICE
-        else:  # variabile
-            gas_label = "Spread (PSV +)"
+        # Formatta header gas
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", user_data["gas"], "🔥")
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas})</b>\n"
-            f"- {gas_label}: {gas_energia_fmt} €/Smc\n"
+            f"- {gas_label}: {gas_energia_fmt} {gas_unit}\n"
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
@@ -702,21 +689,13 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     luce_energia_fmt = format_number(data["luce"]["energia"], max_decimals=4)
     luce_comm_fmt = format_number(data["luce"]["commercializzazione"], max_decimals=2)
 
-    # Determina label in base al tipo e fascia
-    luce_tipo = data["luce"]["tipo"]
-    luce_fascia = data["luce"]["fascia"]
-
-    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
-
-    if luce_tipo == "fissa":
-        luce_label = LABEL_FIXED_PRICE
-    else:  # variabile
-        luce_label = "Spread (PUN +)"
+    # Formatta header luce
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", data["luce"], "💡")
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
         f"💡 <b>Luce ({tipo_display}):</b>\n"
-        f"  - {luce_label}: {luce_energia_fmt} €/kWh\n"
+        f"  - {luce_label}: {luce_energia_fmt} {luce_unit}\n"
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
@@ -725,6 +704,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if consumo_f1 is not None:
         consumo_f2 = data["luce"].get("consumo_f2")
         consumo_f3 = data["luce"].get("consumo_f3")
+        luce_fascia = data["luce"]["fascia"]
 
         if luce_fascia == "monoraria":
             # Solo totale
@@ -755,19 +735,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = data["gas"]["tipo"]
-        gas_fascia = data["gas"]["fascia"]
-
-        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
-
-        if gas_tipo == "fissa":
-            gas_label = LABEL_FIXED_PRICE
-        else:  # variabile
-            gas_label = "Spread (PSV +)"
+        # Formatta header gas
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", data["gas"], "🔥")
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
-            f"  - {gas_label}: {gas_energia_fmt} €/Smc\n"
+            f"  - {gas_label}: {gas_energia_fmt} {gas_unit}\n"
             f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
 
