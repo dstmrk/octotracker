@@ -21,13 +21,15 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
 ## 🎯 Funzionalità
 
 - **Bot Telegram 24/7** per registrare e gestire le tue tariffe (luce e gas)
-- **Scraping automatico** delle tariffe Octopus Energy (fisse e variabili, mono/triorarie)
+- **Lettura open-data ARERA** delle tariffe Octopus Energy da [Il Portale Offerte](https://www.ilportaleofferte.it/portaleOfferte/it/open-data.page) (fisse e variabili, mono/triorarie)
 - **Supporto tariffe variabili** indicizzate a PUN (luce) e PSV (gas) + spread
 - **Notifiche intelligenti** con 3 modalità:
   - ✅ **Tutto migliorato**: conferma che la nuova tariffa conviene
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
+  - 💰 **Calcolo risparmio stimato**: valutazione separata luce/gas basata sui tuoi consumi reali
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
+- **Consumi opzionali**: inserisci i tuoi kWh/anno e Smc/anno per calcoli precisi nei casi ambigui
 - **Webhook mode**: risposte istantanee tramite Cloudflare Tunnel
 - **Persistenza dati** tramite Docker volumes
 - **Scheduler ottimizzato**: task indipendenti che dormono 24 ore tra esecuzioni
@@ -84,8 +86,8 @@ Dovresti vedere:
 ```
 🤖 Avvio OctoTracker...
 📡 Modalità: WEBHOOK
-⏰ Scraper schedulato: 9:00
-⏰ Checker schedulato: 10:00
+⏰ Aggiornamento tariffe schedulato: 11:00
+⏰ Checker schedulato: 12:00
 🌐 Webhook URL: https://octotracker.tuodominio.xyz
 🔌 Porta: 8443
 ✅ Bot configurato!
@@ -150,8 +152,9 @@ Nuova tariffa: 0.138 €/kWh, 60 €/anno
 ```
 
 ### ⚖️ Caso 2: Mix Migliorato/Peggiorato
-Quando una componente migliora ma l'altra peggiora (caso ambiguo):
+Quando una componente migliora ma l'altra peggiora (caso ambiguo), OctoTracker usa i tuoi consumi per valutare **separatamente** luce e gas:
 
+**Con consumi inseriti** (via `/update`):
 ```
 ⚖️ Aggiornamento tariffe Octopus Energy
 ...una delle due componenti è migliorata, l'altra è aumentata.
@@ -161,9 +164,25 @@ Tua tariffa: 0.145 €/kWh, 60 €/anno
 Nuova tariffa: 0.138 €/kWh, 84 €/anno
               (grassetto)  (sottolineato)
 
-📊 In questi casi la convenienza dipende dai tuoi consumi.
-Ti consiglio di fare una verifica in base ai kWh che usi...
+💰 In base ai tuoi consumi di luce, stimiamo un risparmio di circa 47,50 €/anno.
 ```
+
+**Senza consumi**:
+```
+📊 In questi casi la convenienza dipende dai tuoi consumi.
+Se vuoi una stima più precisa, puoi indicare i tuoi consumi usando il comando /update.
+```
+
+**Logica di valutazione per-utility** (luce e gas indipendenti):
+- ✅ **Non-MIXED con risparmio** → Notifica sempre
+- ⚖️ **MIXED senza consumi** → Notifica con suggerimento di inserire consumi
+- 📊 **MIXED con consumi e risparmio > 0** → Notifica con stima risparmio
+- ❌ **MIXED con consumi e risparmio ≤ 0** → NON notifica quella utility
+
+**Esempi**:
+- Luce MIXED con +30€, Gas MIXED con -20€ → Mostra solo luce
+- Luce non-MIXED (conveniente), Gas MIXED con -15€ → Mostra solo luce
+- Luce MIXED con -10€, Gas MIXED con -5€ → Nessuna notifica
 
 **Legenda**:
 - **Grassetto** = valore migliorato 📉
@@ -186,12 +205,12 @@ Puoi personalizzare il comportamento tramite variabili d'ambiente nel file `.env
 | `WEBHOOK_PORT` | `8443` | Porta locale per webhook |
 | `WEBHOOK_SECRET` | - | Token segreto per validazione webhook (obbligatorio) |
 | `HEALTH_PORT` | `8444` | Porta per health check endpoint |
-| `SCRAPER_HOUR` | `9` | Ora dello scraping (0-23, ora italiana) |
-| `CHECKER_HOUR` | `10` | Ora del controllo tariffe (0-23, ora italiana) |
+| `UPDATER_HOUR` | `11` | Ora aggiornamento tariffe da open-data ARERA (0-23, ora italiana) |
+| `CHECKER_HOUR` | `12` | Ora del controllo tariffe (0-23, ora italiana) |
 
-**Esempio**: Per cambiare l'ora dello scraping alle 8:00:
+**Esempio**: Per cambiare l'ora di aggiornamento tariffe alle 8:00:
 ```bash
-SCRAPER_HOUR=8
+UPDATER_HOUR=8
 ```
 
 ## 🏥 Health Check Endpoint
@@ -225,7 +244,7 @@ curl https://tuodominio.xyz:8444/health
     "bot": {
       "status": "ok",
       "scheduled_tasks": {
-        "scraper": "running",
+        "updater": "running",
         "checker": "running"
       }
     }
@@ -253,14 +272,14 @@ OctoTracker usa un **singolo container Docker** con bot e scheduler integrati:
 Container Docker (sempre attivo)
 ├── Bot Telegram (webhook su porta 8443, gestisce comandi utente 24/7)
 ├── Health Server (HTTP su porta 8444, endpoint /health per monitoring)
-├── Scraper Task (indipendente, dorme 24 ore tra esecuzioni)
+├── Tariffe Updater Task (legge open-data ARERA, dorme 24 ore tra esecuzioni)
 ├── Checker Task (indipendente, dorme 24 ore tra esecuzioni)
 └── Error Handler (gestisce timeout di rete senza crashare)
 ```
 
 **Scheduler ottimizzato**:
 - **Sleep-based scheduling**: ogni task calcola esattamente quanto dormire fino alla prossima esecuzione
-- **Task indipendenti**: scraper e checker girano separatamente senza interferire
+- **Task indipendenti**: updater e checker girano separatamente senza interferire
 - **Efficienza massima**: 2 esecuzioni/giorno invece di controlli continui
 - **Timeout aumentati**: 30 secondi per operazioni HTTP (ottimizzato per connessioni lente)
 
@@ -280,11 +299,15 @@ I dati sono salvati localmente:
       luce_fascia TEXT NOT NULL,
       luce_energia REAL NOT NULL,
       luce_commercializzazione REAL NOT NULL,
+      luce_consumo_f1 REAL,           -- kWh/anno (F1 per trioraria, totale per mono/bioraria)
+      luce_consumo_f2 REAL,           -- kWh/anno (solo trioraria)
+      luce_consumo_f3 REAL,           -- kWh/anno (solo trioraria)
       gas_tipo TEXT,
       gas_fascia TEXT,
       gas_energia REAL,
       gas_commercializzazione REAL,
-      last_notified_rates TEXT,  -- JSON
+      gas_consumo_annuo REAL,         -- Smc/anno
+      last_notified_rates TEXT,       -- JSON
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
@@ -333,7 +356,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Installa dipendenze
 uv sync --extra dev
-uv run playwright install chromium
 
 # Crea .env
 cp .env.example .env
@@ -387,8 +409,8 @@ I check di linting e testing girano automaticamente ad ogni push:
 ### Test componenti singoli
 
 ```bash
-# Test solo scraper
-uv run python scraper.py
+# Test solo updater (lettura open-data ARERA)
+uv run python updater.py
 
 # Test solo checker
 uv run python checker.py
@@ -422,7 +444,7 @@ docker compose version
 ### File Principali
 
 - `bot.py` - Bot Telegram con scheduler integrato
-- `scraper.py` - Playwright scraper per tariffe Octopus
+- `updater.py` - Lettura open-data ARERA per tariffe Octopus
 - `checker.py` - Controllo e invio notifiche
 - `docker-compose.yml` - Orchestrazione Docker
 - `Dockerfile` - Build immagine Docker
@@ -434,8 +456,8 @@ docker compose version
 - **Tariffe supportate**:
   - Luce: Fissa monoraria, Variabile monoraria (PUN + spread), Variabile trioraria (PUN + spread F1/F2/F3)
   - Gas: Fissa monoraria, Variabile monoraria (PSV + spread)
-- **Fonte**: https://octopusenergy.it/le-nostre-tariffe
-- **Automazione**: scraping ore 9:00, controllo ore 10:00 (configurabile)
+- **Fonte**: [Open-data ARERA - Il Portale Offerte](https://www.ilportaleofferte.it/portaleOfferte/it/open-data.page)
+- **Automazione**: aggiornamento tariffe ore 11:00, controllo ore 12:00 (configurabile)
 - **Confronti**: Solo tariffe dello stesso tipo e fascia (nessun cross-type)
 - **Utenti**: può avere solo luce, oppure luce + gas
 - **Privacy**: dati salvati localmente
@@ -467,13 +489,13 @@ docker compose logs -f | grep "Errore"
 ping 8.8.8.8 -c 5
 ```
 
-### Scraper non funziona
+### Aggiornamento tariffe non funziona
 ```bash
-# Controlla i logs alle ore dello scraping (default: 9:00)
+# Controlla i logs alle ore dell'aggiornamento (default: 11:00)
 docker compose logs -f
 
-# Test manuale dello scraper
-docker compose exec octotracker python scraper.py
+# Test manuale dell'updater
+docker compose exec octotracker python updater.py
 
 # Verifica file tariffe generato
 cat data/current_rates.json
@@ -506,7 +528,7 @@ docker compose up -d
 
 ## 🔮 Possibili Miglioramenti Futuri
 
-- [ ] **Calcolo automatico convenienza** nei casi "dubbi": chiedi i consumi all'utente (kWh/anno, Smc/anno) e calcola se il cambio conviene realmente
+- [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
 
 ## 📜 Licenza
 

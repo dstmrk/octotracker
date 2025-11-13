@@ -424,3 +424,219 @@ def test_database_connection_error_handling(temp_db):
 
     # Ripristina
     database.DB_FILE = original_db
+
+
+def test_user_consumption_monoraria(temp_db):
+    """
+    Test salvataggio e caricamento consumi luce monoraria
+    """
+    user_id = "consumption_mono_001"
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "consumo_f1": 2700.0,
+        },
+        "gas": None,
+    }
+
+    # Salva e carica
+    assert save_user(user_id, user_data) is True
+    loaded = load_user(user_id)
+
+    # Verifica tariffe
+    assert loaded["luce"]["tipo"] == "fissa"
+    assert loaded["luce"]["fascia"] == "monoraria"
+
+    # Verifica consumi
+    assert loaded["luce"]["consumo_f1"] == 2700.0
+    assert "consumo_f2" not in loaded["luce"]
+    assert "consumo_f3" not in loaded["luce"]
+
+
+def test_user_consumption_bioraria(temp_db):
+    """
+    Test salvataggio e caricamento consumi luce bioraria
+    """
+    user_id = "consumption_bi_002"
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "bioraria",
+            "energia": 0.015,
+            "commercializzazione": 80.0,
+            "consumo_f1": 1200.0,
+            "consumo_f2": 1500.0,
+        },
+        "gas": None,
+    }
+
+    # Salva e carica
+    assert save_user(user_id, user_data) is True
+    loaded = load_user(user_id)
+
+    # Verifica tariffe
+    assert loaded["luce"]["tipo"] == "variabile"
+    assert loaded["luce"]["fascia"] == "bioraria"
+
+    # Verifica consumi
+    assert loaded["luce"]["consumo_f1"] == 1200.0
+    assert loaded["luce"]["consumo_f2"] == 1500.0
+    assert "consumo_f3" not in loaded["luce"]
+
+
+def test_user_consumption_trioraria(temp_db):
+    """
+    Test salvataggio e caricamento consumi luce trioraria
+    """
+    user_id = "consumption_tri_003"
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "trioraria",
+            "energia": 0.012,
+            "commercializzazione": 96.0,
+            "consumo_f1": 900.0,
+            "consumo_f2": 900.0,
+            "consumo_f3": 900.0,
+        },
+        "gas": None,
+    }
+
+    # Salva e carica
+    assert save_user(user_id, user_data) is True
+    loaded = load_user(user_id)
+
+    # Verifica tariffe
+    assert loaded["luce"]["tipo"] == "variabile"
+    assert loaded["luce"]["fascia"] == "trioraria"
+
+    # Verifica consumi
+    assert loaded["luce"]["consumo_f1"] == 900.0
+    assert loaded["luce"]["consumo_f2"] == 900.0
+    assert loaded["luce"]["consumo_f3"] == 900.0
+
+
+def test_user_consumption_gas(temp_db):
+    """
+    Test salvataggio e caricamento consumo gas
+    """
+    user_id = "consumption_gas_004"
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.140,
+            "commercializzazione": 70.0,
+            "consumo_f1": 2500.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.350,
+            "commercializzazione": 120.0,
+            "consumo_annuo": 1200.0,
+        },
+    }
+
+    # Salva e carica
+    assert save_user(user_id, user_data) is True
+    loaded = load_user(user_id)
+
+    # Verifica consumi luce
+    assert loaded["luce"]["consumo_f1"] == 2500.0
+
+    # Verifica consumo gas
+    assert loaded["gas"] is not None
+    assert loaded["gas"]["consumo_annuo"] == 1200.0
+
+
+def test_backward_compatibility_no_consumption(temp_db):
+    """
+    Test retrocompatibilità: utenti senza consumi (NULL nel DB)
+    Simula utenti creati prima dell'introduzione dei consumi
+    """
+    user_id = "old_user_005"
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            # Nessun campo consumo
+        },
+        "gas": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.025,
+            "commercializzazione": 100.0,
+            # Nessun campo consumo
+        },
+    }
+
+    # Salva e carica
+    assert save_user(user_id, user_data) is True
+    loaded = load_user(user_id)
+
+    # Verifica che le tariffe siano salvate correttamente
+    assert loaded["luce"]["tipo"] == "fissa"
+    assert loaded["gas"]["tipo"] == "variabile"
+
+    # Verifica che i campi consumo NON siano presenti (NULL nel DB)
+    assert "consumo_f1" not in loaded["luce"]
+    assert "consumo_f2" not in loaded["luce"]
+    assert "consumo_f3" not in loaded["luce"]
+    assert "consumo_annuo" not in loaded["gas"]
+
+
+def test_update_add_consumption(temp_db):
+    """
+    Test aggiunta consumi a utente esistente senza consumi
+    Simula utente vecchio che aggiorna i dati aggiungendo i consumi
+    """
+    user_id = "update_consumption_006"
+
+    # Step 1: Registrazione iniziale SENZA consumi (utente vecchio)
+    initial_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.150,
+            "commercializzazione": 60.0,
+        },
+        "gas": None,
+    }
+    assert save_user(user_id, initial_data) is True
+
+    # Verifica che non ci siano consumi
+    loaded = load_user(user_id)
+    assert "consumo_f1" not in loaded["luce"]
+
+    # Step 2: Aggiornamento CON consumi
+    updated_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.150,
+            "commercializzazione": 60.0,
+            "consumo_f1": 3000.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.380,
+            "commercializzazione": 110.0,
+            "consumo_annuo": 1400.0,
+        },
+    }
+    assert save_user(user_id, updated_data) is True
+
+    # Step 3: Verifica che i consumi siano stati aggiunti
+    loaded = load_user(user_id)
+    assert loaded["luce"]["consumo_f1"] == 3000.0
+    assert loaded["gas"]["consumo_annuo"] == 1400.0
+
+    # Step 4: Verifica che ci sia ancora solo 1 utente (update, non insert)
+    assert get_user_count() == 1

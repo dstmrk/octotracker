@@ -12,8 +12,6 @@ from typing import Any
 from warnings import filterwarnings
 
 from dotenv import load_dotenv
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import TimeoutError as PlaywrightTimeout
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
@@ -34,8 +32,10 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
+from constants import ERROR_VALUE_NEGATIVE
+from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
-from scraper import scrape_octopus_tariffe
+from formatters import format_utility_header
 
 load_dotenv()
 
@@ -56,9 +56,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-# Costanti messaggi
-ERROR_VALUE_NEGATIVE = "❌ Il valore deve essere maggiore o uguale a zero"
-LABEL_FIXED_PRICE = "Prezzo fisso"
+# Costanti messaggi (specifiche per bot)
+MSG_HAS_GAS = "Hai anche una fornitura gas attiva con Octopus Energy?"
+MSG_GAS_CONSUMO = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
 
 
 # Stati conversazione
@@ -69,9 +69,15 @@ class ConversationState(IntEnum):
     LUCE_TIPO_VARIABILE = 1
     LUCE_ENERGIA = 2
     LUCE_COMM = 3
+    VUOI_CONSUMI_LUCE = 7
+    LUCE_CONSUMO_F1 = 8
+    LUCE_CONSUMO_F2 = 9
+    LUCE_CONSUMO_F3 = 10
     HA_GAS = 4
     GAS_ENERGIA = 5
     GAS_COMM = 6
+    VUOI_CONSUMI_GAS = 11
+    GAS_CONSUMO = 12
 
 
 # Backward compatibility: mantieni le costanti per i test e il codice esistente
@@ -79,9 +85,15 @@ TIPO_TARIFFA = ConversationState.TIPO_TARIFFA
 LUCE_TIPO_VARIABILE = ConversationState.LUCE_TIPO_VARIABILE
 LUCE_ENERGIA = ConversationState.LUCE_ENERGIA
 LUCE_COMM = ConversationState.LUCE_COMM
+VUOI_CONSUMI_LUCE = ConversationState.VUOI_CONSUMI_LUCE
+LUCE_CONSUMO_F1 = ConversationState.LUCE_CONSUMO_F1
+LUCE_CONSUMO_F2 = ConversationState.LUCE_CONSUMO_F2
+LUCE_CONSUMO_F3 = ConversationState.LUCE_CONSUMO_F3
 HA_GAS = ConversationState.HA_GAS
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
+VUOI_CONSUMI_GAS = ConversationState.VUOI_CONSUMI_GAS
+GAS_CONSUMO = ConversationState.GAS_CONSUMO
 
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
@@ -239,7 +251,7 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva costo commercializzazione luce e chiedi se ha gas"""
+    """Salva costo commercializzazione luce e chiedi se vuole inserire consumi"""
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
@@ -250,19 +262,145 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
         keyboard = [
             [
-                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
-                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "Hai anche una fornitura gas attiva con Octopus Energy?", reply_markup=reply_markup
+            "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
+            "💡 Serve solo per valutare meglio quando una tariffa può convenirti.",
+            reply_markup=reply_markup,
         )
-        return HA_GAS
+        return VUOI_CONSUMI_LUCE
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
         return LUCE_COMM
+
+
+async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Gestisci risposta se vuole inserire consumi luce"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "consumi_luce_si":
+        # Inizia raccolta consumi in base alla fascia
+        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
+
+        if luce_fascia == "monoraria":
+            messaggio = (
+                "Inserisci il tuo consumo annuo totale di energia elettrica in kWh.\n\n"
+                "💬 Esempio: 2700"
+            )
+        elif luce_fascia == "trioraria":
+            messaggio = (
+                "Inserisci il tuo consumo annuo in fascia F1 in kWh.\n\n"
+                "(F1 = feriali 8–19)\n\n"
+                "💬 Esempio: 900"
+            )
+        else:
+            # Fallback (non dovrebbe mai succedere)
+            messaggio = "Inserisci il tuo consumo annuo in kWh."
+
+        await query.edit_message_text(messaggio, parse_mode=ParseMode.HTML)
+        return LUCE_CONSUMO_F1
+    else:
+        # Non vuole inserire consumi, vai direttamente a chiedere se ha gas
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(MSG_HAS_GAS, reply_markup=reply_markup)
+        return HA_GAS
+
+
+async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F1 luce e procedi in base alla fascia"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F1
+
+        context.user_data["luce_consumo_f1"] = value
+
+        # Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
+        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
+        if luce_fascia == "monoraria":
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                    InlineKeyboardButton("❌ No", callback_data="gas_no"),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
+            return HA_GAS
+
+        # Se trioraria, chiedi F2
+        await update.message.reply_text(
+            "Ora inserisci il tuo consumo annuo in fascia F2 in kWh.\n\n"
+            "(F2 = feriali 7–8 e 19–23, sabato 7–23)\n\n"
+            "💬 Esempio: 900"
+        )
+        return LUCE_CONSUMO_F2
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 2700)")
+        return LUCE_CONSUMO_F1
+
+
+async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F2 luce (solo trioraria)"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F2
+
+        context.user_data["luce_consumo_f2"] = value
+
+        # Chiedi F3
+        await update.message.reply_text(
+            "Infine, inserisci il tuo consumo annuo in fascia F3 in kWh.\n\n"
+            "(F3 = notte, domeniche e festivi)\n\n"
+            "💬 Esempio: 900"
+        )
+        return LUCE_CONSUMO_F3
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
+        return LUCE_CONSUMO_F2
+
+
+async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F3 luce (solo trioraria) e vai a HA_GAS"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return LUCE_CONSUMO_F3
+
+        context.user_data["luce_consumo_f3"] = value
+
+        # Consumi luce completati, vai a chiedere se ha gas
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
+        return HA_GAS
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
+        return LUCE_CONSUMO_F3
 
 
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -316,7 +454,7 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva gas e conferma"""
+    """Salva commercializzazione gas e chiedi se vuole inserire consumi"""
     try:
         value = float(update.message.text.replace(",", "."))
         if value < 0:
@@ -324,10 +462,56 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             return GAS_COMM
 
         context.user_data["gas_comm"] = value
-        return await salva_e_conferma(update, context, solo_luce=False)
+
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
+            "🔥 Serve solo per valutare meglio quando una tariffa può convenirti.",
+            reply_markup=reply_markup,
+        )
+        return VUOI_CONSUMI_GAS
     except ValueError:
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
+
+
+async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Gestisci risposta se vuole inserire consumi gas"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "consumi_gas_si":
+        # Chiedi consumo gas
+        await query.edit_message_text(MSG_GAS_CONSUMO)
+        return GAS_CONSUMO
+    else:
+        # Non vuole inserire consumi, salva e conferma
+        return await salva_e_conferma(query, context, solo_luce=False)
+
+
+async def gas_consumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo gas e vai a conferma"""
+    try:
+        value = float(update.message.text.replace(",", "."))
+        if value < 0:
+            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
+            return GAS_CONSUMO
+
+        context.user_data["gas_consumo_annuo"] = value
+
+        # Consumi completati, salva e conferma
+        return await salva_e_conferma(update, context, solo_luce=False)
+
+    except ValueError:
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 1200)")
+        return GAS_CONSUMO
 
 
 def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dict[str, Any]:
@@ -350,6 +534,14 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
         }
     }
 
+    # Aggiungi consumi luce se presenti
+    if "luce_consumo_f1" in context.user_data:
+        user_data["luce"]["consumo_f1"] = context.user_data["luce_consumo_f1"]
+    if "luce_consumo_f2" in context.user_data:
+        user_data["luce"]["consumo_f2"] = context.user_data["luce_consumo_f2"]
+    if "luce_consumo_f3" in context.user_data:
+        user_data["luce"]["consumo_f3"] = context.user_data["luce_consumo_f3"]
+
     if not solo_luce:
         user_data["gas"] = {
             "tipo": context.user_data["gas_tipo"],
@@ -357,6 +549,9 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
             "energia": context.user_data["gas_energia"],
             "commercializzazione": context.user_data["gas_comm"],
         }
+        # Aggiungi consumo gas se presente
+        if "gas_consumo_annuo" in context.user_data:
+            user_data["gas"]["consumo_annuo"] = context.user_data["gas_consumo_annuo"]
     else:
         user_data["gas"] = None
 
@@ -377,17 +572,8 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     luce_energia_fmt = format_number(user_data["luce"]["energia"], max_decimals=4)
     luce_comm_fmt = format_number(user_data["luce"]["commercializzazione"], max_decimals=2)
 
-    # Determina label in base al tipo e fascia
-    luce_tipo = user_data["luce"]["tipo"]
-    luce_fascia = user_data["luce"]["fascia"]
-    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
-
-    if luce_tipo == "fissa":
-        luce_label = LABEL_FIXED_PRICE
-        luce_unit = "€/kWh"
-    else:  # variabile
-        luce_label = "Spread (PUN +)"
-        luce_unit = "€/kWh"
+    # Formatta header luce
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", user_data["luce"])
 
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
@@ -397,25 +583,53 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         f"- Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
 
+    # Aggiungi consumi luce se presenti
+    consumo_f1 = user_data["luce"].get("consumo_f1")
+    if consumo_f1 is not None:
+        consumo_f2 = user_data["luce"].get("consumo_f2")
+        consumo_f3 = user_data["luce"].get("consumo_f3")
+        luce_fascia = user_data["luce"]["fascia"]
+
+        if luce_fascia == "monoraria":
+            messaggio += f"- Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
+
+        elif luce_fascia == "bioraria":
+            totale = consumo_f1 + consumo_f2
+            messaggio += (
+                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
+            )
+
+        elif luce_fascia == "trioraria":
+            totale = consumo_f1 + consumo_f2 + consumo_f3
+            messaggio += (
+                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
+                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
+            )
+
     # Aggiungi sezione gas se presente
     if user_data["gas"] is not None:
         gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(user_data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = user_data["gas"]["tipo"]
-        gas_fascia = user_data["gas"]["fascia"]
-        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
-
-        if gas_tipo == "fissa":
-            gas_label = LABEL_FIXED_PRICE
-        else:  # variabile
-            gas_label = "Spread (PSV +)"
+        # Formatta header gas
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", user_data["gas"])
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas})</b>\n"
-            f"- {gas_label}: {gas_energia_fmt} €/Smc\n"
+            f"- {gas_label}: {gas_energia_fmt} {gas_unit}\n"
             f"- Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
+
+        # Aggiungi consumo gas se presente
+        consumo_gas = user_data["gas"].get("consumo_annuo")
+        if consumo_gas is not None:
+            messaggio += (
+                f"- Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
+            )
 
     # Aggiungi footer
     messaggio += (
@@ -475,43 +689,67 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     luce_energia_fmt = format_number(data["luce"]["energia"], max_decimals=4)
     luce_comm_fmt = format_number(data["luce"]["commercializzazione"], max_decimals=2)
 
-    # Determina label in base al tipo e fascia
-    luce_tipo = data["luce"]["tipo"]
-    luce_fascia = data["luce"]["fascia"]
-
-    tipo_display = f"{luce_tipo.capitalize()} {luce_fascia.capitalize()}"
-
-    if luce_tipo == "fissa":
-        luce_label = LABEL_FIXED_PRICE
-    else:  # variabile
-        luce_label = "Spread (PUN +)"
+    # Formatta header luce
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", data["luce"])
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
         f"💡 <b>Luce ({tipo_display}):</b>\n"
-        f"  - {luce_label}: {luce_energia_fmt} €/kWh\n"
+        f"  - {luce_label}: {luce_energia_fmt} {luce_unit}\n"
         f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
     )
+
+    # Mostra consumi luce se presenti
+    consumo_f1 = data["luce"].get("consumo_f1")
+    if consumo_f1 is not None:
+        consumo_f2 = data["luce"].get("consumo_f2")
+        consumo_f3 = data["luce"].get("consumo_f3")
+        luce_fascia = data["luce"]["fascia"]
+
+        if luce_fascia == "monoraria":
+            # Solo totale
+            messaggio += (
+                f"  - Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
+            )
+
+        elif luce_fascia == "bioraria":
+            # Totale + breakdown F1 e F23
+            totale = consumo_f1 + consumo_f2
+            messaggio += (
+                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
+            )
+
+        elif luce_fascia == "trioraria":
+            # Totale + breakdown F1, F2, F3
+            totale = consumo_f1 + consumo_f2 + consumo_f3
+            messaggio += (
+                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
+                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
+                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
+                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
+            )
 
     if data.get("gas") is not None:
         gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
 
-        gas_tipo = data["gas"]["tipo"]
-        gas_fascia = data["gas"]["fascia"]
-
-        tipo_display_gas = f"{gas_tipo.capitalize()} {gas_fascia.capitalize()}"
-
-        if gas_tipo == "fissa":
-            gas_label = LABEL_FIXED_PRICE
-        else:  # variabile
-            gas_label = "Spread (PSV +)"
+        # Formatta header gas
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", data["gas"])
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
-            f"  - {gas_label}: {gas_energia_fmt} €/Smc\n"
+            f"  - {gas_label}: {gas_energia_fmt} {gas_unit}\n"
             f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
         )
+
+        # Mostra consumo gas se presente
+        consumo_gas = data["gas"].get("consumo_annuo")
+        if consumo_gas is not None:
+            messaggio += (
+                f"  - Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
+            )
 
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
@@ -597,12 +835,8 @@ async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
     logger.info("🕷️  Avvio scraper...")
     try:
-        result = await scrape_octopus_tariffe()
+        result = await fetch_octopus_tariffe()
         logger.info(f"✅ Scraper completato: {result}")
-    except PlaywrightTimeout:
-        logger.error("⏱️  Timeout scraper: la pagina non ha risposto in tempo")
-    except PlaywrightError as e:
-        logger.error(f"❌ Errore Playwright scraper: {e}")
     except ConnectionError as e:
         logger.error(f"🌐 Errore di connessione scraper: {e}")
     except OSError as e:
@@ -830,9 +1064,15 @@ def main() -> None:
             LUCE_TIPO_VARIABILE: [CallbackQueryHandler(luce_tipo_variabile)],
             LUCE_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_energia)],
             LUCE_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_comm)],
+            VUOI_CONSUMI_LUCE: [CallbackQueryHandler(vuoi_consumi_luce)],
+            LUCE_CONSUMO_F1: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f1)],
+            LUCE_CONSUMO_F2: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f2)],
+            LUCE_CONSUMO_F3: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f3)],
             HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
+            VUOI_CONSUMI_GAS: [CallbackQueryHandler(vuoi_consumi_gas)],
+            GAS_CONSUMO: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_consumo)],
         },
         fallbacks=[
             CommandHandler("cancel", cancel_conversation),

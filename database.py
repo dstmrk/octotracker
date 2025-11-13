@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS users (
     gas_fascia TEXT,
     gas_energia REAL,
     gas_commercializzazione REAL,
+    luce_consumo_f1 REAL,
+    luce_consumo_f2 REAL,
+    luce_consumo_f3 REAL,
+    gas_consumo_annuo REAL,
     last_notified_rates TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -82,6 +86,14 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
         }
     }
 
+    # Aggiungi consumi luce se presenti
+    if row["luce_consumo_f1"] is not None:
+        user_data["luce"]["consumo_f1"] = row["luce_consumo_f1"]
+    if row["luce_consumo_f2"] is not None:
+        user_data["luce"]["consumo_f2"] = row["luce_consumo_f2"]
+    if row["luce_consumo_f3"] is not None:
+        user_data["luce"]["consumo_f3"] = row["luce_consumo_f3"]
+
     # Aggiungi gas solo se presente
     if row["gas_tipo"]:
         user_data["gas"] = {
@@ -90,6 +102,9 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
             "energia": row["gas_energia"],
             "commercializzazione": row["gas_commercializzazione"],
         }
+        # Aggiungi consumo gas se presente
+        if row["gas_consumo_annuo"] is not None:
+            user_data["gas"]["consumo_annuo"] = row["gas_consumo_annuo"]
 
     # Aggiungi last_notified_rates se presente
     if row["last_notified_rates"]:
@@ -140,42 +155,61 @@ def load_user(user_id: str) -> dict[str, Any] | None:
         return None
 
 
+def _validate_luce_data(luce: dict[str, Any]) -> None:
+    """Valida i dati della fornitura luce"""
+    if luce["tipo"] not in VALID_TYPES:
+        raise ValueError(f"luce.tipo non valido: '{luce['tipo']}'. Valori ammessi: {VALID_TYPES}")
+    if luce["fascia"] not in VALID_FASCE_LUCE:
+        raise ValueError(
+            f"luce.fascia non valida: '{luce['fascia']}'. Valori ammessi: {VALID_FASCE_LUCE}"
+        )
+
+
+def _validate_gas_data(gas: dict[str, Any]) -> None:
+    """Valida i dati della fornitura gas"""
+    if gas["tipo"] not in VALID_TYPES:
+        raise ValueError(f"gas.tipo non valido: '{gas['tipo']}'. Valori ammessi: {VALID_TYPES}")
+    if gas["fascia"] not in VALID_FASCE_GAS:
+        raise ValueError(
+            f"gas.fascia non valida: '{gas['fascia']}'. Valori ammessi: {VALID_FASCE_GAS}"
+        )
+
+
+def _extract_gas_fields(gas: dict[str, Any] | None) -> tuple[str | None, ...]:
+    """Estrae i campi gas se presenti, None altrimenti"""
+    if gas is None:
+        return (None, None, None, None, None)
+
+    return (
+        gas["tipo"],
+        gas["fascia"],
+        gas["energia"],
+        gas["commercializzazione"],
+        gas.get("consumo_annuo"),
+    )
+
+
 def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
     """
     Salva o aggiorna un utente nel database
     Usa UPSERT per gestire sia insert che update
     """
     try:
-        # Estrai dati luce (obbligatori)
+        # Estrai e valida dati luce (obbligatori)
         luce = user_data["luce"]
+        _validate_luce_data(luce)
 
-        # Validazione luce
-        if luce["tipo"] not in VALID_TYPES:
-            raise ValueError(
-                f"luce.tipo non valido: '{luce['tipo']}'. Valori ammessi: {VALID_TYPES}"
-            )
-        if luce["fascia"] not in VALID_FASCE_LUCE:
-            raise ValueError(
-                f"luce.fascia non valida: '{luce['fascia']}'. Valori ammessi: {VALID_FASCE_LUCE}"
-            )
+        # Estrai consumi luce (opzionali)
+        luce_consumo_f1 = luce.get("consumo_f1")
+        luce_consumo_f2 = luce.get("consumo_f2")
+        luce_consumo_f3 = luce.get("consumo_f3")
 
-        # Estrai dati gas (opzionali)
+        # Estrai e valida dati gas (opzionali)
         gas = user_data.get("gas")
-        gas_tipo = gas["tipo"] if gas else None
-        gas_fascia = gas["fascia"] if gas else None
-        gas_energia = gas["energia"] if gas else None
-        gas_comm = gas["commercializzazione"] if gas else None
-
-        # Validazione gas (se presente)
         if gas is not None:
-            if gas["tipo"] not in VALID_TYPES:
-                raise ValueError(
-                    f"gas.tipo non valido: '{gas['tipo']}'. Valori ammessi: {VALID_TYPES}"
-                )
-            if gas["fascia"] not in VALID_FASCE_GAS:
-                raise ValueError(
-                    f"gas.fascia non valida: '{gas['fascia']}'. Valori ammessi: {VALID_FASCE_GAS}"
-                )
+            _validate_gas_data(gas)
+
+        gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
 
         # Serializza last_notified_rates se presente
         last_notified = user_data.get("last_notified_rates")
@@ -187,8 +221,9 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                 INSERT INTO users (
                     user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
                     gas_tipo, gas_fascia, gas_energia, gas_commercializzazione,
+                    luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, gas_consumo_annuo,
                     last_notified_rates, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(user_id) DO UPDATE SET
                     luce_tipo = excluded.luce_tipo,
                     luce_fascia = excluded.luce_fascia,
@@ -198,6 +233,10 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     gas_fascia = excluded.gas_fascia,
                     gas_energia = excluded.gas_energia,
                     gas_commercializzazione = excluded.gas_commercializzazione,
+                    luce_consumo_f1 = excluded.luce_consumo_f1,
+                    luce_consumo_f2 = excluded.luce_consumo_f2,
+                    luce_consumo_f3 = excluded.luce_consumo_f3,
+                    gas_consumo_annuo = excluded.gas_consumo_annuo,
                     last_notified_rates = excluded.last_notified_rates,
                     updated_at = CURRENT_TIMESTAMP
             """,
@@ -211,6 +250,10 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     gas_fascia,
                     gas_energia,
                     gas_comm,
+                    luce_consumo_f1,
+                    luce_consumo_f2,
+                    luce_consumo_f3,
+                    gas_consumo,
                     last_notified_json,
                 ),
             )
