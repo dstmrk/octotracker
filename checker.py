@@ -593,7 +593,7 @@ def _get_mixed_utilities(
     return mixed_utilities
 
 
-def _format_savings_estimates(mixed_utilities: list[tuple[str, float | None]]) -> str:
+def _format_savings_estimates() -> str:
     """Formatta le stime di risparmio per utility con consumi
 
     NOTA: Le stime di risparmio sono ora mostrate inline nelle sezioni utility,

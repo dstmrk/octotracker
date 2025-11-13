@@ -111,6 +111,68 @@ def _remove_namespace(tree: ET.Element) -> None:
             elem.tag = elem.tag.split("}", 1)[1]
 
 
+def _parse_intervallo_prezzo(intervallo: ET.Element) -> dict[str, Any] | None:
+    """Parsea singolo intervallo prezzi da XML
+
+    Args:
+        intervallo: Elemento XML IntervalloPrezzi
+
+    Returns:
+        Dict con prezzo, fascia, unita_misura o None se prezzo mancante
+    """
+    prezzo_elem = intervallo.find("PREZZO")
+    if prezzo_elem is None:
+        return None
+
+    fascia_elem = intervallo.find("FASCIA_COMPONENTE")
+    unita_elem = intervallo.find("UNITA_MISURA")
+
+    return {
+        "prezzo": float(prezzo_elem.text),
+        "fascia": fascia_elem.text if fascia_elem is not None else None,
+        "unita_misura": unita_elem.text if unita_elem is not None else None,
+    }
+
+
+def _extract_intervalli_prezzi(comp: ET.Element) -> list[dict[str, Any]]:
+    """Estrae lista intervalli prezzi da componente
+
+    Args:
+        comp: Elemento XML ComponenteImpresa
+
+    Returns:
+        Lista di dict con dati intervalli (vuota se nessun intervallo valido)
+    """
+    intervalli = []
+    for intervallo in comp.findall(".//IntervalloPrezzi"):
+        parsed = _parse_intervallo_prezzo(intervallo)
+        if parsed is not None:
+            intervalli.append(parsed)
+    return intervalli
+
+
+def _build_componente_result(comp: ET.Element, intervalli: list[dict[str, Any]]) -> dict[str, Any]:
+    """Costruisce dict risultato per componente impresa
+
+    Args:
+        comp: Elemento XML ComponenteImpresa
+        intervalli: Lista intervalli prezzi parsati
+
+    Returns:
+        Dict con nome e intervalli (se presenti)
+    """
+    result = {}
+
+    nome = comp.find("NOME")
+    if nome is not None:
+        result["nome"] = nome.text
+
+    if intervalli:
+        result["intervalli"] = intervalli
+
+    return result
+
+
 def _extract_componente_impresa(offerta_elem: ET.Element, macroarea: str) -> dict[str, Any] | None:
     """Estrae componente impresa da offerta XML
 
@@ -124,33 +186,8 @@ def _extract_componente_impresa(offerta_elem: ET.Element, macroarea: str) -> dic
     for comp in offerta_elem.findall(".//ComponenteImpresa"):
         macro = comp.find("MACROAREA")
         if macro is not None and macro.text == macroarea:
-            result = {}
-
-            # Nome e descrizione
-            nome = comp.find("NOME")
-            if nome is not None:
-                result["nome"] = nome.text
-
-            # Intervalli prezzi
-            intervalli = []
-            for intervallo in comp.findall(".//IntervalloPrezzi"):
-                prezzo_elem = intervallo.find("PREZZO")
-                fascia_elem = intervallo.find("FASCIA_COMPONENTE")
-                unita_elem = intervallo.find("UNITA_MISURA")
-
-                if prezzo_elem is not None:
-                    intervalli.append(
-                        {
-                            "prezzo": float(prezzo_elem.text),
-                            "fascia": fascia_elem.text if fascia_elem is not None else None,
-                            "unita_misura": unita_elem.text if unita_elem is not None else None,
-                        }
-                    )
-
-            if intervalli:
-                result["intervalli"] = intervalli
-
-            return result
+            intervalli = _extract_intervalli_prezzi(comp)
+            return _build_componente_result(comp, intervalli)
 
     return None
 
