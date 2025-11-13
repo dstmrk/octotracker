@@ -34,6 +34,12 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
+from constants import (
+    ERROR_VALUE_NEGATIVE,
+    LABEL_FIXED_PRICE,
+    LABEL_VARIABLE_ELECTRICITY,
+    LABEL_VARIABLE_GAS,
+)
 from database import init_db, load_user, remove_user, save_user, user_exists
 from scraper import scrape_octopus_tariffe
 
@@ -54,11 +60,6 @@ logger = logging.getLogger(__name__)
 logging.getLogger("telegram").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
-
-
-# Costanti messaggi
-ERROR_VALUE_NEGATIVE = "❌ Il valore deve essere maggiore o uguale a zero"
-LABEL_FIXED_PRICE = "Prezzo fisso"
 
 
 # Stati conversazione
@@ -386,7 +387,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         luce_label = LABEL_FIXED_PRICE
         luce_unit = "€/kWh"
     else:  # variabile
-        luce_label = "Spread (PUN +)"
+        luce_label = LABEL_VARIABLE_ELECTRICITY
         luce_unit = "€/kWh"
 
     messaggio = (
@@ -409,7 +410,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         if gas_tipo == "fissa":
             gas_label = LABEL_FIXED_PRICE
         else:  # variabile
-            gas_label = "Spread (PSV +)"
+            gas_label = LABEL_VARIABLE_GAS
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas})</b>\n"
@@ -484,7 +485,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if luce_tipo == "fissa":
         luce_label = LABEL_FIXED_PRICE
     else:  # variabile
-        luce_label = "Spread (PUN +)"
+        luce_label = LABEL_VARIABLE_ELECTRICITY
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
@@ -505,7 +506,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if gas_tipo == "fissa":
             gas_label = LABEL_FIXED_PRICE
         else:  # variabile
-            gas_label = "Spread (PSV +)"
+            gas_label = LABEL_VARIABLE_GAS
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
