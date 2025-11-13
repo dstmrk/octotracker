@@ -314,7 +314,6 @@ def _format_utility_section(
     current_rates: dict[str, Any],
     emoji: str,
     unit: str,
-    index_name: str,
 ) -> str:
     """Formatta sezione utility (luce o gas) della notifica
 
@@ -325,7 +324,6 @@ def _format_utility_section(
         current_rates: Tariffe correnti
         emoji: Emoji da usare (💡 per luce, 🔥 per gas)
         unit: Unità di misura energia (€/kWh per luce, €/Smc per gas)
-        index_name: Nome indice di riferimento (PUN per luce, PSV per gas)
 
     Returns:
         Stringa HTML formattata per la sezione utility
@@ -405,7 +403,6 @@ def _format_luce_section(
         current_rates=current_rates,
         emoji="💡",
         unit="€/kWh",
-        index_name="PUN",
     )
 
 
@@ -420,7 +417,6 @@ def _format_gas_section(
         current_rates=current_rates,
         emoji="🔥",
         unit="€/Smc",
-        index_name="PSV",
     )
 
 

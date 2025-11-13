@@ -72,15 +72,12 @@ def get_utility_unit(utility_name: str) -> str:
     return "€/kWh" if utility_name == "luce" else "€/Smc"
 
 
-def format_utility_header(
-    utility_name: str, user_data: dict[str, Any], emoji: str
-) -> tuple[str, str, str]:
+def format_utility_header(utility_name: str, user_data: dict[str, Any]) -> tuple[str, str, str]:
     """Formatta header per sezione utility (luce o gas)
 
     Args:
         utility_name: "luce" o "gas"
         user_data: Dati utente con tipo/fascia
-        emoji: Emoji da usare (💡 per luce, 🔥 per gas)
 
     Returns:
         Tupla (tipo_display, label, unit)
@@ -89,7 +86,7 @@ def format_utility_header(
         - unit: Unità misura (es. "€/kWh")
 
     Examples:
-        >>> format_utility_header("luce", {"tipo": "fissa", "fascia": "monoraria"}, "💡")
+        >>> format_utility_header("luce", {"tipo": "fissa", "fascia": "monoraria"})
         ("Fissa Monoraria", "Prezzo fisso", "€/kWh")
     """
     tipo = user_data["tipo"]

@@ -573,7 +573,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     luce_comm_fmt = format_number(user_data["luce"]["commercializzazione"], max_decimals=2)
 
     # Formatta header luce
-    tipo_display, luce_label, luce_unit = format_utility_header("luce", user_data["luce"], "💡")
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", user_data["luce"])
 
     messaggio = (
         "✅ <b>Abbiamo finito!</b>\n\n"
@@ -616,7 +616,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
         gas_comm_fmt = format_number(user_data["gas"]["commercializzazione"], max_decimals=2)
 
         # Formatta header gas
-        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", user_data["gas"], "🔥")
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", user_data["gas"])
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas})</b>\n"
@@ -690,7 +690,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     luce_comm_fmt = format_number(data["luce"]["commercializzazione"], max_decimals=2)
 
     # Formatta header luce
-    tipo_display, luce_label, luce_unit = format_utility_header("luce", data["luce"], "💡")
+    tipo_display, luce_label, luce_unit = format_utility_header("luce", data["luce"])
 
     messaggio = (
         "📊 <b>I tuoi dati:</b>\n\n"
@@ -736,7 +736,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
 
         # Formatta header gas
-        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", data["gas"], "🔥")
+        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", data["gas"])
 
         messaggio += (
             f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
