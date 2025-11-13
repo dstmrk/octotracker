@@ -13,6 +13,7 @@ import pytest
 
 from data_reader import (
     _build_arera_url,
+    _empty_structure,
     _extract_componente_impresa,
     _fetch_service_data,
     _parse_arera_xml,
@@ -548,3 +549,62 @@ def test_json_serializable():
     json_str = json.dumps(tariffe_data, indent=2)
     parsed = json.loads(json_str)
     assert tariffe_data == parsed
+
+
+# ===== Test Error Handling =====
+
+
+def test_parse_arera_xml_malformed():
+    """Test gestione XML malformato"""
+    malformed_xml = """<?xml version="1.0"?>
+    <OfferList>
+        <Offer>
+            <SupplierName>Octopus Energy Italia</SupplierName>
+            <OfferName>TARIFF<missing_close_tag>
+        </Offer>
+    """  # Missing closing tags
+
+    result = _parse_arera_xml(malformed_xml, "E")
+
+    # Should return empty structure on parse error
+    assert result == {"luce": {"fissa": {}, "variabile": {}}}
+
+
+def test_parse_arera_xml_non_xml_content():
+    """Test gestione contenuto non-XML (es. pagina di errore HTML)"""
+    html_error = """<!DOCTYPE html>
+    <html>
+    <head><title>500 Internal Server Error</title></head>
+    <body><h1>Server Error</h1></body>
+    </html>"""
+
+    result = _parse_arera_xml(html_error, "G")
+
+    # Should return empty structure on parse error
+    assert result == {"gas": {"fissa": {}, "variabile": {}}}
+
+
+def test_parse_arera_xml_empty_string():
+    """Test gestione stringa vuota"""
+    result = _parse_arera_xml("", "E")
+
+    # Should return empty structure on parse error
+    assert result == {"luce": {"fissa": {}, "variabile": {}}}
+
+
+def test_empty_structure_electricity():
+    """Test struttura vuota per elettricità"""
+    result = _empty_structure("E")
+    assert result == {"luce": {"fissa": {}, "variabile": {}}}
+
+
+def test_empty_structure_gas():
+    """Test struttura vuota per gas"""
+    result = _empty_structure("G")
+    assert result == {"gas": {"fissa": {}, "variabile": {}}}
+
+
+def test_empty_structure_invalid_service():
+    """Test struttura vuota per servizio non valido"""
+    result = _empty_structure("INVALID")
+    assert result == {}

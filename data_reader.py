@@ -299,6 +299,22 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     }
 
 
+def _empty_structure(service: str) -> dict[str, Any]:
+    """Ritorna struttura vuota per un servizio
+
+    Args:
+        service: Tipo servizio - "E" per elettrico, "G" per gas
+
+    Returns:
+        Dict con struttura vuota (luce o gas)
+    """
+    if service == "E":
+        return {"luce": {"fissa": {}, "variabile": {}}}
+    elif service == "G":
+        return {"gas": {"fissa": {}, "variabile": {}}}
+    return {}
+
+
 def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     """Parsea XML ARERA ed estrae tariffe Octopus
 
@@ -309,7 +325,18 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     Returns:
         Dict con struttura parziale (solo luce o solo gas)
     """
-    root = ET.fromstring(xml_content)
+    # Parse XML con gestione errori robusta
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as e:
+        service_name = "elettricità" if service == "E" else "gas"
+        logger.error(f"❌ XML malformato per {service_name}: {e}")
+        logger.debug(f"   Primi 500 caratteri: {xml_content[:500]}")
+        return _empty_structure(service)
+    except Exception as e:
+        service_name = "elettricità" if service == "E" else "gas"
+        logger.error(f"❌ Errore inaspettato parsing XML {service_name}: {type(e).__name__}: {e}")
+        return _empty_structure(service)
 
     # Rimuovi namespace per semplificare il parsing
     _remove_namespace(root)
