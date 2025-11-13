@@ -14,14 +14,9 @@ from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
-from constants import (
-    LABEL_FIXED_PRICE,
-    LABEL_VARIABLE_ELECTRICITY,
-    LABEL_VARIABLE_GAS,
-    MAX_DECIMALS_COST,
-    MAX_DECIMALS_ENERGY,
-)
+from constants import MAX_DECIMALS_COST, MAX_DECIMALS_ENERGY
 from database import load_users, save_user
+from formatters import format_utility_type_display, get_utility_label
 
 load_dotenv()
 
@@ -346,16 +341,10 @@ def _format_utility_section(
     fascia_key = f"{utility_name}_fascia"
     tipo = savings[tipo_key]
     fascia = savings[fascia_key]
-    tipo_display = f"{tipo.capitalize()} {fascia.capitalize()}"
 
-    # Determina label in base al tipo
-    if tipo == "fissa":
-        label = LABEL_FIXED_PRICE
-    else:
-        if utility_name == "luce":
-            label = LABEL_VARIABLE_ELECTRICITY
-        else:  # gas
-            label = LABEL_VARIABLE_GAS
+    # Formatta tipo e label usando helper functions
+    tipo_display = format_utility_type_display(tipo, fascia)
+    label = get_utility_label(tipo, utility_name)
 
     # Header sezione
     utility_display = utility_name.capitalize()
