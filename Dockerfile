@@ -23,8 +23,8 @@ RUN mkdir -p /app/data
 
 # Variabili d'ambiente di default (possono essere sovrascritte)
 ENV TELEGRAM_BOT_TOKEN=""
-ENV SCRAPER_HOUR="9"
-ENV CHECKER_HOUR="10"
+ENV SCRAPER_HOUR="11"
+ENV CHECKER_HOUR="12"
 ENV TZ="Europe/Rome"
 ENV LOG_LEVEL="INFO"
 
