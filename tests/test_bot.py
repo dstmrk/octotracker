@@ -10,21 +10,20 @@ Testa tutti i flussi conversazionali del bot:
 """
 
 import os
+import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from telegram import CallbackQuery, InlineKeyboardMarkup, Message, Update, User
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 
 # Mock WEBHOOK_SECRET prima di importare bot (previene ValueError)
 os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
 
 # Import funzioni del bot e database
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import tempfile
 
 import database
 from bot import (
@@ -40,6 +39,7 @@ from bot import (
     VUOI_CONSUMI_GAS,
     VUOI_CONSUMI_LUCE,
     _format_confirmation_message,
+    cancel_conversation,
     gas_comm,
     gas_consumo,
     gas_energia,
@@ -403,11 +403,65 @@ async def test_remove_command(mock_update, mock_context):
     }
     save_user("123456789", user_data)
 
-    await remove_data(mock_update, mock_context)
+    result = await remove_data(mock_update, mock_context)
 
     # Verifica utente rimosso dal database
     assert load_user("123456789") is None
     mock_update.message.reply_text.assert_called_once()
+    # Verifica che restituisce END per uscire dalla conversazione
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
+async def test_cancel_command(mock_update, mock_context):
+    """Test /cancel annulla la conversazione in corso"""
+    # Simula una conversazione in corso
+    mock_context.user_data["luce_energia"] = 0.145
+    mock_context.user_data["is_variabile"] = False
+
+    result = await cancel_conversation(mock_update, mock_context)
+
+    # Verifica che il context sia stato pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica che restituisce END per uscire dalla conversazione
+    assert result == ConversationHandler.END
+    # Verifica che il messaggio di cancellazione sia stato inviato
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "annullat" in message_text.lower()
+
+
+@pytest.mark.asyncio
+async def test_cancel_command_no_conversation(mock_update, mock_context):
+    """Test /cancel quando non c'è una conversazione in corso"""
+    # Context vuoto
+    assert len(mock_context.user_data) == 0
+
+    result = await cancel_conversation(mock_update, mock_context)
+
+    # Deve comunque funzionare e restituire END
+    assert result == ConversationHandler.END
+    mock_update.message.reply_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_help_command_clears_conversation_context(mock_update, mock_context):
+    """Test /help come fallback: pulisce il context e termina la conversazione"""
+    # Simula conversazione in corso
+    mock_context.user_data["luce_energia"] = 0.145
+    mock_context.user_data["is_variabile"] = False
+
+    result = await help_command(mock_update, mock_context)
+
+    # Verifica context pulito
+    assert len(mock_context.user_data) == 0
+    # Verifica che restituisce END
+    assert result == ConversationHandler.END
+    # Verifica che /cancel sia menzionato nel messaggio di help
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "/cancel" in message_text
 
 
 # ========== TEST FLUSSO CONVERSAZIONE ==========
