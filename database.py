@@ -38,9 +38,23 @@ CREATE TABLE IF NOT EXISTS users (
     luce_consumo_f3 REAL,
     gas_consumo_annuo REAL,
     last_notified_rates TEXT,
+    last_feedback_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    feedback_type TEXT NOT NULL,
+    rating INTEGER,
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
 """
 
 
@@ -64,11 +78,34 @@ def get_connection():
             conn.close()
 
 
+def _column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    """Controlla se una colonna esiste in una tabella"""
+    cursor = conn.execute(f"PRAGMA table_info({table})")
+    columns = [row[1] for row in cursor.fetchall()]
+    return column in columns
+
+
+def _migrate_feedback_schema() -> None:
+    """Migrazione per aggiungere supporto feedback a database esistenti"""
+    try:
+        with get_connection() as conn:
+            # Controlla se la colonna last_feedback_at esiste già
+            if not _column_exists(conn, "users", "last_feedback_at"):
+                logger.info("🔄 Aggiunta colonna last_feedback_at alla tabella users")
+                conn.execute("ALTER TABLE users ADD COLUMN last_feedback_at TIMESTAMP")
+                logger.info("✅ Migration feedback completata")
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore migration feedback: {e}")
+        raise
+
+
 def init_db() -> None:
     """Inizializza database e crea tabelle"""
     try:
         with get_connection() as conn:
             conn.executescript(SCHEMA)
+        # Applica migration per database esistenti
+        _migrate_feedback_schema()
         logger.info("✅ Database inizializzato")
     except sqlite3.Error as e:
         logger.error(f"❌ Errore inizializzazione database: {e}")
@@ -315,6 +352,125 @@ def get_user_count() -> int:
 
     except sqlite3.Error as e:
         logger.error(f"❌ Errore conteggio utenti: {e}")
+        return 0
+
+
+# ========== FUNZIONI FEEDBACK ==========
+
+
+def save_feedback(
+    user_id: str, feedback_type: str, rating: int | None = None, comment: str | None = None
+) -> bool:
+    """
+    Salva un nuovo feedback nel database
+
+    Args:
+        user_id: ID utente Telegram
+        feedback_type: Tipo di feedback ('command', 'notification_rating', 'periodic_survey')
+        rating: Rating numerico (1-5 per survey, 1/0 per thumbs, None se non applicabile)
+        comment: Commento testuale opzionale
+
+    Returns:
+        True se salvato con successo, False altrimenti
+    """
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO feedback (user_id, feedback_type, rating, comment)
+                VALUES (?, ?, ?, ?)
+            """,
+                (user_id, feedback_type, rating, comment),
+            )
+            # Aggiorna timestamp ultimo feedback
+            conn.execute(
+                "UPDATE users SET last_feedback_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (user_id,),
+            )
+
+        logger.info(f"💬 Feedback salvato per utente {user_id} (tipo: {feedback_type})")
+        return True
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore salvataggio feedback: {e}")
+        return False
+
+
+def get_last_feedback_time(user_id: str) -> str | None:
+    """
+    Ottiene timestamp dell'ultimo feedback dell'utente
+
+    Returns:
+        Timestamp ISO string o None se mai dato feedback
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT last_feedback_at FROM users WHERE user_id = ?", (user_id,)
+            )
+            row = cursor.fetchone()
+            return row["last_feedback_at"] if row else None
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore recupero last_feedback_time: {e}")
+        return None
+
+
+def get_recent_feedbacks(limit: int = 10) -> list[dict[str, Any]]:
+    """
+    Ottiene gli ultimi N feedback (per admin)
+
+    Args:
+        limit: Numero massimo di feedback da recuperare
+
+    Returns:
+        Lista di dizionari con i feedback
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT
+                    id, user_id, feedback_type, rating, comment,
+                    datetime(created_at, 'localtime') as created_at
+                FROM feedback
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            """,
+                (limit,),
+            )
+            rows = cursor.fetchall()
+
+            feedbacks = []
+            for row in rows:
+                feedbacks.append(
+                    {
+                        "id": row["id"],
+                        "user_id": row["user_id"],
+                        "feedback_type": row["feedback_type"],
+                        "rating": row["rating"],
+                        "comment": row["comment"],
+                        "created_at": row["created_at"],
+                    }
+                )
+
+            return feedbacks
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore recupero feedback recenti: {e}")
+        return []
+
+
+def get_feedback_count() -> int:
+    """Ritorna il numero totale di feedback ricevuti"""
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute("SELECT COUNT(*) as count FROM feedback")
+            row = cursor.fetchone()
+            return row["count"] if row else 0
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore conteggio feedback: {e}")
         return 0
 
 
