@@ -13,6 +13,7 @@ COPY pyproject.toml .
 # Installa solo dipendenze di produzione (senza pytest e dev tools)
 RUN uv sync --no-dev && \
     # Pulizia per ridurre dimensione
+    rm -rf ~/.cache/uv && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
