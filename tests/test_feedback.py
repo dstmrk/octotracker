@@ -112,6 +112,21 @@ def test_migration_feedback_schema():
         assert cursor.fetchone() is not None
 
 
+def test_migration_idempotent():
+    """Test che la migration può essere eseguita più volte senza errori"""
+    # Esegui migration una seconda volta (è già stata eseguita nel fixture)
+    from database import _migrate_feedback_schema
+
+    # Non deve sollevare eccezioni
+    _migrate_feedback_schema()
+
+    # Verifica che la colonna esista ancora
+    with database.get_connection() as conn:
+        cursor = conn.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cursor.fetchall()]
+        assert "last_feedback_at" in columns
+
+
 def test_save_feedback_success():
     """Test salvataggio feedback con successo"""
     result = save_feedback(
@@ -200,6 +215,93 @@ def test_get_feedback_count():
 
     save_feedback("222", "command", 4)
     assert get_feedback_count() == 2
+
+
+def test_save_feedback_without_user():
+    """Test salvataggio feedback per utente non esistente (nessun errore FK)"""
+    # SQLite permette FK non esistenti se non enforce FK
+    result = save_feedback("999999", "command", 5, "Test utente inesistente")
+    # Dovrebbe salvare comunque (SQLite non enforza FK di default)
+    assert result is True
+
+
+def test_get_last_feedback_time_user_not_exists():
+    """Test get_last_feedback_time per utente inesistente"""
+    result = get_last_feedback_time("999999")
+    assert result is None
+
+
+def test_save_feedback_database_error(monkeypatch):
+    """Test gestione errore database in save_feedback"""
+    import sqlite3
+
+    def mock_get_connection_error():
+        raise sqlite3.Error("Database locked")
+
+    # Salva riferimento originale
+    original_get_connection = database.get_connection
+
+    # Mock per sollevare errore
+    monkeypatch.setattr(database, "get_connection", mock_get_connection_error)
+
+    result = save_feedback("123", "command", 5, "Test")
+
+    # Deve ritornare False in caso di errore
+    assert result is False
+
+    # Ripristina
+    monkeypatch.setattr(database, "get_connection", original_get_connection)
+
+
+def test_get_last_feedback_time_database_error(monkeypatch):
+    """Test gestione errore database in get_last_feedback_time"""
+    import sqlite3
+
+    def mock_get_connection_error():
+        raise sqlite3.Error("Database locked")
+
+    original_get_connection = database.get_connection
+    monkeypatch.setattr(database, "get_connection", mock_get_connection_error)
+
+    result = get_last_feedback_time("123")
+
+    assert result is None
+
+    monkeypatch.setattr(database, "get_connection", original_get_connection)
+
+
+def test_get_recent_feedbacks_database_error(monkeypatch):
+    """Test gestione errore database in get_recent_feedbacks"""
+    import sqlite3
+
+    def mock_get_connection_error():
+        raise sqlite3.Error("Database locked")
+
+    original_get_connection = database.get_connection
+    monkeypatch.setattr(database, "get_connection", mock_get_connection_error)
+
+    result = get_recent_feedbacks()
+
+    assert result == []
+
+    monkeypatch.setattr(database, "get_connection", original_get_connection)
+
+
+def test_get_feedback_count_database_error(monkeypatch):
+    """Test gestione errore database in get_feedback_count"""
+    import sqlite3
+
+    def mock_get_connection_error():
+        raise sqlite3.Error("Database locked")
+
+    original_get_connection = database.get_connection
+    monkeypatch.setattr(database, "get_connection", mock_get_connection_error)
+
+    result = get_feedback_count()
+
+    assert result == 0
+
+    monkeypatch.setattr(database, "get_connection", original_get_connection)
 
 
 # ========== TEST CONVERSAZIONE FEEDBACK ==========
@@ -367,3 +469,82 @@ async def test_feedback_rate_limiting_integration(mock_update, mock_context, mon
     # Terzo feedback dopo 24h: deve funzionare
     result3 = await feedback_command(mock_update, mock_context)
     assert result3 == RATING
+
+
+@pytest.mark.asyncio
+async def test_feedback_command_invalid_timestamp(mock_update, mock_context, monkeypatch):
+    """Test gestione timestamp invalido (graceful fallback)"""
+    user_id = "123456789"
+
+    # Crea utente
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user(user_id, user_data)
+
+    # Inserisci timestamp malformato
+    with database.get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET last_feedback_at = ? WHERE user_id = ?", ("invalid", user_id)
+        )
+
+    # Deve permettere di procedere (safe default)
+    result = await feedback_command(mock_update, mock_context)
+    assert result == RATING
+
+
+@pytest.mark.asyncio
+async def test_feedback_comment_database_error(mock_update, mock_context, monkeypatch):
+    """Test gestione errore database durante salvataggio commento"""
+    mock_context.user_data["rating"] = 5
+    mock_update.message.text = "Test commento"
+
+    # Mock save_feedback per ritornare False (errore)
+    def mock_save_feedback_error(*args, **kwargs):
+        return False
+
+    import feedback
+
+    original_save = feedback.save_feedback
+    monkeypatch.setattr(feedback, "save_feedback", mock_save_feedback_error)
+
+    result = await feedback_comment(mock_update, mock_context)
+
+    assert result == ConversationHandler.END
+    # Verifica che viene mostrato messaggio di errore
+    call_args = mock_update.message.reply_text.call_args
+    assert "errore" in call_args[0][0].lower()
+
+    monkeypatch.setattr(feedback, "save_feedback", original_save)
+
+
+@pytest.mark.asyncio
+async def test_feedback_skip_comment_database_error(
+    mock_update, mock_callback_query, mock_context, monkeypatch
+):
+    """Test gestione errore database durante skip commento"""
+    mock_update.callback_query = mock_callback_query
+    mock_context.user_data["rating"] = 3
+
+    # Mock save_feedback per ritornare False (errore)
+    def mock_save_feedback_error(*args, **kwargs):
+        return False
+
+    import feedback
+
+    original_save = feedback.save_feedback
+    monkeypatch.setattr(feedback, "save_feedback", mock_save_feedback_error)
+
+    result = await feedback_skip_comment(mock_update, mock_context)
+
+    assert result == ConversationHandler.END
+    # Verifica che viene mostrato messaggio di errore
+    call_args = mock_callback_query.edit_message_text.call_args
+    assert "errore" in call_args[0][0].lower()
+
+    monkeypatch.setattr(feedback, "save_feedback", original_save)
