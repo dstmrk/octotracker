@@ -41,6 +41,15 @@ docker-compose.yml
 README.md
 LICENSE
 
+# Test (non servono in produzione)
+tests/
+test_data/
+
+# CI/CD e sviluppo
+.github/
+.pre-commit-config.yaml
+sonar-project.properties
+
 # Render (non serve in Docker)
 render.yaml
 build.sh
