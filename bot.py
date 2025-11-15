@@ -35,6 +35,15 @@ from checker import check_and_notify_users, format_number
 from constants import ERROR_VALUE_NEGATIVE
 from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
+from feedback import (
+    COMMENT,
+    RATING,
+    feedback_cancel,
+    feedback_command,
+    feedback_comment,
+    feedback_rating,
+    feedback_skip_comment,
+)
 from formatters import format_utility_header
 
 load_dotenv()
@@ -797,6 +806,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "• /update – Aggiorna le tariffe che hai impostato\n"
         "• /status – Mostra le tariffe e lo stato attuale\n"
         "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
+        "• /feedback – Invia un feedback per migliorare il bot\n"
         "• /cancel – Annulla la registrazione in corso\n"
         "• /help – Mostra questo messaggio di aiuto\n\n"
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
@@ -1082,6 +1092,22 @@ def main() -> None:
     )
 
     app.add_handler(conv_handler)
+
+    # Handler conversazione feedback
+    feedback_handler = ConversationHandler(
+        entry_points=[CommandHandler("feedback", feedback_command)],
+        states={
+            RATING: [CallbackQueryHandler(feedback_rating, pattern=r"^rating_\d$")],
+            COMMENT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, feedback_comment),
+                CallbackQueryHandler(feedback_skip_comment, pattern=r"^skip_comment$"),
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", feedback_cancel)],
+        per_message=False,
+    )
+
+    app.add_handler(feedback_handler)
     app.add_handler(CommandHandler("cancel", cancel_conversation))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("remove", remove_data))
