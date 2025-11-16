@@ -10,10 +10,16 @@ __pycache__
 .Python
 env/
 venv/
+.venv/
 ENV/
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.db-journal
 
 # Dati locali (saranno montati come volume)
 data/
@@ -40,6 +46,7 @@ docker-compose.yml
 # Documentazione
 README.md
 LICENSE
+CLAUDE.md
 
 # Test (non servono in produzione)
 tests/

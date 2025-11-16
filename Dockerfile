@@ -7,12 +7,14 @@ WORKDIR /app
 # Installa uv (copiando binary da immagine ufficiale - metodo più veloce)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copia file dipendenze e package structure (serve a flit per build)
+# Copia file dipendenze
 COPY pyproject.toml .
-COPY src/ ./src/
 
-# Installa solo dipendenze di produzione (senza pytest e dev tools)
-RUN uv sync --no-dev && \
+# Installa solo dipendenze di produzione (senza installare il progetto come package)
+# Il progetto è un'applicazione standalone, non una libreria da installare
+RUN uv pip install --system \
+    "python-telegram-bot[webhooks]>=20.7" \
+    "python-dotenv>=1.0.0" && \
     # Pulizia per ridurre dimensione
     rm -rf ~/.cache/uv && \
     apt-get clean && \
@@ -32,5 +34,5 @@ ENV CHECKER_HOUR="12"
 ENV TZ="Europe/Rome"
 ENV LOG_LEVEL="INFO"
 
-# Avvia il bot con uv
-CMD ["uv", "run", "python", "-u", "bot.py"]
+# Avvia il bot direttamente con python (non serve uv run per app standalone)
+CMD ["python", "-u", "bot.py"]

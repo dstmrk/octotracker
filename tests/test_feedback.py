@@ -35,7 +35,7 @@ from database import (
     save_feedback,
     save_user,
 )
-from feedback import (
+from handlers.feedback import (
     COMMENT,
     MAX_COMMENT_LENGTH,
     RATING,
@@ -579,7 +579,7 @@ async def test_feedback_comment_database_error(mock_update, mock_context, monkey
     def mock_save_feedback_error(*args, **kwargs):
         return False
 
-    import feedback
+    import handlers.feedback as feedback
 
     original_save = feedback.save_feedback
     monkeypatch.setattr(feedback, "save_feedback", mock_save_feedback_error)
@@ -606,7 +606,7 @@ async def test_feedback_skip_comment_database_error(
     def mock_save_feedback_error(*args, **kwargs):
         return False
 
-    import feedback
+    import handlers.feedback as feedback
 
     original_save = feedback.save_feedback
     monkeypatch.setattr(feedback, "save_feedback", mock_save_feedback_error)
