@@ -97,22 +97,34 @@ xdg-open htmlcov/index.html  # Linux
 
 ```
 octotracker/
-├── bot.py                    # Main bot + comandi utility + scheduler
-├── registration.py           # Conversazione registrazione tariffe
-├── feedback.py               # Sistema feedback utenti
-├── checker.py                # Verifica tariffe e notifiche
-├── database.py               # Gestione database SQLite
-├── data_reader.py            # Scraper tariffe Octopus Energy
-├── formatters.py             # Formattatori output
-├── constants.py              # Costanti globali
-├── health_handler.py         # Health check endpoint
+├── bot.py                    # Main bot: orchestrazione, setup, scheduler
+├── handlers/                 # Handler bot organizzati
+│   ├── __init__.py
+│   ├── registration.py      # Conversazione registrazione tariffe
+│   ├── feedback.py          # Sistema feedback utenti
+│   └── commands.py          # Comandi utility (status, help, etc.)
+├── checker.py               # Verifica tariffe e notifiche
+├── database.py              # Gestione database SQLite
+├── data_reader.py           # Scraper tariffe Octopus Energy
+├── formatters.py            # Formattatori output
+├── constants.py             # Costanti globali
+├── health_handler.py        # Health check endpoint
+├── broadcast.py             # Sistema broadcast messaggi
 ├── tests/
 │   ├── test_bot.py          # Test comandi bot
 │   ├── test_registration.py # Test conversazione registrazione
 │   ├── test_feedback.py     # Test sistema feedback
 │   └── ...
+├── Dockerfile               # Container produzione
+├── docker-compose.yml       # Orchestrazione Docker
 └── pyproject.toml           # Configurazione progetto
 ```
+
+**Principi architetturali:**
+- `bot.py` contiene SOLO orchestrazione (main, setup, scheduler, error handler)
+- Handler conversazioni → `handlers/` subdirectory
+- Logica business → moduli root (checker.py, database.py, etc.)
+- Tests → `tests/` con naming `test_<modulo>.py`
 
 ## 📝 Workflow di Sviluppo
 
@@ -221,35 +233,133 @@ async def test_nome_descrittivo():
 
 ## 🐙 Pattern Consolidati
 
-### Moduli Conversazione (es. registration.py, feedback.py)
+### Moduli Conversazione (handlers/)
 
 Quando crei un nuovo conversation handler:
 
-1. **Separa in file dedicato** (come registration.py e feedback.py)
+1. **Crea file in handlers/** (es. `handlers/nuova_feature.py`)
 2. **Struttura standard**:
-   - Import
-   - Costanti messaggi
-   - Stati conversazione (IntEnum)
-   - Handler functions (async)
-   - Helper functions (private con `_`)
-   - Export esplicito delle costanti per backward compatibility
+   ```python
+   #!/usr/bin/env python3
+   """
+   Docstring descrittivo del modulo
+   """
+   import logging
+   from telegram import Update
+   from telegram.ext import ContextTypes, ConversationHandler
 
-3. **Test completi**:
+   # Setup logger
+   logger = logging.getLogger(__name__)
+
+   # Costanti e stati conversazione
+   STATO_1, STATO_2 = range(2)
+
+   # Handler functions (async)
+   async def handler_1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+       """Docstring funzione"""
+       logger.info(f"User {update.effective_user.id}: azione")
+       # ...
+   ```
+
+3. **Import in bot.py**:
+   ```python
+   from handlers.nuova_feature import (
+       STATO_1,
+       STATO_2,
+       handler_1,
+       handler_2,
+   )
+   ```
+
+4. **Test completi**:
+   - File `tests/test_nuova_feature.py`
    - Test per ogni handler
    - Test validazione input
    - Test flussi completi
    - Test edge cases
+   - Coverage > 80%
+
+### Logging Best Practices
+
+**Ogni modulo deve avere il proprio logger:**
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)  # NON usare root logger!
+
+# Log appropriati
+logger.debug("Info dettagliate per debug")
+logger.info("Operazione normale completata")
+logger.warning("Situazione anomala ma gestibile")
+logger.error("Errore che richiede attenzione")
+```
+
+**Quando loggare:**
+- `INFO`: Operazioni importanti (es. "User X registrato")
+- `WARNING`: Situazioni anomale (es. "Tentativo login fallito")
+- `ERROR`: Errori gestiti (es. "Database error durante save")
+- `DEBUG`: Solo per sviluppo (disabilitato in produzione)
+
+### Docstring Obbligatorie
+
+**Ogni modulo e funzione pubblica deve avere docstring:**
+
+```python
+"""
+Modulo per gestione tariffe Octopus Energy
+
+Responsabilità:
+- Scraping dati ARERA
+- Parsing XML offerte
+- Salvataggio tariffe in JSON
+"""
+
+async def fetch_rates(service: str) -> dict:
+    """
+    Recupera tariffe Octopus per servizio specificato
+
+    Args:
+        service: "elettricita" o "gas"
+
+    Returns:
+        Dict con tariffe parsate
+
+    Raises:
+        ValueError: Se service non valido
+    """
+```
 
 ### Import da Altri Moduli
 
+**Pattern standard per import:**
+
 ```python
-# bot.py importa da registration.py
-from registration import (
-    STATO_1,
-    STATO_2,
-    handler_1,
-    handler_2,
-)
+# Import standard library
+import asyncio
+import logging
+import os
+
+# Import terze parti
+from telegram import Update
+from telegram.ext import ContextTypes
+
+# Import moduli interni (ordine alfabetico)
+from checker import format_number
+from database import load_user
+from handlers.registration import LUCE_ENERGIA
+```
+
+**Uso di `from handlers.*`:**
+
+```python
+# ✅ CORRETTO - Import da handlers/
+from handlers.commands import status, help_command
+from handlers.feedback import feedback_command
+from handlers.registration import start
+
+# ❌ SBAGLIATO - Import vecchio stile (pre-refactoring)
+from registration import start  # Questo non funziona più!
 ```
 
 ## 🔍 Debugging
@@ -264,6 +374,81 @@ source .venv/bin/activate && pytest tests/test_file.py -s
 # Test con breakpoint
 # Aggiungi `breakpoint()` nel codice, poi:
 source .venv/bin/activate && pytest tests/test_file.py -s
+```
+
+## 🐳 Docker Best Practices
+
+### Build Locale
+
+```bash
+# Build immagine (dalla root del progetto)
+docker build -t octotracker:latest .
+
+# Verifica dimensione immagine
+docker images octotracker:latest
+
+# Run container locale
+docker run -d \
+  --name octotracker \
+  -e TELEGRAM_BOT_TOKEN="your_token" \
+  -e WEBHOOK_SECRET="your_secret" \
+  -v ./data:/app/data \
+  -p 8443:8443 \
+  -p 8444:8444 \
+  octotracker:latest
+```
+
+### Docker Compose
+
+```bash
+# Crea file .env con variabili necessarie
+cp .env.example .env
+# Edita .env con i tuoi valori
+
+# Avvia servizi
+docker compose up -d
+
+# Verifica logs
+docker compose logs -f
+
+# Stop servizi
+docker compose down
+```
+
+### Ottimizzazione Dimensione
+
+**Il Dockerfile è ottimizzato per dimensioni minime:**
+
+1. **Base image slim**: `python:3.11-slim` invece di `python:3.11`
+2. **Multi-stage build**: Copia solo `uv` binary necessario
+3. **No dev dependencies**: `uv sync --no-dev` esclude pytest, ruff, etc.
+4. **Pulizia cache**: `rm -rf ~/.cache/uv` dopo install
+5. **.dockerignore completo**: Esclude test, docs, cache, .venv
+
+**File esclusi da .dockerignore:**
+- `tests/` - Test non servono in produzione
+- `.venv/` - Virtual env locale
+- `.pytest_cache/`, `.ruff_cache/` - Cache tools dev
+- `.coverage`, `htmlcov/` - Report coverage
+- `CLAUDE.md`, `README.md` - Documentazione
+- `.github/`, `.git/` - CI/CD e versioning
+
+**Verifica sempre che nuovi file non aumentino dimensione inutilmente!**
+
+### Troubleshooting Docker
+
+```bash
+# Entra nel container per debug
+docker exec -it octotracker /bin/bash
+
+# Verifica file copiati
+docker exec -it octotracker ls -la /app
+
+# Verifica dipendenze installate
+docker exec -it octotracker uv pip list
+
+# Rebuild forzato (senza cache)
+docker build --no-cache -t octotracker:latest .
 ```
 
 ## 🚀 CI/CD

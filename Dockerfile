@@ -7,9 +7,8 @@ WORKDIR /app
 # Installa uv (copiando binary da immagine ufficiale - metodo più veloce)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copia file dipendenze e package structure (serve a flit per build)
+# Copia file dipendenze
 COPY pyproject.toml .
-COPY src/ ./src/
 
 # Installa solo dipendenze di produzione (senza pytest e dev tools)
 RUN uv sync --no-dev && \
