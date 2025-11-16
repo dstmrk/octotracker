@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 # Rate limiting: max 1 feedback ogni 24 ore
 FEEDBACK_COOLDOWN_HOURS = 24
 
+# Lunghezza massima commento (caratteri)
+MAX_COMMENT_LENGTH = 1000
+
 
 # Stati conversazione feedback
 class FeedbackState(IntEnum):
@@ -138,7 +141,7 @@ async def feedback_rating(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     message = (
         f"Grazie! Hai dato {stars}\n\n"
         f"Vuoi aggiungere un commento per aiutarci a migliorare?\n\n"
-        f"💬 <i>Scrivi il tuo messaggio oppure premi Salta.</i>"
+        f"💬 <i>Scrivi il tuo messaggio (max {MAX_COMMENT_LENGTH} caratteri) oppure premi Salta.</i>"
     )
 
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
@@ -151,11 +154,22 @@ async def feedback_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     Handler commento testuale
 
     Returns:
-        ConversationHandler.END (salva e termina)
+        ConversationHandler.END (salva e termina) o COMMENT (se validazione fallita)
     """
     user_id = str(update.effective_user.id)
     rating = context.user_data.get("rating")
     comment = update.message.text.strip()
+
+    # Validazione lunghezza commento
+    if len(comment) > MAX_COMMENT_LENGTH:
+        error_message = (
+            f"❌ <b>Commento troppo lungo!</b>\n\n"
+            f"Il tuo messaggio ha {len(comment)} caratteri, "
+            f"ma il limite è {MAX_COMMENT_LENGTH}.\n\n"
+            f"💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>"
+        )
+        await update.message.reply_text(error_message, parse_mode=ParseMode.HTML)
+        return COMMENT  # Rimani nello stato COMMENT per permettere un nuovo tentativo
 
     # Salva feedback nel database
     success = save_feedback(
