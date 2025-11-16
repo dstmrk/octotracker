@@ -420,6 +420,17 @@ async def test_feedback_rating(mock_update, mock_callback_query, mock_context):
 @pytest.mark.asyncio
 async def test_feedback_comment(mock_update, mock_context):
     """Test invio commento"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     # Setup context con rating
     mock_context.user_data["rating"] = 5
     mock_update.message.text = "Ottimo bot, molto utile!"
@@ -441,6 +452,17 @@ async def test_feedback_comment(mock_update, mock_context):
 @pytest.mark.asyncio
 async def test_feedback_skip_comment(mock_update, mock_callback_query, mock_context):
     """Test skip commento"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     mock_update.callback_query = mock_callback_query
     mock_context.user_data["rating"] = 3
 
