@@ -37,6 +37,7 @@ from database import (
 )
 from feedback import (
     COMMENT,
+    MAX_COMMENT_LENGTH,
     RATING,
     feedback_cancel,
     feedback_command,
@@ -596,6 +597,111 @@ async def test_feedback_skip_comment_database_error(
     assert "errore" in call_args[0][0].lower()
 
     monkeypatch.setattr(feedback, "save_feedback", original_save)
+
+
+# ========== TEST VALIDAZIONE LUNGHEZZA COMMENTO ==========
+
+
+@pytest.mark.asyncio
+async def test_feedback_comment_too_long(mock_update, mock_context):
+    """Test validazione commento troppo lungo (>1000 caratteri)"""
+    # Setup context con rating
+    mock_context.user_data["rating"] = 5
+
+    # Crea commento più lungo di MAX_COMMENT_LENGTH
+    long_comment = "A" * (MAX_COMMENT_LENGTH + 1)
+    mock_update.message.text = long_comment
+
+    result = await feedback_comment(mock_update, mock_context)
+
+    # Deve rimanere in stato COMMENT per permettere un nuovo tentativo
+    assert result == COMMENT
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0]
+    assert str(MAX_COMMENT_LENGTH + 1) in call_args[0][0]  # Mostra lunghezza attuale
+    assert str(MAX_COMMENT_LENGTH) in call_args[0][0]  # Mostra limite
+
+    # Verifica che NON sia stato salvato nel database
+    assert get_feedback_count() == 0
+
+
+@pytest.mark.asyncio
+async def test_feedback_comment_exact_max_length(mock_update, mock_context):
+    """Test commento esattamente di 1000 caratteri (limite massimo)"""
+    # Setup context con rating
+    mock_context.user_data["rating"] = 4
+
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    # Crea commento esattamente di MAX_COMMENT_LENGTH caratteri
+    exact_length_comment = "B" * MAX_COMMENT_LENGTH
+    mock_update.message.text = exact_length_comment
+
+    result = await feedback_comment(mock_update, mock_context)
+
+    # Deve completare con successo
+    assert result == ConversationHandler.END
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "Feedback ricevuto" in call_args[0][0]
+
+    # Verifica salvato nel database
+    assert get_feedback_count() == 1
+    feedbacks = get_recent_feedbacks(limit=1)
+    assert feedbacks[0]["rating"] == 4
+    assert feedbacks[0]["comment"] == exact_length_comment
+    assert len(feedbacks[0]["comment"]) == MAX_COMMENT_LENGTH
+
+
+@pytest.mark.asyncio
+async def test_feedback_comment_retry_after_too_long(mock_update, mock_context):
+    """Test invio commento corretto dopo tentativo con commento troppo lungo"""
+    # Setup context con rating
+    mock_context.user_data["rating"] = 5
+
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
+    # Primo tentativo: commento troppo lungo
+    long_comment = "X" * (MAX_COMMENT_LENGTH + 500)
+    mock_update.message.text = long_comment
+
+    result1 = await feedback_comment(mock_update, mock_context)
+    assert result1 == COMMENT
+    assert get_feedback_count() == 0
+
+    # Reset mock per secondo tentativo
+    mock_update.message.reply_text.reset_mock()
+
+    # Secondo tentativo: commento valido
+    valid_comment = "Ottimo bot!"
+    mock_update.message.text = valid_comment
+
+    result2 = await feedback_comment(mock_update, mock_context)
+    assert result2 == ConversationHandler.END
+
+    # Verifica salvato nel database
+    assert get_feedback_count() == 1
+    feedbacks = get_recent_feedbacks(limit=1)
+    assert feedbacks[0]["comment"] == valid_comment
 
 
 # ========== TEST ON DELETE CASCADE ==========
