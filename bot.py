@@ -32,7 +32,7 @@ filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBU
 
 # Import moduli interni
 from checker import check_and_notify_users, format_number
-from constants import ERROR_VALUE_NEGATIVE
+from constants import ERROR_INPUT_TOO_LONG, ERROR_VALUE_NEGATIVE, MAX_NUMERIC_INPUT_LENGTH
 from data_reader import fetch_octopus_tariffe
 from database import init_db, load_user, remove_user, save_user, user_exists
 from feedback import (
@@ -68,6 +68,43 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # Costanti messaggi (specifiche per bot)
 MSG_HAS_GAS = "Hai anche una fornitura gas attiva con Octopus Energy?"
 MSG_GAS_CONSUMO = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
+
+
+# ========== INPUT VALIDATION ==========
+
+
+def validate_numeric_input(text: str) -> tuple[float | None, str | None]:
+    """
+    Valida un input numerico da parte dell'utente.
+
+    Args:
+        text: Testo inserito dall'utente
+
+    Returns:
+        Tupla (valore, messaggio_errore):
+        - valore: float convertito se valido, None se invalido
+        - messaggio_errore: messaggio di errore se presente, None se valido
+
+    Validazioni eseguite:
+    1. Lunghezza massima (protezione da attacchi con input molto lunghi)
+    2. Conversione a float
+    3. Valore non negativo
+    """
+    # 1. Verifica lunghezza (protezione attacchi)
+    if len(text) > MAX_NUMERIC_INPUT_LENGTH:
+        return None, ERROR_INPUT_TOO_LONG
+
+    # 2. Prova a convertire in float
+    try:
+        value = float(text.replace(",", "."))
+    except ValueError:
+        return None, None  # Errore di conversione, gestito dal chiamante
+
+    # 3. Verifica che non sia negativo
+    if value < 0:
+        return None, ERROR_VALUE_NEGATIVE
+
+    return value, None
 
 
 # Stati conversazione
@@ -238,19 +275,14 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_ENERGIA
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["luce_energia"] = value
-        await update.message.reply_text(
-            "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
-            "💬 Esempio: 72 (se paghi 6 €/mese)"
-        )
-        return LUCE_COMM
-    except ValueError:
+    if error:
+        await update.message.reply_text(error)
+        return LUCE_ENERGIA
+
+    if value is None:
+        # Errore di conversione (non è un numero)
         is_variabile = context.user_data.get("is_variabile", False)
         if is_variabile:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,0088)")
@@ -258,34 +290,43 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,145)")
         return LUCE_ENERGIA
 
+    context.user_data["luce_energia"] = value
+    await update.message.reply_text(
+        "Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"
+        "💬 Esempio: 72 (se paghi 6 €/mese)"
+    )
+    return LUCE_COMM
+
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se vuole inserire consumi"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_COMM
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["luce_comm"] = value
+    if error:
+        await update.message.reply_text(error)
+        return LUCE_COMM
 
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
-                InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
-            "💡 Serve solo per valutare meglio quando una tariffa può convenirti.",
-            reply_markup=reply_markup,
-        )
-        return VUOI_CONSUMI_LUCE
-    except ValueError:
+    if value is None:
+        # Errore di conversione (non è un numero)
         await update.message.reply_text("❌ Inserisci un numero valido (es: 96.50)")
         return LUCE_COMM
+
+    context.user_data["luce_comm"] = value
+
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
+            InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
+        "💡 Serve solo per valutare meglio quando una tariffa può convenirti.",
+        reply_markup=reply_markup,
+    )
+    return VUOI_CONSUMI_LUCE
 
 
 async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -329,74 +370,22 @@ async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo F1 luce e procedi in base alla fascia"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_CONSUMO_F1
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["luce_consumo_f1"] = value
+    if error:
+        await update.message.reply_text(error)
+        return LUCE_CONSUMO_F1
 
-        # Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
-        luce_fascia = context.user_data.get("luce_fascia", "monoraria")
-        if luce_fascia == "monoraria":
-            keyboard = [
-                [
-                    InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
-                    InlineKeyboardButton("❌ No", callback_data="gas_no"),
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
-            return HA_GAS
-
-        # Se trioraria, chiedi F2
-        await update.message.reply_text(
-            "Ora inserisci il tuo consumo annuo in fascia F2 in kWh.\n\n"
-            "(F2 = feriali 7–8 e 19–23, sabato 7–23)\n\n"
-            "💬 Esempio: 900"
-        )
-        return LUCE_CONSUMO_F2
-
-    except ValueError:
+    if value is None:
+        # Errore di conversione (non è un numero)
         await update.message.reply_text("❌ Inserisci un numero valido (es: 2700)")
         return LUCE_CONSUMO_F1
 
+    context.user_data["luce_consumo_f1"] = value
 
-async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva consumo F2 luce (solo trioraria)"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_CONSUMO_F2
-
-        context.user_data["luce_consumo_f2"] = value
-
-        # Chiedi F3
-        await update.message.reply_text(
-            "Infine, inserisci il tuo consumo annuo in fascia F3 in kWh.\n\n"
-            "(F3 = notte, domeniche e festivi)\n\n"
-            "💬 Esempio: 900"
-        )
-        return LUCE_CONSUMO_F3
-
-    except ValueError:
-        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
-        return LUCE_CONSUMO_F2
-
-
-async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva consumo F3 luce (solo trioraria) e vai a HA_GAS"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return LUCE_CONSUMO_F3
-
-        context.user_data["luce_consumo_f3"] = value
-
-        # Consumi luce completati, vai a chiedere se ha gas
+    # Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
+    luce_fascia = context.user_data.get("luce_fascia", "monoraria")
+    if luce_fascia == "monoraria":
         keyboard = [
             [
                 InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
@@ -407,9 +396,64 @@ async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
         return HA_GAS
 
-    except ValueError:
+    # Se trioraria, chiedi F2
+    await update.message.reply_text(
+        "Ora inserisci il tuo consumo annuo in fascia F2 in kWh.\n\n"
+        "(F2 = feriali 7–8 e 19–23, sabato 7–23)\n\n"
+        "💬 Esempio: 900"
+    )
+    return LUCE_CONSUMO_F2
+
+
+async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F2 luce (solo trioraria)"""
+    value, error = validate_numeric_input(update.message.text)
+
+    if error:
+        await update.message.reply_text(error)
+        return LUCE_CONSUMO_F2
+
+    if value is None:
+        # Errore di conversione (non è un numero)
+        await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
+        return LUCE_CONSUMO_F2
+
+    context.user_data["luce_consumo_f2"] = value
+
+    # Chiedi F3
+    await update.message.reply_text(
+        "Infine, inserisci il tuo consumo annuo in fascia F3 in kWh.\n\n"
+        "(F3 = notte, domeniche e festivi)\n\n"
+        "💬 Esempio: 900"
+    )
+    return LUCE_CONSUMO_F3
+
+
+async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva consumo F3 luce (solo trioraria) e vai a HA_GAS"""
+    value, error = validate_numeric_input(update.message.text)
+
+    if error:
+        await update.message.reply_text(error)
+        return LUCE_CONSUMO_F3
+
+    if value is None:
+        # Errore di conversione (non è un numero)
         await update.message.reply_text("❌ Inserisci un numero valido (es: 900)")
         return LUCE_CONSUMO_F3
+
+    context.user_data["luce_consumo_f3"] = value
+
+    # Consumi luce completati, vai a chiedere se ha gas
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Sì", callback_data="gas_si"),
+            InlineKeyboardButton("❌ No", callback_data="gas_no"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(MSG_HAS_GAS, reply_markup=reply_markup)
+    return HA_GAS
 
 
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -441,19 +485,14 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return GAS_ENERGIA
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["gas_energia"] = value
-        await update.message.reply_text(
-            "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
-            "💬 Esempio: 84 (se paghi 7 €/mese)"
-        )
-        return GAS_COMM
-    except ValueError:
+    if error:
+        await update.message.reply_text(error)
+        return GAS_ENERGIA
+
+    if value is None:
+        # Errore di conversione (non è un numero)
         is_variabile = context.user_data.get("is_variabile", False)
         if is_variabile:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,08)")
@@ -461,34 +500,43 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,456)")
         return GAS_ENERGIA
 
+    context.user_data["gas_energia"] = value
+    await update.message.reply_text(
+        "Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"
+        "💬 Esempio: 84 (se paghi 7 €/mese)"
+    )
+    return GAS_COMM
+
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva commercializzazione gas e chiedi se vuole inserire consumi"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return GAS_COMM
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["gas_comm"] = value
+    if error:
+        await update.message.reply_text(error)
+        return GAS_COMM
 
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
-                InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
-            "🔥 Serve solo per valutare meglio quando una tariffa può convenirti.",
-            reply_markup=reply_markup,
-        )
-        return VUOI_CONSUMI_GAS
-    except ValueError:
+    if value is None:
+        # Errore di conversione (non è un numero)
         await update.message.reply_text("❌ Inserisci un numero valido (es: 144.00)")
         return GAS_COMM
+
+    context.user_data["gas_comm"] = value
+
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
+            InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
+        "🔥 Serve solo per valutare meglio quando una tariffa può convenirti.",
+        reply_markup=reply_markup,
+    )
+    return VUOI_CONSUMI_GAS
 
 
 async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -507,20 +555,21 @@ async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def gas_consumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo gas e vai a conferma"""
-    try:
-        value = float(update.message.text.replace(",", "."))
-        if value < 0:
-            await update.message.reply_text(ERROR_VALUE_NEGATIVE)
-            return GAS_CONSUMO
+    value, error = validate_numeric_input(update.message.text)
 
-        context.user_data["gas_consumo_annuo"] = value
+    if error:
+        await update.message.reply_text(error)
+        return GAS_CONSUMO
 
-        # Consumi completati, salva e conferma
-        return await salva_e_conferma(update, context, solo_luce=False)
-
-    except ValueError:
+    if value is None:
+        # Errore di conversione (non è un numero)
         await update.message.reply_text("❌ Inserisci un numero valido (es: 1200)")
         return GAS_CONSUMO
+
+    context.user_data["gas_consumo_annuo"] = value
+
+    # Consumi completati, salva e conferma
+    return await salva_e_conferma(update, context, solo_luce=False)
 
 
 def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dict[str, Any]:
