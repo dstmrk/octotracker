@@ -1,12 +1,13 @@
 """
-Test per bot.py - Conversazioni Telegram e comandi
+Test per registration.py - Conversazione registrazione tariffe
 
-Testa tutti i flussi conversazionali del bot:
-- Comandi: /start, /update, /status, /remove, /help
-- Gestione comandi non riconosciuti
+Testa tutti i flussi conversazionali di registrazione:
+- Validazione input numerici
+- Formattazione messaggi di conferma
 - Conversazione registrazione con input validi
 - Gestione errori con input non validi
 - Flussi completi: luce fissa, variabile mono/tri, con/senza gas
+- Raccolta consumi luce e gas
 """
 
 import os
@@ -17,16 +18,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from telegram import CallbackQuery, InlineKeyboardMarkup, Message, Update, User
-from telegram.ext import ContextTypes, ConversationHandler
+from telegram.ext import ContextTypes
 
-# Mock WEBHOOK_SECRET prima di importare bot (previene ValueError)
+# Mock WEBHOOK_SECRET prima di importare (previene ValueError)
 os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
 
-# Import funzioni del bot e database
+# Import funzioni del modulo registration e database
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import database
-from bot import cancel_conversation, help_command, remove_data, status, unknown_command
 from database import init_db, load_user, save_user
 from registration import (
     GAS_COMM,
@@ -138,21 +138,6 @@ async def test_start_new_user(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
-async def test_unknown_command(mock_update, mock_context):
-    """Test comando non riconosciuto mostra messaggio di aiuto"""
-    mock_update.message.text = "/unknown"
-    await unknown_command(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica messaggio contiene indicazioni per /help
-    assert "non riconosciuto" in message_text.lower()
-    assert "/help" in message_text
-
-
-@pytest.mark.asyncio
 async def test_update_command(mock_update, mock_context):
     """Test /update (alias di /start per aggiornare tariffe)"""
     # Prepara dati esistenti nel database
@@ -177,292 +162,6 @@ async def test_update_command(mock_update, mock_context):
     message_text = call_args[0][0]
     # Può contenere "Aggiorniamo" o simile se è update, o "Benvenuto" se nuovo
     assert "tipo di tariffa" in message_text.lower()
-
-
-@pytest.mark.asyncio
-async def test_help_command(mock_update, mock_context):
-    """Test /help mostra comandi disponibili"""
-    await help_command(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza comandi principali
-    assert "/start" in message_text
-    assert "/status" in message_text
-    assert "/remove" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_no_data(mock_update, mock_context):
-    """Test /status senza dati salvati (database vuoto)"""
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    assert "Non hai ancora registrato" in call_args[0][0]
-
-
-@pytest.mark.asyncio
-async def test_status_with_data(mock_update, mock_context):
-    """Test /status con dati salvati"""
-    # Prepara dati utente nel database
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.145,
-            "commercializzazione": 72.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza dati luce
-    assert "Luce" in message_text
-    assert "0,145" in message_text or "0.145" in message_text
-    assert "72" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_with_consumption_monoraria(mock_update, mock_context):
-    """Test /status mostra consumi per tariffa monoraria"""
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.145,
-            "commercializzazione": 72.0,
-            "consumo_f1": 2700.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza consumo monoraria
-    assert "Consumo:" in message_text
-    assert "2700" in message_text
-    assert "kWh/anno" in message_text
-    # Non deve mostrare breakdown fasce per monoraria
-    assert "F1:" not in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_with_consumption_bioraria(mock_update, mock_context):
-    """Test /status mostra consumi per tariffa bioraria"""
-    user_data = {
-        "luce": {
-            "tipo": "variabile",
-            "fascia": "bioraria",
-            "energia": 0.015,
-            "commercializzazione": 80.0,
-            "consumo_f1": 1200.0,
-            "consumo_f2": 1500.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza consumo bioraria con breakdown
-    assert "Consumo:" in message_text
-    assert "2700" in message_text  # Totale
-    assert "kWh/anno" in message_text
-    assert "F1: 1200 kWh" in message_text
-    assert "F23: 1500 kWh" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_with_consumption_trioraria(mock_update, mock_context):
-    """Test /status mostra consumi per tariffa trioraria"""
-    user_data = {
-        "luce": {
-            "tipo": "variabile",
-            "fascia": "trioraria",
-            "energia": 0.012,
-            "commercializzazione": 96.0,
-            "consumo_f1": 900.0,
-            "consumo_f2": 900.0,
-            "consumo_f3": 900.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza consumo trioraria con breakdown
-    assert "Consumo:" in message_text
-    assert "2700" in message_text  # Totale
-    assert "kWh/anno" in message_text
-    assert "F1: 900 kWh" in message_text
-    assert "F2: 900 kWh" in message_text
-    assert "F3: 900 kWh" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_with_consumption_gas(mock_update, mock_context):
-    """Test /status mostra consumo gas"""
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.140,
-            "commercializzazione": 70.0,
-            "consumo_f1": 2500.0,
-        },
-        "gas": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.350,
-            "commercializzazione": 120.0,
-            "consumo_annuo": 1200.0,
-        },
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza consumo luce
-    assert "2500" in message_text
-    assert "kWh/anno" in message_text
-
-    # Verifica presenza consumo gas
-    assert "1200" in message_text
-    assert "Smc/anno" in message_text
-
-
-@pytest.mark.asyncio
-async def test_status_backward_compat_no_consumption(mock_update, mock_context):
-    """Test /status funziona anche senza consumi (retrocompatibilità)"""
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.145,
-            "commercializzazione": 72.0,
-            # Nessun campo consumo
-        },
-        "gas": {
-            "tipo": "variabile",
-            "fascia": "monoraria",
-            "energia": 0.025,
-            "commercializzazione": 100.0,
-            # Nessun campo consumo
-        },
-    }
-    save_user("123456789", user_data)
-
-    await status(mock_update, mock_context)
-
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-
-    # Verifica presenza tariffe (funziona senza consumi)
-    assert "Luce" in message_text
-    assert "0,145" in message_text or "0.145" in message_text
-    assert "Gas" in message_text
-
-    # Verifica che NON ci sia la riga "Consumo:"
-    assert "Consumo:" not in message_text
-
-
-@pytest.mark.asyncio
-async def test_remove_command(mock_update, mock_context):
-    """Test /remove rimuove dati utente"""
-    # Prepara dati nel database
-    user_data = {
-        "luce": {
-            "tipo": "fissa",
-            "fascia": "monoraria",
-            "energia": 0.145,
-            "commercializzazione": 72.0,
-        }
-    }
-    save_user("123456789", user_data)
-
-    result = await remove_data(mock_update, mock_context)
-
-    # Verifica utente rimosso dal database
-    assert load_user("123456789") is None
-    mock_update.message.reply_text.assert_called_once()
-    # Verifica che restituisce END per uscire dalla conversazione
-    assert result == ConversationHandler.END
-
-
-@pytest.mark.asyncio
-async def test_cancel_command(mock_update, mock_context):
-    """Test /cancel annulla la conversazione in corso"""
-    # Simula una conversazione in corso
-    mock_context.user_data["luce_energia"] = 0.145
-    mock_context.user_data["is_variabile"] = False
-
-    result = await cancel_conversation(mock_update, mock_context)
-
-    # Verifica che il context sia stato pulito
-    assert len(mock_context.user_data) == 0
-    # Verifica che restituisce END per uscire dalla conversazione
-    assert result == ConversationHandler.END
-    # Verifica che il messaggio di cancellazione sia stato inviato
-    mock_update.message.reply_text.assert_called_once()
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-    assert "annullat" in message_text.lower()
-
-
-@pytest.mark.asyncio
-async def test_cancel_command_no_conversation(mock_update, mock_context):
-    """Test /cancel quando non c'è una conversazione in corso"""
-    # Context vuoto
-    assert len(mock_context.user_data) == 0
-
-    result = await cancel_conversation(mock_update, mock_context)
-
-    # Deve comunque funzionare e restituire END
-    assert result == ConversationHandler.END
-    mock_update.message.reply_text.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_help_command_clears_conversation_context(mock_update, mock_context):
-    """Test /help come fallback: pulisce il context e termina la conversazione"""
-    # Simula conversazione in corso
-    mock_context.user_data["luce_energia"] = 0.145
-    mock_context.user_data["is_variabile"] = False
-
-    result = await help_command(mock_update, mock_context)
-
-    # Verifica context pulito
-    assert len(mock_context.user_data) == 0
-    # Verifica che restituisce END
-    assert result == ConversationHandler.END
-    # Verifica che /cancel sia menzionato nel messaggio di help
-    call_args = mock_update.message.reply_text.call_args
-    message_text = call_args[0][0]
-    assert "/cancel" in message_text
 
 
 # ========== TEST FLUSSO CONVERSAZIONE ==========
@@ -719,7 +418,6 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
     assert result == VUOI_CONSUMI_GAS  # Chiede se vuole indicare consumo gas
 
     # Simula risposta "No" alla domanda consumo gas
-    # Usa SimpleNamespace per avere attributi semplici senza auto-mocking
     from types import SimpleNamespace
 
     mock_user = SimpleNamespace(id=int(user_id))
@@ -752,7 +450,7 @@ async def test_negative_values_rejected(mock_update, mock_context):
 
     result = await luce_energia(mock_update, mock_context)
 
-    # Con miglioramento #10, il bot ora rifiuta negativi
+    # Con validazione, il bot ora rifiuta negativi
     assert result == LUCE_ENERGIA  # Rimane nello stesso stato
     assert "luce_energia" not in mock_context.user_data  # Valore non salvato
 
