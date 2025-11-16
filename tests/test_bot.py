@@ -26,9 +26,15 @@ os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import database
-from bot import cancel_conversation, help_command, remove_data, status, unknown_command
 from database import init_db, load_user, save_user
-from registration import (
+from handlers.commands import (
+    cancel_conversation,
+    help_command,
+    remove_data,
+    status,
+    unknown_command,
+)
+from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,

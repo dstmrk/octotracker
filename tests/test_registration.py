@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import database
 from database import init_db, load_user, save_user
-from registration import (
+from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,

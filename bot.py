@@ -29,10 +29,17 @@ from telegram.warnings import PTBUserWarning
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 # Import moduli interni
-from checker import check_and_notify_users, format_number
+from checker import check_and_notify_users
 from data_reader import fetch_octopus_tariffe
-from database import init_db, load_user, remove_user, user_exists
-from feedback import (
+from database import init_db
+from handlers.commands import (
+    cancel_conversation,
+    help_command,
+    remove_data,
+    status,
+    unknown_command,
+)
+from handlers.feedback import (
     COMMENT,
     RATING,
     feedback_cancel,
@@ -41,8 +48,7 @@ from feedback import (
     feedback_rating,
     feedback_skip_comment,
 )
-from formatters import format_utility_header
-from registration import (
+from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,
@@ -112,170 +118,6 @@ if not WEBHOOK_SECRET:
 
 # Configurazione admin (opzionale - per alert errori critici)
 ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")  # ID Telegram dell'admin
-
-
-# ========== BOT COMMANDS ==========
-
-
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Mostra dati salvati"""
-    user_id = str(update.effective_user.id)
-
-    # Pulisci eventuali dati di conversazione in corso
-    context.user_data.clear()
-
-    data = load_user(user_id)
-
-    if not data:
-        await update.message.reply_text(
-            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
-            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
-            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
-        )
-        return ConversationHandler.END
-
-    # Formatta numeri rimuovendo zeri trailing
-    luce_energia_fmt = format_number(data["luce"]["energia"], max_decimals=4)
-    luce_comm_fmt = format_number(data["luce"]["commercializzazione"], max_decimals=2)
-
-    # Formatta header luce
-    tipo_display, luce_label, luce_unit = format_utility_header("luce", data["luce"])
-
-    messaggio = (
-        "📊 <b>I tuoi dati:</b>\n\n"
-        f"💡 <b>Luce ({tipo_display}):</b>\n"
-        f"  - {luce_label}: {luce_energia_fmt} {luce_unit}\n"
-        f"  - Commercializzazione: {luce_comm_fmt} €/anno\n"
-    )
-
-    # Mostra consumi luce se presenti
-    consumo_f1 = data["luce"].get("consumo_f1")
-    if consumo_f1 is not None:
-        consumo_f2 = data["luce"].get("consumo_f2")
-        consumo_f3 = data["luce"].get("consumo_f3")
-        luce_fascia = data["luce"]["fascia"]
-
-        if luce_fascia == "monoraria":
-            # Solo totale
-            messaggio += (
-                f"  - Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
-            )
-
-        elif luce_fascia == "bioraria":
-            # Totale + breakdown F1 e F23
-            totale = consumo_f1 + consumo_f2
-            messaggio += (
-                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
-            )
-
-        elif luce_fascia == "trioraria":
-            # Totale + breakdown F1, F2, F3
-            totale = consumo_f1 + consumo_f2 + consumo_f3
-            messaggio += (
-                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
-                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
-            )
-
-    if data.get("gas") is not None:
-        gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
-        gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
-
-        # Formatta header gas
-        tipo_display_gas, gas_label, gas_unit = format_utility_header("gas", data["gas"])
-
-        messaggio += (
-            f"\n🔥 <b>Gas ({tipo_display_gas}):</b>\n"
-            f"  - {gas_label}: {gas_energia_fmt} {gas_unit}\n"
-            f"  - Commercializzazione: {gas_comm_fmt} €/anno\n"
-        )
-
-        # Mostra consumo gas se presente
-        consumo_gas = data["gas"].get("consumo_annuo")
-        if consumo_gas is not None:
-            messaggio += (
-                f"  - Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
-            )
-
-    messaggio += "\nPer modificarli usa /update"
-    await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
-    return ConversationHandler.END
-
-
-async def remove_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancella dati utente"""
-    user_id = str(update.effective_user.id)
-
-    # Pulisci eventuali dati di conversazione in corso
-    context.user_data.clear()
-
-    if user_exists(user_id):
-        remove_user(user_id)
-        await update.message.reply_text(
-            "✅ <b>Dati cancellati con successo</b>\n\n"
-            "Tutte le informazioni che avevi registrato (tariffe e preferenze) sono state rimosse.\n"
-            "Da questo momento non riceverai più notifiche da OctoTracker.\n\n"
-            "🐙 Ti ringrazio per averlo provato!\n\n"
-            "Se in futuro vuoi ricominciare a monitorare le tariffe, ti basta usare il comando /start.",
-            parse_mode=ParseMode.HTML,
-        )
-    else:
-        await update.message.reply_text(
-            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
-            "Per iniziare a usare OctoTracker, inserisci i tuoi dati con il comando /start.\n\n"
-            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
-        )
-
-    return ConversationHandler.END
-
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Mostra messaggio di aiuto"""
-    # Pulisci eventuali dati di conversazione in corso
-    context.user_data.clear()
-
-    help_text = (
-        "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
-        "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
-        "e ti avvisa quando ci sono offerte più convenienti rispetto alle tue.\n\n"
-        "<b>Comandi disponibili:</b>\n"
-        "• /start – Inizia e registra le tue tariffe attuali\n"
-        "• /update – Aggiorna le tariffe che hai impostato\n"
-        "• /status – Mostra le tariffe e lo stato attuale\n"
-        "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
-        "• /feedback – Invia un feedback per migliorare il bot\n"
-        "• /cancel – Annulla la registrazione in corso\n"
-        "• /help – Mostra questo messaggio di aiuto\n\n"
-        f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
-        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
-    )
-    await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
-    return ConversationHandler.END
-
-
-async def cancel_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Annulla la conversazione in corso e resetta lo stato"""
-    await update.message.reply_text(
-        "❌ <b>Registrazione annullata</b>\n\n"
-        "Nessun problema! Hai annullato la procedura di registrazione.\n\n"
-        "Quando vuoi riprovarci, usa il comando /start.\n"
-        "Se hai bisogno di aiuto, puoi usare /help.",
-        parse_mode=ParseMode.HTML,
-    )
-    # Pulisci i dati della conversazione
-    context.user_data.clear()
-    return ConversationHandler.END
-
-
-async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Gestisce comandi non riconosciuti"""
-    await update.message.reply_text(
-        "Comando non riconosciuto 🤷‍♂️\n"
-        "Dai un'occhiata a /help per vedere cosa puoi fare con OctoTracker."
-    )
 
 
 # ========== SCHEDULER ==========
