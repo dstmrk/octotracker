@@ -58,6 +58,7 @@ from bot import (
     status,
     tipo_tariffa,
     unknown_command,
+    validate_numeric_input,
     vuoi_consumi_gas,
     vuoi_consumi_luce,
 )
@@ -1283,3 +1284,201 @@ async def test_gas_comm_negative():
     message.reply_text.assert_called_once()
     call_args = message.reply_text.call_args[0][0]
     assert "maggiore o uguale a zero" in call_args.lower()
+
+
+# ========== TEST VALIDAZIONE INPUT NUMERICI (PROTEZIONE ATTACCHI) ==========
+
+
+def test_validate_numeric_input_valid():
+    """Test validazione input numerico valido"""
+    value, error = validate_numeric_input("123.45")
+    assert value == 123.45
+    assert error is None
+
+
+def test_validate_numeric_input_valid_with_comma():
+    """Test validazione input numerico valido con virgola"""
+    value, error = validate_numeric_input("123,45")
+    assert value == 123.45
+    assert error is None
+
+
+def test_validate_numeric_input_zero():
+    """Test validazione input zero (valido)"""
+    value, error = validate_numeric_input("0")
+    assert value == 0.0
+    assert error is None
+
+
+def test_validate_numeric_input_small_decimal():
+    """Test validazione input decimale piccolo (es. spread)"""
+    value, error = validate_numeric_input("0.0088")
+    assert value == 0.0088
+    assert error is None
+
+
+def test_validate_numeric_input_negative():
+    """Test validazione input negativo (invalido)"""
+    value, error = validate_numeric_input("-10")
+    assert value is None
+    assert error is not None
+    assert "maggiore o uguale a zero" in error.lower()
+
+
+def test_validate_numeric_input_too_long():
+    """Test validazione input troppo lungo (protezione attacchi)"""
+    # Input con 11 caratteri (max 10)
+    value, error = validate_numeric_input("12345678901")
+    assert value is None
+    assert error is not None
+    assert "troppo lungo" in error.lower()
+    assert "10" in error  # Verifica menzione del limite
+
+
+def test_validate_numeric_input_very_long():
+    """Test validazione input molto lungo (simulazione attacco)"""
+    # Input con 100 caratteri
+    value, error = validate_numeric_input("1" * 100)
+    assert value is None
+    assert error is not None
+    assert "troppo lungo" in error.lower()
+
+
+def test_validate_numeric_input_invalid_string():
+    """Test validazione input non numerico"""
+    value, error = validate_numeric_input("abc")
+    assert value is None
+    assert error is None  # None significa errore di conversione, gestito dal chiamante
+
+
+def test_validate_numeric_input_empty():
+    """Test validazione input vuoto"""
+    value, error = validate_numeric_input("")
+    assert value is None
+    assert error is None  # ValueError gestito dal chiamante
+
+
+def test_validate_numeric_input_special_chars():
+    """Test validazione input con caratteri speciali"""
+    value, error = validate_numeric_input("12.34€")
+    assert value is None
+    assert error is None  # ValueError gestito dal chiamante
+
+
+def test_validate_numeric_input_at_max_length():
+    """Test validazione input esattamente al limite (10 caratteri)"""
+    # 10 caratteri esatti - dovrebbe essere valido
+    value, error = validate_numeric_input("1234567.89")
+    assert value == 1234567.89
+    assert error is None
+
+
+@pytest.mark.asyncio
+async def test_luce_energia_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per energia luce (protezione attacchi)"""
+    # Input con 50 cifre
+    mock_update.message.text = "1" * 50
+    mock_context.user_data["is_variabile"] = False
+
+    result = await luce_energia(mock_update, mock_context)
+
+    # Deve tornare allo stesso stato
+    assert result == LUCE_ENERGIA
+    # Deve mostrare errore specifico
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    error_msg = call_args[0][0]
+    assert "troppo lungo" in error_msg.lower()
+    assert "10" in error_msg
+
+
+@pytest.mark.asyncio
+async def test_luce_comm_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per commercializzazione luce"""
+    mock_update.message.text = "9" * 20
+
+    result = await luce_comm(mock_update, mock_context)
+
+    assert result == LUCE_COMM
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f1_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per consumo luce F1"""
+    mock_update.message.text = "8" * 15
+
+    result = await luce_consumo_f1(mock_update, mock_context)
+
+    assert result == LUCE_CONSUMO_F1
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f2_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per consumo luce F2"""
+    mock_update.message.text = "7" * 12
+
+    result = await luce_consumo_f2(mock_update, mock_context)
+
+    assert result == LUCE_CONSUMO_F2
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_luce_consumo_f3_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per consumo luce F3"""
+    mock_update.message.text = "6" * 11
+
+    result = await luce_consumo_f3(mock_update, mock_context)
+
+    assert result == LUCE_CONSUMO_F3
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_gas_energia_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per energia gas"""
+    mock_update.message.text = "5" * 30
+    mock_context.user_data["is_variabile"] = False
+
+    result = await gas_energia(mock_update, mock_context)
+
+    assert result == GAS_ENERGIA
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_gas_comm_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per commercializzazione gas"""
+    mock_update.message.text = "4" * 25
+
+    result = await gas_comm(mock_update, mock_context)
+
+    assert result == GAS_COMM
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_gas_consumo_too_long_input(mock_update, mock_context):
+    """Test input troppo lungo per consumo gas"""
+    mock_update.message.text = "3" * 40
+
+    result = await gas_consumo(mock_update, mock_context)
+
+    assert result == GAS_CONSUMO
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "troppo lungo" in call_args[0][0].lower()
