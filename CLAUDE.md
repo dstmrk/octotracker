@@ -421,9 +421,16 @@ docker compose down
 
 1. **Base image slim**: `python:3.11-slim` invece di `python:3.11`
 2. **Multi-stage build**: Copia solo `uv` binary necessario
-3. **No dev dependencies**: `uv sync --no-dev` esclude pytest, ruff, etc.
+3. **Solo dipendenze runtime**: `uv pip install --system` installa solo le dipendenze necessarie (no pytest, ruff, etc.)
 4. **Pulizia cache**: `rm -rf ~/.cache/uv` dopo install
 5. **.dockerignore completo**: Esclude test, docs, cache, .venv
+
+**⚠️ IMPORTANTE - Progetto Standalone:**
+Il progetto è un'**applicazione bot standalone**, non una libreria Python da installare come package.
+- Dockerfile usa `uv pip install --system` per installare solo dipendenze esterne
+- NON usa `uv sync` (che installerebbe il progetto stesso come package)
+- Il codice viene copiato in `/app` e eseguito direttamente con `python bot.py`
+- Il `[build-system]` in `pyproject.toml` serve solo per compatibilità con tool di sviluppo
 
 **File esclusi da .dockerignore:**
 - `tests/` - Test non servono in produzione
