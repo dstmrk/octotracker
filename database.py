@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS feedback (
     rating INTEGER,
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
@@ -66,6 +66,7 @@ def get_connection():
         DATA_DIR.mkdir(exist_ok=True)
         conn = sqlite3.connect(DB_FILE, timeout=30.0)  # Timeout aumentato per concurrent writes
         conn.row_factory = sqlite3.Row  # Accesso per nome colonna
+        conn.execute("PRAGMA foreign_keys = ON")  # Abilita foreign key constraints
         yield conn
         conn.commit()
     except sqlite3.Error as e:
@@ -99,6 +100,92 @@ def _migrate_feedback_schema() -> None:
         raise
 
 
+def _has_cascade_delete(conn: sqlite3.Connection, table: str) -> bool:
+    """Verifica se la tabella ha ON DELETE CASCADE nella FOREIGN KEY"""
+    cursor = conn.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table}'")
+    row = cursor.fetchone()
+    if row:
+        table_sql = row[0]
+        return "ON DELETE CASCADE" in table_sql
+    return False
+
+
+def _migrate_feedback_cascade() -> None:
+    """Migrazione per aggiungere ON DELETE CASCADE alla tabella feedback"""
+    try:
+        with get_connection() as conn:
+            # Controlla se la tabella feedback esiste
+            cursor = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='feedback'"
+            )
+            if not cursor.fetchone():
+                # Tabella non esiste ancora, verrà creata con lo schema corretto
+                return
+
+            # Controlla se ha già ON DELETE CASCADE
+            if _has_cascade_delete(conn, "feedback"):
+                logger.debug("Tabella feedback ha già ON DELETE CASCADE")
+                return
+
+            logger.info("🔄 Migrazione tabella feedback per aggiungere ON DELETE CASCADE")
+
+            # 1. Rinomina la vecchia tabella
+            conn.execute("ALTER TABLE feedback RENAME TO feedback_old")
+
+            # 2. Crea la nuova tabella con ON DELETE CASCADE
+            conn.execute(
+                """
+                CREATE TABLE feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    feedback_type TEXT NOT NULL,
+                    rating INTEGER,
+                    comment TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                )
+            """
+            )
+
+            # 3. Copia solo i feedback validi (dove user_id esiste ancora in users)
+            conn.execute(
+                """
+                INSERT INTO feedback (id, user_id, feedback_type, rating, comment, created_at)
+                SELECT f.id, f.user_id, f.feedback_type, f.rating, f.comment, f.created_at
+                FROM feedback_old f
+                WHERE EXISTS (SELECT 1 FROM users u WHERE u.user_id = f.user_id)
+            """
+            )
+
+            # 4. Ricrea gli indici
+            conn.execute("CREATE INDEX idx_feedback_user ON feedback(user_id)")
+            conn.execute("CREATE INDEX idx_feedback_created ON feedback(created_at DESC)")
+
+            # 5. Verifica quanti feedback sono stati copiati vs eliminati
+            cursor_old = conn.execute("SELECT COUNT(*) as count FROM feedback_old")
+            old_count = cursor_old.fetchone()["count"]
+            cursor_new = conn.execute("SELECT COUNT(*) as count FROM feedback")
+            new_count = cursor_new.fetchone()["count"]
+
+            # 6. Elimina la vecchia tabella
+            conn.execute("DROP TABLE feedback_old")
+
+            orphaned = old_count - new_count
+            if orphaned > 0:
+                logger.info(
+                    f"✅ Migration feedback CASCADE completata: "
+                    f"{new_count} feedback mantenuti, {orphaned} feedback orfani rimossi"
+                )
+            else:
+                logger.info(
+                    f"✅ Migration feedback CASCADE completata: {new_count} feedback migrati"
+                )
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore migration feedback cascade: {e}")
+        raise
+
+
 def init_db() -> None:
     """Inizializza database e crea tabelle"""
     try:
@@ -106,6 +193,7 @@ def init_db() -> None:
             conn.executescript(SCHEMA)
         # Applica migration per database esistenti
         _migrate_feedback_schema()
+        _migrate_feedback_cascade()
         logger.info("✅ Database inizializzato")
     except sqlite3.Error as e:
         logger.error(f"❌ Errore inizializzazione database: {e}")

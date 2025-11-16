@@ -31,6 +31,7 @@ from database import (
     get_last_feedback_time,
     get_recent_feedbacks,
     init_db,
+    remove_user,
     save_feedback,
     save_user,
 )
@@ -130,6 +131,17 @@ def test_migration_idempotent():
 
 def test_save_feedback_success():
     """Test salvataggio feedback con successo"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     result = save_feedback(
         user_id="123456789", feedback_type="command", rating=5, comment="Ottimo bot!"
     )
@@ -140,6 +152,17 @@ def test_save_feedback_success():
 
 def test_save_feedback_no_comment():
     """Test salvataggio feedback senza commento"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     result = save_feedback(user_id="123456789", feedback_type="command", rating=4, comment=None)
 
     assert result is True
@@ -187,6 +210,19 @@ def test_get_last_feedback_time_after_feedback():
 
 def test_get_recent_feedbacks():
     """Test recupero feedback recenti"""
+    # Crea utenti prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("111", user_data)
+    save_user("222", user_data)
+    save_user("333", user_data)
+
     # Salva 3 feedback
     save_feedback("111", "command", 5, "Ottimo")
     save_feedback("222", "command", 3, "Buono")
@@ -211,6 +247,18 @@ def test_get_feedback_count():
     """Test conteggio feedback"""
     assert get_feedback_count() == 0
 
+    # Crea utenti prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("111", user_data)
+    save_user("222", user_data)
+
     save_feedback("111", "command", 5)
     assert get_feedback_count() == 1
 
@@ -219,11 +267,11 @@ def test_get_feedback_count():
 
 
 def test_save_feedback_without_user():
-    """Test salvataggio feedback per utente non esistente (nessun errore FK)"""
-    # SQLite permette FK non esistenti se non enforce FK
+    """Test salvataggio feedback per utente non esistente (FK constraint failure)"""
+    # Ora che le FK sono abilitate, il salvataggio deve fallire
     result = save_feedback("999999", "command", 5, "Test utente inesistente")
-    # Dovrebbe salvare comunque (SQLite non enforza FK di default)
-    assert result is True
+    # Deve fallire con FK constraint error
+    assert result is False
 
 
 def test_get_last_feedback_time_user_not_exists():
@@ -372,6 +420,17 @@ async def test_feedback_rating(mock_update, mock_callback_query, mock_context):
 @pytest.mark.asyncio
 async def test_feedback_comment(mock_update, mock_context):
     """Test invio commento"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     # Setup context con rating
     mock_context.user_data["rating"] = 5
     mock_update.message.text = "Ottimo bot, molto utile!"
@@ -393,6 +452,17 @@ async def test_feedback_comment(mock_update, mock_context):
 @pytest.mark.asyncio
 async def test_feedback_skip_comment(mock_update, mock_callback_query, mock_context):
     """Test skip commento"""
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     mock_update.callback_query = mock_callback_query
     mock_context.user_data["rating"] = 3
 
@@ -584,6 +654,17 @@ async def test_feedback_comment_exact_max_length(mock_update, mock_context):
     # Setup context con rating
     mock_context.user_data["rating"] = 4
 
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     # Crea commento esattamente di MAX_COMMENT_LENGTH caratteri
     exact_length_comment = "B" * MAX_COMMENT_LENGTH
     mock_update.message.text = exact_length_comment
@@ -610,6 +691,17 @@ async def test_feedback_comment_retry_after_too_long(mock_update, mock_context):
     # Setup context con rating
     mock_context.user_data["rating"] = 5
 
+    # Crea utente prima di salvare feedback (required con FK enabled)
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user("123456789", user_data)
+
     # Primo tentativo: commento troppo lungo
     long_comment = "X" * (MAX_COMMENT_LENGTH + 500)
     mock_update.message.text = long_comment
@@ -632,3 +724,204 @@ async def test_feedback_comment_retry_after_too_long(mock_update, mock_context):
     assert get_feedback_count() == 1
     feedbacks = get_recent_feedbacks(limit=1)
     assert feedbacks[0]["comment"] == valid_comment
+
+
+# ========== TEST ON DELETE CASCADE ==========
+
+
+def test_cascade_delete_removes_feedback():
+    """Test che rimuovendo un utente vengono cancellati anche i suoi feedback"""
+    user_id = "123456789"
+
+    # Crea utente
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user(user_id, user_data)
+
+    # Salva 3 feedback per questo utente
+    save_feedback(user_id, "command", 5, "Primo feedback")
+    save_feedback(user_id, "command", 4, "Secondo feedback")
+    save_feedback(user_id, "command", 3, "Terzo feedback")
+
+    # Verifica che ci siano 3 feedback
+    assert get_feedback_count() == 3
+
+    # Rimuovi utente
+    result = remove_user(user_id)
+    assert result is True
+
+    # Verifica che i feedback siano stati cancellati automaticamente
+    assert get_feedback_count() == 0
+
+
+def test_cascade_delete_preserves_other_users_feedback():
+    """Test che la cancellazione a cascata non tocca i feedback di altri utenti"""
+    user1_id = "111111111"
+    user2_id = "222222222"
+
+    # Crea due utenti
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        }
+    }
+    save_user(user1_id, user_data)
+    save_user(user2_id, user_data)
+
+    # Salva feedback per entrambi
+    save_feedback(user1_id, "command", 5, "User 1 feedback 1")
+    save_feedback(user1_id, "command", 4, "User 1 feedback 2")
+    save_feedback(user2_id, "command", 3, "User 2 feedback 1")
+
+    assert get_feedback_count() == 3
+
+    # Rimuovi solo user1
+    remove_user(user1_id)
+
+    # Verifica che rimanga solo 1 feedback (di user2)
+    assert get_feedback_count() == 1
+
+    # Verifica che il feedback rimanente sia di user2
+    feedbacks = get_recent_feedbacks(limit=10)
+    assert len(feedbacks) == 1
+    assert feedbacks[0]["user_id"] == user2_id
+    assert feedbacks[0]["comment"] == "User 2 feedback 1"
+
+
+def test_migration_cascade_adds_on_delete():
+    """Test che la migration aggiunge ON DELETE CASCADE"""
+    from database import _has_cascade_delete
+
+    # Verifica che la tabella feedback abbia ON DELETE CASCADE
+    with database.get_connection() as conn:
+        has_cascade = _has_cascade_delete(conn, "feedback")
+        assert has_cascade is True
+
+
+def test_migration_cascade_idempotent():
+    """Test che la migration cascade è idempotente (può essere eseguita più volte)"""
+    from database import _migrate_feedback_cascade
+
+    # Esegui migration una seconda volta (è già stata eseguita nel fixture)
+    _migrate_feedback_cascade()  # Non deve sollevare eccezioni
+
+    # Verifica che la tabella esista ancora e abbia CASCADE
+    from database import _has_cascade_delete
+
+    with database.get_connection() as conn:
+        has_cascade = _has_cascade_delete(conn, "feedback")
+        assert has_cascade is True
+
+
+def test_foreign_keys_enabled():
+    """Test che le foreign keys siano abilitate"""
+    with database.get_connection() as conn:
+        cursor = conn.execute("PRAGMA foreign_keys")
+        result = cursor.fetchone()
+        # Il valore dovrebbe essere 1 (enabled)
+        assert result[0] == 1
+
+
+def test_migration_cascade_with_orphaned_feedback(monkeypatch, temp_database):
+    """Test che la migration rimuove i feedback orfani durante l'upgrade"""
+    from database import _migrate_feedback_cascade
+
+    # Crea un database temporaneo separato
+    with tempfile.TemporaryDirectory() as tmpdir:
+        temp_db = Path(tmpdir) / "orphan_test.db"
+        monkeypatch.setattr(database, "DB_FILE", temp_db)
+
+        # Inizializza database con vecchia struttura (senza CASCADE)
+        with database.get_connection() as conn:
+            # Crea tabella users
+            conn.execute(
+                """
+                CREATE TABLE users (
+                    user_id TEXT PRIMARY KEY,
+                    luce_tipo TEXT NOT NULL,
+                    luce_fascia TEXT NOT NULL,
+                    luce_energia REAL NOT NULL,
+                    luce_commercializzazione REAL NOT NULL,
+                    gas_tipo TEXT,
+                    gas_fascia TEXT,
+                    gas_energia REAL,
+                    gas_commercializzazione REAL,
+                    luce_consumo_f1 REAL,
+                    luce_consumo_f2 REAL,
+                    luce_consumo_f3 REAL,
+                    gas_consumo_annuo REAL,
+                    last_notified_rates TEXT,
+                    last_feedback_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Crea vecchia tabella feedback SENZA ON DELETE CASCADE
+            conn.execute(
+                """
+                CREATE TABLE feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    feedback_type TEXT NOT NULL,
+                    rating INTEGER,
+                    comment TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
+
+            # Inserisci un utente
+            conn.execute(
+                """
+                INSERT INTO users (
+                    user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione
+                ) VALUES ('111', 'fissa', 'monoraria', 0.145, 72.0)
+            """
+            )
+
+            # Inserisci 2 feedback: 1 valido, 1 orfano
+            conn.execute(
+                """
+                INSERT INTO feedback (user_id, feedback_type, rating, comment)
+                VALUES ('111', 'command', 5, 'Feedback valido')
+            """
+            )
+            conn.execute(
+                """
+                INSERT INTO feedback (user_id, feedback_type, rating, comment)
+                VALUES ('999', 'command', 3, 'Feedback orfano')
+            """
+            )
+
+        # Verifica che ci siano 2 feedback prima della migration
+        with database.get_connection() as conn:
+            cursor = conn.execute("SELECT COUNT(*) as count FROM feedback")
+            assert cursor.fetchone()["count"] == 2
+
+        # Esegui migration
+        _migrate_feedback_cascade()
+
+        # Verifica che rimanga solo 1 feedback (quello valido)
+        with database.get_connection() as conn:
+            cursor = conn.execute("SELECT COUNT(*) as count FROM feedback")
+            assert cursor.fetchone()["count"] == 1
+
+            # Verifica che sia quello dell'utente 111
+            cursor = conn.execute("SELECT user_id FROM feedback")
+            assert cursor.fetchone()["user_id"] == "111"
+
+            # Verifica che la tabella abbia CASCADE
+            from database import _has_cascade_delete
+
+            assert _has_cascade_delete(conn, "feedback") is True
