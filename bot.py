@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
+from logging.handlers import TimedRotatingFileHandler
 from warnings import filterwarnings
 
 from dotenv import load_dotenv
@@ -82,11 +83,35 @@ load_dotenv()
 
 # Configurazione logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL, logging.INFO),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+
+# Crea directory data/ se non esiste
+os.makedirs("data", exist_ok=True)
+
+# Configura formato log
+log_formatter = logging.Formatter(
+    fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+# Handler per file con rotazione ogni 3 giorni
+file_handler = TimedRotatingFileHandler(
+    filename="data/octotracker.log",
+    when="D",  # Rotazione giornaliera
+    interval=3,  # Ogni 3 giorni
+    backupCount=0,  # Non mantiene backup (elimina log più vecchi di 3 giorni)
+    encoding="utf-8",
+)
+file_handler.setFormatter(log_formatter)
+
+# Handler per console (importante per Docker logs)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+
+# Configura root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+root_logger.addHandler(file_handler)
+root_logger.addHandler(console_handler)
 
 # Setup logger per questo modulo
 logger = logging.getLogger(__name__)
