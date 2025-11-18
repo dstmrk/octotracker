@@ -10,6 +10,7 @@ __pycache__/
 data/users.json
 data/users.db
 data/current_rates.json
+data/octotracker.log
 # Ma non gli esempi
 !data/*.example
 
