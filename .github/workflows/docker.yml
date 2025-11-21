@@ -3,28 +3,49 @@ name: Docker Build
 on:
   pull_request:
     branches: [ main ]
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/docker.yml'
-    paths-ignore:
-      - 'static/**'
   push:
     branches: [ main ]
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/docker.yml'
-    paths-ignore:
-      - 'static/**'
 
 jobs:
+  check-changes:
+    name: Check if build needed
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.filter.outputs.should_build }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Check changed files
+      id: filter
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          # Per push su main, build sempre
+          echo "should_build=true" >> $GITHUB_OUTPUT
+        else
+          # Per PR, controlla i file modificati
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Build se ci sono modifiche a file rilevanti e NON solo a static/
+          if echo "$CHANGED_FILES" | grep -qE '\.(py|toml)$|Dockerfile|docker-compose\.yml|\.github/workflows/docker\.yml'; then
+            if echo "$CHANGED_FILES" | grep -qv '^static/'; then
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              echo "✅ Rilevate modifiche che richiedono build Docker"
+            else
+              echo "should_build=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Solo modifiche a static/, skip build"
+            fi
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Nessuna modifica rilevante, skip build"
+          fi
+        fi
+
   build:
     name: Docker Build
+    needs: check-changes
+    if: needs.check-changes.outputs.should_build == 'true'
     runs-on: ubuntu-latest
 
     steps:

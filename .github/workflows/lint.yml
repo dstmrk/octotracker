@@ -2,27 +2,52 @@ name: Lint
 
 on:
   pull_request:
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - '.github/workflows/lint.yml'
-      - '.pre-commit-config.yaml'
-    paths-ignore:
-      - 'static/**'
   push:
     branches:
       - main
-    paths:
-      - '**.py'
-      - 'pyproject.toml'
-      - '.github/workflows/lint.yml'
-      - '.pre-commit-config.yaml'
-    paths-ignore:
-      - 'static/**'
 
 jobs:
+  check-changes:
+    name: Check if lint needed
+    runs-on: ubuntu-latest
+    outputs:
+      should_lint: ${{ steps.filter.outputs.should_lint }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Check changed files
+      id: filter
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          # Per push su main, lint sempre
+          echo "should_lint=true" >> $GITHUB_OUTPUT
+        else
+          # Per PR, controlla i file modificati
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Lint se ci sono modifiche a file rilevanti e NON solo a static/
+          if echo "$CHANGED_FILES" | grep -qE '\.(py|toml|yaml)$|\.github/workflows/lint\.yml|\.pre-commit-config\.yaml'; then
+            if echo "$CHANGED_FILES" | grep -qv '^static/'; then
+              echo "should_lint=true" >> $GITHUB_OUTPUT
+              echo "✅ Rilevate modifiche che richiedono lint"
+            else
+              echo "should_lint=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Solo modifiche a static/, skip lint"
+            fi
+          else
+            echo "should_lint=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Nessuna modifica rilevante, skip lint"
+          fi
+        fi
+
   lint:
     name: Lint (Black + Ruff)
+    needs: check-changes
+    if: needs.check-changes.outputs.should_lint == 'true'
     runs-on: ubuntu-latest
 
     steps:
