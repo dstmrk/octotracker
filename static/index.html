@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OctoTracker - Monitora le tariffe Octopus Energy</title>
+    <meta name="description" content="Il bot Telegram gratuito per monitorare le tariffe e risparmiare sulla bolletta. Progetto indipendente non ufficiale." />
+    
+    <!-- Link to local styles instead of CDN -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+      
+      <!-- Header Logo Area -->
+      <div class="logo-wrapper">
+          <div class="logo-circle">
+              <!-- Real logo image -->
+              <img 
+                src="/logo.png" 
+                alt="OctoTracker Logo" 
+              />
+          </div>
+      </div>
+
+      <!-- Main Content Box -->
+      <main class="neo-card main-card">
+        
+        <h1>
+          Risparmia sulle tariffe <br/>
+          <span class="highlight">Octopus Energy</span>
+        </h1>
+
+        <p class="subtitle">
+          Il bot Telegram gratuito che monitora le nuove offerte e ti avvisa se c'è una tariffa migliore della tua attuale.
+        </p>
+
+        <!-- Main CTA -->
+        <a 
+          href="https://t.me/octotracker_it_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-cta"
+        >
+          <!-- Icon: Send -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          AVVIA IL BOT
+        </a>
+
+        <!-- Features List -->
+        <div class="features-grid">
+          
+          <div class="feature-item">
+            <div class="icon-box">
+              <!-- Icon: Zap -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <span>Monitoraggio Offerte Fisse e Flex</span>
+          </div>
+
+          <div class="feature-item">
+            <div class="icon-box">
+              <!-- Icon: Check -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <span>100% Gratuito</span>
+          </div>
+
+          <div class="feature-item">
+            <div class="icon-box">
+              <!-- Icon: Check -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <span>Privacy Totale</span>
+          </div>
+
+        </div>
+
+      </main>
+
+      <!-- Mockup / Visual Context -->
+      <div class="mockup-container">
+        <div class="mockup-card">
+          <div class="chat-header">
+             <!-- Chat Avatar -->
+             <div class="avatar">
+               <img src="/logo.png" alt="Bot Avatar" />
+             </div>
+             <div>
+               <p style="font-weight: bold; font-size: 0.875rem; line-height: 1;">OctoTracker</p>
+               <p class="font-mono" style="font-size: 0.625rem; color: var(--color-text-muted);">bot</p>
+             </div>
+          </div>
+          
+          <!-- Chat Bubble -->
+          <div class="chat-bubble">
+             <p class="bubble-title">
+               <!-- Icon: TrendingDown -->
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+               Nuova tariffa rilevata!
+             </p>
+             <p class="bubble-text">
+               La tariffa <strong>Octopus Fissa 12M</strong> è ora disponibile a <strong>0.11 €/kWh</strong>.
+             </p>
+             <p class="bubble-meta">
+               📉 È più bassa della tua attuale (0.14 €/kWh). Ti conviene cambiare!
+             </p>
+          </div>
+          
+          <div class="chat-time">
+             <span class="timestamp font-mono">Oggi 10:42</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOW IT WORKS SECTION -->
+      <div class="steps-grid">
+        
+        <!-- Card 1 -->
+        <div class="step-card">
+          <div class="step-icon-wrapper icon-bg-pink">
+              <!-- Icon: Settings2 -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+          </div>
+          <h3>1. Registrati</h3>
+          <p>
+              Avvia il bot e inserisci i costi della tua tariffa attuale. Non servono dati sensibili o password, solo le cifre.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="step-card">
+           <div class="step-icon-wrapper icon-bg-blue">
+              <!-- Icon: ScanSearch (Monitor) -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><circle cx="17" cy="17" r="2"/><path d="m21 21-1.5-1.5"/></svg>
+          </div>
+          <h3>2. Monitora</h3>
+          <p>
+              Ogni giorno OctoTracker controlla automaticamente per te se ci sono nuove tariffe ufficiali più convenienti.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="step-card">
+           <div class="step-icon-wrapper icon-bg-yellow">
+              <!-- Icon: Bell -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </div>
+          <h3>3. Notifica</h3>
+          <p>
+              Ricevi un messaggio solo quando la nuova tariffa è più vantaggiosa. Puoi in autonomia contattare Octopus Energy per cambiare.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Important Disclaimer -->
+      <div class="disclaimer-box">
+          <!-- Icon: AlertTriangle -->
+          <svg xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="disclaimer-content">
+            <span class="disclaimer-title">Disclaimer</span>
+            <span class="disclaimer-text">
+              OctoTracker è un progetto indipendente e <u>non è affiliato</u>, né collegato in alcun modo a Octopus Energy.
+            </span>
+          </div>
+      </div>
+
+      <!-- Simple Footer -->
+      <footer>
+         <p>
+           &copy; 2025 OctoTracker - @octotracker_it_bot
+         </p>
+      </footer>
+
+    </div>
+  </body>
+</html>
