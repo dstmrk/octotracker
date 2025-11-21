@@ -48,6 +48,9 @@ README.md
 LICENSE
 CLAUDE.md
 
+# File statici (non servono in produzione)
+static/
+
 # Test (non servono in produzione)
 tests/
 test_data/

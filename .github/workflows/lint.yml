@@ -7,6 +7,8 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/lint.yml'
       - '.pre-commit-config.yaml'
+    paths-ignore:
+      - 'static/**'
   push:
     branches:
       - main
@@ -15,6 +17,8 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/lint.yml'
       - '.pre-commit-config.yaml'
+    paths-ignore:
+      - 'static/**'
 
 jobs:
   lint:
