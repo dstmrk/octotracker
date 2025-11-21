@@ -27,6 +27,15 @@ jobs:
         else
           # Per PR, controlla i file modificati
           git fetch origin ${{ github.base_ref }}
+
+          # Verifica se esiste merge base
+          if ! git merge-base origin/${{ github.base_ref }} HEAD > /dev/null 2>&1; then
+            # Nessuna merge base = nuova branch, esegui lint per sicurezza
+            echo "should_lint=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Nuova branch senza merge base, lint per sicurezza"
+            exit 0
+          fi
+
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
           # Lint se ci sono modifiche a file rilevanti e NON solo a static/
