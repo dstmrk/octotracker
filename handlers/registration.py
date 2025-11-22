@@ -155,6 +155,8 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             "📊 <b>Tariffa Fissa</b>\n\n"
             "Perfetto! Ora inserisci i dati della tua tariffa luce.\n\n"
             "👉 Quanto paghi per la materia energia luce (€/kWh)?\n\n"
+            "ℹ️ Inserisci il prezzo <b>IVA e imposte escluse, perdite incluse</b> "
+            "(come riportato sul sito Octopus Energy/ARERA)\n\n"
             "💬 Esempio: 0,145",
             parse_mode=ParseMode.HTML,
         )
@@ -201,6 +203,8 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_text(
         f"⚡ <b>Luce variabile {tipo_msg}</b>\n\n"
         f"Ora inserisci lo spread della tua tariffa rispetto al PUN.\n\n"
+        f"ℹ️ Inserisci il valore <b>IVA e imposte escluse, perdite incluse</b> "
+        f"(come riportato sul sito Octopus Energy/ARERA)\n\n"
         f"💬 Esempio: se la tua tariffa è <b>PUN + 0,0088</b> €/kWh, scrivi <code>0,0088</code>",
         parse_mode=ParseMode.HTML,
     )
@@ -402,12 +406,16 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             msg = (
                 "🔥 <b>Gas variabile</b>\n\n"
                 "Ora inserisci lo spread della tua tariffa rispetto al PSV.\n\n"
+                "ℹ️ Inserisci il valore <b>IVA e imposte escluse</b> "
+                "(come riportato sul sito Octopus Energy/ARERA)\n\n"
                 "💬 Esempio: se la tua tariffa è <b>PSV + 0,08</b> €/Smc, scrivi <code>0,08</code>"
             )
         else:
             msg = (
                 "🔥 <b>Gas fisso</b>\n\n"
                 "Perfetto! Inserisci il costo materia energia gas (€/Smc).\n\n"
+                "ℹ️ Inserisci il prezzo <b>IVA e imposte escluse</b> "
+                "(come riportato sul sito Octopus Energy/ARERA)\n\n"
                 "💬 Esempio: 0,456"
             )
 
