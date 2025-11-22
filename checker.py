@@ -527,7 +527,7 @@ def _should_show_utility(
     Determina se mostrare una utility (luce o gas) nel messaggio di notifica.
 
     Logica:
-    - Non mixed (ha savings) → MOSTRA sempre
+    - Non mixed (ha savings) → MOSTRA sempre (con stima risparmio se disponibili consumi)
     - Mixed senza consumi → MOSTRA (con suggerimento)
     - Mixed con consumi:
       - Risparmio > 0 → MOSTRA (con stima)
@@ -542,7 +542,7 @@ def _should_show_utility(
     Returns:
         (should_show, estimated_savings)
         - should_show: True se va inclusa nel messaggio
-        - estimated_savings: risparmio stimato (solo per mixed con consumi)
+        - estimated_savings: risparmio stimato (se disponibili consumi), None altrimenti
     """
     if utility_type == "luce":
         is_mixed = savings["luce_is_mixed"]
@@ -557,9 +557,10 @@ def _should_show_utility(
     else:
         return False, None
 
-    # Non mixed con savings → mostra sempre
+    # Non mixed con savings → mostra sempre, calcola risparmio se ci sono consumi
     if not is_mixed and has_savings:
-        return True, None
+        estimated_savings = _calculate_utility_savings(utility_type, user_rates, current_rates)
+        return True, estimated_savings
 
     # Mixed → calcola risparmio se ci sono consumi
     if is_mixed:
