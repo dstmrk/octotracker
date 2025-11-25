@@ -1,6 +1,13 @@
 services:
   octotracker:
-    build: .
+    # PRODUZIONE: Usa immagine pre-built da GitHub Container Registry
+    # Decommenta la riga seguente e commenta "build:" per usare immagine da GHCR
+    image: ghcr.io/dstmrk/octotracker:latest
+
+    # SVILUPPO: Build locale
+    # Commenta "image:" sopra e decommenta "build:" per build locale
+    # build: .
+
     container_name: octotracker
     restart: unless-stopped
     environment:
