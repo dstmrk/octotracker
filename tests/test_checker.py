@@ -963,6 +963,114 @@ async def test_send_notification_telegram_error():
 
 
 @pytest.mark.asyncio
+async def test_send_notification_bot_blocked_removes_user():
+    """send_notification con 'bot was blocked by the user' rimuove l'utente dal database"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(
+        side_effect=TelegramError("Forbidden: bot was blocked by the user")
+    )
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        mock_remove_user.assert_called_once_with("123456")
+
+
+@pytest.mark.asyncio
+async def test_send_notification_user_deactivated_removes_user():
+    """send_notification con 'user is deactivated' rimuove l'utente dal database"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TelegramError("Forbidden: user is deactivated"))
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        mock_remove_user.assert_called_once_with("123456")
+
+
+@pytest.mark.asyncio
+async def test_send_notification_bot_kicked_removes_user():
+    """send_notification con 'bot was kicked' rimuove l'utente dal database"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TelegramError("Forbidden: bot was kicked"))
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        mock_remove_user.assert_called_once_with("123456")
+
+
+@pytest.mark.asyncio
+async def test_send_notification_chat_not_found_removes_user():
+    """send_notification con 'chat not found' rimuove l'utente dal database"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TelegramError("Bad Request: chat not found"))
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        mock_remove_user.assert_called_once_with("123456")
+
+
+@pytest.mark.asyncio
+async def test_send_notification_case_insensitive_matching():
+    """send_notification gestisce errori case-insensitive"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    # Errore con maiuscole/minuscole diverse
+    bot_mock.send_message = AsyncMock(
+        side_effect=TelegramError("FORBIDDEN: BOT WAS BLOCKED BY THE USER")
+    )
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        mock_remove_user.assert_called_once_with("123456")
+
+
+@pytest.mark.asyncio
+async def test_send_notification_other_error_does_not_remove_user():
+    """send_notification con errore diverso NON rimuove l'utente"""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from telegram.error import TelegramError
+
+    bot_mock = MagicMock()
+    bot_mock.send_message = AsyncMock(side_effect=TelegramError("Some other error"))
+
+    with patch("database.remove_user") as mock_remove_user:
+        result = await send_notification(bot_mock, "123456", "Test message")
+
+        assert result is False
+        # Verifica che remove_user NON sia stato chiamato
+        mock_remove_user.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_check_and_notify_users_no_users():
     """check_and_notify_users senza utenti registrati"""
     from unittest.mock import patch

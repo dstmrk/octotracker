@@ -27,6 +27,14 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "current_rates.json"
 
+# Errori Telegram che indicano che l'utente deve essere rimosso dal database
+TELEGRAM_ERRORS_TO_DELETE = [
+    "bot was blocked by the user",
+    "user is deactivated",  # Account Telegram disabilitato
+    "bot was kicked",  # Bot rimosso da gruppo/canale
+    "chat not found",  # Chat non esiste più
+]
+
 
 def load_json(file_path: Path) -> dict[str, Any] | None:
     """Carica file JSON con gestione errori"""
@@ -714,6 +722,18 @@ async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
         logger.error(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
         return False
     except TelegramError as e:
+        error_msg = str(e).lower()  # Case-insensitive per robustezza
+
+        # Controlla se l'errore indica che dobbiamo rimuovere l'utente
+        if any(pattern in error_msg for pattern in TELEGRAM_ERRORS_TO_DELETE):
+            logger.warning(
+                f"🚫 Utente {user_id} non raggiungibile ('{e}') - rimozione dal database"
+            )
+            from database import remove_user
+
+            remove_user(user_id)
+            return False
+
         logger.error(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
         return False
 
