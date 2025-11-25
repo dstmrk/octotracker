@@ -76,10 +76,10 @@ WEBHOOK_SECRET=  # Opzionale: openssl rand -hex 32
 
 ```bash
 # Build e avvio (prima volta: 5-10 min per scaricare dipendenze)
-docker-compose up -d
+docker compose up -d
 
 # Verifica logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 Dovresti vedere:
@@ -102,16 +102,16 @@ Cerca il tuo bot su Telegram e invia `/start` 🎉
 
 ```bash
 # Stop
-docker-compose down
+docker compose down
 
 # Restart
-docker-compose restart
+docker compose restart
 
 # Logs in tempo reale
-docker-compose logs -f
+docker compose logs -f
 
 # Rebuild dopo aggiornamenti codice
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Dati Persistenti
