@@ -75,15 +75,15 @@ jobs:
           ${{ runner.os }}-buildx-
 
     - name: Build Docker image
-      run: docker compose build
+      run: docker build -t octotracker:test .
       env:
         DOCKER_BUILDKIT: 1
-        COMPOSE_DOCKER_CLI_BUILD: 1
 
     - name: Verify image created
       run: |
-        if docker images | grep -q "octotracker"; then
+        if docker images octotracker:test | grep -q "octotracker"; then
           echo "✅ Docker image built successfully!"
+          docker images octotracker:test
         else
           echo "❌ Docker image build failed"
           exit 1
