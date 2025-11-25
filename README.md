@@ -124,6 +124,40 @@ I dati sono salvati in `./data/`:
 
 ---
 
+## 🚢 Deployment Produzione
+
+### Immagine Docker Pre-built
+
+Ad ogni release, viene automaticamente pubblicata un'immagine Docker su GitHub Container Registry (GHCR).
+
+**Setup iniziale sul server:**
+```bash
+# Scarica docker-compose.yml e .env.example dal repository
+curl -O https://raw.githubusercontent.com/dstmrk/octotracker/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/dstmrk/octotracker/main/.env.example
+
+# Configura .env
+cp .env.example .env
+nano .env  # Configura TELEGRAM_BOT_TOKEN, WEBHOOK_URL, WEBHOOK_SECRET
+
+# Avvia usando immagine da GHCR
+docker compose pull
+docker compose up -d
+```
+
+**Aggiornamento alla nuova release:**
+```bash
+docker compose pull      # Scarica nuova immagine
+docker compose up -d     # Riavvia con nuova versione
+```
+
+Il file `.env` e i dati in `./data/` vengono preservati durante l'aggiornamento!
+
+**Sviluppo locale:**
+Per sviluppo locale, modifica `docker-compose.yml` commentando `image:` e decommentando `build: .`
+
+---
+
 ## 🤖 Comandi Bot
 
 - `/start` - Registra le tue tariffe (prima volta)
