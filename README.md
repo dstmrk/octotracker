@@ -117,7 +117,7 @@ docker compose up -d --build
 ### Dati Persistenti
 
 I dati sono salvati in `./data/`:
-- `users.db` - database SQLite con utenti registrati e tariffe
+- `octotracker.db` - database SQLite con utenti registrati e tariffe
 - `current_rates.json` - tariffe Octopus aggiornate
 
 **Backup**: Copia semplicemente la cartella `data/`!
@@ -321,7 +321,7 @@ Container Docker (sempre attivo)
 
 I dati sono salvati localmente:
 
-**data/users.db** - Database SQLite con utenti e loro tariffe
+**data/octotracker.db** - Database SQLite con utenti e loro tariffe
 - Tabella `users` con campi flat per luce e gas
 - Campo `last_notified_rates` in formato JSON per tracking notifiche
 - Supporta transazioni ACID per evitare race conditions con 1000+ utenti
@@ -372,7 +372,7 @@ I dati sono salvati localmente:
 ```
 
 **Nota sulla struttura**:
-- **users.db**: Database SQLite con supporto transazioni ACID per scalare a 1000+ utenti
+- **octotracker.db**: Database SQLite con supporto transazioni ACID per scalare a 1000+ utenti
 - **current_rates.json**: Struttura a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
 - Per tariffe variabili, `energia` rappresenta lo spread (es: PUN + 0.0088)
 

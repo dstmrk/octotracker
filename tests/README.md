@@ -98,7 +98,7 @@ Verifica flussi conversazionali Telegram e gestione input:
 }
 ```
 
-### users.db (SQLite)
+### octotracker.db (SQLite)
 **Schema tabella `users`:**
 ```sql
 CREATE TABLE users (

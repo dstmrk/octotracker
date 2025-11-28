@@ -210,7 +210,7 @@ class TestCheckDatabase:
             mock_db_path = MagicMock()
             mock_db_path.exists.return_value = True
             mock_db_path.is_file.return_value = True
-            mock_db_path.__str__.return_value = "data/users.db"
+            mock_db_path.__str__.return_value = "data/octotracker.db"
             mock_path.return_value = mock_db_path
 
             # Mock count
@@ -221,14 +221,14 @@ class TestCheckDatabase:
             assert result["status"] == "ok"
             assert result["accessible"] is True
             assert result["users_count"] == 42
-            assert result["path"] == "data/users.db"
+            assert result["path"] == "data/octotracker.db"
 
     def test_database_not_found(self):
         """Test con database non esistente"""
         with patch("health_handler.Path") as mock_path:
             mock_db_path = MagicMock()
             mock_db_path.exists.return_value = False
-            mock_db_path.__str__.return_value = "data/users.db"
+            mock_db_path.__str__.return_value = "data/octotracker.db"
             mock_path.return_value = mock_db_path
 
             result = _check_database()
@@ -243,7 +243,7 @@ class TestCheckDatabase:
             mock_db_path = MagicMock()
             mock_db_path.exists.return_value = True
             mock_db_path.is_file.return_value = False
-            mock_db_path.__str__.return_value = "data/users.db"
+            mock_db_path.__str__.return_value = "data/octotracker.db"
             mock_path.return_value = mock_db_path
 
             result = _check_database()
@@ -260,7 +260,7 @@ class TestCheckDatabase:
             mock_db_path = MagicMock()
             mock_db_path.exists.return_value = True
             mock_db_path.is_file.return_value = True
-            mock_db_path.__str__.return_value = "data/users.db"
+            mock_db_path.__str__.return_value = "data/octotracker.db"
             mock_path.return_value = mock_db_path
 
             # Simula errore query
