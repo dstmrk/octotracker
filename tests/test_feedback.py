@@ -53,7 +53,7 @@ from handlers.feedback import (
 def temp_database(monkeypatch):
     """Usa database temporaneo per ogni test"""
     with tempfile.TemporaryDirectory() as tmpdir:
-        temp_db = Path(tmpdir) / "test_users.db"
+        temp_db = Path(tmpdir) / "test_octotracker.db"
         monkeypatch.setattr(database, "DB_FILE", temp_db)
         init_db()
         yield temp_db

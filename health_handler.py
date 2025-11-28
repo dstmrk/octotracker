@@ -117,7 +117,7 @@ def _check_database() -> dict[str, Any]:
     # Import locale per evitare circular dependency
     from database import get_user_count
 
-    db_path = Path("data/users.db")
+    db_path = Path("data/octotracker.db")
 
     try:
         # Verifica file esiste

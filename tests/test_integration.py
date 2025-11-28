@@ -37,7 +37,7 @@ def temp_db():
 
         # Patch con path temporanei
         database.DATA_DIR = Path(tmpdir)
-        database.DB_FILE = Path(tmpdir) / "test_users.db"
+        database.DB_FILE = Path(tmpdir) / "test_octotracker.db"
 
         # Inizializza database temporaneo
         init_db()

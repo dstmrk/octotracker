@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # File database
 DATA_DIR = Path(__file__).parent / "data"
-DB_FILE = DATA_DIR / "users.db"
+DB_FILE = DATA_DIR / "octotracker.db"
 
 # Valori validi per validazione
 VALID_TYPES = {"fissa", "variabile"}
