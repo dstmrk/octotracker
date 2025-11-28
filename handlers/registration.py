@@ -527,7 +527,25 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
 
     Returns:
         Dizionario con struttura nested luce/gas
+
+    Raises:
+        KeyError: Se mancano dati necessari nel context.user_data
     """
+    # Verifica che tutti i dati necessari per luce esistano
+    required_luce_keys = ["luce_tipo", "luce_fascia", "luce_energia", "luce_comm"]
+    missing_keys = [key for key in required_luce_keys if key not in context.user_data]
+
+    if missing_keys:
+        # Log dettagliato per debug
+        available_keys = list(context.user_data.keys())
+        logger.error(
+            f"Dati mancanti in context.user_data. "
+            f"Richiesti: {required_luce_keys}, "
+            f"Mancanti: {missing_keys}, "
+            f"Disponibili: {available_keys}"
+        )
+        raise KeyError(f"Dati mancanti per luce: {', '.join(missing_keys)}")
+
     user_data = {
         "luce": {
             "tipo": context.user_data["luce_tipo"],
@@ -546,6 +564,21 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
         user_data["luce"]["consumo_f3"] = context.user_data["luce_consumo_f3"]
 
     if not solo_luce:
+        # Verifica che tutti i dati necessari per gas esistano
+        required_gas_keys = ["gas_tipo", "gas_fascia", "gas_energia", "gas_comm"]
+        missing_gas_keys = [key for key in required_gas_keys if key not in context.user_data]
+
+        if missing_gas_keys:
+            # Log dettagliato per debug
+            available_keys = list(context.user_data.keys())
+            logger.error(
+                f"Dati mancanti in context.user_data. "
+                f"Richiesti: {required_gas_keys}, "
+                f"Mancanti: {missing_gas_keys}, "
+                f"Disponibili: {available_keys}"
+            )
+            raise KeyError(f"Dati mancanti per gas: {', '.join(missing_gas_keys)}")
+
         user_data["gas"] = {
             "tipo": context.user_data["gas_tipo"],
             "fascia": context.user_data["gas_fascia"],
@@ -658,8 +691,18 @@ async def salva_e_conferma(
         user_id = str(update_or_query.from_user.id)
         send_message = lambda text, **kwargs: update_or_query.edit_message_text(text, **kwargs)
 
-    # Costruisci struttura dati utente
-    user_data = _build_user_data(context, solo_luce)
+    try:
+        # Costruisci struttura dati utente
+        user_data = _build_user_data(context, solo_luce)
+    except KeyError as e:
+        # Dati mancanti - chiedi all'utente di riprovare
+        logger.error(f"User {user_id}: Errore costruzione dati utente - {e}")
+        await send_message(
+            "❌ Si è verificato un errore durante il salvataggio dei dati.\n\n"
+            "Per favore riprova usando il comando /start per ricominciare la registrazione.",
+            parse_mode=ParseMode.HTML,
+        )
+        return ConversationHandler.END
 
     # Salva nel database
     save_user(user_id, user_data)
