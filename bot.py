@@ -93,12 +93,12 @@ log_formatter = logging.Formatter(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-# Handler per file con rotazione ogni 3 giorni
+# Handler per file con rotazione giornaliera (mantiene ultimi 3 giorni)
 file_handler = TimedRotatingFileHandler(
     filename="data/octotracker.log",
     when="D",  # Rotazione giornaliera
-    interval=3,  # Ogni 3 giorni
-    backupCount=0,  # Non mantiene backup (elimina log più vecchi di 3 giorni)
+    interval=1,  # Ogni giorno
+    backupCount=2,  # Mantiene 2 backup (totale: oggi + 2 giorni precedenti = 3 giorni)
     encoding="utf-8",
 )
 file_handler.setFormatter(log_formatter)
