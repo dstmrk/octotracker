@@ -9,19 +9,19 @@ Struttura JSON salvata (compatibile con scraper.py):
 {
   "luce": {
     "fissa": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     },
     "variabile": {
-      "monoraria": {"energia": float, "commercializzazione": float},
-      "trioraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None},
+      "trioraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     }
   },
   "gas": {
     "fissa": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     },
     "variabile": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     }
   },
   "data_aggiornamento": "YYYY-MM-DD"
@@ -192,19 +192,16 @@ def _extract_componente_impresa(offerta_elem: ET.Element, macroarea: str) -> dic
     return None
 
 
-def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, float]] | None:
-    """Parsea singola offerta luce da XML
+def _validate_and_extract_luce_metadata(
+    offerta_elem: ET.Element,
+) -> tuple[str, str, str | None] | None:
+    """Valida ed estrae metadati base di un'offerta luce
 
     Args:
         offerta_elem: Elemento XML offerta
 
     Returns:
-        Tupla (tipo_offerta, tipo_fascia, dati) dove:
-        - tipo_offerta: "fissa" o "variabile"
-        - tipo_fascia: "monoraria" o "trioraria"
-        - dati: {"energia": float, "commercializzazione": float}
-
-        None se offerta non è valida o non è luce
+        Tupla (tipo_offerta, tipo_fascia, cod_offerta) se valida, None altrimenti
     """
     # Verifica P.IVA Octopus
     piva_elem = offerta_elem.find(".//PIVA_UTENTE")
@@ -220,17 +217,41 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
     tipo_offerta_elem = offerta_elem.find(".//TIPO_OFFERTA")
     if tipo_offerta_elem is None:
         return None
-
-    tipo_offerta_code = tipo_offerta_elem.text
-    tipo_offerta = "fissa" if tipo_offerta_code == "01" else "variabile"
+    tipo_offerta = "fissa" if tipo_offerta_elem.text == "01" else "variabile"
 
     # Determina tipo fascia (01=monoraria, 03=trioraria)
     tipo_fascia_elem = offerta_elem.find(".//TIPOLOGIA_FASCE")
     if tipo_fascia_elem is None:
         return None
+    tipo_fascia = "monoraria" if tipo_fascia_elem.text == "01" else "trioraria"
 
-    tipo_fascia_code = tipo_fascia_elem.text
-    tipo_fascia = "monoraria" if tipo_fascia_code == "01" else "trioraria"
+    # Estrai codice offerta (opzionale)
+    cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
+    cod_offerta = cod_offerta_elem.text if cod_offerta_elem is not None else None
+
+    return (tipo_offerta, tipo_fascia, cod_offerta)
+
+
+def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, float]] | None:
+    """Parsea singola offerta luce da XML
+
+    Args:
+        offerta_elem: Elemento XML offerta
+
+    Returns:
+        Tupla (tipo_offerta, tipo_fascia, dati) dove:
+        - tipo_offerta: "fissa" o "variabile"
+        - tipo_fascia: "monoraria" o "trioraria"
+        - dati: {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
+
+        None se offerta non è valida o non è luce
+    """
+    # Valida ed estrai metadati base
+    metadata = _validate_and_extract_luce_metadata(offerta_elem)
+    if metadata is None:
+        return None
+
+    tipo_offerta, tipo_fascia, cod_offerta = metadata
 
     # Estrai costo commercializzazione (MACROAREA=01)
     comp_comm = _extract_componente_impresa(offerta_elem, "01")
@@ -269,6 +290,7 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         {
             "energia": energia,
             "commercializzazione": commercializzazione,
+            "cod_offerta": cod_offerta,
         },
     )
 
@@ -282,7 +304,7 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     Returns:
         Tupla (tipo_offerta, dati) dove:
         - tipo_offerta: "fissa" o "variabile"
-        - dati: {"energia": float, "commercializzazione": float}
+        - dati: {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
 
         None se offerta non è valida o non è gas
     """
@@ -290,6 +312,10 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     piva_elem = offerta_elem.find(".//PIVA_UTENTE")
     if piva_elem is None or piva_elem.text != OCTOPUS_PIVA:
         return None
+
+    # Estrai codice offerta (opzionale)
+    cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
+    cod_offerta = cod_offerta_elem.text if cod_offerta_elem is not None else None
 
     # Verifica che sia offerta gas (TIPO_MERCATO=02)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
@@ -335,6 +361,7 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     return tipo_offerta, {
         "energia": energia,
         "commercializzazione": commercializzazione,
+        "cod_offerta": cod_offerta,
     }
 
 
