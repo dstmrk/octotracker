@@ -315,6 +315,25 @@ def _format_header(is_mixed: bool) -> str:
     return header
 
 
+def _format_rate_value(formatted_value: str, unit: str, has_saving: bool, is_worse: bool) -> str:
+    """Formatta singolo valore tariffa con styling HTML
+
+    Args:
+        formatted_value: Valore già formattato come stringa
+        unit: Unità di misura (es: "€/kWh", "€/anno")
+        has_saving: True se c'è un risparmio
+        is_worse: True se è peggiorato
+
+    Returns:
+        Stringa formattata con tag HTML (grassetto per risparmio, sottolineato per peggioramento)
+    """
+    if has_saving:
+        return f"<b>{formatted_value} {unit}</b>"
+    if is_worse:
+        return f"<u>{formatted_value} {unit}</u>"
+    return f"{formatted_value} {unit}"
+
+
 def _format_utility_section(
     utility_name: str,
     savings: dict[str, Any],
@@ -379,23 +398,21 @@ def _format_utility_section(
         energia_formatted = format_number(energia_new, max_decimals=MAX_DECIMALS_ENERGY)
         comm_formatted = format_number(comm_new, max_decimals=MAX_DECIMALS_COST)
 
-        # Formatta energia con grassetto/sottolineato in base a risparmio/peggioramento
-        energia_worse_key = f"{utility_name}_energia_worse"
-        if savings[energia_key]:
-            energia_str = f"<b>{energia_formatted} {unit}</b>"
-        elif savings[energia_worse_key]:
-            energia_str = f"<u>{energia_formatted} {unit}</u>"
-        else:
-            energia_str = f"{energia_formatted} {unit}"
+        # Formatta energia usando helper
+        energia_str = _format_rate_value(
+            energia_formatted,
+            unit,
+            has_saving=bool(savings[energia_key]),
+            is_worse=savings[f"{utility_name}_energia_worse"],
+        )
 
-        # Formatta commercializzazione
-        comm_worse_key = f"{utility_name}_comm_worse"
-        if savings[comm_key]:
-            comm_str = f"<b>{comm_formatted} €/anno</b>"
-        elif savings[comm_worse_key]:
-            comm_str = f"<u>{comm_formatted} €/anno</u>"
-        else:
-            comm_str = f"{comm_formatted} €/anno"
+        # Formatta commercializzazione usando helper
+        comm_str = _format_rate_value(
+            comm_formatted,
+            "€/anno",
+            has_saving=bool(savings[comm_key]),
+            is_worse=savings[f"{utility_name}_comm_worse"],
+        )
 
         section += f"Nuova tariffa: {label} {energia_str}, Comm. {comm_str}\n"
 
