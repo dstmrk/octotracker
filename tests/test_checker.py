@@ -883,6 +883,119 @@ def test_format_notification():
     assert "ko-fi.com" in result
 
 
+def test_format_notification_with_cod_offerta():
+    """format_notification include codice offerta se disponibile"""
+    from checker import format_notification
+
+    savings = {
+        "luce_tipo": "variabile",
+        "luce_fascia": "monoraria",
+        "luce_energia": {"attuale": 0.010, "nuova": 0.0088, "risparmio": 0.0012},
+        "luce_comm": None,
+        "gas_tipo": "fissa",
+        "gas_fascia": "monoraria",
+        "gas_energia": {"attuale": 0.450, "nuova": 0.360, "risparmio": 0.090},
+        "gas_comm": {"attuale": 90.0, "nuova": 84.0, "risparmio": 6.0},
+        "luce_energia_worse": False,
+        "luce_comm_worse": False,
+        "gas_energia_worse": False,
+        "gas_comm_worse": False,
+        "is_mixed": False,
+        "luce_is_mixed": False,
+        "gas_is_mixed": False,
+    }
+
+    user_rates = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.010,
+            "commercializzazione": 72.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.450,
+            "commercializzazione": 90.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {
+            "variabile": {
+                "monoraria": {
+                    "energia": 0.0088,
+                    "commercializzazione": 72.0,
+                    "cod_offerta": "000129ESVML77XXXXXOCTOFLEXMONv77",
+                }
+            }
+        },
+        "gas": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.360,
+                    "commercializzazione": 84.0,
+                    "cod_offerta": "000129GSFML37XXXXXXXXOCTOFIXGv37",
+                }
+            }
+        },
+    }
+
+    result = format_notification(savings, user_rates, current_rates)
+
+    # Verifica che i codici offerta appaiano nel messaggio
+    assert "📋 Codice offerta:" in result
+    assert "000129ESVML77XXXXXOCTOFLEXMONv77" in result
+    assert "000129GSFML37XXXXXXXXOCTOFIXGv37" in result
+    assert "<code>" in result  # Verifica formato HTML
+
+
+def test_format_notification_without_cod_offerta():
+    """format_notification funziona anche senza codice offerta (backward compatibility)"""
+    from checker import format_notification
+
+    savings = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": {"attuale": 0.145, "nuova": 0.130, "risparmio": 0.015},
+        "luce_comm": None,
+        "gas_tipo": None,
+        "gas_fascia": None,
+        "gas_energia": None,
+        "gas_comm": None,
+        "luce_energia_worse": False,
+        "luce_comm_worse": False,
+        "gas_energia_worse": False,
+        "gas_comm_worse": False,
+        "is_mixed": False,
+        "luce_is_mixed": False,
+        "gas_is_mixed": False,
+    }
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": None,
+    }
+
+    # Tariffe senza cod_offerta
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}}
+    }
+
+    result = format_notification(savings, user_rates, current_rates)
+
+    # Verifica che il messaggio si formi correttamente anche senza codice offerta
+    assert "⚡️" in result
+    assert "💡" in result
+    # Il codice offerta non dovrebbe apparire
+    assert "📋 Codice offerta:" not in result
+
+
 # ========== TESTS FOR ASYNC FUNCTIONS ==========
 
 

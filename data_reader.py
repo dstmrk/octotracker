@@ -9,19 +9,19 @@ Struttura JSON salvata (compatibile con scraper.py):
 {
   "luce": {
     "fissa": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     },
     "variabile": {
-      "monoraria": {"energia": float, "commercializzazione": float},
-      "trioraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None},
+      "trioraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     }
   },
   "gas": {
     "fissa": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     },
     "variabile": {
-      "monoraria": {"energia": float, "commercializzazione": float}
+      "monoraria": {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
     }
   },
   "data_aggiornamento": "YYYY-MM-DD"
@@ -202,7 +202,7 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         Tupla (tipo_offerta, tipo_fascia, dati) dove:
         - tipo_offerta: "fissa" o "variabile"
         - tipo_fascia: "monoraria" o "trioraria"
-        - dati: {"energia": float, "commercializzazione": float}
+        - dati: {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
 
         None se offerta non è valida o non è luce
     """
@@ -210,6 +210,10 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
     piva_elem = offerta_elem.find(".//PIVA_UTENTE")
     if piva_elem is None or piva_elem.text != OCTOPUS_PIVA:
         return None
+
+    # Estrai codice offerta (opzionale)
+    cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
+    cod_offerta = cod_offerta_elem.text if cod_offerta_elem is not None else None
 
     # Verifica che sia offerta luce (TIPO_MERCATO=01)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
@@ -269,6 +273,7 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         {
             "energia": energia,
             "commercializzazione": commercializzazione,
+            "cod_offerta": cod_offerta,
         },
     )
 
@@ -282,7 +287,7 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     Returns:
         Tupla (tipo_offerta, dati) dove:
         - tipo_offerta: "fissa" o "variabile"
-        - dati: {"energia": float, "commercializzazione": float}
+        - dati: {"energia": float, "commercializzazione": float, "cod_offerta": str | None}
 
         None se offerta non è valida o non è gas
     """
@@ -290,6 +295,10 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     piva_elem = offerta_elem.find(".//PIVA_UTENTE")
     if piva_elem is None or piva_elem.text != OCTOPUS_PIVA:
         return None
+
+    # Estrai codice offerta (opzionale)
+    cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
+    cod_offerta = cod_offerta_elem.text if cod_offerta_elem is not None else None
 
     # Verifica che sia offerta gas (TIPO_MERCATO=02)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
@@ -335,6 +344,7 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
     return tipo_offerta, {
         "energia": energia,
         "commercializzazione": commercializzazione,
+        "cod_offerta": cod_offerta,
     }
 
 

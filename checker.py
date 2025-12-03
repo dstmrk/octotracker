@@ -399,6 +399,11 @@ def _format_utility_section(
 
         section += f"Nuova tariffa: {label} {energia_str}, Comm. {comm_str}\n"
 
+        # Aggiungi codice offerta se disponibile
+        cod_offerta = current_rates[utility_name][tipo][fascia].get("cod_offerta")
+        if cod_offerta:
+            section += f"📋 Codice offerta: <code>{cod_offerta}</code>\n"
+
     # Aggiungi stima risparmio se disponibile (per utility mixed con consumi)
     if estimated_savings is not None:
         risparmio_formatted = format_number(abs(estimated_savings), max_decimals=MAX_DECIMALS_COST)

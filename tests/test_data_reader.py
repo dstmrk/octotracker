@@ -250,6 +250,77 @@ def test_parse_offerta_luce_gas_market():
     assert result is None
 
 
+def test_parse_offerta_luce_with_cod_offerta():
+    """Test estrazione codice offerta da XML luce"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>01</TIPO_MERCATO>
+            <TIPO_OFFERTA>02</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <TipoPrezzo>
+            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
+        </TipoPrezzo>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>72.0</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.0088</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>"""
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_luce(offerta)
+
+    assert result is not None
+    tipo_offerta, tipo_fascia, dati = result
+    assert dati["cod_offerta"] == "000129ESVML77XXXXXOCTOFLEXMONv77"
+
+
+def test_parse_offerta_luce_without_cod_offerta():
+    """Test parsing luce senza codice offerta (backward compatibility)"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>01</TIPO_MERCATO>
+            <TIPO_OFFERTA>01</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <TipoPrezzo>
+            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
+        </TipoPrezzo>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>72.0</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.1045</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>"""
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_luce(offerta)
+
+    assert result is not None
+    tipo_offerta, tipo_fascia, dati = result
+    assert dati["cod_offerta"] is None
+
+
 # ========== GAS PARSING TESTS ==========
 
 
@@ -335,6 +406,71 @@ def test_parse_offerta_gas_wrong_piva():
     result = _parse_offerta_gas(offerta)
 
     assert result is None
+
+
+def test_parse_offerta_gas_with_cod_offerta():
+    """Test estrazione codice offerta da XML gas"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+            <COD_OFFERTA>000129GSFML37XXXXXXXXOCTOFIXGv37</COD_OFFERTA>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>02</TIPO_MERCATO>
+            <TIPO_OFFERTA>01</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>84.0</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.36</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>"""
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_gas(offerta)
+
+    assert result is not None
+    tipo_offerta, dati = result
+    assert dati["cod_offerta"] == "000129GSFML37XXXXXXXXOCTOFIXGv37"
+
+
+def test_parse_offerta_gas_without_cod_offerta():
+    """Test parsing gas senza codice offerta (backward compatibility)"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>02</TIPO_MERCATO>
+            <TIPO_OFFERTA>02</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>84.0</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi>
+                <PREZZO>0.08</PREZZO>
+            </IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>"""
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_gas(offerta)
+
+    assert result is not None
+    tipo_offerta, dati = result
+    assert dati["cod_offerta"] is None
 
 
 # ========== XML PARSING TESTS ==========
