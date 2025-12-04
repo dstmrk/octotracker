@@ -12,6 +12,7 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL=${TELEGRAM_CHANNEL:-}
       - WEBHOOK_URL=${WEBHOOK_URL:-}
       - WEBHOOK_PORT=${WEBHOOK_PORT:-8443}
       # WEBHOOK_SECRET: OBBLIGATORIO per sicurezza (protezione da webhook spoofing)
