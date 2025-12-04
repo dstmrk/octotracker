@@ -167,8 +167,8 @@ async def test_update_command(mock_update, mock_context):
 @pytest.mark.asyncio
 async def test_start_with_telegram_channel(mock_update, mock_context, monkeypatch):
     """Test /start con canale Telegram configurato"""
-    # Imposta variabile d'ambiente TELEGRAM_CHANNEL
-    monkeypatch.setenv("TELEGRAM_CHANNEL", "octotracker_updates")
+    # Imposta variabile d'ambiente TELEGRAM_CHANNEL (con @)
+    monkeypatch.setenv("TELEGRAM_CHANNEL", "@octotracker_updates")
 
     result = await start(mock_update, mock_context)
 
