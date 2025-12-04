@@ -4,6 +4,7 @@ Gestione conversazione registrazione tariffe per OctoTracker
 Conversation handler per raccolta dati tariffe luce/gas utenti
 """
 import logging
+import os
 from enum import IntEnum
 from typing import Any
 
@@ -117,6 +118,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # Link canale Telegram (se configurato)
+    telegram_channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
+    channel_info = ""
+    if telegram_channel:
+        channel_info = (
+            f"Per avere aggiornamenti sulle nuove funzionalità, iscriviti al canale "
+            f'<a href="https://t.me/{telegram_channel}">@{telegram_channel}</a>!\n\n'
+        )
+
     if is_update:
         messaggio = (
             "♻️ <b>Aggiorniamo le tue tariffe!</b>\n\n"
@@ -130,6 +140,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "🐙 <b>Benvenuto su OctoTracker!</b>\n\n"
             "Questo bot controlla ogni giorno le tariffe di Octopus Energy e ti avvisa "
             "se ne trova di più convenienti rispetto alle tue attuali.\n\n"
+            f"{channel_info}"
             "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
             "Rispondi passo passo ai messaggi: ci vorrà meno di un minuto. ⚡️\n\n"
             "👉 Iniziamo: che tipo di tariffa hai?"
