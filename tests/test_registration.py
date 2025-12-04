@@ -164,6 +164,62 @@ async def test_update_command(mock_update, mock_context):
     assert "tipo di tariffa" in message_text.lower()
 
 
+@pytest.mark.asyncio
+async def test_start_with_telegram_channel(mock_update, mock_context, monkeypatch):
+    """Test /start con canale Telegram configurato"""
+    # Imposta variabile d'ambiente TELEGRAM_CHANNEL
+    monkeypatch.setenv("TELEGRAM_CHANNEL", "octotracker_updates")
+
+    result = await start(mock_update, mock_context)
+
+    assert result == TIPO_TARIFFA
+    mock_update.message.reply_text.assert_called_once()
+
+    # Verifica che il messaggio contenga il link al canale
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "Per avere aggiornamenti sulle nuove funzionalità" in message_text
+    assert "@octotracker_updates" in message_text
+    assert "https://t.me/octotracker_updates" in message_text
+
+
+@pytest.mark.asyncio
+async def test_start_without_telegram_channel(mock_update, mock_context, monkeypatch):
+    """Test /start senza canale Telegram configurato"""
+    # Rimuovi o imposta a vuoto TELEGRAM_CHANNEL
+    monkeypatch.delenv("TELEGRAM_CHANNEL", raising=False)
+
+    result = await start(mock_update, mock_context)
+
+    assert result == TIPO_TARIFFA
+    mock_update.message.reply_text.assert_called_once()
+
+    # Verifica che il messaggio NON contenga il link al canale
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "Per avere aggiornamenti sulle nuove funzionalità" not in message_text
+    assert (
+        "@" not in message_text or "tipo di tariffa" in message_text
+    )  # @ può apparire in altri contesti
+
+
+@pytest.mark.asyncio
+async def test_start_with_empty_telegram_channel(mock_update, mock_context, monkeypatch):
+    """Test /start con TELEGRAM_CHANNEL vuoto o con soli spazi"""
+    # Imposta TELEGRAM_CHANNEL a stringa vuota
+    monkeypatch.setenv("TELEGRAM_CHANNEL", "   ")
+
+    result = await start(mock_update, mock_context)
+
+    assert result == TIPO_TARIFFA
+    mock_update.message.reply_text.assert_called_once()
+
+    # Verifica che il messaggio NON contenga il link al canale
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+    assert "Per avere aggiornamenti sulle nuove funzionalità" not in message_text
+
+
 # ========== TEST FLUSSO CONVERSAZIONE ==========
 
 
