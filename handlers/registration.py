@@ -122,9 +122,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     telegram_channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
     channel_info = ""
     if telegram_channel:
+        # Rimuovi @ iniziale per URL Telegram (https://t.me/ richiede solo il nome)
+        channel_name = telegram_channel.lstrip("@")
         channel_info = (
             f"Per avere aggiornamenti sulle nuove funzionalità, iscriviti al canale "
-            f'<a href="https://t.me/{telegram_channel}">@{telegram_channel}</a>!\n\n'
+            f'<a href="https://t.me/{channel_name}">@{channel_name}</a>!\n\n'
         )
 
     if is_update:
