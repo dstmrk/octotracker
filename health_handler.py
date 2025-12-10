@@ -124,8 +124,6 @@ def _check_database() -> dict[str, Any]:
         if not db_path.exists() or not db_path.is_file():
             return {
                 "status": "error",
-                "path": str(db_path),
-                "accessible": False,
                 "error": "Database file not found",
             }
 
@@ -134,8 +132,6 @@ def _check_database() -> dict[str, Any]:
 
         return {
             "status": "ok",
-            "path": str(db_path),
-            "accessible": True,
             "users_count": users_count,
         }
 
@@ -143,8 +139,6 @@ def _check_database() -> dict[str, Any]:
         logger.error(f"❌ Errore check database: {e}")
         return {
             "status": "error",
-            "path": str(db_path),
-            "accessible": False,
             "error": str(e),
         }
 
@@ -163,8 +157,6 @@ def _check_tariffe() -> dict[str, Any]:
         if not tariffe_path.exists():
             return {
                 "status": "warning",
-                "path": str(tariffe_path),
-                "accessible": False,
                 "message": "Tariffe file not found (will be created on first scrape)",
             }
 
@@ -176,8 +168,6 @@ def _check_tariffe() -> dict[str, Any]:
         if not last_update_str:
             return {
                 "status": "warning",
-                "path": str(tariffe_path),
-                "accessible": True,
                 "message": "Missing data_aggiornamento field",
             }
 
@@ -188,8 +178,6 @@ def _check_tariffe() -> dict[str, Any]:
         if days_old > 3:
             return {
                 "status": "warning",
-                "path": str(tariffe_path),
-                "accessible": True,
                 "last_update": last_update_str,
                 "days_old": days_old,
                 "message": f"Tariffe outdated ({days_old} days old)",
@@ -197,8 +185,6 @@ def _check_tariffe() -> dict[str, Any]:
 
         return {
             "status": "ok",
-            "path": str(tariffe_path),
-            "accessible": True,
             "last_update": last_update_str,
             "days_old": days_old,
         }
@@ -207,16 +193,12 @@ def _check_tariffe() -> dict[str, Any]:
         logger.error(f"❌ Errore parsing tariffe JSON: {e}")
         return {
             "status": "error",
-            "path": str(tariffe_path),
-            "accessible": True,
             "error": f"Invalid JSON: {str(e)}",
         }
     except Exception as e:
         logger.error(f"❌ Errore check tariffe: {e}")
         return {
             "status": "error",
-            "path": str(tariffe_path),
-            "accessible": False,
             "error": str(e),
         }
 
@@ -239,7 +221,6 @@ def _check_tasks(application_data: dict[str, Any]) -> dict[str, Any]:
         if scraper_task is None or checker_task is None:
             return {
                 "status": "error",
-                "webhook_configured": True,
                 "scheduled_tasks": {
                     "scraper": "missing",
                     "checker": "missing",
@@ -255,7 +236,6 @@ def _check_tasks(application_data: dict[str, Any]) -> dict[str, Any]:
         if scraper_task.done() or checker_task.done():
             return {
                 "status": "error",
-                "webhook_configured": True,
                 "scheduled_tasks": {
                     "scraper": scraper_status,
                     "checker": checker_status,
@@ -265,7 +245,6 @@ def _check_tasks(application_data: dict[str, Any]) -> dict[str, Any]:
 
         return {
             "status": "ok",
-            "webhook_configured": True,
             "scheduled_tasks": {
                 "scraper": scraper_status,
                 "checker": checker_status,
@@ -276,6 +255,5 @@ def _check_tasks(application_data: dict[str, Any]) -> dict[str, Any]:
         logger.error(f"❌ Errore check tasks: {e}")
         return {
             "status": "error",
-            "webhook_configured": True,
             "error": str(e),
         }
