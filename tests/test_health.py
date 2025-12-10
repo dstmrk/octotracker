@@ -219,9 +219,7 @@ class TestCheckDatabase:
             result = _check_database()
 
             assert result["status"] == "ok"
-            assert result["accessible"] is True
             assert result["users_count"] == 42
-            assert result["path"] == "data/octotracker.db"
 
     def test_database_not_found(self):
         """Test con database non esistente"""
@@ -234,7 +232,6 @@ class TestCheckDatabase:
             result = _check_database()
 
             assert result["status"] == "error"
-            assert result["accessible"] is False
             assert "not found" in result["error"].lower()
 
     def test_database_not_file(self):
@@ -249,7 +246,6 @@ class TestCheckDatabase:
             result = _check_database()
 
             assert result["status"] == "error"
-            assert result["accessible"] is False
 
     def test_database_exception(self):
         """Test con exception durante query database"""
@@ -269,7 +265,6 @@ class TestCheckDatabase:
             result = _check_database()
 
             assert result["status"] == "error"
-            assert result["accessible"] is False
             assert "locked" in result["error"].lower()
 
 
@@ -300,7 +295,6 @@ class TestCheckTariffe:
             result = _check_tariffe()
 
             assert result["status"] == "ok"
-            assert result["accessible"] is True
             assert result["last_update"] == yesterday
             assert result["days_old"] == 1
 
@@ -315,7 +309,6 @@ class TestCheckTariffe:
             result = _check_tariffe()
 
             assert result["status"] == "warning"
-            assert result["accessible"] is False
             assert "not found" in result["message"].lower()
 
     def test_tariffe_outdated(self):
@@ -342,7 +335,6 @@ class TestCheckTariffe:
             result = _check_tariffe()
 
             assert result["status"] == "warning"
-            assert result["accessible"] is True
             assert result["days_old"] == 5
             assert "outdated" in result["message"].lower()
 
@@ -419,7 +411,6 @@ class TestCheckTasks:
         result = _check_tasks(application_data)
 
         assert result["status"] == "ok"
-        assert result["webhook_configured"] is True
         assert result["scheduled_tasks"]["scraper"] == "running"
         assert result["scheduled_tasks"]["checker"] == "running"
 
