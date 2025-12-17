@@ -1,13 +1,17 @@
 """
-Script per inviare messaggi broadcast a tutti gli utenti del bot.
+Script per inviare messaggi broadcast a utenti specifici.
 
 Uso:
-    python broadcast.py [message_file]
+    python broadcast.py [message_file] [users_file]
 
-    Se non specificato, usa 'message.txt' come file sorgente.
+    Se non specificati:
+    - message_file: 'message.txt'
+    - users_file: 'users.txt'
 
-Il messaggio viene inviato massimo 10 alla volta con rate limiting
-per evitare problemi con l'API di Telegram.
+Il messaggio viene inviato a batch (default 10, configurabile via BROADCAST_BATCH_SIZE
+nel file .env) con rate limiting per evitare problemi con l'API di Telegram.
+
+Prima dell'invio viene mostrata un'anteprima del messaggio e il numero di destinatari.
 """
 
 import asyncio
@@ -21,9 +25,10 @@ from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
-from database import load_users
-
 logger = logging.getLogger(__name__)
+
+# Configurazione batch size (default 10)
+DEFAULT_BATCH_SIZE = 10
 
 
 async def send_broadcast_message(bot: Bot, user_id: str, message: str) -> bool:
@@ -53,23 +58,23 @@ async def send_broadcast_message(bot: Bot, user_id: str, message: str) -> bool:
 
 
 async def send_broadcasts_parallel(
-    bot: Bot, users: dict[str, dict], message: str
+    bot: Bot, user_ids: list[str], message: str, batch_size: int = DEFAULT_BATCH_SIZE
 ) -> tuple[int, int]:
     """
     Invia messaggi broadcast in parallelo con rate limiting.
 
-    Utilizza un semaforo per limitare a massimo 10 invii simultanei,
-    come implementato in checker.py.
+    Utilizza un semaforo per limitare gli invii simultanei.
 
     Args:
         bot: Bot Telegram
-        users: Dizionario {user_id: user_data}
+        user_ids: Lista di user_id destinatari
         message: Messaggio da inviare
+        batch_size: Numero massimo di invii simultanei (default da .env o 10)
 
     Returns:
         Tupla (messaggi_inviati, messaggi_falliti)
     """
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(batch_size)
 
     async def send_with_limit(user_id: str) -> bool:
         async with semaphore:
@@ -80,9 +85,9 @@ async def send_broadcasts_parallel(
                 logger.warning(f"  ❌ Invio fallito per {user_id}")
             return success
 
-    logger.info(f"📨 Invio {len(users)} messaggi in parallelo (max 10 simultanei)...")
+    logger.info(f"📨 Invio {len(user_ids)} messaggi in parallelo (max {batch_size} simultanei)...")
 
-    tasks = [send_with_limit(user_id) for user_id in users.keys()]
+    tasks = [send_with_limit(user_id) for user_id in user_ids]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     successful = sum(1 for r in results if r is True)
@@ -116,13 +121,50 @@ def load_message(message_file: str) -> str:
     return message
 
 
-def confirm_send(message: str, user_count: int) -> bool:
+def load_users_from_file(users_file: str) -> list[str]:
+    """
+    Carica la lista di user_id da un file.
+
+    Il file deve contenere un user_id Telegram per riga.
+    Righe vuote e commenti (iniziano con #) vengono ignorati.
+
+    Args:
+        users_file: Path del file contenente gli user_id
+
+    Returns:
+        Lista di user_id
+
+    Raises:
+        FileNotFoundError: Se il file non esiste
+        ValueError: Se il file è vuoto o non contiene user_id validi
+    """
+    users_path = Path(users_file)
+    if not users_path.exists():
+        raise FileNotFoundError(f"File utenti non trovato: {users_file}")
+
+    lines = users_path.read_text(encoding="utf-8").strip().split("\n")
+
+    # Filtra righe vuote e commenti
+    user_ids = []
+    for line in lines:
+        line = line.strip()
+        if line and not line.startswith("#"):
+            user_ids.append(line)
+
+    if not user_ids:
+        raise ValueError(f"Il file {users_file} non contiene user_id validi")
+
+    return user_ids
+
+
+def confirm_send(message: str, user_count: int, batch_size: int) -> bool:
     """
     Mostra un'anteprima del messaggio e chiede conferma all'utente.
 
     Args:
         message: Il messaggio da inviare
         user_count: Numero di utenti che riceveranno il messaggio
+        batch_size: Numero di invii simultanei configurato
 
     Returns:
         True se l'utente conferma, False altrimenti
@@ -132,6 +174,9 @@ def confirm_send(message: str, user_count: int) -> bool:
     print("=" * 70)
     print(f"\n{message}\n")
     print("=" * 70)
+    print("\n📊 Configurazione invio:")
+    print(f"   • Destinatari: {user_count} utenti")
+    print(f"   • Batch size: {batch_size} messaggi simultanei")
     print(f"\n⚠️  Stai per inviare questo messaggio a {user_count} utenti.")
 
     confirmation = input("\nSei sicuro? (S/N): ").strip().upper()
@@ -139,33 +184,34 @@ def confirm_send(message: str, user_count: int) -> bool:
     return confirmation in ["S", "SI", "SÌ", "Y", "YES"]
 
 
-async def broadcast_to_all_users(message_file: str, bot_token: str) -> dict[str, int]:
+async def broadcast_to_users(
+    message_file: str, users_file: str, bot_token: str, batch_size: int = DEFAULT_BATCH_SIZE
+) -> dict[str, int]:
     """
-    Carica il messaggio, conferma con l'utente e invia broadcast a tutti gli utenti.
+    Carica messaggio e utenti da file, conferma con l'utente e invia broadcast.
 
     Args:
         message_file: Path del file contenente il messaggio
+        users_file: Path del file contenente gli user_id (uno per riga)
         bot_token: Token del bot Telegram
+        batch_size: Numero massimo di invii simultanei
 
     Returns:
         Dizionario con statistiche di invio: {"successful": int, "failed": int, "total": int}
 
     Raises:
-        FileNotFoundError: Se il file messaggio non esiste
-        ValueError: Se il file messaggio è vuoto o non ci sono utenti
+        FileNotFoundError: Se il file messaggio o utenti non esiste
+        ValueError: Se i file sono vuoti o non validi
     """
     # Carica il messaggio
     message = load_message(message_file)
 
-    # Carica gli utenti
-    users = load_users()
-    user_count = len(users)
-
-    if user_count == 0:
-        raise ValueError("Nessun utente nel database")
+    # Carica gli utenti dal file
+    user_ids = load_users_from_file(users_file)
+    user_count = len(user_ids)
 
     # Mostra preview e chiedi conferma
-    if not confirm_send(message, user_count):
+    if not confirm_send(message, user_count, batch_size):
         logger.info("❌ Invio annullato dall'utente")
         return {"successful": 0, "failed": 0, "total": 0}
 
@@ -174,7 +220,7 @@ async def broadcast_to_all_users(message_file: str, bot_token: str) -> dict[str,
     start_time = time()
 
     bot = Bot(token=bot_token)
-    successful, failed = await send_broadcasts_parallel(bot, users, message)
+    successful, failed = await send_broadcasts_parallel(bot, user_ids, message, batch_size)
 
     duration = time() - start_time
 
@@ -210,12 +256,18 @@ def main():
         logger.error("❌ TELEGRAM_BOT_TOKEN non configurato nel file .env")
         sys.exit(1)
 
-    # File messaggio (default: message.txt nella directory corrente)
+    # Batch size da .env (default: 10)
+    batch_size = int(os.getenv("BROADCAST_BATCH_SIZE", DEFAULT_BATCH_SIZE))
+
+    # File messaggio (default: message.txt)
     message_file = sys.argv[1] if len(sys.argv) > 1 else "message.txt"
+
+    # File utenti (default: users.txt)
+    users_file = sys.argv[2] if len(sys.argv) > 2 else "users.txt"
 
     # Esegui broadcast
     try:
-        asyncio.run(broadcast_to_all_users(message_file, bot_token))
+        asyncio.run(broadcast_to_users(message_file, users_file, bot_token, batch_size))
     except FileNotFoundError as e:
         logger.error(f"❌ {e}")
         sys.exit(1)
