@@ -3,6 +3,7 @@
 Unit tests for data_reader.py
 Tests XML parsing and data extraction from ARERA Open Data
 """
+
 import json
 import xml.etree.ElementTree as ET
 from datetime import datetime

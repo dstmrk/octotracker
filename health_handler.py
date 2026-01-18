@@ -3,6 +3,7 @@
 Health check endpoint per monitoring OctoTracker
 Verifica stato database, tariffe e sistema
 """
+
 import json
 import logging
 from datetime import datetime

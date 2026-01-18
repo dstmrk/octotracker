@@ -3,6 +3,7 @@
 Sistema di feedback per OctoTracker
 Gestisce raccolta feedback utenti con conversazione guidata
 """
+
 import logging
 from datetime import datetime, timedelta
 from enum import IntEnum
@@ -182,9 +183,7 @@ async def feedback_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "Grazie per il tuo contributo. Lo useremo per migliorare OctoTracker!"
         )
     else:
-        message = (
-            "❌ Si è verificato un errore nel salvataggio del feedback.\n" "Riprova più tardi."
-        )
+        message = "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi."
 
     await update.message.reply_text(message, parse_mode=ParseMode.HTML)
 
@@ -213,9 +212,7 @@ async def feedback_skip_comment(update: Update, context: ContextTypes.DEFAULT_TY
             "Grazie per il tuo contributo. Lo useremo per migliorare OctoTracker!"
         )
     else:
-        message = (
-            "❌ Si è verificato un errore nel salvataggio del feedback.\n" "Riprova più tardi."
-        )
+        message = "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi."
 
     await query.edit_message_text(message, parse_mode=ParseMode.HTML)
 

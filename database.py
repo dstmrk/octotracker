@@ -2,6 +2,7 @@
 """
 Gestione database SQLite per gli utenti di OctoTracker
 """
+
 import json
 import logging
 import sqlite3

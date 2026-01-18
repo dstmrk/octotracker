@@ -32,6 +32,7 @@ Note:
 - Per tariffe variabili: "energia" è lo spread (da sommare a PUN/PSVDAm)
 - Filtra offerte usando P.IVA Octopus Energy Italia: 01771990445
 """
+
 import asyncio
 import json
 import logging

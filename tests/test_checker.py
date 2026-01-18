@@ -3,6 +3,7 @@
 Unit tests per checker.py
 Verifica logica confronto tariffe con vari scenari
 """
+
 import sys
 from pathlib import Path
 
