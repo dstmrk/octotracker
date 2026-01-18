@@ -54,7 +54,7 @@ jobs:
         fi
 
   lint:
-    name: Lint (Black + Ruff)
+    name: Lint (Ruff)
     needs: check-changes
     if: needs.check-changes.outputs.should_lint == 'true'
     runs-on: ubuntu-latest
@@ -77,10 +77,10 @@ jobs:
     - name: Install dependencies
       run: uv sync --extra dev
 
-    - name: Run Black (check only)
-      run: uv run black --check --diff .
+    - name: Run Ruff format (check only)
+      run: uv run ruff format --check --diff .
 
-    - name: Run Ruff (check only)
+    - name: Run Ruff check
       run: uv run ruff check .
 
     - name: Lint summary
@@ -90,6 +90,6 @@ jobs:
           echo "✅ All lint checks passed!"
         else
           echo "❌ Lint checks failed"
-          echo "Run locally: 'black .' and 'ruff check --fix .'"
+          echo "Run locally: 'ruff format .' and 'ruff check --fix .'"
           exit 1
         fi

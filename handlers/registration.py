@@ -3,6 +3,7 @@
 Gestione conversazione registrazione tariffe per OctoTracker
 Conversation handler per raccolta dati tariffe luce/gas utenti
 """
+
 import logging
 import os
 from enum import IntEnum

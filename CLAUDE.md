@@ -22,35 +22,30 @@ source .venv/bin/activate
 
 ## 🎨 Formattazione e Linting
 
-### Black
-Formattatore di codice (configurato per line-length 100):
+### Ruff
+Formattatore e linter veloce (configurato in `pyproject.toml`, line-length 100):
 
 ```bash
 # Formatta i file modificati
-uv run black <file1.py> <file2.py>
+uv run ruff format <file1.py> <file2.py>
 
 # Formatta tutto il progetto
-uv run black .
+uv run ruff format .
 
-# Check senza modificare
-uv run black --check .
-```
+# Check formattazione senza modificare
+uv run ruff format --check .
 
-### Ruff
-Linter e fixer veloce (configurato in `pyproject.toml`):
-
-```bash
-# Check e auto-fix
+# Linting con auto-fix
 uv run ruff check <file.py> --fix
 
-# Check tutto il progetto
+# Linting tutto il progetto
 uv run ruff check .
 
 # Solo check senza modifiche
 uv run ruff check . --no-fix
 ```
 
-**⚠️ IMPORTANTE**: Esegui sempre `black` e `ruff` prima di committare!
+**⚠️ IMPORTANTE**: Esegui sempre `ruff format` e `ruff check` prima di committare!
 
 ## ✅ Testing
 
@@ -142,7 +137,7 @@ git checkout -b feature/nome-feature
 
 ```bash
 # Formatta il codice frequentemente
-uv run black <file.py>
+uv run ruff format <file.py>
 uv run ruff check <file.py> --fix
 
 # Esegui i test rilevanti
@@ -153,7 +148,7 @@ source .venv/bin/activate && pytest tests/test_<modulo>.py -v
 
 **CHECKLIST OBBLIGATORIA:**
 
-- [ ] `uv run black .` → Nessun file modificato
+- [ ] `uv run ruff format .` → Nessun file modificato
 - [ ] `uv run ruff check . --fix` → Nessun errore
 - [ ] `source .venv/bin/activate && pytest` → Tutti i test passano
 - [ ] `source .venv/bin/activate && pytest --cov=<nuovo_modulo>` → Coverage > 80%
@@ -470,7 +465,6 @@ Il progetto usa GitHub Actions e SonarCloud per:
 ## 📚 Riferimenti
 
 - [uv documentation](https://github.com/astral-sh/uv)
-- [Black documentation](https://black.readthedocs.io/)
 - [Ruff documentation](https://docs.astral.sh/ruff/)
 - [pytest documentation](https://docs.pytest.org/)
 - [python-telegram-bot documentation](https://docs.python-telegram-bot.org/)
