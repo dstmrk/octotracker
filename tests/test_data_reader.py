@@ -45,10 +45,11 @@ def test_build_arera_url_gas():
 
 
 def test_build_arera_url_different_month():
-    """Test costruzione URL per un mese diverso"""
+    """Test costruzione URL per un mese diverso (mese senza zero iniziale)"""
     date = datetime(2025, 1, 5)
     url = _build_arera_url(date, "E")
-    expected = "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_01/PO_Offerte_E_MLIBERO_20250105.xml"
+    # Nota: il path usa il mese senza zero iniziale (es: 2025_1, non 2025_01)
+    expected = "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_1/PO_Offerte_E_MLIBERO_20250105.xml"
     assert url == expected
 
 

@@ -69,10 +69,11 @@ def _build_arera_url(date: datetime, service: str = "E") -> str:
         URL completo del file XML
 
     Example:
-        Per data 2025-11-13 e servizio "E":
-        https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_11/PO_Offerte_E_MLIBERO_20251113.xml
+        Per data 2026-01-23 e servizio "E":
+        https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260123.xml
     """
-    year_month = date.strftime("%Y_%m")
+    # Nota: il path usa il mese senza zero iniziale (es: 2026_1, non 2026_01)
+    year_month = f"{date.year}_{date.month}"
     date_str = date.strftime("%Y%m%d")
     filename = f"PO_Offerte_{service}_MLIBERO_{date_str}.xml"
 
