@@ -604,6 +604,29 @@ async def test_fetch_octopus_tariffe_partial_failure():
             assert result["gas"]["fissa"]["monoraria"]["energia"] == 0.39
 
 
+@pytest.mark.asyncio
+async def test_fetch_octopus_tariffe_no_rates_found_does_not_write():
+    """Test che il file NON viene scritto quando nessuna tariffa è trovata"""
+    with patch("data_reader.asyncio.to_thread") as mock_to_thread:
+
+        async def side_effect(func, *args):
+            # Simula fallimento di entrambi i servizi (XML malformato)
+            if func.__name__ == "_fetch_service_data":
+                return {}, None
+            # _write_rates_file non dovrebbe mai essere chiamato
+            raise AssertionError("_write_rates_file should not be called when no rates found")
+
+        mock_to_thread.side_effect = side_effect
+
+        result = await fetch_octopus_tariffe()
+
+        # Struttura vuota restituita
+        assert result["luce"]["fissa"] == {}
+        assert result["luce"]["variabile"] == {}
+        assert result["gas"]["fissa"] == {}
+        assert result["gas"]["variabile"] == {}
+
+
 def test_fetch_service_data_download_failure():
     """Test _fetch_service_data quando download fallisce"""
     with patch("data_reader._download_xml", side_effect=Exception("Network error")):

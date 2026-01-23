@@ -562,13 +562,21 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
     }
     total_found = sum(rates_count.values())
 
-    # Salva risultati
-    DATA_DIR.mkdir(exist_ok=True)
-    await asyncio.to_thread(_write_rates_file, RATES_FILE, tariffe_data)
-
     duration = time.time() - start_time
-    logger.info(f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe")
-    logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
+
+    # Salva risultati solo se almeno una tariffa è stata trovata
+    if total_found > 0:
+        DATA_DIR.mkdir(exist_ok=True)
+        await asyncio.to_thread(_write_rates_file, RATES_FILE, tariffe_data)
+        logger.info(
+            f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe"
+        )
+        logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
+    else:
+        logger.warning(
+            f"⚠️  Lettura ARERA completata in {duration:.2f}s - Nessuna tariffa trovata, "
+            f"file {RATES_FILE} NON aggiornato per preservare dati precedenti"
+        )
 
     return tariffe_data
 
