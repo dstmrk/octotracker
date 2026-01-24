@@ -38,6 +38,7 @@ from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,
+    GAS_TIPO,
     HA_GAS,
     LUCE_COMM,
     LUCE_CONSUMO_F1,
@@ -52,6 +53,7 @@ from handlers.registration import (
     gas_comm,
     gas_consumo,
     gas_energia,
+    gas_tipo_tariffa,
     ha_gas,
     luce_comm,
     luce_consumo_f1,
@@ -513,7 +515,7 @@ async def test_luce_tipo_variabile_mono(mock_callback_query, mock_context):
     assert result == LUCE_ENERGIA
     assert mock_context.user_data["luce_tipo"] == "variabile"
     assert mock_context.user_data["luce_fascia"] == "monoraria"
-    assert mock_context.user_data["gas_tipo"] == "variabile"
+    # gas_tipo non viene più impostato qui, verrà chiesto separatamente in GAS_TIPO
 
 
 @pytest.mark.asyncio
@@ -628,7 +630,7 @@ async def test_luce_comm_invalid_input(mock_update, mock_context):
 async def test_gas_energia_invalid_input(mock_update, mock_context):
     """Test input non valido per energia gas"""
     mock_update.message.text = "invalid"
-    mock_context.user_data["is_variabile"] = False
+    mock_context.user_data["gas_tipo"] = "fissa"
 
     result = await gas_energia(mock_update, mock_context)
 
@@ -652,14 +654,37 @@ async def test_gas_comm_invalid_input(mock_update, mock_context):
 
 @pytest.mark.asyncio
 async def test_has_gas_yes(mock_callback_query, mock_context):
-    """Test flusso quando utente ha gas"""
+    """Test flusso quando utente ha gas - ora va a GAS_TIPO per chiedere tipo tariffa"""
     mock_callback_query.callback_query.data = "gas_si"
-    mock_context.user_data["is_variabile"] = False
 
     result = await ha_gas(mock_callback_query, mock_context)
 
-    assert result == GAS_ENERGIA
+    assert result == GAS_TIPO  # Ora chiede tipo tariffa gas
     mock_callback_query.callback_query.edit_message_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_gas_tipo_tariffa_fissa(mock_callback_query, mock_context):
+    """Test scelta gas fisso"""
+    mock_callback_query.callback_query.data = "gas_tipo_fissa"
+
+    result = await gas_tipo_tariffa(mock_callback_query, mock_context)
+
+    assert result == GAS_ENERGIA
+    assert mock_context.user_data["gas_tipo"] == "fissa"
+    assert mock_context.user_data["gas_fascia"] == "monoraria"
+
+
+@pytest.mark.asyncio
+async def test_gas_tipo_tariffa_variabile(mock_callback_query, mock_context):
+    """Test scelta gas variabile"""
+    mock_callback_query.callback_query.data = "gas_tipo_variabile"
+
+    result = await gas_tipo_tariffa(mock_callback_query, mock_context)
+
+    assert result == GAS_ENERGIA
+    assert mock_context.user_data["gas_tipo"] == "variabile"
+    assert mock_context.user_data["gas_fascia"] == "monoraria"
 
 
 @pytest.mark.asyncio
@@ -1234,7 +1259,7 @@ async def test_gas_energia_value_error_variabile():
     message.reply_text = AsyncMock()
     update.message = message
 
-    context.user_data = {"is_variabile": True}
+    context.user_data = {"gas_tipo": "variabile"}
 
     result = await gas_energia(update, context)
 
@@ -1256,7 +1281,7 @@ async def test_gas_energia_value_error_fissa():
     message.reply_text = AsyncMock()
     update.message = message
 
-    context.user_data = {"is_variabile": False}
+    context.user_data = {"gas_tipo": "fissa"}
 
     result = await gas_energia(update, context)
 
@@ -1450,7 +1475,7 @@ async def test_luce_consumo_f3_too_long_input(mock_update, mock_context):
 async def test_gas_energia_too_long_input(mock_update, mock_context):
     """Test input troppo lungo per energia gas"""
     mock_update.message.text = "5" * 30
-    mock_context.user_data["is_variabile"] = False
+    mock_context.user_data["gas_tipo"] = "fissa"
 
     result = await gas_energia(mock_update, mock_context)
 

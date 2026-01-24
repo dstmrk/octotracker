@@ -32,6 +32,7 @@ from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,
+    GAS_TIPO,
     HA_GAS,
     LUCE_COMM,
     LUCE_CONSUMO_F1,
@@ -46,6 +47,7 @@ from handlers.registration import (
     gas_comm,
     gas_consumo,
     gas_energia,
+    gas_tipo_tariffa,
     ha_gas,
     luce_comm,
     luce_consumo_f1,
@@ -262,7 +264,7 @@ async def test_luce_tipo_variabile_mono(mock_callback_query, mock_context):
     assert result == LUCE_ENERGIA
     assert mock_context.user_data["luce_tipo"] == "variabile"
     assert mock_context.user_data["luce_fascia"] == "monoraria"
-    assert mock_context.user_data["gas_tipo"] == "variabile"
+    # gas_tipo non viene più impostato qui, verrà chiesto separatamente in GAS_TIPO
 
 
 @pytest.mark.asyncio
@@ -377,7 +379,7 @@ async def test_luce_comm_invalid_input(mock_update, mock_context):
 async def test_gas_energia_invalid_input(mock_update, mock_context):
     """Test input non valido per energia gas"""
     mock_update.message.text = "invalid"
-    mock_context.user_data["is_variabile"] = False
+    mock_context.user_data["gas_tipo"] = "fissa"
 
     result = await gas_energia(mock_update, mock_context)
 
@@ -401,14 +403,20 @@ async def test_gas_comm_invalid_input(mock_update, mock_context):
 
 @pytest.mark.asyncio
 async def test_has_gas_yes(mock_callback_query, mock_context):
-    """Test flusso quando utente ha gas"""
+    """Test flusso quando utente ha gas - ora va a GAS_TIPO per chiedere tipo tariffa"""
     mock_callback_query.callback_query.data = "gas_si"
-    mock_context.user_data["is_variabile"] = False
 
     result = await ha_gas(mock_callback_query, mock_context)
 
-    assert result == GAS_ENERGIA
+    assert result == GAS_TIPO  # Ora chiede tipo tariffa gas
     mock_callback_query.callback_query.edit_message_text.assert_called_once()
+    # Verifica che mostri la domanda sul tipo tariffa gas
+    call_args = mock_callback_query.callback_query.edit_message_text.call_args
+    assert (
+        "tipo di tariffa" in call_args[1]["text"]
+        if "text" in call_args[1]
+        else "tipo di tariffa" in call_args[0][0]
+    )
 
 
 @pytest.mark.asyncio
@@ -436,6 +444,41 @@ async def test_has_gas_no(mock_callback_query, mock_context):
     assert "luce" in user_data
     # Bot salva gas: None quando utente non ha gas
     assert user_data.get("gas") is None
+
+
+@pytest.mark.asyncio
+async def test_gas_tipo_tariffa_fissa(mock_callback_query, mock_context):
+    """Test scelta gas fisso"""
+    mock_callback_query.callback_query.data = "gas_tipo_fissa"
+
+    result = await gas_tipo_tariffa(mock_callback_query, mock_context)
+
+    assert result == GAS_ENERGIA
+    assert mock_context.user_data["gas_tipo"] == "fissa"
+    assert mock_context.user_data["gas_fascia"] == "monoraria"
+    mock_callback_query.callback_query.edit_message_text.assert_called_once()
+    # Verifica messaggio per gas fisso
+    call_args = mock_callback_query.callback_query.edit_message_text.call_args
+    msg = call_args[0][0]
+    assert "Gas fisso" in msg
+
+
+@pytest.mark.asyncio
+async def test_gas_tipo_tariffa_variabile(mock_callback_query, mock_context):
+    """Test scelta gas variabile"""
+    mock_callback_query.callback_query.data = "gas_tipo_variabile"
+
+    result = await gas_tipo_tariffa(mock_callback_query, mock_context)
+
+    assert result == GAS_ENERGIA
+    assert mock_context.user_data["gas_tipo"] == "variabile"
+    assert mock_context.user_data["gas_fascia"] == "monoraria"
+    mock_callback_query.callback_query.edit_message_text.assert_called_once()
+    # Verifica messaggio per gas variabile
+    call_args = mock_callback_query.callback_query.edit_message_text.call_args
+    msg = call_args[0][0]
+    assert "Gas variabile" in msg
+    assert "PSV" in msg
 
 
 @pytest.mark.asyncio
@@ -493,6 +536,109 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
     user_data = load_user(user_id)
     assert user_data is not None
     assert user_data["luce"]["energia"] == 0.145
+    assert user_data["gas"]["energia"] == 0.456
+
+
+@pytest.mark.asyncio
+async def test_complete_flow_mixed_luce_fissa_gas_variabile(mock_update, mock_context):
+    """Test flusso completo: luce fissa + gas variabile (combinazione mista)"""
+    user_id = "123456789"
+    mock_update.effective_user.id = int(user_id)
+
+    # Setup context con luce fissa e gas variabile (combinazione mista)
+    mock_context.user_data = {
+        "luce_tipo": "fissa",
+        "luce_fascia": "monoraria",
+        "luce_energia": 0.145,
+        "luce_comm": 72.0,
+        "gas_tipo": "variabile",  # Gas variabile mentre luce è fissa
+        "gas_fascia": "monoraria",
+        "gas_energia": 0.08,  # Spread PSV
+        "gas_comm": 84.0,
+    }
+
+    # Simula step gas_comm
+    mock_update.message.text = "84"
+    result = await gas_comm(mock_update, mock_context)
+
+    assert result == VUOI_CONSUMI_GAS
+
+    # Simula risposta "No" alla domanda consumo gas
+    from types import SimpleNamespace
+
+    mock_user = SimpleNamespace(id=int(user_id))
+    mock_query = MagicMock(spec=CallbackQuery)
+    mock_query.data = "consumi_gas_no"
+    mock_query.answer = AsyncMock()
+    mock_query.edit_message_text = AsyncMock()
+    mock_query.from_user = mock_user
+
+    mock_update.callback_query = mock_query
+
+    result = await vuoi_consumi_gas(mock_update, mock_context)
+
+    assert result == -1  # Fine conversazione
+
+    # Verifica salvataggio completo nel database
+    user_data = load_user(user_id)
+    assert user_data is not None
+    # Luce fissa
+    assert user_data["luce"]["tipo"] == "fissa"
+    assert user_data["luce"]["energia"] == 0.145
+    # Gas variabile (combinazione mista!)
+    assert user_data["gas"]["tipo"] == "variabile"
+    assert user_data["gas"]["energia"] == 0.08
+
+
+@pytest.mark.asyncio
+async def test_complete_flow_mixed_luce_variabile_gas_fissa(mock_update, mock_context):
+    """Test flusso completo: luce variabile + gas fissa (combinazione mista inversa)"""
+    user_id = "123456789"
+    mock_update.effective_user.id = int(user_id)
+
+    # Setup context con luce variabile e gas fissa (combinazione mista inversa)
+    mock_context.user_data = {
+        "luce_tipo": "variabile",
+        "luce_fascia": "trioraria",
+        "luce_energia": 0.025,  # Spread PUN
+        "luce_comm": 72.0,
+        "gas_tipo": "fissa",  # Gas fisso mentre luce è variabile
+        "gas_fascia": "monoraria",
+        "gas_energia": 0.456,  # Prezzo fisso
+        "gas_comm": 84.0,
+    }
+
+    # Simula step gas_comm
+    mock_update.message.text = "84"
+    result = await gas_comm(mock_update, mock_context)
+
+    assert result == VUOI_CONSUMI_GAS
+
+    # Simula risposta "No" alla domanda consumo gas
+    from types import SimpleNamespace
+
+    mock_user = SimpleNamespace(id=int(user_id))
+    mock_query = MagicMock(spec=CallbackQuery)
+    mock_query.data = "consumi_gas_no"
+    mock_query.answer = AsyncMock()
+    mock_query.edit_message_text = AsyncMock()
+    mock_query.from_user = mock_user
+
+    mock_update.callback_query = mock_query
+
+    result = await vuoi_consumi_gas(mock_update, mock_context)
+
+    assert result == -1  # Fine conversazione
+
+    # Verifica salvataggio completo nel database
+    user_data = load_user(user_id)
+    assert user_data is not None
+    # Luce variabile
+    assert user_data["luce"]["tipo"] == "variabile"
+    assert user_data["luce"]["fascia"] == "trioraria"
+    assert user_data["luce"]["energia"] == 0.025
+    # Gas fisso (combinazione mista!)
+    assert user_data["gas"]["tipo"] == "fissa"
     assert user_data["gas"]["energia"] == 0.456
 
 
@@ -982,7 +1128,7 @@ async def test_gas_energia_value_error_variabile():
     message.reply_text = AsyncMock()
     update.message = message
 
-    context.user_data = {"is_variabile": True}
+    context.user_data = {"gas_tipo": "variabile"}
 
     result = await gas_energia(update, context)
 
@@ -1004,7 +1150,7 @@ async def test_gas_energia_value_error_fissa():
     message.reply_text = AsyncMock()
     update.message = message
 
-    context.user_data = {"is_variabile": False}
+    context.user_data = {"gas_tipo": "fissa"}
 
     result = await gas_energia(update, context)
 
@@ -1198,7 +1344,7 @@ async def test_luce_consumo_f3_too_long_input(mock_update, mock_context):
 async def test_gas_energia_too_long_input(mock_update, mock_context):
     """Test input troppo lungo per energia gas"""
     mock_update.message.text = "5" * 30
-    mock_context.user_data["is_variabile"] = False
+    mock_context.user_data["gas_tipo"] = "fissa"
 
     result = await gas_energia(mock_update, mock_context)
 
