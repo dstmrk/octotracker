@@ -792,12 +792,9 @@ def _prepare_user_notification(
     Returns:
         Tupla (current_octopus, message) se notifica necessaria, None altrimenti
     """
-    logger.info(f"📊 Controllo utente {user_id}...")
-
     savings = check_better_rates(user_rates, current_rates)
 
     if not savings["has_savings"]:
-        logger.info("  ℹ️  Nessun risparmio trovato")
         return None
 
     # Costruisci tariffe Octopus correnti per questo utente
@@ -805,7 +802,6 @@ def _prepare_user_notification(
 
     # Controlla se già notificato
     if not _should_notify_user(user_rates, current_octopus):
-        logger.info("  ⏭️  Tariffe migliori già notificate in precedenza, skip")
         return None
 
     # Valuta separatamente luce e gas per determinare cosa mostrare
@@ -814,11 +810,15 @@ def _prepare_user_notification(
 
     # Skip se nessuna utility è conveniente
     if not show_luce and not show_gas:
-        logger.info("  ⏭️  Nessuna fornitura conveniente da mostrare, skip")
+        # Log solo per casi MIXED non convenienti (informativi)
         if savings["luce_is_mixed"] and luce_savings is not None:
-            logger.info(f"     Luce MIXED: risparmio stimato {luce_savings:.2f} €/anno (≤ 0)")
+            logger.info(
+                f"⏭️  Utente {user_id}: luce MIXED stimato {luce_savings:.2f} €/anno, non conveniente"
+            )
         if savings["gas_is_mixed"] and gas_savings is not None:
-            logger.info(f"     Gas MIXED: risparmio stimato {gas_savings:.2f} €/anno (≤ 0)")
+            logger.info(
+                f"⏭️  Utente {user_id}: gas MIXED stimato {gas_savings:.2f} €/anno, non conveniente"
+            )
         return None
 
     # Log quali utility vengono mostrate
@@ -827,7 +827,7 @@ def _prepare_user_notification(
         utilities_shown.append("luce")
     if show_gas:
         utilities_shown.append("gas")
-    logger.info(f"  📋 Forniture da mostrare: {', '.join(utilities_shown)}")
+    logger.info(f"📤 Utente {user_id}: notifica accodata ({', '.join(utilities_shown)})")
 
     # Genera messaggio
     message = format_notification(
@@ -839,7 +839,6 @@ def _prepare_user_notification(
         luce_estimated_savings=luce_savings,
         gas_estimated_savings=gas_savings,
     )
-    logger.info("  📤 Notifica accodata per invio")
 
     return (current_octopus, message)
 
@@ -873,10 +872,10 @@ async def _send_notifications_parallel(
                 # Aggiorna last_notified_rates per questo utente
                 user_rates["last_notified_rates"] = current_octopus
                 save_user(user_id, user_rates)
-                logger.info(f"  ✅ Notifica inviata a {user_id}")
+                logger.info(f"✅ Notifica inviata a {user_id}")
                 return True
             else:
-                logger.warning(f"  ❌ Notifica fallita per {user_id}")
+                logger.warning(f"❌ Notifica fallita per {user_id}")
                 return False
 
     # Crea task per tutte le notifiche

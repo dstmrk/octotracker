@@ -1994,3 +1994,75 @@ async def test_check_and_notify_luce_mixed_negative_gas_non_mixed():
                         assert "🔥" in message_text and "Gas" in message_text
     finally:
         Path(rates_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_check_and_notify_both_mixed_negative_savings():
+    """Test che luce e gas entrambi MIXED con risparmio negativo vengono skippati"""
+    import json
+    import tempfile
+    from unittest.mock import AsyncMock, patch
+
+    from telegram import Bot
+
+    # User con consumi sia luce che gas che portano a risparmio negativo
+    users = {
+        "123": {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.130,  # Tariffa attuale bassa
+                "commercializzazione": 65.0,
+                "consumo_f1": 2700.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.400,  # Tariffa attuale bassa
+                "commercializzazione": 60.0,
+                "consumo_annuo": 1200.0,
+            },
+        }
+    }
+
+    # Nuove tariffe peggiori per entrambe (caso MIXED: energia migliora, comm peggiora)
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.125,  # Migliora di 0.005
+                    "commercializzazione": 90.0,  # Peggiora di 25
+                }
+            }
+        },
+        "gas": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.390,  # Migliora di 0.01 → risparmio 12€
+                    "commercializzazione": 100.0,  # Peggiora di 40€
+                }
+            }
+        },
+    }
+
+    # Luce: risparmio energia (0.130-0.125)*2700 = 13.5€, aumento comm 65-90 = -25€, totale -11.5€
+    # Gas: risparmio energia (0.400-0.390)*1200 = 12€, aumento comm 60-100 = -40€, totale -28€
+    # Entrambi negativi → skip con log per entrambi
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(current_rates, f)
+        rates_file = f.name
+
+    try:
+        with patch("checker.load_users", return_value=users):
+            with patch("checker.RATES_FILE", Path(rates_file)):
+                with patch("checker.Bot") as MockBot:
+                    mock_bot_instance = AsyncMock(spec=Bot)
+                    MockBot.return_value = mock_bot_instance
+
+                    await check_and_notify_users("fake_token")
+
+                    # Verifica che NON sia stata inviata alcuna notifica
+                    mock_bot_instance.send_message.assert_not_called()
+    finally:
+        Path(rates_file).unlink()
