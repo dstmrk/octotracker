@@ -78,6 +78,7 @@ class ConversationState(IntEnum):
     LUCE_CONSUMO_F2 = 9
     LUCE_CONSUMO_F3 = 10
     HA_GAS = 4
+    GAS_TIPO = 13  # Scelta tipo tariffa gas (fissa/variabile)
     GAS_ENERGIA = 5
     GAS_COMM = 6
     VUOI_CONSUMI_GAS = 11
@@ -94,6 +95,7 @@ LUCE_CONSUMO_F1 = ConversationState.LUCE_CONSUMO_F1
 LUCE_CONSUMO_F2 = ConversationState.LUCE_CONSUMO_F2
 LUCE_CONSUMO_F3 = ConversationState.LUCE_CONSUMO_F3
 HA_GAS = ConversationState.HA_GAS
+GAS_TIPO = ConversationState.GAS_TIPO
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
 VUOI_CONSUMI_GAS = ConversationState.VUOI_CONSUMI_GAS
@@ -136,7 +138,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "Inserisci di nuovo i valori attuali così OctoTracker potrà confrontarli "
             "con le nuove offerte di Octopus Energy.\n\n"
             "Ti guiderò passo passo come la prima volta: prima la luce, poi (se ce l'hai) il gas.\n\n"
-            "👉 Iniziamo: che tipo di tariffa hai?"
+            "👉 Iniziamo: che tipo di tariffa <b>luce</b> hai?"
         )
     else:
         messaggio = (
@@ -146,7 +148,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             f"{channel_info}"
             "Ti farò qualche semplice domanda per registrare le tue tariffe luce e (se ce l'hai) gas.\n"
             "Rispondi passo passo ai messaggi: ci vorrà meno di un minuto. ⚡️\n\n"
-            "👉 Iniziamo: che tipo di tariffa hai?"
+            "👉 Iniziamo: che tipo di tariffa <b>luce</b> hai?"
         )
 
     await update.message.reply_text(messaggio, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
@@ -162,8 +164,7 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         context.user_data["is_variabile"] = False
         context.user_data["luce_tipo"] = "fissa"
         context.user_data["luce_fascia"] = "monoraria"
-        context.user_data["gas_tipo"] = "fissa"  # Se ha gas, sarà fissa
-        context.user_data["gas_fascia"] = "monoraria"
+        # gas_tipo e gas_fascia verranno chiesti separatamente in GAS_TIPO
 
         await query.edit_message_text(
             "📊 <b>Tariffa Fissa</b>\n\n"
@@ -210,9 +211,7 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data["luce_fascia"] = "trioraria"
         tipo_msg = "trioraria (PUN)"
 
-    # Gas variabile è sempre monorario
-    context.user_data["gas_tipo"] = "variabile"
-    context.user_data["gas_fascia"] = "monoraria"
+    # gas_tipo e gas_fascia verranno chiesti separatamente in GAS_TIPO
 
     await query.edit_message_text(
         f"⚡ <b>Luce variabile {tipo_msg}</b>\n\n"
@@ -414,29 +413,55 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
 
     if query.data == "gas_si":
-        is_variabile = context.user_data.get("is_variabile", False)
+        # Chiedi che tipo di tariffa gas ha (può essere diversa dalla luce)
+        keyboard = [
+            [
+                InlineKeyboardButton("📊 Fissa", callback_data="gas_tipo_fissa"),
+                InlineKeyboardButton("📈 Variabile", callback_data="gas_tipo_variabile"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-        if is_variabile:
-            msg = (
-                "🔥 <b>Gas variabile</b>\n\n"
-                "Ora inserisci lo spread della tua tariffa rispetto al PSV.\n\n"
-                "ℹ️ Inserisci il valore <b>IVA e imposte escluse</b> "
-                "(come riportato sul sito Octopus Energy/ARERA)\n\n"
-                "💬 Esempio: se la tua tariffa è <b>PSV + 0,08</b> €/Smc, scrivi <code>0,08</code>"
-            )
-        else:
-            msg = (
-                "🔥 <b>Gas fisso</b>\n\n"
-                "Perfetto! Inserisci il costo materia energia gas (€/Smc).\n\n"
-                "ℹ️ Inserisci il prezzo <b>IVA e imposte escluse</b> "
-                "(come riportato sul sito Octopus Energy/ARERA)\n\n"
-                "💬 Esempio: 0,456"
-            )
-
-        await query.edit_message_text(msg, parse_mode=ParseMode.HTML)
-        return GAS_ENERGIA
+        await query.edit_message_text(
+            "🔥 <b>Fornitura Gas</b>\n\nChe tipo di tariffa <b>gas</b> hai?",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML,
+        )
+        return GAS_TIPO
     else:
         return await salva_e_conferma(query, context, solo_luce=True)
+
+
+async def gas_tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Gestisci scelta tipo tariffa gas (Fissa/Variabile)"""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "gas_tipo_fissa":
+        context.user_data["gas_tipo"] = "fissa"
+        context.user_data["gas_fascia"] = "monoraria"
+
+        msg = (
+            "🔥 <b>Gas fisso</b>\n\n"
+            "Perfetto! Inserisci il costo materia energia gas (€/Smc).\n\n"
+            "ℹ️ Inserisci il prezzo <b>IVA e imposte escluse</b> "
+            "(come riportato sul sito Octopus Energy/ARERA)\n\n"
+            "💬 Esempio: 0,456"
+        )
+    else:  # gas_tipo_variabile
+        context.user_data["gas_tipo"] = "variabile"
+        context.user_data["gas_fascia"] = "monoraria"
+
+        msg = (
+            "🔥 <b>Gas variabile</b>\n\n"
+            "Ora inserisci lo spread della tua tariffa rispetto al PSV.\n\n"
+            "ℹ️ Inserisci il valore <b>IVA e imposte escluse</b> "
+            "(come riportato sul sito Octopus Energy/ARERA)\n\n"
+            "💬 Esempio: se la tua tariffa è <b>PSV + 0,08</b> €/Smc, scrivi <code>0,08</code>"
+        )
+
+    await query.edit_message_text(msg, parse_mode=ParseMode.HTML)
+    return GAS_ENERGIA
 
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -449,8 +474,8 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     if value is None:
         # Errore di conversione (non è un numero)
-        is_variabile = context.user_data.get("is_variabile", False)
-        if is_variabile:
+        gas_tipo = context.user_data.get("gas_tipo", "fissa")
+        if gas_tipo == "variabile":
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,08)")
         else:
             await update.message.reply_text("❌ Inserisci un numero valido (es: 0,456)")
