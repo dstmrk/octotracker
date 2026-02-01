@@ -499,70 +499,11 @@ docker compose version
 - **Timeout**: 30 secondi per operazioni HTTP
 - **Resilienza**: error handler gestisce timeout di rete
 
-## 🔧 Troubleshooting
-
-### Bot non risponde su Telegram
-```bash
-# Controlla che il container sia attivo
-docker ps
-
-# Controlla i logs per errori
-docker compose logs -f
-
-# Verifica che TELEGRAM_BOT_TOKEN sia corretto nel .env
-cat .env
-```
-
-### Timeout di rete / Bot crasha
-Il bot ha timeout aumentati (30s) e error handler - non dovrebbe crashare.
-```bash
-# Controlla i logs per vedere errori di rete
-docker compose logs -f | grep "Errore"
-
-# Se vedi molti timeout, verifica la connessione internet
-ping 8.8.8.8 -c 5
-```
-
-### Aggiornamento tariffe non funziona
-```bash
-# Controlla i logs alle ore dell'aggiornamento (default: 11:00)
-docker compose logs -f
-
-# Test manuale dell'updater
-docker compose exec octotracker python updater.py
-
-# Verifica file tariffe generato
-cat data/current_rates.json
-```
-
-### Container non parte
-```bash
-# Verifica che non ci siano problemi di memoria
-free -h
-
-# Rebuild completo del container
-docker compose down
-docker compose up -d --build
-
-# Logs dettagliati durante startup
-docker compose logs -f
-```
-
-### Warning memoria sul kernel
-Se vedi "Your kernel does not support memory soft limit capabilities", è normale su alcuni kernel. Il bot funziona comunque - il limite hard di 1G è attivo.
-
-### Dati persi dopo restart
-I dati dovrebbero essere persistenti in `./data/`. Se si perdono:
-```bash
-# Verifica che il volume sia montato correttamente
-docker compose down
-ls -la data/
-docker compose up -d
-```
-
 ## 🔮 Possibili Miglioramenti Futuri
 
 - [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
+- [ ] **Aggiornamento tariffe con un tap**: quando arriva una notifica con tariffe più convenienti, un pulsante inline permette di aggiornare direttamente le proprie tariffe registrate senza dover reinserire tutto manualmente
+- [ ] **Storico tariffe**: possibilità di consultare lo storico delle tariffe Octopus Energy degli ultimi 365 giorni, per capire l'andamento nel tempo
 
 ## 📜 Licenza
 
