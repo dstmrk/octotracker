@@ -117,8 +117,7 @@ docker compose up -d --build
 ### Dati Persistenti
 
 I dati sono salvati in `./data/`:
-- `octotracker.db` - database SQLite con utenti registrati e tariffe
-- `current_rates.json` - tariffe Octopus aggiornate
+- `octotracker.db` - database SQLite con utenti registrati, tariffe e storico
 
 **Backup**: Copia semplicemente la cartella `data/`!
 
@@ -347,33 +346,24 @@ I dati sono salvati localmente:
   );
   ```
 
-**data/current_rates.json** - Tariffe Octopus aggiornate (struttura nested)
-```json
-{
-  "luce": {
-    "fissa": {
-      "monoraria": {"energia": 0.145, "commercializzazione": 72.0}
-    },
-    "variabile": {
-      "monoraria": {"energia": 0.0088, "commercializzazione": 72.0},
-      "trioraria": {"energia": 0.0088, "commercializzazione": 72.0}
-    }
-  },
-  "gas": {
-    "fissa": {
-      "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
-    },
-    "variabile": {
-      "monoraria": {"energia": 0.08, "commercializzazione": 84.0}
-    }
-  },
-  "data_aggiornamento": "2025-11-10"
-}
+**Tabella rate_history** - Storico tariffe Octopus (una riga per combinazione servizio/tipo/fascia/data)
+```sql
+CREATE TABLE rate_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_fonte TEXT NOT NULL,           -- Data del file XML ARERA
+    servizio TEXT NOT NULL,             -- "luce" o "gas"
+    tipo TEXT NOT NULL,                 -- "fissa" o "variabile"
+    fascia TEXT NOT NULL,               -- "monoraria" o "trioraria"
+    energia REAL NOT NULL,              -- €/kWh, €/Smc o spread
+    commercializzazione REAL,           -- €/anno
+    cod_offerta TEXT,
+    UNIQUE(data_fonte, servizio, tipo, fascia)
+);
 ```
 
 **Nota sulla struttura**:
 - **octotracker.db**: Database SQLite con supporto transazioni ACID per scalare a 1000+ utenti
-- **current_rates.json**: Struttura a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
+- **rate_history**: Le tariffe correnti sono l'ultimo record per ogni combinazione servizio/tipo/fascia
 - Per tariffe variabili, `energia` rappresenta lo spread (es: PUN + 0.0088)
 
 **Persistenza**: I dati sono salvati nel volume Docker (`./data` nella cartella del progetto) e sono persistenti tra restart del container.

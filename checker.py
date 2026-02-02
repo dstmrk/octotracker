@@ -4,11 +4,9 @@ Controlla se ci sono tariffe più convenienti e notifica gli utenti
 """
 
 import asyncio
-import json
 import logging
 import os
 import time
-from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -16,17 +14,13 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
 from constants import MAX_DECIMALS_COST, MAX_DECIMALS_ENERGY
-from database import load_users, save_pending_rates, save_user
+from database import get_current_rates, load_users, save_pending_rates, save_user
 from formatters import format_utility_type_display, get_utility_label
 
 load_dotenv()
 
 # Setup logger
 logger = logging.getLogger(__name__)
-
-# File dati
-DATA_DIR = Path(__file__).parent / "data"
-RATES_FILE = DATA_DIR / "current_rates.json"
 
 # Errori Telegram che indicano che l'utente deve essere rimosso dal database
 TELEGRAM_ERRORS_TO_DELETE = [
@@ -35,39 +29,6 @@ TELEGRAM_ERRORS_TO_DELETE = [
     "bot was kicked",  # Bot rimosso da gruppo/canale
     "chat not found",  # Chat non esiste più
 ]
-
-
-def load_json(file_path: Path) -> dict[str, Any] | None:
-    """Carica file JSON con gestione errori"""
-    if file_path.exists():
-        try:
-            with open(file_path) as f:
-                content = f.read()
-                if not content.strip():
-                    logger.warning(f"⚠️  {file_path.name} è vuoto")
-                    return None
-                return json.loads(content)
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ Errore parsing {file_path.name}: {e}")
-            logger.debug(f"   File location: {file_path}")
-            # Mostra prime righe del file per debug
-            try:
-                with open(file_path) as f:
-                    first_lines = f.read(200)
-                    logger.debug(f"   Prime righe: {repr(first_lines)}")
-            except OSError:
-                pass  # Debug read fallito (include PermissionError), non critico
-            return None
-        except FileNotFoundError:
-            logger.warning(f"📁 File non trovato: {file_path.name}")
-            return None
-        except PermissionError:
-            logger.error(f"🔒 Permesso negato per leggere: {file_path.name}")
-            return None
-        except OSError as e:
-            logger.error(f"💾 Errore I/O lettura {file_path.name}: {e}")
-            return None
-    return None
 
 
 def format_number(value: float, max_decimals: int = 3) -> str:
@@ -986,7 +947,7 @@ async def check_and_notify_users(bot_token: str) -> None:
 
     # Carica e valida dati
     users = load_users()
-    current_rates = load_json(RATES_FILE)
+    current_rates = get_current_rates()
 
     if not _validate_checker_data(users, current_rates, start_time):
         return

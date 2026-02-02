@@ -34,14 +34,14 @@ Note:
 """
 
 import asyncio
-import json
 import logging
 import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any
+
+from database import save_rates_batch
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -52,10 +52,6 @@ ARERA_BASE_URL = "https://www.ilportaleofferte.it/portaleOfferte/resources/opend
 SERVICE_NAME_ELECTRICITY = "elettricità"  # Nome servizio per elettricità
 SERVICE_NAME_GAS = "gas"  # Nome servizio per gas
 REQUEST_TIMEOUT = 30  # Timeout per richieste HTTP (secondi)
-
-# File dati
-DATA_DIR = Path(__file__).parent / "data"
-RATES_FILE = DATA_DIR / "current_rates.json"
 
 
 def _build_arera_url(date: datetime, service: str = "E") -> str:
@@ -458,15 +454,34 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     return {}
 
 
-def _write_rates_file(file_path: Path, data: dict[str, Any]) -> None:
-    """Helper sincrono per scrivere file JSON delle tariffe
+def _flatten_rates(tariffe_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Converte struttura nested delle tariffe in lista flat per il DB
 
     Args:
-        file_path: Path del file da scrivere
-        data: Dati da serializzare in JSON
+        tariffe_data: Struttura nested con luce/gas → fissa/variabile → fascia → dati
+
+    Returns:
+        Lista di dict con chiavi: servizio, tipo, fascia, energia, commercializzazione, cod_offerta
     """
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=2)
+    rates = []
+    for servizio in ("luce", "gas"):
+        service_data = tariffe_data.get(servizio, {})
+        for tipo in ("fissa", "variabile"):
+            tipo_data = service_data.get(tipo, {})
+            for fascia, dati in tipo_data.items():
+                if not dati or "energia" not in dati:
+                    continue
+                rates.append(
+                    {
+                        "servizio": servizio,
+                        "tipo": tipo,
+                        "fascia": fascia,
+                        "energia": dati["energia"],
+                        "commercializzazione": dati.get("commercializzazione"),
+                        "cod_offerta": dati.get("cod_offerta"),
+                    }
+                )
+    return rates
 
 
 def _fetch_service_data(
@@ -564,25 +579,26 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
 
     duration = time.time() - start_time
 
-    # Salva risultati solo se almeno una tariffa è stata trovata
+    # Salva risultati nel DB solo se almeno una tariffa è stata trovata
     if total_found > 0:
-        DATA_DIR.mkdir(exist_ok=True)
-        await asyncio.to_thread(_write_rates_file, RATES_FILE, tariffe_data)
+        flat_rates = _flatten_rates(tariffe_data)
+        data_fonte = tariffe_data.get("data_fonte_xml", tariffe_data["data_aggiornamento"])
+        inserted = await asyncio.to_thread(save_rates_batch, data_fonte, flat_rates)
         logger.info(
             f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe"
         )
-        logger.info(f"💾 Tariffe salvate in {RATES_FILE}")
+        logger.info(f"💾 {inserted} tariffe salvate nel database")
     else:
-        logger.warning(
-            f"⚠️  Lettura ARERA completata in {duration:.2f}s - Nessuna tariffa trovata, "
-            f"file {RATES_FILE} NON aggiornato per preservare dati precedenti"
-        )
+        logger.warning(f"⚠️  Lettura ARERA completata in {duration:.2f}s - Nessuna tariffa trovata")
 
     return tariffe_data
 
 
 if __name__ == "__main__":
+    import json
     import os
+
+    from database import init_db
 
     # Configura logging per esecuzione standalone
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -591,6 +607,7 @@ if __name__ == "__main__":
         format="%(message)s",
     )
 
+    init_db()
     result = asyncio.run(fetch_octopus_tariffe())
     logger.info("📊 Tariffe estratte:")
     logger.info(json.dumps(result, indent=2))

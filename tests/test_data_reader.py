@@ -8,7 +8,7 @@ import json
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -17,11 +17,11 @@ from data_reader import (
     _empty_structure,
     _extract_componente_impresa,
     _fetch_service_data,
+    _flatten_rates,
     _parse_arera_xml,
     _parse_offerta_gas,
     _parse_offerta_luce,
     _remove_namespace,
-    _write_rates_file,
     fetch_octopus_tariffe,
 )
 
@@ -503,23 +503,51 @@ def test_parse_arera_xml_gas():
     assert "variabile" in result["gas"]
 
 
-# ========== FILE WRITING TESTS ==========
+# ========== FLATTEN RATES TESTS ==========
 
 
-def test_write_rates_file():
-    """Test scrittura file tariffe"""
-    test_path = Path("/tmp/test_rates.json")
-    test_data = {"luce": {"fissa": {"monoraria": {"energia": 0.1078}}}}
+def test_flatten_rates():
+    """Test conversione struttura nested in lista flat"""
+    tariffe_data = {
+        "luce": {
+            "fissa": {"monoraria": {"energia": 0.1078, "commercializzazione": 72.0}},
+            "variabile": {
+                "monoraria": {
+                    "energia": 0.0088,
+                    "commercializzazione": 72.0,
+                    "cod_offerta": "COD123",
+                },
+            },
+        },
+        "gas": {
+            "fissa": {"monoraria": {"energia": 0.39, "commercializzazione": 84.0}},
+            "variabile": {},
+        },
+    }
 
-    with patch("builtins.open", mock_open()) as mock_file:
-        _write_rates_file(test_path, test_data)
+    result = _flatten_rates(tariffe_data)
 
-        # Verifica che il file sia stato aperto in scrittura
-        mock_file.assert_called_once_with(test_path, "w")
+    assert len(result) == 3
+    # Verifica struttura flat
+    luce_fissa = [r for r in result if r["servizio"] == "luce" and r["tipo"] == "fissa"]
+    assert len(luce_fissa) == 1
+    assert luce_fissa[0]["fascia"] == "monoraria"
+    assert luce_fissa[0]["energia"] == 0.1078
+    assert luce_fissa[0]["commercializzazione"] == 72.0
 
-        # Verifica che json.dump sia stato chiamato
-        handle = mock_file()
-        handle.write.assert_called()
+    luce_var = [r for r in result if r["servizio"] == "luce" and r["tipo"] == "variabile"]
+    assert len(luce_var) == 1
+    assert luce_var[0]["cod_offerta"] == "COD123"
+
+
+def test_flatten_rates_empty():
+    """Test flatten con struttura vuota"""
+    tariffe_data = {
+        "luce": {"fissa": {}, "variabile": {}},
+        "gas": {"fissa": {}, "variabile": {}},
+    }
+    result = _flatten_rates(tariffe_data)
+    assert result == []
 
 
 # ========== INTEGRATION TESTS ==========
@@ -545,18 +573,21 @@ async def test_fetch_octopus_tariffe_success():
         }
     }
 
-    with patch("data_reader._fetch_service_data"):
-        with patch("data_reader.asyncio.to_thread") as mock_to_thread:
-            # Mock parallel fetches
-            async def side_effect(func, *args):
-                if args[0] == "E":
-                    return mock_luce_data, datetime.now()
-                else:
-                    return mock_gas_data, datetime.now()
+    with patch("data_reader._fetch_service_data") as mock_fetch:
+        with patch("data_reader.save_rates_batch"):
+            with patch("data_reader.asyncio.to_thread") as mock_to_thread:
+                # Mock parallel fetches
+                async def side_effect(func, *args):
+                    if func is mock_fetch:
+                        if args[0] == "E":
+                            return mock_luce_data, datetime.now()
+                        else:
+                            return mock_gas_data, datetime.now()
+                    # Mock save_rates_batch call
+                    return 5
 
-            mock_to_thread.side_effect = side_effect
+                mock_to_thread.side_effect = side_effect
 
-            with patch("data_reader._write_rates_file"):
                 result = await fetch_octopus_tariffe()
 
                 # Verify structure
@@ -579,52 +610,60 @@ async def test_fetch_octopus_tariffe_partial_failure():
         }
     }
 
-    with patch("data_reader.asyncio.to_thread") as mock_to_thread:
+    with patch("data_reader._fetch_service_data") as mock_fetch:
+        with patch("data_reader.save_rates_batch"):
+            with patch("data_reader.asyncio.to_thread") as mock_to_thread:
 
-        async def side_effect(func, *args):
-            if args[0] == "E":
-                return {}, None  # Luce fallita
-            else:
-                return mock_gas_data, datetime.now()  # Gas OK
+                async def side_effect(func, *args):
+                    if func is mock_fetch:
+                        if args[0] == "E":
+                            return {}, None  # Luce fallita
+                        else:
+                            return mock_gas_data, datetime.now()  # Gas OK
+                    # Mock save_rates_batch call
+                    return 2
 
-        mock_to_thread.side_effect = side_effect
+                mock_to_thread.side_effect = side_effect
 
-        with patch("data_reader._write_rates_file"):
-            result = await fetch_octopus_tariffe()
+                result = await fetch_octopus_tariffe()
 
-            # Structure should exist even if empty
-            assert "luce" in result
-            assert "gas" in result
+                # Structure should exist even if empty
+                assert "luce" in result
+                assert "gas" in result
 
-            # Luce should be empty
-            assert result["luce"]["fissa"] == {}
-            assert result["luce"]["variabile"] == {}
+                # Luce should be empty
+                assert result["luce"]["fissa"] == {}
+                assert result["luce"]["variabile"] == {}
 
-            # Gas should have data
-            assert result["gas"]["fissa"]["monoraria"]["energia"] == 0.39
+                # Gas should have data
+                assert result["gas"]["fissa"]["monoraria"]["energia"] == 0.39
 
 
 @pytest.mark.asyncio
-async def test_fetch_octopus_tariffe_no_rates_found_does_not_write():
-    """Test che il file NON viene scritto quando nessuna tariffa è trovata"""
-    with patch("data_reader.asyncio.to_thread") as mock_to_thread:
+async def test_fetch_octopus_tariffe_no_rates_found_does_not_save():
+    """Test che il DB NON viene scritto quando nessuna tariffa è trovata"""
+    with patch("data_reader._fetch_service_data") as mock_fetch:
+        with patch("data_reader.save_rates_batch") as mock_save:
+            with patch("data_reader.asyncio.to_thread") as mock_to_thread:
 
-        async def side_effect(func, *args):
-            # Simula fallimento di entrambi i servizi (XML malformato)
-            if func.__name__ == "_fetch_service_data":
-                return {}, None
-            # _write_rates_file non dovrebbe mai essere chiamato
-            raise AssertionError("_write_rates_file should not be called when no rates found")
+                async def side_effect(func, *args):
+                    if func is mock_fetch:
+                        return {}, None
+                    raise AssertionError("save_rates_batch should not be called")
 
-        mock_to_thread.side_effect = side_effect
+                mock_to_thread.side_effect = side_effect
 
-        result = await fetch_octopus_tariffe()
+                result = await fetch_octopus_tariffe()
 
-        # Struttura vuota restituita
-        assert result["luce"]["fissa"] == {}
-        assert result["luce"]["variabile"] == {}
-        assert result["gas"]["fissa"] == {}
-        assert result["gas"]["variabile"] == {}
+                # Struttura vuota restituita
+                assert result["luce"]["fissa"] == {}
+                assert result["luce"]["variabile"] == {}
+                assert result["gas"]["fissa"] == {}
+                assert result["gas"]["variabile"] == {}
+
+                # save_rates_batch non deve essere stato chiamato via to_thread
+                # (to_thread è chiamato solo per _fetch_service_data)
+                assert mock_save.call_count == 0
 
 
 def test_fetch_service_data_download_failure():

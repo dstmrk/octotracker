@@ -146,30 +146,20 @@ def _check_database() -> dict[str, Any]:
 
 def _check_tariffe() -> dict[str, Any]:
     """
-    Verifica presenza e aggiornamento del file tariffe.
+    Verifica presenza e aggiornamento delle tariffe nel database.
 
     Returns:
-        Dizionario con status e dettagli del file tariffe
+        Dizionario con status e dettagli delle tariffe
     """
-    tariffe_path = Path("data/current_rates.json")
+    from database import get_latest_rate_date
 
     try:
-        # Verifica file esiste
-        if not tariffe_path.exists():
-            return {
-                "status": "warning",
-                "message": "Tariffe file not found (will be created on first scrape)",
-            }
-
-        # Leggi e valida contenuto
-        with open(tariffe_path) as f:
-            data = json.load(f)
-            last_update_str = data.get("data_aggiornamento")
+        last_update_str = get_latest_rate_date()
 
         if not last_update_str:
             return {
                 "status": "warning",
-                "message": "Missing data_aggiornamento field",
+                "message": "No rates in database (will be populated on first scrape)",
             }
 
         # Verifica che le tariffe non siano troppo vecchie (>3 giorni)
@@ -190,12 +180,6 @@ def _check_tariffe() -> dict[str, Any]:
             "days_old": days_old,
         }
 
-    except json.JSONDecodeError as e:
-        logger.error(f"❌ Errore parsing tariffe JSON: {e}")
-        return {
-            "status": "error",
-            "error": f"Invalid JSON: {str(e)}",
-        }
     except Exception as e:
         logger.error(f"❌ Errore check tariffe: {e}")
         return {
