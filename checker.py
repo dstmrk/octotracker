@@ -12,11 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
 from constants import MAX_DECIMALS_COST, MAX_DECIMALS_ENERGY
-from database import load_users, save_user
+from database import load_users, save_pending_rates, save_user
 from formatters import format_utility_type_display, get_utility_label
 
 load_dotenv()
@@ -680,7 +680,7 @@ def _format_footer(
     )
 
     footer = _format_mixed_consumption_message(mixed_utilities)
-    footer += "🔧 Se vuoi aggiornare le tariffe che hai registrato, puoi farlo in qualsiasi momento con il comando /update.\n\n"
+    footer += "👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n"
     footer += "🔗 Maggiori info: https://octopusenergy.it/le-nostre-tariffe\n\n"
     footer += "☕️ Se pensi che questo bot ti sia utile, puoi offrirmi un caffè su ko-fi.com/dstmrk — grazie di cuore! 💙"
 
@@ -730,10 +730,25 @@ def format_notification(
     return message
 
 
-async def send_notification(bot: Bot, user_id: str, message: str) -> bool:
-    """Invia notifica Telegram"""
+def build_rate_update_keyboard() -> InlineKeyboardMarkup:
+    """Costruisce la tastiera inline per aggiornamento tariffe"""
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Aggiorna tariffe", callback_data="rate_update_yes"),
+            InlineKeyboardButton("❌ No grazie", callback_data="rate_update_no"),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+async def send_notification(
+    bot: Bot, user_id: str, message: str, reply_markup: InlineKeyboardMarkup | None = None
+) -> bool:
+    """Invia notifica Telegram con tastiera inline opzionale"""
     try:
-        await bot.send_message(chat_id=user_id, text=message, parse_mode="HTML")
+        await bot.send_message(
+            chat_id=user_id, text=message, parse_mode="HTML", reply_markup=reply_markup
+        )
         return True
     except RetryAfter as e:
         logger.warning(f"⏱️  Rate limit per utente {user_id}: riprova tra {e.retry_after}s")
@@ -781,16 +796,79 @@ def _validate_checker_data(
     return True
 
 
+def _build_pending_rates(
+    user_rates: dict[str, Any], current_rates: dict[str, Any]
+) -> dict[str, Any]:
+    """Costruisce le tariffe pendenti da proporre all'utente
+
+    Contiene le nuove tariffe Octopus che l'utente può scegliere di adottare.
+    Mantiene tipo, fascia e consumi dall'utente, aggiorna energia e commercializzazione.
+
+    Args:
+        user_rates: Tariffe attuali dell'utente
+        current_rates: Tariffe correnti Octopus
+
+    Returns:
+        Dict con la struttura user_data contenente le nuove tariffe
+    """
+    pending = {
+        "luce": {
+            "tipo": user_rates["luce"]["tipo"],
+            "fascia": user_rates["luce"]["fascia"],
+        }
+    }
+
+    # Copia consumi luce se presenti
+    for key in ("consumo_f1", "consumo_f2", "consumo_f3"):
+        if key in user_rates["luce"]:
+            pending["luce"][key] = user_rates["luce"][key]
+
+    # Aggiorna tariffe luce
+    luce_tipo = user_rates["luce"]["tipo"]
+    luce_fascia = user_rates["luce"]["fascia"]
+    luce_rate = current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia)
+    if luce_rate:
+        pending["luce"]["energia"] = luce_rate["energia"]
+        pending["luce"]["commercializzazione"] = luce_rate["commercializzazione"]
+    else:
+        # Mantieni le tariffe attuali se non troviamo le nuove
+        pending["luce"]["energia"] = user_rates["luce"]["energia"]
+        pending["luce"]["commercializzazione"] = user_rates["luce"]["commercializzazione"]
+
+    # Gas (se presente)
+    if user_rates.get("gas"):
+        pending["gas"] = {
+            "tipo": user_rates["gas"]["tipo"],
+            "fascia": user_rates["gas"]["fascia"],
+        }
+
+        # Copia consumo gas se presente
+        if "consumo_annuo" in user_rates["gas"]:
+            pending["gas"]["consumo_annuo"] = user_rates["gas"]["consumo_annuo"]
+
+        gas_tipo = user_rates["gas"]["tipo"]
+        gas_fascia = user_rates["gas"]["fascia"]
+        gas_rate = current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia)
+        if gas_rate:
+            pending["gas"]["energia"] = gas_rate["energia"]
+            pending["gas"]["commercializzazione"] = gas_rate["commercializzazione"]
+        else:
+            pending["gas"]["energia"] = user_rates["gas"]["energia"]
+            pending["gas"]["commercializzazione"] = user_rates["gas"]["commercializzazione"]
+
+    return pending
+
+
 def _prepare_user_notification(
     user_id: str,
     user_rates: dict[str, Any],
     current_rates: dict[str, Any],
-) -> tuple[dict[str, Any], str] | None:
+) -> tuple[dict[str, Any], str, dict[str, Any]] | None:
     """
     Valuta un utente e prepara i dati per la notifica.
 
     Returns:
-        Tupla (current_octopus, message) se notifica necessaria, None altrimenti
+        Tupla (current_octopus, message, pending_rates) se notifica necessaria, None altrimenti
     """
     savings = check_better_rates(user_rates, current_rates)
 
@@ -840,11 +918,14 @@ def _prepare_user_notification(
         gas_estimated_savings=gas_savings,
     )
 
-    return (current_octopus, message)
+    # Costruisci tariffe pendenti per aggiornamento rapido
+    pending_rates = _build_pending_rates(user_rates, current_rates)
+
+    return (current_octopus, message, pending_rates)
 
 
 async def _send_notifications_parallel(
-    bot: Bot, notifications_to_send: list[tuple[str, dict, dict, str]]
+    bot: Bot, notifications_to_send: list[tuple[str, dict, dict, str, dict]]
 ) -> int:
     """
     Invia notifiche in parallelo con rate limiting.
@@ -863,15 +944,22 @@ async def _send_notifications_parallel(
     semaphore = asyncio.Semaphore(10)
 
     async def send_with_limit(
-        user_id: str, user_rates: dict, current_octopus: dict, message: str
+        user_id: str,
+        user_rates: dict,
+        current_octopus: dict,
+        message: str,
+        pending_rates: dict,
     ) -> bool:
         """Invia notifica con rate limiting"""
         async with semaphore:
-            success = await send_notification(bot, user_id, message)
+            reply_markup = build_rate_update_keyboard()
+            success = await send_notification(bot, user_id, message, reply_markup=reply_markup)
             if success:
                 # Aggiorna last_notified_rates per questo utente
                 user_rates["last_notified_rates"] = current_octopus
                 save_user(user_id, user_rates)
+                # Salva tariffe pendenti per aggiornamento rapido via bottone
+                save_pending_rates(user_id, pending_rates)
                 logger.info(f"✅ Notifica inviata a {user_id}")
                 return True
             else:
@@ -880,8 +968,8 @@ async def _send_notifications_parallel(
 
     # Crea task per tutte le notifiche
     tasks = [
-        send_with_limit(user_id, user_rates, current_octopus, message)
-        for user_id, user_rates, current_octopus, message in notifications_to_send
+        send_with_limit(user_id, user_rates, current_octopus, message, pending_rates)
+        for user_id, user_rates, current_octopus, message, pending_rates in notifications_to_send
     ]
 
     # Esegui tutte le notifiche in parallelo (con semaphore che limita a 10 simultanee)
@@ -912,8 +1000,10 @@ async def check_and_notify_users(bot_token: str) -> None:
     for user_id, user_rates in users.items():
         result = _prepare_user_notification(user_id, user_rates, current_rates)
         if result is not None:
-            current_octopus, message = result
-            notifications_to_send.append((user_id, user_rates, current_octopus, message))
+            current_octopus, message, pending_rates = result
+            notifications_to_send.append(
+                (user_id, user_rates, current_octopus, message, pending_rates)
+            )
 
     # ========== FASE 2: Invia notifiche in parallelo ==========
     notifications_sent = await _send_notifications_parallel(bot, notifications_to_send)
