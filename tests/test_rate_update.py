@@ -13,7 +13,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from telegram import CallbackQuery, Message, Update, User
@@ -492,3 +492,62 @@ def test_build_rate_update_keyboard():
     assert len(keyboard.inline_keyboard[0]) == 2
     assert keyboard.inline_keyboard[0][0].callback_data == "rate_update_yes"
     assert keyboard.inline_keyboard[0][1].callback_data == "rate_update_no"
+
+
+# ========== TEST EDGE CASES HANDLER ==========
+
+
+@pytest.mark.asyncio
+async def test_rate_update_yes_user_not_in_db(mock_update, mock_context):
+    """Test click 'Aggiorna tariffe' quando l'utente non esiste nel DB ma ha pending_rates"""
+    # Simula pending_rates presenti ma utente non nel DB
+    with patch("handlers.rate_update.load_pending_rates", return_value={"luce": {}}):
+        with patch("handlers.rate_update.load_user", return_value=None):
+            await rate_update_yes(mock_update, mock_context)
+
+    # Verifica che il messaggio sia stato aggiornato con il testo di fallback
+    mock_update.callback_query.edit_message_text.assert_called_once()
+    call_args = mock_update.callback_query.edit_message_text.call_args
+    assert DECLINED_TEXT in call_args.kwargs["text"]
+
+
+@pytest.mark.asyncio
+async def test_rate_update_yes_save_failure(
+    mock_update, mock_context, sample_user_data, sample_pending_rates
+):
+    """Test click 'Aggiorna tariffe' quando save_user fallisce"""
+    user_id = str(mock_update.effective_user.id)
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    with patch("handlers.rate_update.save_user", return_value=False):
+        await rate_update_yes(mock_update, mock_context)
+
+    # Verifica che il messaggio contenga l'errore
+    mock_update.callback_query.edit_message_text.assert_called_once()
+    call_args = mock_update.callback_query.edit_message_text.call_args
+    assert "Errore nell'aggiornamento" in call_args.kwargs["text"]
+
+
+# ========== TEST DATABASE PENDING RATES ERROR HANDLING ==========
+
+
+def test_save_pending_rates_db_error(sample_user_data):
+    """Test save_pending_rates con errore database"""
+    with patch("database.get_connection", side_effect=database.sqlite3.Error("test error")):
+        result = save_pending_rates("123", {"luce": {}})
+    assert result is False
+
+
+def test_load_pending_rates_db_error():
+    """Test load_pending_rates con errore database"""
+    with patch("database.get_connection", side_effect=database.sqlite3.Error("test error")):
+        result = load_pending_rates("123")
+    assert result is None
+
+
+def test_clear_pending_rates_db_error():
+    """Test clear_pending_rates con errore database"""
+    with patch("database.get_connection", side_effect=database.sqlite3.Error("test error")):
+        result = clear_pending_rates("123")
+    assert result is False
