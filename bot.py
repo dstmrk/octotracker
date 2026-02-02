@@ -50,6 +50,7 @@ from handlers.feedback import (
     feedback_rating,
     feedback_skip_comment,
 )
+from handlers.rate_update import rate_update_no, rate_update_yes
 from handlers.registration import (
     GAS_COMM,
     GAS_CONSUMO,
@@ -419,6 +420,11 @@ def main() -> None:
     )
 
     app.add_handler(feedback_handler)
+
+    # Handler per pulsanti aggiornamento tariffe nelle notifiche
+    app.add_handler(CallbackQueryHandler(rate_update_yes, pattern=r"^rate_update_yes$"))
+    app.add_handler(CallbackQueryHandler(rate_update_no, pattern=r"^rate_update_no$"))
+
     app.add_handler(CommandHandler("cancel", cancel_conversation))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("remove", remove_data))

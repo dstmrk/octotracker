@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
     luce_consumo_f3 REAL,
     gas_consumo_annuo REAL,
     last_notified_rates TEXT,
+    pending_rates TEXT,
     last_feedback_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -187,6 +188,19 @@ def _migrate_feedback_cascade() -> None:
         raise
 
 
+def _migrate_pending_rates() -> None:
+    """Migrazione per aggiungere colonna pending_rates a database esistenti"""
+    try:
+        with get_connection() as conn:
+            if not _column_exists(conn, "users", "pending_rates"):
+                logger.info("🔄 Aggiunta colonna pending_rates alla tabella users")
+                conn.execute("ALTER TABLE users ADD COLUMN pending_rates TEXT")
+                logger.info("✅ Migration pending_rates completata")
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore migration pending_rates: {e}")
+        raise
+
+
 def init_db() -> None:
     """Inizializza database e crea tabelle"""
     try:
@@ -195,6 +209,7 @@ def init_db() -> None:
         # Applica migration per database esistenti
         _migrate_feedback_schema()
         _migrate_feedback_cascade()
+        _migrate_pending_rates()
         logger.info("✅ Database inizializzato")
     except sqlite3.Error as e:
         logger.error(f"❌ Errore inizializzazione database: {e}")
@@ -442,6 +457,73 @@ def get_user_count() -> int:
     except sqlite3.Error as e:
         logger.error(f"❌ Errore conteggio utenti: {e}")
         return 0
+
+
+# ========== FUNZIONI PENDING RATES ==========
+
+
+def save_pending_rates(user_id: str, pending_rates: dict[str, Any]) -> bool:
+    """
+    Salva le tariffe in attesa di conferma per un utente
+
+    Args:
+        user_id: ID utente Telegram
+        pending_rates: Dict con le nuove tariffe da applicare
+
+    Returns:
+        True se salvato con successo, False altrimenti
+    """
+    try:
+        pending_json = json.dumps(pending_rates)
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE users SET pending_rates = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (pending_json, user_id),
+            )
+        logger.debug(f"Pending rates salvate per utente {user_id}")
+        return True
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore salvataggio pending_rates per {user_id}: {e}")
+        return False
+
+
+def load_pending_rates(user_id: str) -> dict[str, Any] | None:
+    """
+    Carica le tariffe in attesa di conferma per un utente
+
+    Returns:
+        Dict con le tariffe pendenti o None se non presenti
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute("SELECT pending_rates FROM users WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+            if row and row["pending_rates"]:
+                return json.loads(row["pending_rates"])
+            return None
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore caricamento pending_rates per {user_id}: {e}")
+        return None
+
+
+def clear_pending_rates(user_id: str) -> bool:
+    """
+    Rimuove le tariffe in attesa per un utente
+
+    Returns:
+        True se rimosso con successo, False altrimenti
+    """
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE users SET pending_rates = NULL, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (user_id,),
+            )
+        logger.debug(f"Pending rates rimosse per utente {user_id}")
+        return True
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore rimozione pending_rates per {user_id}: {e}")
+        return False
 
 
 # ========== FUNZIONI FEEDBACK ==========

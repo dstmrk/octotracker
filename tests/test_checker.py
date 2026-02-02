@@ -837,8 +837,8 @@ def test_format_footer_savings():
         show_gas=True,
     )
 
-    assert "🔧" in result
-    assert "/update" in result
+    assert "👇" in result
+    assert "aggiornare le tariffe" in result
 
 
 def test_format_notification():
@@ -1012,7 +1012,7 @@ async def test_send_notification_success():
 
     assert result is True
     bot_mock.send_message.assert_called_once_with(
-        chat_id="123456", text="Test message", parse_mode="HTML"
+        chat_id="123456", text="Test message", parse_mode="HTML", reply_markup=None
     )
 
 
@@ -1238,12 +1238,15 @@ async def test_check_and_notify_users_with_savings():
                 mock_bot_class.return_value = mock_bot
 
                 with patch("checker.save_user") as mock_save:
-                    await check_and_notify_users("fake_token")
+                    with patch("checker.save_pending_rates") as mock_pending:
+                        await check_and_notify_users("fake_token")
 
-                    # Verifica che il messaggio sia stato inviato
-                    mock_bot.send_message.assert_called_once()
-                    # Verifica che l'utente sia stato aggiornato
-                    mock_save.assert_called_once()
+                        # Verifica che il messaggio sia stato inviato
+                        mock_bot.send_message.assert_called_once()
+                        # Verifica che l'utente sia stato aggiornato
+                        mock_save.assert_called_once()
+                        # Verifica che le tariffe pendenti siano state salvate
+                        mock_pending.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -1550,7 +1553,7 @@ def test_format_footer_not_mixed():
     assert "📊" not in footer
     assert "💰" not in footer
     assert "consumi" not in footer
-    assert "🔧 Se vuoi aggiornare" in footer
+    assert "👇 Vuoi aggiornare le tariffe" in footer
 
 
 # ========== TEST CHECK_AND_NOTIFY SKIP MIXED WITH NEGATIVE SAVINGS ==========
@@ -1664,16 +1667,17 @@ async def test_check_and_notify_send_mixed_positive_savings():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga la stima
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        assert "💰 In base ai tuoi consumi di luce" in message_text
-                        assert "27,50 €/anno" in message_text
+                            # Verifica che il messaggio contenga la stima
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            assert "💰 In base ai tuoi consumi di luce" in message_text
+                            assert "27,50 €/anno" in message_text
     finally:
         Path(rates_file).unlink()
 
@@ -1724,16 +1728,17 @@ async def test_check_and_notify_both_utilities_non_mixed():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        assert "💡" in message_text and "Luce" in message_text
-                        assert "🔥" in message_text and "Gas" in message_text
+                            # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            assert "💡" in message_text and "Luce" in message_text
+                            assert "🔥" in message_text and "Gas" in message_text
     finally:
         Path(rates_file).unlink()
 
@@ -1788,20 +1793,21 @@ async def test_check_and_notify_both_utilities_mixed_with_savings():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga ENTRAMBE le stime
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        assert "💡" in message_text and "Luce" in message_text
-                        assert "🔥" in message_text and "Gas" in message_text
-                        assert "💰 In base ai tuoi consumi di luce" in message_text
-                        assert "27,50 €/anno" in message_text
-                        assert "💰 In base ai tuoi consumi di gas" in message_text
-                        assert "39,20 €/anno" in message_text
+                            # Verifica che il messaggio contenga ENTRAMBE le stime
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            assert "💡" in message_text and "Luce" in message_text
+                            assert "🔥" in message_text and "Gas" in message_text
+                            assert "💰 In base ai tuoi consumi di luce" in message_text
+                            assert "27,50 €/anno" in message_text
+                            assert "💰 In base ai tuoi consumi di gas" in message_text
+                            assert "39,20 €/anno" in message_text
     finally:
         Path(rates_file).unlink()
 
@@ -1852,21 +1858,22 @@ async def test_check_and_notify_both_utilities_mixed_without_consumption():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga ENTRAMBE le sezioni e suggerimento
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        assert "💡" in message_text and "Luce" in message_text
-                        assert "🔥" in message_text and "Gas" in message_text
-                        assert (
-                            "📊 In questi casi la convenienza dipende dai tuoi consumi"
-                            in message_text
-                        )
-                        assert "/update" in message_text
+                            # Verifica che il messaggio contenga ENTRAMBE le sezioni e suggerimento
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            assert "💡" in message_text and "Luce" in message_text
+                            assert "🔥" in message_text and "Gas" in message_text
+                            assert (
+                                "📊 In questi casi la convenienza dipende dai tuoi consumi"
+                                in message_text
+                            )
+                            assert "/update" in message_text
     finally:
         Path(rates_file).unlink()
 
@@ -1918,18 +1925,19 @@ async def test_check_and_notify_luce_non_mixed_gas_mixed_positive():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        assert "💡" in message_text and "Luce" in message_text
-                        assert "🔥" in message_text and "Gas" in message_text
-                        # Gas dovrebbe avere la stima
-                        assert "💰 In base ai tuoi consumi di gas" in message_text
+                            # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            assert "💡" in message_text and "Luce" in message_text
+                            assert "🔥" in message_text and "Gas" in message_text
+                            # Gas dovrebbe avere la stima
+                            assert "💰 In base ai tuoi consumi di gas" in message_text
     finally:
         Path(rates_file).unlink()
 
@@ -1981,17 +1989,18 @@ async def test_check_and_notify_luce_mixed_negative_gas_non_mixed():
                     mock_bot_instance.send_message = AsyncMock()
 
                     with patch("checker.save_user"):
-                        await check_and_notify_users("fake_token")
+                        with patch("checker.save_pending_rates"):
+                            await check_and_notify_users("fake_token")
 
-                        # Verifica che sia stata inviata una notifica
-                        mock_bot_instance.send_message.assert_called_once()
+                            # Verifica che sia stata inviata una notifica
+                            mock_bot_instance.send_message.assert_called_once()
 
-                        # Verifica che il messaggio contenga SOLO gas
-                        call_args = mock_bot_instance.send_message.call_args
-                        message_text = call_args.kwargs["text"]
-                        # Verifica che non ci sia la sezione luce (cerca sia emoji che parola)
-                        assert not ("💡" in message_text and "Luce" in message_text)
-                        assert "🔥" in message_text and "Gas" in message_text
+                            # Verifica che il messaggio contenga SOLO gas
+                            call_args = mock_bot_instance.send_message.call_args
+                            message_text = call_args.kwargs["text"]
+                            # Verifica che non ci sia la sezione luce (cerca sia emoji che parola)
+                            assert not ("💡" in message_text and "Luce" in message_text)
+                            assert "🔥" in message_text and "Gas" in message_text
     finally:
         Path(rates_file).unlink()
 
