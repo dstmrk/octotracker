@@ -226,6 +226,9 @@ async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia luce (spread o prezzo fisso)"""
+    if update.message is None or update.message.text is None:
+        return LUCE_ENERGIA
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -251,6 +254,9 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo commercializzazione luce e chiedi se vuole inserire consumi"""
+    if update.message is None or update.message.text is None:
+        return LUCE_COMM
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -321,6 +327,9 @@ async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo F1 luce e procedi in base alla fascia"""
+    if update.message is None or update.message.text is None:
+        return LUCE_CONSUMO_F1
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -358,6 +367,9 @@ async def luce_consumo_f1(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo F2 luce (solo trioraria)"""
+    if update.message is None or update.message.text is None:
+        return LUCE_CONSUMO_F2
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -382,6 +394,9 @@ async def luce_consumo_f2(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo F3 luce (solo trioraria) e vai a HA_GAS"""
+    if update.message is None or update.message.text is None:
+        return LUCE_CONSUMO_F3
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -466,6 +481,9 @@ async def gas_tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva costo energia gas (spread o prezzo fisso)"""
+    if update.message is None or update.message.text is None:
+        return GAS_ENERGIA
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -491,6 +509,9 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva commercializzazione gas e chiedi se vuole inserire consumi"""
+    if update.message is None or update.message.text is None:
+        return GAS_COMM
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
@@ -536,6 +557,9 @@ async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def gas_consumo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Salva consumo gas e vai a conferma"""
+    if update.message is None or update.message.text is None:
+        return GAS_CONSUMO
+
     value, error = validate_numeric_input(update.message.text)
 
     if error:
