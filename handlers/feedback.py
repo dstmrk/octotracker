@@ -13,6 +13,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, ConversationHandler
 
 from database import get_last_feedback_time, save_feedback
+from handlers import safe_answer_callback
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ async def feedback_rating(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         COMMENT per raccogliere commento opzionale
     """
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     # Estrai rating dal callback_data (formato: "rating_N")
     rating = int(query.data.split("_")[1])
@@ -198,7 +199,7 @@ async def feedback_skip_comment(update: Update, context: ContextTypes.DEFAULT_TY
         ConversationHandler.END (salva senza commento e termina)
     """
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     user_id = str(update.effective_user.id)
     rating = context.user_data.get("rating")
