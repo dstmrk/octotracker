@@ -17,6 +17,7 @@ from checker import format_number
 from constants import ERROR_INPUT_TOO_LONG, ERROR_VALUE_NEGATIVE, MAX_NUMERIC_INPUT_LENGTH
 from database import save_user, user_exists
 from formatters import format_utility_header
+from handlers import safe_answer_callback
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -158,7 +159,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo tariffa (Fissa/Variabile)"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "tipo_fissa":
         context.user_data["is_variabile"] = False
@@ -200,7 +201,7 @@ async def tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def luce_tipo_variabile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo luce variabile (Monoraria/Trioraria)"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "luce_mono":
         context.user_data["luce_tipo"] = "variabile"
@@ -283,7 +284,7 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def vuoi_consumi_luce(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci risposta se vuole inserire consumi luce"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "consumi_luce_si":
         # Inizia raccolta consumi in base alla fascia
@@ -410,7 +411,7 @@ async def luce_consumo_f3(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci risposta se ha gas"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "gas_si":
         # Chiedi che tipo di tariffa gas ha (può essere diversa dalla luce)
@@ -435,7 +436,7 @@ async def ha_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def gas_tipo_tariffa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci scelta tipo tariffa gas (Fissa/Variabile)"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "gas_tipo_fissa":
         context.user_data["gas_tipo"] = "fissa"
@@ -523,7 +524,7 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def vuoi_consumi_gas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gestisci risposta se vuole inserire consumi gas"""
     query = update.callback_query
-    await query.answer()
+    await safe_answer_callback(query)
 
     if query.data == "consumi_gas_si":
         # Chiedi consumo gas
