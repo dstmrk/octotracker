@@ -57,6 +57,22 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS rate_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_fonte TEXT NOT NULL,
+    servizio TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    fascia TEXT NOT NULL,
+    energia REAL NOT NULL,
+    commercializzazione REAL,
+    cod_offerta TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(data_fonte, servizio, tipo, fascia)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_history_data ON rate_history(data_fonte);
+CREATE INDEX IF NOT EXISTS idx_rate_history_servizio ON rate_history(servizio, tipo, fascia);
 """
 
 
@@ -643,6 +659,158 @@ def get_feedback_count() -> int:
     except sqlite3.Error as e:
         logger.error(f"❌ Errore conteggio feedback: {e}")
         return 0
+
+
+# ========== FUNZIONI STORICO TARIFFE ==========
+
+
+def save_rate(
+    data_fonte: str,
+    servizio: str,
+    tipo: str,
+    fascia: str,
+    energia: float,
+    commercializzazione: float | None = None,
+    cod_offerta: str | None = None,
+) -> bool:
+    """
+    Salva una tariffa nello storico. Ignora duplicati (stessa data/servizio/tipo/fascia).
+
+    Returns:
+        True se inserita, False se già presente o errore
+    """
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO rate_history
+                    (data_fonte, servizio, tipo, fascia, energia, commercializzazione, cod_offerta)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (data_fonte, servizio, tipo, fascia, energia, commercializzazione, cod_offerta),
+            )
+            return True
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore salvataggio tariffa storico: {e}")
+        return False
+
+
+def save_rates_batch(data_fonte: str, rates: list[dict[str, Any]]) -> int:
+    """
+    Salva un batch di tariffe per una data. Ignora duplicati.
+
+    Args:
+        data_fonte: Data fonte in formato YYYY-MM-DD
+        rates: Lista di dict con chiavi: servizio, tipo, fascia, energia, commercializzazione, cod_offerta
+
+    Returns:
+        Numero di tariffe inserite
+    """
+    inserted = 0
+    try:
+        with get_connection() as conn:
+            for rate in rates:
+                try:
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO rate_history
+                            (data_fonte, servizio, tipo, fascia, energia,
+                             commercializzazione, cod_offerta)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            data_fonte,
+                            rate["servizio"],
+                            rate["tipo"],
+                            rate["fascia"],
+                            rate["energia"],
+                            rate.get("commercializzazione"),
+                            rate.get("cod_offerta"),
+                        ),
+                    )
+                    if conn.execute("SELECT changes()").fetchone()[0] > 0:
+                        inserted += 1
+                except sqlite3.Error as e:
+                    logger.warning(f"⚠️  Errore inserimento tariffa: {e}")
+        logger.debug(f"Salvate {inserted} tariffe per {data_fonte}")
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore salvataggio batch tariffe: {e}")
+    return inserted
+
+
+def get_current_rates() -> dict[str, Any] | None:
+    """
+    Legge le tariffe più recenti dal DB e le restituisce nella struttura nested.
+
+    Returns:
+        Dict con struttura:
+        {
+            "luce": {"fissa": {"monoraria": {...}}, "variabile": {...}},
+            "gas": {"fissa": {"monoraria": {...}}, "variabile": {...}},
+        }
+        oppure None se non ci sono tariffe
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT servizio, tipo, fascia, energia, commercializzazione, cod_offerta
+                FROM rate_history
+                WHERE data_fonte = (SELECT MAX(data_fonte) FROM rate_history)
+                """
+            )
+            rows = cursor.fetchall()
+
+        if not rows:
+            return None
+
+        result: dict[str, Any] = {
+            "luce": {"fissa": {}, "variabile": {}},
+            "gas": {"fissa": {}, "variabile": {}},
+        }
+
+        for row in rows:
+            servizio = row["servizio"]
+            tipo = row["tipo"]
+            fascia = row["fascia"]
+
+            rate_data: dict[str, Any] = {"energia": row["energia"]}
+            if row["commercializzazione"] is not None:
+                rate_data["commercializzazione"] = row["commercializzazione"]
+            if row["cod_offerta"] is not None:
+                rate_data["cod_offerta"] = row["cod_offerta"]
+
+            if servizio in result and tipo in result[servizio]:
+                result[servizio][tipo][fascia] = rate_data
+
+        return result
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore lettura tariffe correnti: {e}")
+        return None
+
+
+def get_latest_rate_date() -> str | None:
+    """Ritorna la data più recente presente nello storico tariffe (formato YYYY-MM-DD)"""
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute("SELECT MAX(data_fonte) as max_date FROM rate_history")
+            row = cursor.fetchone()
+            return row["max_date"] if row else None
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore lettura data tariffe: {e}")
+        return None
+
+
+def get_rate_history_dates() -> set[str]:
+    """Ritorna le date già presenti nello storico (formato YYYY-MM-DD)"""
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute("SELECT DISTINCT data_fonte FROM rate_history")
+            return {row["data_fonte"] for row in cursor.fetchall()}
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore lettura date storico: {e}")
+        return set()
 
 
 if __name__ == "__main__":

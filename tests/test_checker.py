@@ -632,62 +632,6 @@ def test_format_number_two_decimals_min():
     assert result == "0,50"
 
 
-def test_load_json_success():
-    """load_json carica file JSON valido"""
-    from pathlib import Path
-    from unittest.mock import mock_open, patch
-
-    from checker import load_json
-
-    test_data = '{"luce": {"fissa": {"monoraria": {"energia": 0.1078}}}}'
-
-    with patch("builtins.open", mock_open(read_data=test_data)):
-        with patch.object(Path, "exists", return_value=True):
-            result = load_json(Path("/tmp/test.json"))
-
-    assert result is not None
-    assert "luce" in result
-
-
-def test_load_json_empty_file():
-    """load_json con file vuoto"""
-    from pathlib import Path
-    from unittest.mock import mock_open, patch
-
-    from checker import load_json
-
-    with patch("builtins.open", mock_open(read_data="")):
-        with patch.object(Path, "exists", return_value=True):
-            result = load_json(Path("/tmp/test.json"))
-
-    assert result is None
-
-
-def test_load_json_file_not_found():
-    """load_json con file non trovato"""
-    from pathlib import Path
-
-    from checker import load_json
-
-    result = load_json(Path("/tmp/nonexistent.json"))
-
-    assert result is None
-
-
-def test_load_json_invalid_json():
-    """load_json con JSON non valido"""
-    from pathlib import Path
-    from unittest.mock import mock_open, patch
-
-    from checker import load_json
-
-    with patch("builtins.open", mock_open(read_data="invalid json")):
-        with patch.object(Path, "exists", return_value=True):
-            result = load_json(Path("/tmp/test.json"))
-
-    assert result is None
-
-
 def test_format_header_mixed():
     """_format_header con caso mixed"""
     from checker import _format_header
@@ -1190,7 +1134,7 @@ async def test_check_and_notify_users_no_users():
     from unittest.mock import patch
 
     with patch("checker.load_users", return_value={}):
-        with patch("checker.load_json", return_value={"luce": {}, "gas": {}}):
+        with patch("checker.get_current_rates", return_value={"luce": {}, "gas": {}}):
             # Non dovrebbe generare errori
             await check_and_notify_users("fake_token")
 
@@ -1203,7 +1147,7 @@ async def test_check_and_notify_users_no_rates():
     users = {"123": {"luce": {"tipo": "fissa", "fascia": "monoraria"}}}
 
     with patch("checker.load_users", return_value=users):
-        with patch("checker.load_json", return_value=None):
+        with patch("checker.get_current_rates", return_value=None):
             # Non dovrebbe generare errori
             await check_and_notify_users("fake_token")
 
@@ -1231,7 +1175,7 @@ async def test_check_and_notify_users_with_savings():
     }
 
     with patch("checker.load_users", return_value=users):
-        with patch("checker.load_json", return_value=current_rates):
+        with patch("checker.get_current_rates", return_value=current_rates):
             with patch("checker.Bot") as mock_bot_class:
                 mock_bot = MagicMock()
                 mock_bot.send_message = AsyncMock()
@@ -1273,7 +1217,7 @@ async def test_check_and_notify_users_already_notified():
     }
 
     with patch("checker.load_users", return_value=users):
-        with patch("checker.load_json", return_value=current_rates):
+        with patch("checker.get_current_rates", return_value=current_rates):
             with patch("checker.Bot") as mock_bot_class:
                 mock_bot = MagicMock()
                 mock_bot.send_message = AsyncMock()
@@ -1315,36 +1259,6 @@ def test_format_luce_section_worse():
 
     # Dovrebbe contenere markup di sottolineatura per peggioramento
     assert "<u>" in result or result == ""
-
-
-def test_load_json_permission_error():
-    """load_json con errore di permesso"""
-    from pathlib import Path
-    from unittest.mock import mock_open, patch
-
-    from checker import load_json
-
-    with patch("builtins.open", mock_open()) as mock_file:
-        mock_file.side_effect = PermissionError("Permission denied")
-        with patch.object(Path, "exists", return_value=True):
-            result = load_json(Path("/tmp/test.json"))
-
-    assert result is None
-
-
-def test_load_json_os_error():
-    """load_json con errore OS generico"""
-    from pathlib import Path
-    from unittest.mock import mock_open, patch
-
-    from checker import load_json
-
-    with patch("builtins.open", mock_open()) as mock_file:
-        mock_file.side_effect = OSError("OS error")
-        with patch.object(Path, "exists", return_value=True):
-            result = load_json(Path("/tmp/test.json"))
-
-    assert result is None
 
 
 # ========== TEST CONSUMPTION-BASED SAVINGS CALCULATION ==========
@@ -1562,8 +1476,6 @@ def test_format_footer_not_mixed():
 @pytest.mark.asyncio
 async def test_check_and_notify_skip_mixed_negative_savings():
     """Test che caso MIXED con risparmio negativo viene skippato"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1598,28 +1510,19 @@ async def test_check_and_notify_skip_mixed_negative_savings():
     # Aumento comm: 65-85 = -20
     # Totale: 13.5-20 = -6.5 (negativo, deve skippare)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            mock_bot = AsyncMock(spec=Bot)
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                mock_bot = AsyncMock(spec=Bot)
+            await check_and_notify_users("fake_token")
 
-                await check_and_notify_users("fake_token")
-
-                # Verifica che NON sia stata inviata alcuna notifica
-                mock_bot.send_message.assert_not_called()
-    finally:
-        Path(rates_file).unlink()
+            # Verifica che NON sia stata inviata alcuna notifica
+            mock_bot.send_message.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_send_mixed_positive_savings():
     """Test che caso MIXED con risparmio positivo viene inviato"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1654,39 +1557,30 @@ async def test_check_and_notify_send_mixed_positive_savings():
     # Aumento comm: 72-85 = -13
     # Totale: 40.5-13 = 27.5 (positivo, deve inviare)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga la stima
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            assert "💰 In base ai tuoi consumi di luce" in message_text
-                            assert "27,50 €/anno" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga la stima
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💰 In base ai tuoi consumi di luce" in message_text
+                        assert "27,50 €/anno" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_both_utilities_non_mixed():
     """Test che entrambe le utility non-MIXED vengono mostrate"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1715,39 +1609,30 @@ async def test_check_and_notify_both_utilities_non_mixed():
         "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga ENTRAMBE le sezioni
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            assert "💡" in message_text and "Luce" in message_text
-                            assert "🔥" in message_text and "Gas" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_both_utilities_mixed_with_savings():
     """Test che entrambe le utility MIXED con risparmio positivo vengono mostrate"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1780,43 +1665,34 @@ async def test_check_and_notify_both_utilities_mixed_with_savings():
         "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga ENTRAMBE le stime
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            assert "💡" in message_text and "Luce" in message_text
-                            assert "🔥" in message_text and "Gas" in message_text
-                            assert "💰 In base ai tuoi consumi di luce" in message_text
-                            assert "27,50 €/anno" in message_text
-                            assert "💰 In base ai tuoi consumi di gas" in message_text
-                            assert "39,20 €/anno" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga ENTRAMBE le stime
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        assert "💰 In base ai tuoi consumi di luce" in message_text
+                        assert "27,50 €/anno" in message_text
+                        assert "💰 In base ai tuoi consumi di gas" in message_text
+                        assert "39,20 €/anno" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_both_utilities_mixed_without_consumption():
     """Test che entrambe le utility MIXED senza consumi vengono mostrate con suggerimento"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1845,44 +1721,35 @@ async def test_check_and_notify_both_utilities_mixed_without_consumption():
         "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga ENTRAMBE le sezioni e suggerimento
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            assert "💡" in message_text and "Luce" in message_text
-                            assert "🔥" in message_text and "Gas" in message_text
-                            assert (
-                                "📊 In questi casi la convenienza dipende dai tuoi consumi"
-                                in message_text
-                            )
-                            assert "/update" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni e suggerimento
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        assert (
+                            "📊 In questi casi la convenienza dipende dai tuoi consumi"
+                            in message_text
+                        )
+                        assert "/update" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_luce_non_mixed_gas_mixed_positive():
     """Test luce non-MIXED + gas MIXED con risparmio positivo → mostra entrambe"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1912,41 +1779,32 @@ async def test_check_and_notify_luce_non_mixed_gas_mixed_positive():
         "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 88.0}}},
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga ENTRAMBE le sezioni
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            assert "💡" in message_text and "Luce" in message_text
-                            assert "🔥" in message_text and "Gas" in message_text
-                            # Gas dovrebbe avere la stima
-                            assert "💰 In base ai tuoi consumi di gas" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga ENTRAMBE le sezioni
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        assert "💡" in message_text and "Luce" in message_text
+                        assert "🔥" in message_text and "Gas" in message_text
+                        # Gas dovrebbe avere la stima
+                        assert "💰 In base ai tuoi consumi di gas" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_luce_mixed_negative_gas_non_mixed():
     """Test luce MIXED con risparmio negativo + gas non-MIXED → mostra solo gas"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -1976,40 +1834,31 @@ async def test_check_and_notify_luce_mixed_negative_gas_non_mixed():
         "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
+                mock_bot_instance.send_message = AsyncMock()
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
-                    mock_bot_instance.send_message = AsyncMock()
+                with patch("checker.save_user"):
+                    with patch("checker.save_pending_rates"):
+                        await check_and_notify_users("fake_token")
 
-                    with patch("checker.save_user"):
-                        with patch("checker.save_pending_rates"):
-                            await check_and_notify_users("fake_token")
+                        # Verifica che sia stata inviata una notifica
+                        mock_bot_instance.send_message.assert_called_once()
 
-                            # Verifica che sia stata inviata una notifica
-                            mock_bot_instance.send_message.assert_called_once()
-
-                            # Verifica che il messaggio contenga SOLO gas
-                            call_args = mock_bot_instance.send_message.call_args
-                            message_text = call_args.kwargs["text"]
-                            # Verifica che non ci sia la sezione luce (cerca sia emoji che parola)
-                            assert not ("💡" in message_text and "Luce" in message_text)
-                            assert "🔥" in message_text and "Gas" in message_text
-    finally:
-        Path(rates_file).unlink()
+                        # Verifica che il messaggio contenga SOLO gas
+                        call_args = mock_bot_instance.send_message.call_args
+                        message_text = call_args.kwargs["text"]
+                        # Verifica che non ci sia la sezione luce (cerca sia emoji che parola)
+                        assert not ("💡" in message_text and "Luce" in message_text)
+                        assert "🔥" in message_text and "Gas" in message_text
 
 
 @pytest.mark.asyncio
 async def test_check_and_notify_both_mixed_negative_savings():
     """Test che luce e gas entrambi MIXED con risparmio negativo vengono skippati"""
-    import json
-    import tempfile
     from unittest.mock import AsyncMock, patch
 
     from telegram import Bot
@@ -2058,20 +1907,13 @@ async def test_check_and_notify_both_mixed_negative_savings():
     # Gas: risparmio energia (0.400-0.390)*1200 = 12€, aumento comm 60-100 = -40€, totale -28€
     # Entrambi negativi → skip con log per entrambi
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(current_rates, f)
-        rates_file = f.name
+    with patch("checker.load_users", return_value=users):
+        with patch("checker.get_current_rates", return_value=current_rates):
+            with patch("checker.Bot") as MockBot:
+                mock_bot_instance = AsyncMock(spec=Bot)
+                MockBot.return_value = mock_bot_instance
 
-    try:
-        with patch("checker.load_users", return_value=users):
-            with patch("checker.RATES_FILE", Path(rates_file)):
-                with patch("checker.Bot") as MockBot:
-                    mock_bot_instance = AsyncMock(spec=Bot)
-                    MockBot.return_value = mock_bot_instance
+                await check_and_notify_users("fake_token")
 
-                    await check_and_notify_users("fake_token")
-
-                    # Verifica che NON sia stata inviata alcuna notifica
-                    mock_bot_instance.send_message.assert_not_called()
-    finally:
-        Path(rates_file).unlink()
+                # Verifica che NON sia stata inviata alcuna notifica
+                mock_bot_instance.send_message.assert_not_called()

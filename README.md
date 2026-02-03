@@ -28,6 +28,8 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
   - 💰 **Calcolo risparmio stimato**: valutazione separata luce/gas basata sui tuoi consumi reali
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
+- **Aggiornamento tariffe con un tap**: pulsanti inline nelle notifiche per aggiornare le tue tariffe registrate senza reinserire tutto
+- **Storico tariffe**: memorizzazione automatica delle tariffe Octopus Energy (fino a 365 giorni) per analisi andamento
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
 - **Consumi opzionali**: inserisci i tuoi kWh/anno e Smc/anno per calcoli precisi nei casi ambigui
 - **Webhook mode**: risposte istantanee tramite Cloudflare Tunnel
@@ -117,8 +119,7 @@ docker compose up -d --build
 ### Dati Persistenti
 
 I dati sono salvati in `./data/`:
-- `octotracker.db` - database SQLite con utenti registrati e tariffe
-- `current_rates.json` - tariffe Octopus aggiornate
+- `octotracker.db` - database SQLite con utenti registrati, tariffe e storico
 
 **Backup**: Copia semplicemente la cartella `data/`!
 
@@ -347,33 +348,24 @@ I dati sono salvati localmente:
   );
   ```
 
-**data/current_rates.json** - Tariffe Octopus aggiornate (struttura nested)
-```json
-{
-  "luce": {
-    "fissa": {
-      "monoraria": {"energia": 0.145, "commercializzazione": 72.0}
-    },
-    "variabile": {
-      "monoraria": {"energia": 0.0088, "commercializzazione": 72.0},
-      "trioraria": {"energia": 0.0088, "commercializzazione": 72.0}
-    }
-  },
-  "gas": {
-    "fissa": {
-      "monoraria": {"energia": 0.456, "commercializzazione": 84.0}
-    },
-    "variabile": {
-      "monoraria": {"energia": 0.08, "commercializzazione": 84.0}
-    }
-  },
-  "data_aggiornamento": "2025-11-10"
-}
+**Tabella rate_history** - Storico tariffe Octopus (una riga per combinazione servizio/tipo/fascia/data)
+```sql
+CREATE TABLE rate_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_fonte TEXT NOT NULL,           -- Data del file XML ARERA
+    servizio TEXT NOT NULL,             -- "luce" o "gas"
+    tipo TEXT NOT NULL,                 -- "fissa" o "variabile"
+    fascia TEXT NOT NULL,               -- "monoraria" o "trioraria"
+    energia REAL NOT NULL,              -- €/kWh, €/Smc o spread
+    commercializzazione REAL,           -- €/anno
+    cod_offerta TEXT,
+    UNIQUE(data_fonte, servizio, tipo, fascia)
+);
 ```
 
 **Nota sulla struttura**:
 - **octotracker.db**: Database SQLite con supporto transazioni ACID per scalare a 1000+ utenti
-- **current_rates.json**: Struttura a 3 livelli (luce/gas → fissa/variabile → monoraria/trioraria)
+- **rate_history**: Le tariffe correnti sono l'ultimo record per ogni combinazione servizio/tipo/fascia
 - Per tariffe variabili, `energia` rappresenta lo spread (es: PUN + 0.0088)
 
 **Persistenza**: I dati sono salvati nel volume Docker (`./data` nella cartella del progetto) e sono persistenti tra restart del container.
@@ -502,8 +494,9 @@ docker compose version
 ## 🔮 Possibili Miglioramenti Futuri
 
 - [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
-- [ ] **Aggiornamento tariffe con un tap**: quando arriva una notifica con tariffe più convenienti, un pulsante inline permette di aggiornare direttamente le proprie tariffe registrate senza dover reinserire tutto manualmente
-- [ ] **Storico tariffe**: possibilità di consultare lo storico delle tariffe Octopus Energy degli ultimi 365 giorni, per capire l'andamento nel tempo
+- [x] **Aggiornamento tariffe con un tap**: ✅ Implementato! Pulsanti inline "✅ Aggiorna tariffe" / "❌ No grazie" nelle notifiche permettono di aggiornare le tariffe registrate con un click
+- [x] **Storico tariffe (backend)**: ✅ Implementato! Le tariffe vengono salvate nella tabella `rate_history` del database (fino a 365 giorni). Script `backfill_rate_history.py` per popolare lo storico iniziale
+- [ ] **Storico tariffe (UI)**: comando bot per consultare lo storico e visualizzare grafici dell'andamento tariffe nel tempo
 
 ## 📜 Licenza
 

@@ -6,7 +6,7 @@ Verifica endpoint /health e check di sistema
 
 import json
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from health_handler import (
     HealthHandler,
@@ -276,121 +276,39 @@ class TestCheckTariffe:
         """Test con tariffe presenti e recenti"""
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        mock_data = json.dumps(
-            {
-                "luce": {},
-                "gas": {},
-                "data_aggiornamento": yesterday,
-            }
-        )
-
-        with (
-            patch("health_handler.Path") as mock_path,
-            patch("builtins.open", mock_open(read_data=mock_data)),
-        ):
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = True
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
+        with patch("database.get_latest_rate_date", return_value=yesterday):
             result = _check_tariffe()
 
             assert result["status"] == "ok"
             assert result["last_update"] == yesterday
             assert result["days_old"] == 1
 
-    def test_tariffe_not_found(self):
-        """Test con file tariffe non esistente"""
-        with patch("health_handler.Path") as mock_path:
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = False
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
+    def test_tariffe_no_data(self):
+        """Test senza tariffe nel database"""
+        with patch("database.get_latest_rate_date", return_value=None):
             result = _check_tariffe()
 
             assert result["status"] == "warning"
-            assert "not found" in result["message"].lower()
+            assert "no rates" in result["message"].lower()
 
     def test_tariffe_outdated(self):
         """Test con tariffe vecchie (>3 giorni)"""
         old_date = (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d")
 
-        mock_data = json.dumps(
-            {
-                "luce": {},
-                "gas": {},
-                "data_aggiornamento": old_date,
-            }
-        )
-
-        with (
-            patch("health_handler.Path") as mock_path,
-            patch("builtins.open", mock_open(read_data=mock_data)),
-        ):
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = True
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
+        with patch("database.get_latest_rate_date", return_value=old_date):
             result = _check_tariffe()
 
             assert result["status"] == "warning"
             assert result["days_old"] == 5
             assert "outdated" in result["message"].lower()
 
-    def test_tariffe_missing_date(self):
-        """Test con file tariffe senza data_aggiornamento"""
-        mock_data = json.dumps({"luce": {}, "gas": {}})  # No data_aggiornamento
-
-        with (
-            patch("health_handler.Path") as mock_path,
-            patch("builtins.open", mock_open(read_data=mock_data)),
-        ):
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = True
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
-            result = _check_tariffe()
-
-            assert result["status"] == "warning"
-            assert "missing" in result["message"].lower()
-
-    def test_tariffe_invalid_json(self):
-        """Test con JSON malformato"""
-        with (
-            patch("health_handler.Path") as mock_path,
-            patch("builtins.open", mock_open(read_data="invalid json {")),
-        ):
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = True
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
-            result = _check_tariffe()
-
-            assert result["status"] == "error"
-            assert "json" in result["error"].lower()
-
     def test_tariffe_exception(self):
-        """Test con exception durante lettura file"""
-        with (
-            patch("health_handler.Path") as mock_path,
-            patch("builtins.open") as mock_file,
-        ):
-            mock_tariffe_path = MagicMock()
-            mock_tariffe_path.exists.return_value = True
-            mock_tariffe_path.__str__.return_value = "data/current_rates.json"
-            mock_path.return_value = mock_tariffe_path
-
-            # Simula errore I/O
-            mock_file.side_effect = OSError("Permission denied")
-
+        """Test con exception durante query database"""
+        with patch("database.get_latest_rate_date", side_effect=Exception("DB error")):
             result = _check_tariffe()
 
             assert result["status"] == "error"
-            assert "denied" in result["error"].lower()
+            assert "db error" in result["error"].lower()
 
 
 class TestCheckTasks:

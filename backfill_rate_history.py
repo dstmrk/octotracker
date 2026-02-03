@@ -13,84 +13,18 @@ Uso:
 
 import argparse
 import logging
-import sqlite3
 import time
 from datetime import datetime, timedelta
 
 from data_reader import (
     _build_arera_url,
     _download_xml,
+    _flatten_rates,
     _parse_arera_xml,
 )
-from database import DATA_DIR, DB_FILE, get_connection
+from database import get_rate_history_dates, init_db, save_rates_batch
 
 logger = logging.getLogger(__name__)
-
-# Schema tabella storico tariffe
-RATE_HISTORY_SCHEMA = """
-CREATE TABLE IF NOT EXISTS rate_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    data_fonte TEXT NOT NULL,
-    servizio TEXT NOT NULL,
-    tipo TEXT NOT NULL,
-    fascia TEXT NOT NULL,
-    energia REAL NOT NULL,
-    commercializzazione REAL,
-    cod_offerta TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(data_fonte, servizio, tipo, fascia)
-);
-
-CREATE INDEX IF NOT EXISTS idx_rate_history_data ON rate_history(data_fonte);
-CREATE INDEX IF NOT EXISTS idx_rate_history_servizio ON rate_history(servizio, tipo, fascia);
-"""
-
-
-def init_rate_history_table() -> None:
-    """Crea la tabella rate_history se non esiste"""
-    DATA_DIR.mkdir(exist_ok=True)
-    with get_connection() as conn:
-        conn.executescript(RATE_HISTORY_SCHEMA)
-    logger.info(f"✅ Tabella rate_history pronta in {DB_FILE}")
-
-
-def get_existing_dates() -> set[str]:
-    """Ritorna le date già presenti nello storico (formato YYYY-MM-DD)"""
-    with get_connection() as conn:
-        cursor = conn.execute("SELECT DISTINCT data_fonte FROM rate_history")
-        return {row["data_fonte"] for row in cursor.fetchall()}
-
-
-def _extract_rates_from_parsed(parsed: dict, servizio: str) -> list[dict]:
-    """Estrae lista di tariffe flat dalla struttura nested del parser
-
-    Args:
-        parsed: Output di _parse_arera_xml (es. {"luce": {"fissa": {"monoraria": {...}}}})
-        servizio: "luce" o "gas"
-
-    Returns:
-        Lista di dict pronti per inserimento DB
-    """
-    rates = []
-    service_data = parsed.get(servizio, {})
-
-    for tipo in ("fissa", "variabile"):
-        tipo_data = service_data.get(tipo, {})
-        for fascia, dati in tipo_data.items():
-            if not dati or "energia" not in dati:
-                continue
-            rates.append(
-                {
-                    "servizio": servizio,
-                    "tipo": tipo,
-                    "fascia": fascia,
-                    "energia": dati["energia"],
-                    "commercializzazione": dati.get("commercializzazione"),
-                    "cod_offerta": dati.get("cod_offerta"),
-                }
-            )
-
-    return rates
 
 
 def _download_and_parse_date(target_date: datetime) -> list[dict]:
@@ -99,52 +33,21 @@ def _download_and_parse_date(target_date: datetime) -> list[dict]:
     Returns:
         Lista di rate dict per quella data (vuota se download fallisce)
     """
-    all_rates = []
+    combined = {"luce": {"fissa": {}, "variabile": {}}, "gas": {"fissa": {}, "variabile": {}}}
 
     for service_code, servizio in [("E", "luce"), ("G", "gas")]:
         try:
             url = _build_arera_url(target_date, service_code)
             xml_content = _download_xml(url)
             parsed = _parse_arera_xml(xml_content, service_code)
-            rates = _extract_rates_from_parsed(parsed, servizio)
-            all_rates.extend(rates)
+            # Merge parsed data into combined
+            if servizio in parsed:
+                combined[servizio] = parsed[servizio]
         except Exception:
             # File non disponibile per questa data (normale per weekend/festivi)
             pass
 
-    return all_rates
-
-
-def _save_rates_for_date(conn: sqlite3.Connection, date_str: str, rates: list[dict]) -> int:
-    """Salva le tariffe per una data nel DB
-
-    Returns:
-        Numero di righe inserite
-    """
-    inserted = 0
-    for rate in rates:
-        try:
-            conn.execute(
-                """
-                INSERT INTO rate_history
-                    (data_fonte, servizio, tipo, fascia, energia, commercializzazione, cod_offerta)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    date_str,
-                    rate["servizio"],
-                    rate["tipo"],
-                    rate["fascia"],
-                    rate["energia"],
-                    rate["commercializzazione"],
-                    rate["cod_offerta"],
-                ),
-            )
-            inserted += 1
-        except sqlite3.IntegrityError:
-            # Duplicate: già presente (UNIQUE constraint)
-            pass
-    return inserted
+    return _flatten_rates(combined)
 
 
 def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None:
@@ -155,8 +58,8 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
         dry_run: Se True, non scrive nel DB
         delay: Secondi di attesa tra una richiesta e l'altra (rispetto rate limit)
     """
-    init_rate_history_table()
-    existing_dates = get_existing_dates()
+    init_db()
+    existing_dates = get_rate_history_dates()
 
     logger.info(f"📊 Date già presenti nello storico: {len(existing_dates)}")
     logger.info(f"📅 Periodo: ultimi {days} giorni")
@@ -192,10 +95,9 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
 
         # Salva nel DB
         try:
-            with get_connection() as conn:
-                inserted = _save_rates_for_date(conn, date_str, rates)
-                total_inserted += inserted
-                logger.info(f"   {date_str}: {inserted} tariffe salvate")
+            inserted = save_rates_batch(date_str, rates)
+            total_inserted += inserted
+            logger.info(f"   {date_str}: {inserted} tariffe salvate")
         except Exception as e:
             total_errors += 1
             logger.error(f"   {date_str}: errore salvataggio: {e}")

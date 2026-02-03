@@ -9,7 +9,6 @@ __pycache__/
 # Data files (ignorati perché contengono dati utente/tariffe)
 data/users.json
 data/octotracker.db
-data/current_rates.json
 data/octotracker.log
 # Ma non gli esempi
 !data/*.example
