@@ -28,6 +28,8 @@ Bot Telegram che monitora le tariffe Octopus Energy e ti avvisa quando ci sono o
   - ⚖️ **Mix migliorato/peggiorato**: avviso quando una componente migliora e l'altra peggiora
   - 💰 **Calcolo risparmio stimato**: valutazione separata luce/gas basata sui tuoi consumi reali
   - 🎯 **Evidenziazione visiva**: grassetto per valori migliorati, sottolineato per peggiorati
+- **Aggiornamento tariffe con un tap**: pulsanti inline nelle notifiche per aggiornare le tue tariffe registrate senza reinserire tutto
+- **Storico tariffe**: memorizzazione automatica delle tariffe Octopus Energy (fino a 365 giorni) per analisi andamento
 - **Deduplica notifiche**: non ti invia lo stesso messaggio più volte
 - **Consumi opzionali**: inserisci i tuoi kWh/anno e Smc/anno per calcoli precisi nei casi ambigui
 - **Webhook mode**: risposte istantanee tramite Cloudflare Tunnel
@@ -492,8 +494,9 @@ docker compose version
 ## 🔮 Possibili Miglioramenti Futuri
 
 - [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
-- [ ] **Aggiornamento tariffe con un tap**: quando arriva una notifica con tariffe più convenienti, un pulsante inline permette di aggiornare direttamente le proprie tariffe registrate senza dover reinserire tutto manualmente
-- [ ] **Storico tariffe**: possibilità di consultare lo storico delle tariffe Octopus Energy degli ultimi 365 giorni, per capire l'andamento nel tempo
+- [x] **Aggiornamento tariffe con un tap**: ✅ Implementato! Pulsanti inline "✅ Aggiorna tariffe" / "❌ No grazie" nelle notifiche permettono di aggiornare le tariffe registrate con un click
+- [x] **Storico tariffe (backend)**: ✅ Implementato! Le tariffe vengono salvate nella tabella `rate_history` del database (fino a 365 giorni). Script `backfill_rate_history.py` per popolare lo storico iniziale
+- [ ] **Storico tariffe (UI)**: comando bot per consultare lo storico e visualizzare grafici dell'andamento tariffe nel tempo
 
 ## 📜 Licenza
 
