@@ -832,6 +832,101 @@ def get_rate_history_dates() -> set[str]:
         return set()
 
 
+def get_rate_history(
+    servizio: str,
+    tipo: str,
+    fascia: str,
+    days: int = 365,
+    include_commercializzazione: bool = False,
+    include_stats: bool = False,
+) -> dict[str, Any]:
+    """
+    Recupera storico tariffe filtrato per grafico Mini App.
+
+    Args:
+        servizio: "luce" o "gas"
+        tipo: "fissa" o "variabile"
+        fascia: "monoraria", "bioraria", "trioraria"
+        days: Numero di giorni da recuperare (default 365)
+        include_commercializzazione: Se includere anche i costi commercializzazione
+        include_stats: Se calcolare statistiche (min, max, avg)
+
+    Returns:
+        Dict con struttura:
+        {
+            "labels": ["2025-01-01", "2025-01-02", ...],
+            "data": [0.115, 0.116, ...],
+            "commercializzazione": [72.0, 72.0, ...],  # se richiesto
+            "period": {"from": "2025-01-01", "to": "2025-01-30"},
+            "stats": {"min": 0.10, "max": 0.12, "avg": 0.11}  # se richiesto
+        }
+    """
+    empty_result: dict[str, Any] = {
+        "labels": [],
+        "data": [],
+        "period": {"from": None, "to": None},
+    }
+
+    if include_commercializzazione:
+        empty_result["commercializzazione"] = []
+
+    if include_stats:
+        empty_result["stats"] = {"min": None, "max": None, "avg": None}
+
+    # Gestisci days invalidi
+    if days <= 0:
+        return empty_result
+
+    try:
+        with get_connection() as conn:
+            # Query con filtro temporale
+            cursor = conn.execute(
+                """
+                SELECT data_fonte, energia, commercializzazione
+                FROM rate_history
+                WHERE servizio = ?
+                  AND tipo = ?
+                  AND fascia = ?
+                  AND data_fonte >= date('now', '-' || ? || ' days')
+                ORDER BY data_fonte ASC
+                """,
+                (servizio, tipo, fascia, days),
+            )
+            rows = cursor.fetchall()
+
+        if not rows:
+            return empty_result
+
+        # Estrai dati
+        labels = [row["data_fonte"] for row in rows]
+        data = [row["energia"] for row in rows]
+
+        result: dict[str, Any] = {
+            "labels": labels,
+            "data": data,
+            "period": {
+                "from": labels[0] if labels else None,
+                "to": labels[-1] if labels else None,
+            },
+        }
+
+        if include_commercializzazione:
+            result["commercializzazione"] = [row["commercializzazione"] for row in rows]
+
+        if include_stats and data:
+            result["stats"] = {
+                "min": round(min(data), 6),
+                "max": round(max(data), 6),
+                "avg": round(sum(data) / len(data), 6),
+            }
+
+        return result
+
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore lettura storico tariffe: {e}")
+        return empty_result
+
+
 if __name__ == "__main__":
     # Test inizializzazione
     init_db()
