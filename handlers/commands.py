@@ -7,7 +7,7 @@ Gestisce comandi semplici (status, remove, help, cancel, unknown)
 import logging
 import os
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, ConversationHandler
 
@@ -21,8 +21,52 @@ logger = logging.getLogger(__name__)
 # Leggi configurazione per help (evita import circolari)
 CHECKER_HOUR = int(os.getenv("CHECKER_HOUR", "10"))
 
+# URL della Mini App per grafici (es. https://octotracker.example.com/app/)
+WEBAPP_URL = os.getenv("WEBAPP_URL", "")
+
 
 # ========== BOT COMMANDS ==========
+
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Apre la Mini App con i grafici dello storico tariffe"""
+    user_id = str(update.effective_user.id)
+    logger.info(f"User {user_id}: /history command")
+
+    # Pulisci eventuali dati di conversazione in corso
+    context.user_data.clear()
+
+    if not WEBAPP_URL:
+        await update.message.reply_text(
+            "La Mini App non è ancora configurata.\nContatta l'amministratore del bot.",
+        )
+        return ConversationHandler.END
+
+    # Crea bottone che apre la Mini App
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text="📊 Apri Grafici Tariffe",
+                    web_app=WebAppInfo(url=WEBAPP_URL),
+                )
+            ]
+        ]
+    )
+
+    await update.message.reply_text(
+        "📈 <b>Storico Tariffe</b>\n\n"
+        "Clicca il pulsante qui sotto per aprire i grafici interattivi "
+        "con l'andamento delle tariffe Octopus Energy.\n\n"
+        "Puoi filtrare per:\n"
+        "• Servizio (Luce/Gas)\n"
+        "• Tipo tariffa (Fissa/Variabile)\n"
+        "• Fascia oraria\n"
+        "• Periodo (7, 30, 90, 365 giorni)",
+        parse_mode=ParseMode.HTML,
+        reply_markup=keyboard,
+    )
+    return ConversationHandler.END
 
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -153,6 +197,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "• /start – Inizia e registra le tue tariffe attuali\n"
         "• /update – Aggiorna le tariffe che hai impostato\n"
         "• /status – Mostra le tariffe e lo stato attuale\n"
+        "• /history – Visualizza i grafici dello storico tariffe\n"
         "• /remove – Cancella i tuoi dati e disattiva il servizio\n"
         "• /feedback – Invia un feedback per migliorare il bot\n"
         "• /cancel – Annulla la registrazione in corso\n"
