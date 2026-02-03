@@ -99,8 +99,9 @@ octotracker/
 │   ├── feedback.py          # Sistema feedback utenti
 │   └── commands.py          # Comandi utility (status, help, etc.)
 ├── checker.py               # Verifica tariffe e notifiche
-├── database.py              # Gestione database SQLite
-├── data_reader.py           # Scraper tariffe Octopus Energy
+├── database.py              # Gestione database SQLite (users + rate_history)
+├── data_reader.py           # Scraper tariffe ARERA → salva in DB
+├── backfill_rate_history.py # Script standalone per backfill storico tariffe
 ├── formatters.py            # Formattatori output
 ├── constants.py             # Costanti globali
 ├── health_handler.py        # Health check endpoint
@@ -307,7 +308,7 @@ Modulo per gestione tariffe Octopus Energy
 Responsabilità:
 - Scraping dati ARERA
 - Parsing XML offerte
-- Salvataggio tariffe in JSON
+- Salvataggio tariffe in database (tabella rate_history)
 """
 
 async def fetch_rates(service: str) -> dict:
@@ -461,6 +462,29 @@ Il progetto usa GitHub Actions e SonarCloud per:
 - Analizzare la code quality
 
 **Non bypassare mai i check CI/CD!**
+
+### ⚠️ Coverage Check Prima delle PR
+
+**SonarCloud richiede coverage > 80% sul nuovo codice.** Prima di aprire una PR:
+
+```bash
+# Verifica coverage sui moduli modificati
+source .venv/bin/activate && pytest \
+  --cov=<modulo1> --cov=<modulo2> \
+  --cov-report=term-missing
+
+# Esempio per checker e database
+source .venv/bin/activate && pytest \
+  --cov=checker --cov=database \
+  --cov-report=term-missing
+```
+
+Se la coverage è < 80%, aggiungi test per:
+- Nuove funzioni/metodi
+- Nuovi branch (if/else)
+- Gestione errori (try/except)
+
+**Tip**: Le righe mancanti sono mostrate nella colonna "Missing" del report.
 
 ## 📚 Riferimenti
 
