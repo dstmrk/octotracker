@@ -584,10 +584,25 @@ async def fetch_octopus_tariffe(max_days_back: int = 7) -> dict[str, Any]:
         flat_rates = _flatten_rates(tariffe_data)
         data_fonte = tariffe_data.get("data_fonte_xml", tariffe_data["data_aggiornamento"])
         inserted = await asyncio.to_thread(save_rates_batch, data_fonte, flat_rates)
-        logger.info(
-            f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe"
-        )
-        logger.info(f"💾 {inserted} tariffe salvate nel database")
+
+        if inserted == -1:
+            # Errore critico nel salvataggio DB
+            logger.error(
+                f"❌ Lettura ARERA completata in {duration:.2f}s - "
+                f"Trovate {total_found}/5 tariffe MA ERRORE SALVATAGGIO DB"
+            )
+        elif inserted < len(flat_rates):
+            # Salvataggio parziale (alcuni duplicati o errori minori)
+            logger.info(
+                f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe"
+            )
+            logger.info(f"💾 {inserted}/{len(flat_rates)} tariffe salvate (resto già presenti)")
+        else:
+            # Tutto salvato correttamente
+            logger.info(
+                f"✅ Lettura ARERA completata in {duration:.2f}s - Trovate {total_found}/5 tariffe"
+            )
+            logger.info(f"💾 {inserted} tariffe salvate nel database")
     else:
         logger.warning(f"⚠️  Lettura ARERA completata in {duration:.2f}s - Nessuna tariffa trovata")
 

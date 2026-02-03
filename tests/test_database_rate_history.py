@@ -6,7 +6,7 @@ Test per le funzioni storico tariffe in database.py
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -149,11 +149,36 @@ class TestSaveRatesBatch:
             assert inserted == 1  # Solo gas inserito
 
     def test_save_rates_batch_db_error(self):
-        """Test gestione errore database"""
-        with patch("database.get_connection") as mock_conn:
+        """Test gestione errore database - ritorna -1"""
+        with patch("database.sqlite3.connect") as mock_conn:
             mock_conn.side_effect = sqlite3.Error("DB error")
-            inserted = save_rates_batch("2025-01-15", [{"servizio": "luce"}])
-            assert inserted == 0
+            inserted = save_rates_batch(
+                "2025-01-15",
+                [{"servizio": "luce", "tipo": "fissa", "fascia": "monoraria", "energia": 0.10}],
+            )
+            assert inserted == -1  # Errore critico
+
+    def test_save_rates_batch_rollback_on_error(self):
+        """Test che il rollback viene eseguito in caso di errore"""
+        mock_conn = MagicMock()
+        mock_conn.execute.side_effect = [
+            None,  # BEGIN TRANSACTION
+            None,  # Prima INSERT
+            MagicMock(fetchone=lambda: [1]),  # SELECT changes() - prima riga inserita
+            sqlite3.Error("Insert failed"),  # Seconda INSERT fallisce
+        ]
+
+        with patch("database.sqlite3.connect", return_value=mock_conn):
+            inserted = save_rates_batch(
+                "2025-01-15",
+                [
+                    {"servizio": "luce", "tipo": "fissa", "fascia": "monoraria", "energia": 0.10},
+                    {"servizio": "gas", "tipo": "fissa", "fascia": "monoraria", "energia": 0.39},
+                ],
+            )
+            assert inserted == -1
+            mock_conn.rollback.assert_called_once()
+            mock_conn.close.assert_called_once()
 
 
 class TestGetCurrentRates:
