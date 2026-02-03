@@ -666,6 +666,47 @@ async def test_fetch_octopus_tariffe_no_rates_found_does_not_save():
                 assert mock_save.call_count == 0
 
 
+@pytest.mark.asyncio
+async def test_fetch_octopus_tariffe_db_error_logs_error():
+    """Test che errore DB viene loggato correttamente"""
+    mock_luce_data = {
+        "luce": {
+            "fissa": {"monoraria": {"energia": 0.1078, "commercializzazione": 72.0}},
+            "variabile": {},
+        }
+    }
+
+    with patch("data_reader._fetch_service_data") as mock_fetch:
+        with patch("data_reader.save_rates_batch"):
+            with patch("data_reader.asyncio.to_thread") as mock_to_thread:
+                with patch("data_reader.logger") as mock_logger:
+
+                    async def side_effect(func, *args):
+                        if func is mock_fetch:
+                            if args[0] == "E":
+                                return mock_luce_data, datetime.now()
+                            else:
+                                return {}, None
+                        # Mock save_rates_batch returns -1 (DB error)
+                        return -1
+
+                    mock_to_thread.side_effect = side_effect
+
+                    result = await fetch_octopus_tariffe()
+
+                    # Dovrebbe loggare errore critico
+                    error_calls = [
+                        call
+                        for call in mock_logger.error.call_args_list
+                        if "ERRORE SALVATAGGIO DB" in str(call)
+                    ]
+                    assert len(error_calls) == 1
+
+                    # Ma dovrebbe comunque ritornare i dati estratti
+                    assert "luce" in result
+                    assert result["luce"]["fissa"]["monoraria"]["energia"] == 0.1078
+
+
 def test_fetch_service_data_download_failure():
     """Test _fetch_service_data quando download fallisce"""
     with patch("data_reader._download_xml", side_effect=Exception("Network error")):

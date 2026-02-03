@@ -697,45 +697,64 @@ def save_rate(
 
 def save_rates_batch(data_fonte: str, rates: list[dict[str, Any]]) -> int:
     """
-    Salva un batch di tariffe per una data. Ignora duplicati.
+    Salva un batch di tariffe per una data in modo atomico (transazione).
+    Ignora duplicati (già presenti nel DB).
 
     Args:
         data_fonte: Data fonte in formato YYYY-MM-DD
         rates: Lista di dict con chiavi: servizio, tipo, fascia, energia, commercializzazione, cod_offerta
 
     Returns:
-        Numero di tariffe inserite
+        Numero di tariffe inserite (>= 0)
+        -1 in caso di errore critico (nessuna tariffa salvata)
     """
+    if not rates:
+        return 0
+
     inserted = 0
+    conn = None
     try:
-        with get_connection() as conn:
-            for rate in rates:
-                try:
-                    conn.execute(
-                        """
-                        INSERT OR IGNORE INTO rate_history
-                            (data_fonte, servizio, tipo, fascia, energia,
-                             commercializzazione, cod_offerta)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            data_fonte,
-                            rate["servizio"],
-                            rate["tipo"],
-                            rate["fascia"],
-                            rate["energia"],
-                            rate.get("commercializzazione"),
-                            rate.get("cod_offerta"),
-                        ),
-                    )
-                    if conn.execute("SELECT changes()").fetchone()[0] > 0:
-                        inserted += 1
-                except sqlite3.Error as e:
-                    logger.warning(f"⚠️  Errore inserimento tariffa: {e}")
+        conn = sqlite3.connect(DB_FILE, timeout=30.0)
+        conn.row_factory = sqlite3.Row
+        conn.execute("BEGIN TRANSACTION")
+
+        for rate in rates:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO rate_history
+                    (data_fonte, servizio, tipo, fascia, energia,
+                     commercializzazione, cod_offerta)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    data_fonte,
+                    rate["servizio"],
+                    rate["tipo"],
+                    rate["fascia"],
+                    rate["energia"],
+                    rate.get("commercializzazione"),
+                    rate.get("cod_offerta"),
+                ),
+            )
+            if conn.execute("SELECT changes()").fetchone()[0] > 0:
+                inserted += 1
+
+        conn.commit()
         logger.debug(f"Salvate {inserted} tariffe per {data_fonte}")
+        return inserted
+
     except sqlite3.Error as e:
         logger.error(f"❌ Errore salvataggio batch tariffe: {e}")
-    return inserted
+        if conn:
+            try:
+                conn.rollback()
+                logger.debug("Rollback transazione completato")
+            except sqlite3.Error:
+                pass
+        return -1
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_current_rates() -> dict[str, Any] | None:
