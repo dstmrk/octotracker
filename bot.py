@@ -293,20 +293,42 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def run_health_server(application_data: dict) -> None:
     """
-    Avvia server HTTP separato per health check endpoint.
+    Avvia server HTTP separato per health check, API e Mini App.
 
-    Usa Tornado per servire /health su porta 8444 (default).
+    Usa Tornado per servire su porta 8444 (default):
+    - /health - Health check endpoint
+    - /api/* - API REST per Mini App
+    - /app/* - Frontend Mini App (file statici)
+
     Separato dal webhook per evitare conflitti con python-telegram-bot.
     """
+    from pathlib import Path
+
     from tornado.httpserver import HTTPServer
     from tornado.web import Application as TornadoApp
+    from tornado.web import StaticFileHandler
 
+    from api.handlers import RatesCurrentHandler, RatesHistoryHandler, UserRatesHandler
     from health_handler import HealthHandler
 
-    # Crea applicazione Tornado con health handler
+    # Path alla webapp
+    webapp_path = Path(__file__).parent / "webapp"
+
+    # Crea applicazione Tornado con tutti gli handler
     health_app = TornadoApp(
         [
+            # Health check
             (r"/health", HealthHandler, {"application_data": application_data}),
+            # API endpoints
+            (r"/api/rates/history", RatesHistoryHandler),
+            (r"/api/rates/current", RatesCurrentHandler),
+            (r"/api/user/rates", UserRatesHandler),
+            # Mini App frontend (file statici)
+            (
+                r"/app/(.*)",
+                StaticFileHandler,
+                {"path": str(webapp_path), "default_filename": "index.html"},
+            ),
         ]
     )
 
@@ -315,6 +337,8 @@ async def run_health_server(application_data: dict) -> None:
     server.listen(HEALTH_PORT, address="0.0.0.0")
 
     logger.info(f"🏥 Health check endpoint attivo su porta {HEALTH_PORT}")
+    logger.info(f"📊 API Mini App attiva su porta {HEALTH_PORT}/api/")
+    logger.info(f"🌐 WebApp Mini App attiva su porta {HEALTH_PORT}/app/")
 
     # Keep alive - tornado usa il suo event loop
     # asyncio.sleep(0) per permettere scheduling

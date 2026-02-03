@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>OctoTracker - Storico Tariffe</title>
+
+    <!-- Telegram WebApp Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Fonts (same as landing page) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <!-- Local styles -->
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <div class="container">
+
+      <!-- Header -->
+      <header class="header">
+        <h1>Storico Tariffe</h1>
+      </header>
+
+      <!-- Service Tabs -->
+      <div class="tabs-container">
+        <button class="tab-btn active" data-service="luce">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Luce
+        </button>
+        <button class="tab-btn" data-service="gas">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+          Gas
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-container">
+        <div class="filter-group">
+          <label for="tipo-select">Tipo</label>
+          <select id="tipo-select" class="filter-select">
+            <option value="variabile">Variabile (Flex)</option>
+            <option value="fissa">Fissa</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="fascia-select">Fascia</label>
+          <select id="fascia-select" class="filter-select">
+            <option value="monoraria">Monoraria</option>
+            <option value="bioraria">Bioraria</option>
+            <option value="trioraria">Trioraria</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Chart Card -->
+      <div class="chart-card">
+        <div class="chart-container">
+          <canvas id="rate-chart"></canvas>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading">
+          <div class="spinner"></div>
+          <span>Caricamento...</span>
+        </div>
+
+        <!-- Error message -->
+        <div id="error-message" class="error-message" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="error-text">Errore nel caricamento dei dati</span>
+        </div>
+      </div>
+
+      <!-- Period Selector -->
+      <div class="period-container">
+        <button class="period-btn" data-days="7">7gg</button>
+        <button class="period-btn" data-days="30">30gg</button>
+        <button class="period-btn" data-days="90">90gg</button>
+        <button class="period-btn active" data-days="365">1 anno</button>
+      </div>
+
+      <!-- Stats Card -->
+      <div class="stats-card" id="stats-card" style="display: none;">
+        <div class="stat-item">
+          <span class="stat-label">Oggi</span>
+          <span class="stat-value" id="stat-current">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Tua tariffa</span>
+          <span class="stat-value highlight" id="stat-user">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Min/Max periodo</span>
+          <span class="stat-value" id="stat-minmax">-</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span>OctoTracker</span>
+      </footer>
+
+    </div>
+
+    <!-- App Script -->
+    <script src="js/app.js"></script>
+  </body>
+</html>
