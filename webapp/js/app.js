@@ -480,9 +480,16 @@ function updateFasciaOptions() {
 // ========== Initialization ==========
 
 async function initializeFromUserRates() {
+  console.log('initializeFromUserRates: starting...');
+
   try {
     // Carica prima i dati utente per determinare lo stato iniziale
-    const userRates = await fetchUserRates().catch(() => null);
+    const userRates = await fetchUserRates().catch((err) => {
+      console.warn('initializeFromUserRates: fetchUserRates failed:', err);
+      return null;
+    });
+
+    console.log('initializeFromUserRates: userRates =', userRates);
 
     if (userRates) {
       state.userRates = userRates;
@@ -490,20 +497,24 @@ async function initializeFromUserRates() {
       // Determina servizio e tipo iniziali in base ai dati utente
       // Priorità: luce > gas
       if (userRates.luce) {
+        console.log('initializeFromUserRates: setting state from luce:', userRates.luce);
         state.service = 'luce';
         state.tipo = userRates.luce.tipo || CONFIG.defaultTipo;
         state.fascia = userRates.luce.fascia || CONFIG.defaultFascia;
       } else if (userRates.gas) {
+        console.log('initializeFromUserRates: setting state from gas:', userRates.gas);
         state.service = 'gas';
         state.tipo = userRates.gas.tipo || CONFIG.defaultTipo;
         state.fascia = 'monoraria'; // Gas ha solo monoraria
       }
 
+      console.log('initializeFromUserRates: final state =', { service: state.service, tipo: state.tipo, fascia: state.fascia });
+
       // Aggiorna UI per riflettere lo stato iniziale
       updateInitialUI();
     }
   } catch (error) {
-    console.warn('Could not load user rates for initialization:', error);
+    console.warn('initializeFromUserRates: error:', error);
   }
 
   // Carica i dati storici
