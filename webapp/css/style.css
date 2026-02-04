@@ -170,14 +170,24 @@ body {
   min-height: 250px;
 }
 
+.chart-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted-on-white);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
 .chart-container {
   position: relative;
-  height: 220px;
+  height: 200px;
   width: 100%;
 }
 
-#rate-chart {
-  max-height: 220px;
+#rate-chart,
+#comm-chart {
+  max-height: 200px;
 }
 
 /* Loading */
