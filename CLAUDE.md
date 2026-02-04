@@ -454,6 +454,47 @@ docker exec -it octotracker uv pip list
 docker build --no-cache -t octotracker:latest .
 ```
 
+## 📱 Mini App (Telegram WebApp)
+
+La Mini App per i grafici dello storico tariffe si trova in `webapp/`.
+
+### Struttura
+
+```
+webapp/
+├── index.html       # HTML principale
+├── css/
+│   └── style.css    # Stili Neo-Brutalist
+└── js/
+    └── app.js       # Logica applicativa
+```
+
+### Cache Busting
+
+**⚠️ IMPORTANTE**: Quando modifichi CSS o JavaScript della Mini App, incrementa sempre il parametro di versione negli include per forzare il browser a ricaricare i file aggiornati:
+
+```html
+<!-- In webapp/index.html -->
+<link rel="stylesheet" href="css/style.css?v=3">  <!-- Incrementa v=X -->
+<script src="js/app.js?v=3"></script>              <!-- Incrementa v=X -->
+```
+
+Senza cache busting, Telegram e i browser potrebbero usare versioni vecchie dei file anche dopo il deploy.
+
+### API Endpoints
+
+La Mini App usa le seguenti API (servite sulla porta 8444 insieme all'health check):
+
+- `GET /api/rates/history` - Storico tariffe per i grafici
+- `GET /api/rates/current` - Tariffe correnti
+- `GET /api/user/rates` - Tariffe salvate dell'utente
+
+Tutte le API richiedono l'header `X-Telegram-Init-Data` per l'autenticazione.
+
+### Configurazione
+
+Imposta la variabile d'ambiente `WEBAPP_URL` con l'URL pubblico della Mini App (es. `https://tuodominio.com/app/`).
+
 ## 🚀 CI/CD
 
 Il progetto usa GitHub Actions e SonarCloud per:
