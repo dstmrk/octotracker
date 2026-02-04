@@ -242,8 +242,6 @@ function initChart() {
   const commCtx = document.getElementById('comm-chart');
   if (commCtx) {
     state.commChart = new Chart(commCtx, createChartConfig('€/anno', 0));
-    // Nascondi la linea "Tua tariffa" nel grafico commercializzazione
-    state.commChart.data.datasets[1].hidden = true;
   }
 }
 
@@ -278,6 +276,17 @@ function updateCharts(historyData) {
     state.commChart.data.datasets[0].label = 'Commercializzazione';
     state.commChart.data.labels = labels;
     state.commChart.data.datasets[0].data = commercializzazione;
+
+    // Aggiungi linea utente commercializzazione se disponibile
+    const userComm = getUserCurrentComm();
+    if (userComm !== null) {
+      state.commChart.data.datasets[1].data = labels.map(() => userComm);
+      state.commChart.data.datasets[1].hidden = false;
+    } else {
+      state.commChart.data.datasets[1].data = [];
+      state.commChart.data.datasets[1].hidden = true;
+    }
+
     state.commChart.update();
   }
 }
@@ -298,40 +307,18 @@ function getUserCurrentRate() {
   return serviceData.energia;
 }
 
-function updateStats(historyData) {
-  const statsCard = document.getElementById('stats-card');
-  const statCurrent = document.getElementById('stat-current');
-  const statUser = document.getElementById('stat-user');
-  const statComm = document.getElementById('stat-comm');
+function getUserCurrentComm() {
+  if (!state.userRates) return null;
 
-  if (!historyData || !historyData.data || historyData.data.length === 0) {
-    statsCard.style.display = 'none';
-    return;
+  const serviceData = state.userRates[state.service];
+  if (!serviceData) return null;
+
+  // Verifica che tipo e fascia corrispondano
+  if (serviceData.tipo !== state.tipo || serviceData.fascia !== state.fascia) {
+    return null;
   }
 
-  statsCard.style.display = 'grid';
-
-  const unit = state.service === 'luce' ? '€/kWh' : '€/Smc';
-  const lastValue = historyData.data[historyData.data.length - 1];
-
-  // Valore corrente energia
-  statCurrent.textContent = `${lastValue.toFixed(4)} ${unit}`;
-
-  // Tariffa utente
-  const userRate = getUserCurrentRate();
-  if (userRate !== null) {
-    statUser.textContent = `${userRate.toFixed(4)} ${unit}`;
-  } else {
-    statUser.textContent = '-';
-  }
-
-  // Commercializzazione corrente
-  if (historyData.commercializzazione && historyData.commercializzazione.length > 0) {
-    const lastComm = historyData.commercializzazione[historyData.commercializzazione.length - 1];
-    statComm.textContent = `${lastComm.toFixed(2)} €/anno`;
-  } else {
-    statComm.textContent = '-';
-  }
+  return serviceData.commercializzazione;
 }
 
 // ========== UI Helpers ==========
@@ -400,7 +387,6 @@ async function loadData() {
 
     // Aggiorna UI
     updateCharts(historyData);
-    updateStats(historyData);
 
     hideLoading();
   } catch (error) {
