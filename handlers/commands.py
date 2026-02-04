@@ -36,6 +36,17 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # Pulisci eventuali dati di conversazione in corso
     context.user_data.clear()
 
+    # Verifica che l'utente abbia tariffe registrate
+    user_data = load_user(user_id)
+    if not user_data:
+        await update.message.reply_text(
+            "ℹ️ Non hai ancora registrato le tue tariffe.\n\n"
+            "Per visualizzare i grafici dello storico tariffe, "
+            "devi prima inserire i tuoi dati con il comando /start.\n\n"
+            "🐙 Ti guiderò passo passo: ci vogliono meno di 60 secondi!"
+        )
+        return ConversationHandler.END
+
     if not WEBAPP_URL:
         await update.message.reply_text(
             "La Mini App non è ancora configurata.\nContatta l'amministratore del bot.",

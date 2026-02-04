@@ -205,11 +205,35 @@ async def test_help_command(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
+async def test_history_command_user_not_registered(mock_update, mock_context, monkeypatch):
+    """Test /history per utente non registrato"""
+    import handlers.commands
+
+    monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "https://example.com/app/")
+
+    result = await history_command(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    assert "Non hai ancora registrato" in message_text
+    assert "/start" in message_text
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
 async def test_history_command_no_webapp_url(mock_update, mock_context, monkeypatch):
     """Test /history senza WEBAPP_URL configurato"""
     import handlers.commands
 
     monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "")
+
+    # Registra utente per superare il primo controllo
+    user_data = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.1, "commercializzazione": 72}
+    }
+    save_user("123456789", user_data)
 
     result = await history_command(mock_update, mock_context)
 
@@ -227,6 +251,12 @@ async def test_history_command_with_webapp_url(mock_update, mock_context, monkey
     import handlers.commands
 
     monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "https://example.com/app/")
+
+    # Registra utente
+    user_data = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.1, "commercializzazione": 72}
+    }
+    save_user("123456789", user_data)
 
     result = await history_command(mock_update, mock_context)
 
@@ -260,6 +290,12 @@ async def test_history_command_clears_context(mock_update, mock_context, monkeyp
     import handlers.commands
 
     monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "https://example.com/app/")
+
+    # Registra utente
+    user_data = {
+        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.1, "commercializzazione": 72}
+    }
+    save_user("123456789", user_data)
 
     # Simula dati di conversazione preesistenti
     mock_context.user_data["old_data"] = "some_value"
