@@ -30,6 +30,7 @@ from database import init_db, load_user, save_user
 from handlers.commands import (
     cancel_conversation,
     help_command,
+    history_command,
     remove_data,
     status,
     unknown_command,
@@ -199,7 +200,74 @@ async def test_help_command(mock_update, mock_context):
     # Verifica presenza comandi principali
     assert "/start" in message_text
     assert "/status" in message_text
+    assert "/history" in message_text
     assert "/remove" in message_text
+
+
+@pytest.mark.asyncio
+async def test_history_command_no_webapp_url(mock_update, mock_context, monkeypatch):
+    """Test /history senza WEBAPP_URL configurato"""
+    import handlers.commands
+
+    monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "")
+
+    result = await history_command(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    message_text = call_args[0][0]
+
+    assert "non è ancora configurata" in message_text
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
+async def test_history_command_with_webapp_url(mock_update, mock_context, monkeypatch):
+    """Test /history con WEBAPP_URL configurato"""
+    import handlers.commands
+
+    monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "https://example.com/app/")
+
+    result = await history_command(mock_update, mock_context)
+
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+
+    message_text = call_args[0][0]
+    assert "Storico Tariffe" in message_text
+    assert "grafici interattivi" in message_text
+
+    # Verifica che c'è una tastiera inline con WebApp
+    kwargs = call_args[1]
+    assert "reply_markup" in kwargs
+    reply_markup = kwargs["reply_markup"]
+    assert reply_markup is not None
+
+    # Verifica struttura tastiera
+    assert len(reply_markup.inline_keyboard) == 1
+    assert len(reply_markup.inline_keyboard[0]) == 1
+    button = reply_markup.inline_keyboard[0][0]
+    assert button.text == "📊 Apri Grafici Tariffe"
+    assert button.web_app is not None
+    assert button.web_app.url == "https://example.com/app/"
+
+    assert result == ConversationHandler.END
+
+
+@pytest.mark.asyncio
+async def test_history_command_clears_context(mock_update, mock_context, monkeypatch):
+    """Test /history pulisce il contesto della conversazione"""
+    import handlers.commands
+
+    monkeypatch.setattr(handlers.commands, "WEBAPP_URL", "https://example.com/app/")
+
+    # Simula dati di conversazione preesistenti
+    mock_context.user_data["old_data"] = "some_value"
+
+    await history_command(mock_update, mock_context)
+
+    # Verifica che user_data sia stato pulito
+    assert mock_context.user_data == {}
 
 
 @pytest.mark.asyncio

@@ -37,6 +37,7 @@ from database import init_db
 from handlers.commands import (
     cancel_conversation,
     help_command,
+    history_command,
     remove_data,
     status,
     unknown_command,
@@ -451,6 +452,7 @@ def main() -> None:
 
     app.add_handler(CommandHandler("cancel", cancel_conversation))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("history", history_command))
     app.add_handler(CommandHandler("remove", remove_data))
     app.add_handler(CommandHandler("help", help_command))
 
