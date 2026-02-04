@@ -400,6 +400,8 @@ function setupEventListeners() {
   // Tipo select
   document.getElementById('tipo-select').addEventListener('change', (e) => {
     state.tipo = e.target.value;
+    // Aggiorna fasce disponibili in base al tipo
+    updateFasciaOptions();
     loadData();
   });
 
@@ -431,9 +433,11 @@ function setupEventListeners() {
 function updateFasciaOptions() {
   const fasciaSelect = document.getElementById('fascia-select');
   const isGas = state.service === 'gas';
+  const isLuceFissa = state.service === 'luce' && state.tipo === 'fissa';
 
-  // Gas ha solo monoraria
-  if (isGas) {
+  // Gas e Luce Fissa hanno solo monoraria
+  // Luce Variabile ha tutte le fasce
+  if (isGas || isLuceFissa) {
     fasciaSelect.innerHTML = '<option value="monoraria">Monoraria</option>';
     state.fascia = 'monoraria';
   } else {
