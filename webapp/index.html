@@ -58,8 +58,17 @@
         </div>
       </div>
 
-      <!-- Chart Card -->
+      <!-- Period Selector -->
+      <div class="period-container">
+        <button class="period-btn" data-days="7">7gg</button>
+        <button class="period-btn" data-days="30">30gg</button>
+        <button class="period-btn" data-days="90">90gg</button>
+        <button class="period-btn active" data-days="365">1 anno</button>
+      </div>
+
+      <!-- Chart Card - Tariffe -->
       <div class="chart-card">
+        <div class="chart-title">Tariffa Energia</div>
         <div class="chart-container">
           <canvas id="rate-chart"></canvas>
         </div>
@@ -77,18 +86,30 @@
         </div>
       </div>
 
-      <!-- Period Selector -->
-      <div class="period-container">
-        <button class="period-btn" data-days="7">7gg</button>
-        <button class="period-btn" data-days="30">30gg</button>
-        <button class="period-btn" data-days="90">90gg</button>
-        <button class="period-btn active" data-days="365">1 anno</button>
+      <!-- Chart Card - Commercializzazione -->
+      <div class="chart-card">
+        <div class="chart-title">Commercializzazione</div>
+        <div class="chart-container">
+          <canvas id="comm-chart"></canvas>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading-comm" class="loading">
+          <div class="spinner"></div>
+          <span>Caricamento...</span>
+        </div>
+
+        <!-- Error message -->
+        <div id="error-message-comm" class="error-message" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="error-text-comm">Errore nel caricamento dei dati</span>
+        </div>
       </div>
 
       <!-- Stats Card -->
       <div class="stats-card" id="stats-card" style="display: none;">
         <div class="stat-item">
-          <span class="stat-label">Oggi</span>
+          <span class="stat-label">Energia oggi</span>
           <span class="stat-value" id="stat-current">-</span>
         </div>
         <div class="stat-item">
@@ -96,8 +117,8 @@
           <span class="stat-value highlight" id="stat-user">-</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Min/Max periodo</span>
-          <span class="stat-value" id="stat-minmax">-</span>
+          <span class="stat-label">Comm. oggi</span>
+          <span class="stat-value" id="stat-comm">-</span>
         </div>
       </div>
 

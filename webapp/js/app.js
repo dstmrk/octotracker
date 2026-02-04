@@ -28,6 +28,7 @@ const state = {
   fascia: CONFIG.defaultFascia,
   days: CONFIG.defaultDays,
   chart: null,
+  commChart: null,
   userRates: null,
   currentRates: null,
 };
@@ -47,9 +48,6 @@ function initTelegram() {
 
   // Imposta colore header
   tg.setHeaderColor('secondary_bg_color');
-
-  // Abilita pulsante chiusura
-  tg.enableClosingConfirmation();
 
   // Ready
   tg.ready();
@@ -117,21 +115,17 @@ async function fetchCurrentRates() {
 
 // ========== Chart ==========
 
-function initChart() {
-  const ctx = document.getElementById('rate-chart');
-  if (!ctx) return;
-
-  // Colori dal CSS
+function createChartConfig(tooltipUnit, yAxisDecimals = 3) {
   const primaryColor = '#d946ef';
   const userColor = '#38bdf8';
 
-  state.chart = new Chart(ctx, {
+  return {
     type: 'line',
     data: {
       labels: [],
       datasets: [
         {
-          label: 'Prezzo Energia',
+          label: 'Valore',
           data: [],
           borderColor: primaryColor,
           backgroundColor: 'rgba(217, 70, 239, 0.1)',
@@ -189,8 +183,7 @@ function initChart() {
           callbacks: {
             label: function (context) {
               const value = context.parsed.y;
-              const unit = state.service === 'luce' ? '€/kWh' : '€/Smc';
-              return `${context.dataset.label}: ${value.toFixed(4)} ${unit}`;
+              return `${context.dataset.label}: ${value.toFixed(yAxisDecimals === 0 ? 2 : 4)} ${tooltipUnit}`;
             },
           },
         },
@@ -209,7 +202,6 @@ function initChart() {
             },
             callback: function (value, index) {
               const label = this.getLabelForValue(value);
-              // Formatta data in modo compatto
               const date = new Date(label);
               return date.toLocaleDateString('it-IT', {
                 day: '2-digit',
@@ -229,36 +221,65 @@ function initChart() {
               family: "'JetBrains Mono', monospace",
             },
             callback: function (value) {
-              return value.toFixed(3);
+              return yAxisDecimals === 0 ? value.toFixed(0) : value.toFixed(3);
             },
           },
         },
       },
     },
-  });
+  };
 }
 
-function updateChart(historyData) {
-  if (!state.chart) return;
-
-  const { labels, data } = historyData;
-
-  // Aggiorna dati principali
-  state.chart.data.labels = labels;
-  state.chart.data.datasets[0].data = data;
-
-  // Aggiungi linea utente se disponibile
-  const userRate = getUserCurrentRate();
-  if (userRate !== null) {
-    // Crea array con stesso valore per tutta la lunghezza
-    state.chart.data.datasets[1].data = labels.map(() => userRate);
-    state.chart.data.datasets[1].hidden = false;
-  } else {
-    state.chart.data.datasets[1].data = [];
-    state.chart.data.datasets[1].hidden = true;
+function initChart() {
+  // Grafico tariffe energia
+  const rateCtx = document.getElementById('rate-chart');
+  if (rateCtx) {
+    const rateUnit = state.service === 'luce' ? '€/kWh' : '€/Smc';
+    state.chart = new Chart(rateCtx, createChartConfig(rateUnit, 3));
   }
 
-  state.chart.update();
+  // Grafico commercializzazione
+  const commCtx = document.getElementById('comm-chart');
+  if (commCtx) {
+    state.commChart = new Chart(commCtx, createChartConfig('€/anno', 0));
+    // Nascondi la linea "Tua tariffa" nel grafico commercializzazione
+    state.commChart.data.datasets[1].hidden = true;
+  }
+}
+
+function updateCharts(historyData) {
+  const { labels, data, commercializzazione } = historyData;
+
+  // Aggiorna grafico tariffe energia
+  if (state.chart) {
+    // Aggiorna label in base al tipo (variabile = spread, fissa = prezzo)
+    const isVariabile = state.tipo === 'variabile';
+    state.chart.data.datasets[0].label = isVariabile ? 'Spread su PUN/PSV' : 'Prezzo Energia';
+
+    // Aggiorna dati principali
+    state.chart.data.labels = labels;
+    state.chart.data.datasets[0].data = data;
+
+    // Aggiungi linea utente se disponibile
+    const userRate = getUserCurrentRate();
+    if (userRate !== null) {
+      state.chart.data.datasets[1].data = labels.map(() => userRate);
+      state.chart.data.datasets[1].hidden = false;
+    } else {
+      state.chart.data.datasets[1].data = [];
+      state.chart.data.datasets[1].hidden = true;
+    }
+
+    state.chart.update();
+  }
+
+  // Aggiorna grafico commercializzazione
+  if (state.commChart && commercializzazione) {
+    state.commChart.data.datasets[0].label = 'Commercializzazione';
+    state.commChart.data.labels = labels;
+    state.commChart.data.datasets[0].data = commercializzazione;
+    state.commChart.update();
+  }
 }
 
 // ========== Stats ==========
@@ -281,7 +302,7 @@ function updateStats(historyData) {
   const statsCard = document.getElementById('stats-card');
   const statCurrent = document.getElementById('stat-current');
   const statUser = document.getElementById('stat-user');
-  const statMinMax = document.getElementById('stat-minmax');
+  const statComm = document.getElementById('stat-comm');
 
   if (!historyData || !historyData.data || historyData.data.length === 0) {
     statsCard.style.display = 'none';
@@ -293,7 +314,7 @@ function updateStats(historyData) {
   const unit = state.service === 'luce' ? '€/kWh' : '€/Smc';
   const lastValue = historyData.data[historyData.data.length - 1];
 
-  // Valore corrente
+  // Valore corrente energia
   statCurrent.textContent = `${lastValue.toFixed(4)} ${unit}`;
 
   // Tariffa utente
@@ -304,14 +325,12 @@ function updateStats(historyData) {
     statUser.textContent = '-';
   }
 
-  // Min/Max
-  if (historyData.stats) {
-    const { min, max } = historyData.stats;
-    statMinMax.textContent = `${min.toFixed(4)} / ${max.toFixed(4)}`;
+  // Commercializzazione corrente
+  if (historyData.commercializzazione && historyData.commercializzazione.length > 0) {
+    const lastComm = historyData.commercializzazione[historyData.commercializzazione.length - 1];
+    statComm.textContent = `${lastComm.toFixed(2)} €/anno`;
   } else {
-    const min = Math.min(...historyData.data);
-    const max = Math.max(...historyData.data);
-    statMinMax.textContent = `${min.toFixed(4)} / ${max.toFixed(4)}`;
+    statComm.textContent = '-';
   }
 }
 
@@ -319,29 +338,46 @@ function updateStats(historyData) {
 
 function showLoading() {
   const loading = document.getElementById('loading');
+  const loadingComm = document.getElementById('loading-comm');
   const error = document.getElementById('error-message');
+  const errorComm = document.getElementById('error-message-comm');
+
   loading.classList.remove('hidden');
+  loadingComm.classList.remove('hidden');
   error.style.display = 'none';
+  errorComm.style.display = 'none';
 }
 
 function hideLoading() {
   const loading = document.getElementById('loading');
+  const loadingComm = document.getElementById('loading-comm');
+
   loading.classList.add('hidden');
+  loadingComm.classList.add('hidden');
 }
 
 function showError(message) {
   const loading = document.getElementById('loading');
+  const loadingComm = document.getElementById('loading-comm');
   const error = document.getElementById('error-message');
+  const errorComm = document.getElementById('error-message-comm');
   const errorText = document.getElementById('error-text');
+  const errorTextComm = document.getElementById('error-text-comm');
 
   loading.classList.add('hidden');
+  loadingComm.classList.add('hidden');
   error.style.display = 'flex';
+  errorComm.style.display = 'flex';
   errorText.textContent = message;
+  errorTextComm.textContent = message;
 }
 
 function hideError() {
   const error = document.getElementById('error-message');
+  const errorComm = document.getElementById('error-message-comm');
+
   error.style.display = 'none';
+  errorComm.style.display = 'none';
 }
 
 // ========== Data Loading ==========
@@ -363,7 +399,7 @@ async function loadData() {
     }
 
     // Aggiorna UI
-    updateChart(historyData);
+    updateCharts(historyData);
     updateStats(historyData);
 
     hideLoading();
@@ -400,6 +436,8 @@ function setupEventListeners() {
   // Tipo select
   document.getElementById('tipo-select').addEventListener('change', (e) => {
     state.tipo = e.target.value;
+    // Aggiorna fasce disponibili in base al tipo
+    updateFasciaOptions();
     loadData();
   });
 
@@ -431,17 +469,23 @@ function setupEventListeners() {
 function updateFasciaOptions() {
   const fasciaSelect = document.getElementById('fascia-select');
   const isGas = state.service === 'gas';
+  const isLuceFissa = state.service === 'luce' && state.tipo === 'fissa';
+  const isLuceVariabile = state.service === 'luce' && state.tipo === 'variabile';
 
-  // Gas ha solo monoraria
-  if (isGas) {
+  // Gas e Luce Fissa hanno solo monoraria
+  // Luce Variabile ha monoraria e trioraria (no bioraria con Octopus)
+  if (isGas || isLuceFissa) {
     fasciaSelect.innerHTML = '<option value="monoraria">Monoraria</option>';
     state.fascia = 'monoraria';
-  } else {
+  } else if (isLuceVariabile) {
     fasciaSelect.innerHTML = `
       <option value="monoraria">Monoraria</option>
-      <option value="bioraria">Bioraria</option>
       <option value="trioraria">Trioraria</option>
     `;
+    // Reset fascia se era bioraria
+    if (state.fascia === 'bioraria') {
+      state.fascia = 'monoraria';
+    }
   }
 
   fasciaSelect.value = state.fascia;

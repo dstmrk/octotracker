@@ -22,6 +22,10 @@
   --color-success: #22c55e;
   --color-error: #ef4444;
 
+  /* Fixed colors for elements with white background (not affected by dark mode) */
+  --color-text-on-white: #0f172a;
+  --color-text-muted-on-white: #475569;
+
   /* Shadows and borders */
   --shadow-distance: 4px;
   --border-width: 3px;
@@ -90,7 +94,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   background-color: var(--color-white);
-  color: var(--color-text);
+  color: var(--color-text-on-white);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-distance) var(--shadow-distance) 0 0 var(--color-border);
@@ -138,7 +142,7 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   background-color: var(--color-white);
-  color: var(--color-text);
+  color: var(--color-text-on-white);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: 3px 3px 0 0 var(--color-border);
@@ -166,14 +170,24 @@ body {
   min-height: 250px;
 }
 
+.chart-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted-on-white);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
 .chart-container {
   position: relative;
-  height: 220px;
+  height: 200px;
   width: 100%;
 }
 
-#rate-chart {
-  max-height: 220px;
+#rate-chart,
+#comm-chart {
+  max-height: 200px;
 }
 
 /* Loading */
@@ -213,7 +227,7 @@ body {
 .loading span {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted-on-white);
 }
 
 /* Error Message */
@@ -255,7 +269,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   background-color: var(--color-white);
-  color: var(--color-text);
+  color: var(--color-text-on-white);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: 3px 3px 0 0 var(--color-border);
@@ -273,7 +287,8 @@ body {
 }
 
 .period-btn.active {
-  background-color: var(--color-accent-yellow);
+  background-color: var(--color-accent-blue);
+  color: var(--color-text-on-white);
 }
 
 /* Stats Card */
@@ -300,14 +315,14 @@ body {
   font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted-on-white);
 }
 
 .stat-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--color-text-on-white);
 }
 
 .stat-value.highlight {
