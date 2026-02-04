@@ -243,6 +243,10 @@ function updateChart(historyData) {
 
   const { labels, data } = historyData;
 
+  // Aggiorna label in base al tipo (variabile = spread, fissa = prezzo)
+  const isVariabile = state.tipo === 'variabile';
+  state.chart.data.datasets[0].label = isVariabile ? 'Spread su PUN/PSV' : 'Prezzo Energia';
+
   // Aggiorna dati principali
   state.chart.data.labels = labels;
   state.chart.data.datasets[0].data = data;
@@ -434,18 +438,22 @@ function updateFasciaOptions() {
   const fasciaSelect = document.getElementById('fascia-select');
   const isGas = state.service === 'gas';
   const isLuceFissa = state.service === 'luce' && state.tipo === 'fissa';
+  const isLuceVariabile = state.service === 'luce' && state.tipo === 'variabile';
 
   // Gas e Luce Fissa hanno solo monoraria
-  // Luce Variabile ha tutte le fasce
+  // Luce Variabile ha monoraria e trioraria (no bioraria con Octopus)
   if (isGas || isLuceFissa) {
     fasciaSelect.innerHTML = '<option value="monoraria">Monoraria</option>';
     state.fascia = 'monoraria';
-  } else {
+  } else if (isLuceVariabile) {
     fasciaSelect.innerHTML = `
       <option value="monoraria">Monoraria</option>
-      <option value="bioraria">Bioraria</option>
       <option value="trioraria">Trioraria</option>
     `;
+    // Reset fascia se era bioraria
+    if (state.fascia === 'bioraria') {
+      state.fascia = 'monoraria';
+    }
   }
 
   fasciaSelect.value = state.fascia;
