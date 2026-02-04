@@ -479,6 +479,55 @@ function updateFasciaOptions() {
 
 // ========== Initialization ==========
 
+async function initializeFromUserRates() {
+  try {
+    // Carica prima i dati utente per determinare lo stato iniziale
+    const userRates = await fetchUserRates().catch(() => null);
+
+    if (userRates) {
+      state.userRates = userRates;
+
+      // Determina servizio e tipo iniziali in base ai dati utente
+      // Priorità: luce > gas
+      if (userRates.luce) {
+        state.service = 'luce';
+        state.tipo = userRates.luce.tipo || CONFIG.defaultTipo;
+        state.fascia = userRates.luce.fascia || CONFIG.defaultFascia;
+      } else if (userRates.gas) {
+        state.service = 'gas';
+        state.tipo = userRates.gas.tipo || CONFIG.defaultTipo;
+        state.fascia = 'monoraria'; // Gas ha solo monoraria
+      }
+
+      // Aggiorna UI per riflettere lo stato iniziale
+      updateInitialUI();
+    }
+  } catch (error) {
+    console.warn('Could not load user rates for initialization:', error);
+  }
+
+  // Carica i dati storici
+  loadData();
+}
+
+function updateInitialUI() {
+  // Aggiorna tab attivo
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    if (btn.dataset.service === state.service) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Aggiorna dropdown tipo
+  const tipoSelect = document.getElementById('tipo-select');
+  tipoSelect.value = state.tipo;
+
+  // Aggiorna dropdown fascia (considera le opzioni disponibili)
+  updateFasciaOptions();
+}
+
 function init() {
   console.log('OctoTracker Mini App initializing...');
 
@@ -491,8 +540,8 @@ function init() {
   // Setup event listeners
   setupEventListeners();
 
-  // Load initial data
-  loadData();
+  // Initialize from user rates and load data
+  initializeFromUserRates();
 
   console.log('OctoTracker Mini App ready');
 }
