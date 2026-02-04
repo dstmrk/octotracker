@@ -48,9 +48,6 @@ function initTelegram() {
   // Imposta colore header
   tg.setHeaderColor('secondary_bg_color');
 
-  // Abilita pulsante chiusura
-  tg.enableClosingConfirmation();
-
   // Ready
   tg.ready();
 
