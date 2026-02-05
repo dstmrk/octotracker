@@ -551,3 +551,206 @@ def test_clear_pending_rates_db_error():
     with patch("database.get_connection", side_effect=database.sqlite3.Error("test error")):
         result = clear_pending_rates("123")
     assert result is False
+
+
+# ========== TEST MIXED TARIFF SCENARIOS ==========
+
+
+def test_build_pending_rates_gas_better_luce_worse():
+    """Test caso misto: gas migliore, luce peggiore → aggiorna solo gas"""
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.100,  # Utente ha tariffa migliore
+            "commercializzazione": 60.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.500,  # Utente ha tariffa peggiore
+            "commercializzazione": 90.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.130,  # PEGGIORE per l'utente
+                    "commercializzazione": 72.0,  # PEGGIORE
+                }
+            }
+        },
+        "gas": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.420,  # MIGLIORE per l'utente
+                    "commercializzazione": 80.0,  # MIGLIORE
+                }
+            }
+        },
+    }
+
+    # Solo gas è conveniente
+    pending = _build_pending_rates(user_rates, current_rates, show_luce=False, show_gas=True)
+
+    # Gas deve essere aggiornato alle nuove tariffe
+    assert pending["gas"]["energia"] == 0.420
+    assert pending["gas"]["commercializzazione"] == 80.0
+
+    # Luce deve mantenere le tariffe dell'utente (non aggiornare!)
+    assert pending["luce"]["energia"] == 0.100
+    assert pending["luce"]["commercializzazione"] == 60.0
+
+
+def test_build_pending_rates_luce_better_gas_worse():
+    """Test caso misto: luce migliore, gas peggiore → aggiorna solo luce"""
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.150,  # Utente ha tariffa peggiore
+            "commercializzazione": 80.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.400,  # Utente ha tariffa migliore
+            "commercializzazione": 75.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.120,  # MIGLIORE per l'utente
+                    "commercializzazione": 65.0,  # MIGLIORE
+                }
+            }
+        },
+        "gas": {
+            "fissa": {
+                "monoraria": {
+                    "energia": 0.450,  # PEGGIORE per l'utente
+                    "commercializzazione": 85.0,  # PEGGIORE
+                }
+            }
+        },
+    }
+
+    # Solo luce è conveniente
+    pending = _build_pending_rates(user_rates, current_rates, show_luce=True, show_gas=False)
+
+    # Luce deve essere aggiornata alle nuove tariffe
+    assert pending["luce"]["energia"] == 0.120
+    assert pending["luce"]["commercializzazione"] == 65.0
+
+    # Gas deve mantenere le tariffe dell'utente (non aggiornare!)
+    assert pending["gas"]["energia"] == 0.400
+    assert pending["gas"]["commercializzazione"] == 75.0
+
+
+def test_build_pending_rates_both_better():
+    """Test caso: entrambe migliori → aggiorna entrambe"""
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.150,
+            "commercializzazione": 80.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.500,
+            "commercializzazione": 90.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.120, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+
+    # Entrambe convenienti
+    pending = _build_pending_rates(user_rates, current_rates, show_luce=True, show_gas=True)
+
+    # Entrambe devono essere aggiornate
+    assert pending["luce"]["energia"] == 0.120
+    assert pending["luce"]["commercializzazione"] == 65.0
+    assert pending["gas"]["energia"] == 0.420
+    assert pending["gas"]["commercializzazione"] == 80.0
+
+
+def test_build_pending_rates_preserves_consumption_with_mixed():
+    """Test che i consumi vengono preservati anche in caso misto"""
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.100,
+            "commercializzazione": 60.0,
+            "consumo_f1": 2700.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.500,
+            "commercializzazione": 90.0,
+            "consumo_annuo": 1200.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 72.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+
+    # Solo gas conveniente
+    pending = _build_pending_rates(user_rates, current_rates, show_luce=False, show_gas=True)
+
+    # Consumi devono essere preservati
+    assert pending["luce"]["consumo_f1"] == 2700.0
+    assert pending["gas"]["consumo_annuo"] == 1200.0
+
+    # Luce mantiene tariffe utente
+    assert pending["luce"]["energia"] == 0.100
+
+    # Gas aggiornato
+    assert pending["gas"]["energia"] == 0.420
+
+
+def test_build_pending_rates_backward_compatible():
+    """Test che la funzione funziona senza parametri (backward compatibility)"""
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+    }
+
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {},
+    }
+
+    # Chiamata senza parametri show_luce/show_gas (default: aggiorna tutto)
+    pending = _build_pending_rates(user_rates, current_rates)
+
+    # Deve aggiornare come prima (default behavior)
+    assert pending["luce"]["energia"] == 0.130
+    assert pending["luce"]["commercializzazione"] == 65.0
