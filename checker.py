@@ -758,16 +758,22 @@ def _validate_checker_data(
 
 
 def _build_pending_rates(
-    user_rates: dict[str, Any], current_rates: dict[str, Any]
+    user_rates: dict[str, Any],
+    current_rates: dict[str, Any],
+    show_luce: bool = True,
+    show_gas: bool = True,
 ) -> dict[str, Any]:
     """Costruisce le tariffe pendenti da proporre all'utente
 
     Contiene le nuove tariffe Octopus che l'utente può scegliere di adottare.
-    Mantiene tipo, fascia e consumi dall'utente, aggiorna energia e commercializzazione.
+    Mantiene tipo, fascia e consumi dall'utente, aggiorna energia e commercializzazione
+    SOLO per le utility che sono effettivamente convenienti.
 
     Args:
         user_rates: Tariffe attuali dell'utente
         current_rates: Tariffe correnti Octopus
+        show_luce: Se True, aggiorna le tariffe luce; altrimenti mantiene quelle utente
+        show_gas: Se True, aggiorna le tariffe gas; altrimenti mantiene quelle utente
 
     Returns:
         Dict con la struttura user_data contenente le nuove tariffe
@@ -784,15 +790,17 @@ def _build_pending_rates(
         if key in user_rates["luce"]:
             pending["luce"][key] = user_rates["luce"][key]
 
-    # Aggiorna tariffe luce
+    # Aggiorna tariffe luce solo se show_luce è True
     luce_tipo = user_rates["luce"]["tipo"]
     luce_fascia = user_rates["luce"]["fascia"]
     luce_rate = current_rates.get("luce", {}).get(luce_tipo, {}).get(luce_fascia)
-    if luce_rate:
+
+    if show_luce and luce_rate:
+        # Aggiorna alle nuove tariffe Octopus
         pending["luce"]["energia"] = luce_rate["energia"]
         pending["luce"]["commercializzazione"] = luce_rate["commercializzazione"]
     else:
-        # Mantieni le tariffe attuali se non troviamo le nuove
+        # Mantieni le tariffe attuali dell'utente
         pending["luce"]["energia"] = user_rates["luce"]["energia"]
         pending["luce"]["commercializzazione"] = user_rates["luce"]["commercializzazione"]
 
@@ -810,10 +818,13 @@ def _build_pending_rates(
         gas_tipo = user_rates["gas"]["tipo"]
         gas_fascia = user_rates["gas"]["fascia"]
         gas_rate = current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia)
-        if gas_rate:
+
+        if show_gas and gas_rate:
+            # Aggiorna alle nuove tariffe Octopus
             pending["gas"]["energia"] = gas_rate["energia"]
             pending["gas"]["commercializzazione"] = gas_rate["commercializzazione"]
         else:
+            # Mantieni le tariffe attuali dell'utente
             pending["gas"]["energia"] = user_rates["gas"]["energia"]
             pending["gas"]["commercializzazione"] = user_rates["gas"]["commercializzazione"]
 
@@ -880,7 +891,10 @@ def _prepare_user_notification(
     )
 
     # Costruisci tariffe pendenti per aggiornamento rapido
-    pending_rates = _build_pending_rates(user_rates, current_rates)
+    # Aggiorna solo le tariffe delle utility effettivamente convenienti
+    pending_rates = _build_pending_rates(
+        user_rates, current_rates, show_luce=show_luce, show_gas=show_gas
+    )
 
     return (current_octopus, message, pending_rates)
 
