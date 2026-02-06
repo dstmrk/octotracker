@@ -18,6 +18,9 @@ data/octotracker.log
 playwright-report/
 test-results/
 
+# Build artifacts
+*.egg-info/
+
 # Testing & Coverage
 .pytest_cache/
 .coverage
