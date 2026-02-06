@@ -13,10 +13,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, ConversationHandler
 
-from checker import format_number
 from constants import ERROR_INPUT_TOO_LONG, ERROR_VALUE_NEGATIVE, MAX_NUMERIC_INPUT_LENGTH
 from database import save_user, user_exists
-from formatters import format_utility_header
+from formatters import format_luce_consumption, format_number, format_utility_header
 from handlers import safe_answer_callback
 
 # Setup logger
@@ -684,31 +683,7 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     )
 
     # Aggiungi consumi luce se presenti
-    consumo_f1 = user_data["luce"].get("consumo_f1")
-    if consumo_f1 is not None:
-        consumo_f2 = user_data["luce"].get("consumo_f2")
-        consumo_f3 = user_data["luce"].get("consumo_f3")
-        luce_fascia = user_data["luce"]["fascia"]
-
-        if luce_fascia == "monoraria":
-            messaggio += f"- Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
-
-        elif luce_fascia == "bioraria":
-            totale = consumo_f1 + consumo_f2
-            messaggio += (
-                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
-            )
-
-        elif luce_fascia == "trioraria":
-            totale = consumo_f1 + consumo_f2 + consumo_f3
-            messaggio += (
-                f"- Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
-                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
-            )
+    messaggio += format_luce_consumption(user_data["luce"])
 
     # Aggiungi sezione gas se presente
     if user_data["gas"] is not None:
