@@ -542,6 +542,114 @@ def clear_pending_rates(user_id: str) -> bool:
         return False
 
 
+def apply_pending_rates(user_id: str) -> tuple[bool, str]:
+    """
+    Applica le tariffe pendenti in modo atomico (singola transazione).
+
+    Carica pending_rates, carica i dati utente correnti, preserva last_notified_rates
+    e consumi, salva le nuove tariffe e pulisce pending_rates in un'unica transazione.
+
+    Args:
+        user_id: ID utente Telegram
+
+    Returns:
+        Tupla (success, message) dove success indica se l'operazione è riuscita
+        e message descrive il risultato
+    """
+    conn = None
+    try:
+        DATA_DIR.mkdir(exist_ok=True)
+        conn = sqlite3.connect(DB_FILE, timeout=30.0)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("BEGIN IMMEDIATE")
+
+        # 1. Carica pending_rates
+        cursor = conn.execute("SELECT pending_rates FROM users WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row or not row["pending_rates"]:
+            conn.rollback()
+            return False, "no_pending"
+
+        pending_rates = json.loads(row["pending_rates"])
+
+        # 2. Carica dati utente corrente per preservare last_notified_rates
+        cursor = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            conn.rollback()
+            return False, "no_user"
+
+        # 3. Preserva last_notified_rates dall'utente corrente
+        pending_rates["last_notified_rates"] = (
+            json.loads(user_row["last_notified_rates"]) if user_row["last_notified_rates"] else None
+        )
+
+        # 4. Estrai e valida dati
+        luce = pending_rates["luce"]
+        _validate_luce_data(luce)
+
+        gas = pending_rates.get("gas")
+        if gas is not None:
+            _validate_gas_data(gas)
+
+        gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
+        last_notified = pending_rates.get("last_notified_rates")
+        last_notified_json = json.dumps(last_notified) if last_notified else None
+
+        # 5. Aggiorna utente e pulisci pending_rates in un'unica transazione
+        conn.execute(
+            """
+            UPDATE users SET
+                luce_tipo = ?, luce_fascia = ?, luce_energia = ?, luce_commercializzazione = ?,
+                gas_tipo = ?, gas_fascia = ?, gas_energia = ?, gas_commercializzazione = ?,
+                luce_consumo_f1 = ?, luce_consumo_f2 = ?, luce_consumo_f3 = ?,
+                gas_consumo_annuo = ?,
+                last_notified_rates = ?,
+                pending_rates = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+            """,
+            (
+                luce["tipo"],
+                luce["fascia"],
+                luce["energia"],
+                luce["commercializzazione"],
+                gas_tipo,
+                gas_fascia,
+                gas_energia,
+                gas_comm,
+                luce.get("consumo_f1"),
+                luce.get("consumo_f2"),
+                luce.get("consumo_f3"),
+                gas_consumo,
+                last_notified_json,
+                user_id,
+            ),
+        )
+
+        conn.commit()
+        logger.info(f"✅ Utente {user_id}: tariffe aggiornate atomicamente")
+        return True, "ok"
+
+    except (KeyError, ValueError) as e:
+        logger.error(f"❌ Validazione fallita per {user_id}: {e}")
+        if conn:
+            conn.rollback()
+        return False, "validation_error"
+    except sqlite3.Error as e:
+        logger.error(f"❌ Errore database apply_pending_rates per {user_id}: {e}")
+        if conn:
+            try:
+                conn.rollback()
+            except sqlite3.Error:
+                pass
+        return False, "db_error"
+    finally:
+        if conn:
+            conn.close()
+
+
 # ========== FUNZIONI FEEDBACK ==========
 
 

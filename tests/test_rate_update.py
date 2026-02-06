@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import database
 from database import (
+    apply_pending_rates,
     clear_pending_rates,
     init_db,
     load_pending_rates,
@@ -499,11 +500,9 @@ def test_build_rate_update_keyboard():
 
 @pytest.mark.asyncio
 async def test_rate_update_yes_user_not_in_db(mock_update, mock_context):
-    """Test click 'Aggiorna tariffe' quando l'utente non esiste nel DB ma ha pending_rates"""
-    # Simula pending_rates presenti ma utente non nel DB
-    with patch("handlers.rate_update.load_pending_rates", return_value={"luce": {}}):
-        with patch("handlers.rate_update.load_user", return_value=None):
-            await rate_update_yes(mock_update, mock_context)
+    """Test click 'Aggiorna tariffe' quando l'utente non esiste nel DB"""
+    # Utente non esiste nel DB → apply_pending_rates restituisce no_pending
+    await rate_update_yes(mock_update, mock_context)
 
     # Verifica che il messaggio sia stato aggiornato con il testo di fallback
     mock_update.callback_query.edit_message_text.assert_called_once()
@@ -515,12 +514,12 @@ async def test_rate_update_yes_user_not_in_db(mock_update, mock_context):
 async def test_rate_update_yes_save_failure(
     mock_update, mock_context, sample_user_data, sample_pending_rates
 ):
-    """Test click 'Aggiorna tariffe' quando save_user fallisce"""
+    """Test click 'Aggiorna tariffe' quando apply_pending_rates fallisce per errore DB"""
     user_id = str(mock_update.effective_user.id)
     save_user(user_id, sample_user_data)
     save_pending_rates(user_id, sample_pending_rates)
 
-    with patch("handlers.rate_update.save_user", return_value=False):
+    with patch("handlers.rate_update.apply_pending_rates", return_value=(False, "db_error")):
         await rate_update_yes(mock_update, mock_context)
 
     # Verifica che il messaggio contenga l'errore
@@ -728,6 +727,87 @@ def test_build_pending_rates_preserves_consumption_with_mixed():
 
     # Gas aggiornato
     assert pending["gas"]["energia"] == 0.420
+
+
+# ========== TEST APPLY_PENDING_RATES (ATOMIC) ==========
+
+
+def test_apply_pending_rates_success(sample_user_data, sample_pending_rates):
+    """Test apply_pending_rates atomico con successo"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    success, reason = apply_pending_rates(user_id)
+
+    assert success is True
+    assert reason == "ok"
+
+    # Tariffe aggiornate
+    updated = load_user(user_id)
+    assert updated["luce"]["energia"] == 0.130
+    assert updated["luce"]["commercializzazione"] == 65.0
+
+    # Pending rates pulite
+    assert load_pending_rates(user_id) is None
+
+
+def test_apply_pending_rates_no_pending(sample_user_data):
+    """Test apply_pending_rates senza tariffe pendenti"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+
+    success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "no_pending"
+
+    # Tariffe originali non modificate
+    user = load_user(user_id)
+    assert user["luce"]["energia"] == 0.145
+
+
+def test_apply_pending_rates_no_user():
+    """Test apply_pending_rates con utente inesistente"""
+    success, reason = apply_pending_rates("999999")
+
+    assert success is False
+    assert reason == "no_pending"
+
+
+def test_apply_pending_rates_preserves_last_notified(sample_pending_rates):
+    """Test che apply_pending_rates preserva last_notified_rates"""
+    user_id = "123456789"
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "last_notified_rates": {"luce": {"energia": 0.130}},
+    }
+    save_user(user_id, user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    success, reason = apply_pending_rates(user_id)
+    assert success is True
+
+    updated = load_user(user_id)
+    assert updated["last_notified_rates"] == {"luce": {"energia": 0.130}}
+
+
+def test_apply_pending_rates_db_error(sample_user_data, sample_pending_rates):
+    """Test apply_pending_rates con errore database"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    with patch("database.sqlite3.connect", side_effect=database.sqlite3.Error("test error")):
+        success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "db_error"
 
 
 def test_build_pending_rates_backward_compatible():
