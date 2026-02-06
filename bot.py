@@ -215,7 +215,10 @@ async def scraper_daily_task() -> None:
 
     # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
-        await run_scraper()
+        try:
+            await run_scraper()
+        except Exception as e:
+            logger.error(f"❌ Errore non gestito in scraper_daily_task: {e}", exc_info=True)
 
         # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
         seconds_until_next = calculate_seconds_until_next_run(SCRAPER_HOUR)
@@ -236,7 +239,10 @@ async def checker_daily_task(bot_token: str) -> None:
 
     # Loop infinito: esegui e ricalcola il prossimo run time
     while True:
-        await run_checker(bot_token)
+        try:
+            await run_checker(bot_token)
+        except Exception as e:
+            logger.error(f"❌ Errore non gestito in checker_daily_task: {e}", exc_info=True)
 
         # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
         seconds_until_next = calculate_seconds_until_next_run(CHECKER_HOUR)
@@ -244,6 +250,20 @@ async def checker_daily_task(bot_token: str) -> None:
 
         logger.info(f"⏰ Prossimo checker tra {hours_until_next:.1f} ore (alle {CHECKER_HOUR}:00)")
         await asyncio.sleep(seconds_until_next)
+
+
+def _task_done_callback(task: asyncio.Task) -> None:
+    """Logga errori se un background task termina inaspettatamente"""
+    try:
+        exc = task.exception()
+    except asyncio.CancelledError:
+        logger.info(f"Task {task.get_name()} cancellato")
+        return
+    if exc is not None:
+        logger.critical(
+            f"💀 Background task {task.get_name()} terminato con errore: {exc}",
+            exc_info=exc,
+        )
 
 
 # ========== ERROR HANDLER ==========
@@ -357,11 +377,15 @@ async def post_init(application: Application) -> None:
 
     # Avvia i due task giornalieri separati in background
     # Salva i task per evitare garbage collection prematura
-    scraper_task = asyncio.create_task(scraper_daily_task())
-    checker_task = asyncio.create_task(checker_daily_task(bot_token))
+    scraper_task = asyncio.create_task(scraper_daily_task(), name="scraper_daily")
+    checker_task = asyncio.create_task(checker_daily_task(bot_token), name="checker_daily")
 
     # Avvia health check server separato
-    health_task = asyncio.create_task(run_health_server(application.bot_data))
+    health_task = asyncio.create_task(run_health_server(application.bot_data), name="health_server")
+
+    # Registra callback per rilevare crash dei background task
+    for task in (scraper_task, checker_task, health_task):
+        task.add_done_callback(_task_done_callback)
 
     # Salva i task nell'application per mantenerli vivi
     application.bot_data["scraper_task"] = scraper_task
