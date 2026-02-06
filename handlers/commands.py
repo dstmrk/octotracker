@@ -11,9 +11,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppI
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, ConversationHandler
 
-from checker import format_number
 from database import load_user, remove_user, user_exists
-from formatters import format_utility_header
+from formatters import format_luce_consumption, format_number, format_utility_header
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -112,36 +111,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
 
     # Mostra consumi luce se presenti
-    consumo_f1 = data["luce"].get("consumo_f1")
-    if consumo_f1 is not None:
-        consumo_f2 = data["luce"].get("consumo_f2")
-        consumo_f3 = data["luce"].get("consumo_f3")
-        luce_fascia = data["luce"]["fascia"]
-
-        if luce_fascia == "monoraria":
-            # Solo totale
-            messaggio += (
-                f"  - Consumo: <b>{format_number(consumo_f1, max_decimals=0)}</b> kWh/anno\n"
-            )
-
-        elif luce_fascia == "bioraria":
-            # Totale + breakdown F1 e F23
-            totale = consumo_f1 + consumo_f2
-            messaggio += (
-                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F23: {format_number(consumo_f2, max_decimals=0)} kWh\n"
-            )
-
-        elif luce_fascia == "trioraria":
-            # Totale + breakdown F1, F2, F3
-            totale = consumo_f1 + consumo_f2 + consumo_f3
-            messaggio += (
-                f"  - Consumo: <b>{format_number(totale, max_decimals=0)}</b> kWh/anno - "
-                f"F1: {format_number(consumo_f1, max_decimals=0)} kWh | "
-                f"F2: {format_number(consumo_f2, max_decimals=0)} kWh | "
-                f"F3: {format_number(consumo_f3, max_decimals=0)} kWh\n"
-            )
+    messaggio += format_luce_consumption(data["luce"], prefix="  - ")
 
     if data.get("gas") is not None:
         gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)

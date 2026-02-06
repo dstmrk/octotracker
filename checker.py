@@ -15,7 +15,7 @@ from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
 from constants import MAX_DECIMALS_COST, MAX_DECIMALS_ENERGY
 from database import get_current_rates, load_users, save_pending_rates, save_user
-from formatters import format_utility_type_display, get_utility_label
+from formatters import format_number, format_utility_type_display, get_utility_label
 
 load_dotenv()
 
@@ -29,43 +29,6 @@ TELEGRAM_ERRORS_TO_DELETE = [
     "bot was kicked",  # Bot rimosso da gruppo/canale
     "chat not found",  # Chat non esiste più
 ]
-
-
-def format_number(value: float, max_decimals: int = 3) -> str:
-    """
-    Formatta numero con logica intelligente per i decimali:
-    - Se intero (es. 72.0) → "72" (nessun decimale)
-    - Se ha decimali → mostra almeno 2 decimali, rimuovi zeri trailing oltre il secondo
-    Usa virgola come separatore decimale (stile italiano)
-
-    Esempi:
-    - 72.0 → "72"
-    - 72.5 → "72,50"
-    - 0.145 → "0,145"
-    - 0.140 → "0,14"
-    - 0.100 → "0,10"
-    """
-    # Arrotonda al massimo di decimali
-    rounded = round(value, max_decimals)
-
-    # Controlla se è un numero intero
-    if rounded == int(rounded):
-        return str(int(rounded))
-
-    # Ha decimali: formatta con max decimali e poi sistema
-    formatted = f"{rounded:.{max_decimals}f}"
-
-    # Rimuovi zeri trailing
-    formatted = formatted.rstrip("0")
-
-    # Assicurati di avere almeno 2 decimali se ci sono decimali
-    parts = formatted.split(".")
-    if len(parts) > 1 and len(parts[1]) < 2:
-        parts[1] = parts[1].ljust(2, "0")
-        formatted = ".".join(parts)
-
-    # Sostituisci punto con virgola (stile italiano)
-    return formatted.replace(".", ",")
 
 
 def check_better_rates(user_rates: dict[str, Any], current_rates: dict[str, Any]) -> dict[str, Any]:
