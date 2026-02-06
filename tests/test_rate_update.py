@@ -180,20 +180,8 @@ def test_clear_pending_rates(sample_user_data, sample_pending_rates):
     assert loaded is None
 
 
-def test_pending_rates_migration():
-    """Test che la migration aggiunge correttamente la colonna pending_rates"""
-    with database.get_connection() as conn:
-        cursor = conn.execute("PRAGMA table_info(users)")
-        columns = [row[1] for row in cursor.fetchall()]
-        assert "pending_rates" in columns
-
-
-def test_pending_rates_migration_idempotent():
-    """Test che la migration pending_rates è idempotente"""
-    from database import _migrate_pending_rates
-
-    _migrate_pending_rates()
-
+def test_schema_has_pending_rates_column():
+    """Test che lo schema include la colonna pending_rates"""
     with database.get_connection() as conn:
         cursor = conn.execute("PRAGMA table_info(users)")
         columns = [row[1] for row in cursor.fetchall()]

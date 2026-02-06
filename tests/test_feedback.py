@@ -99,34 +99,17 @@ def mock_context():
 # ========== TEST DATABASE FEEDBACK ==========
 
 
-def test_migration_feedback_schema():
-    """Test che la migration aggiunge correttamente la colonna last_feedback_at"""
-    # Verifica che la colonna esista (è stata creata da init_db nel fixture)
+def test_schema_has_feedback_columns():
+    """Test che lo schema include la colonna last_feedback_at e la tabella feedback"""
     with database.get_connection() as conn:
         cursor = conn.execute("PRAGMA table_info(users)")
         columns = [row[1] for row in cursor.fetchall()]
         assert "last_feedback_at" in columns
 
-        # Verifica che la tabella feedback esista
         cursor = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='feedback'"
         )
         assert cursor.fetchone() is not None
-
-
-def test_migration_idempotent():
-    """Test che la migration può essere eseguita più volte senza errori"""
-    # Esegui migration una seconda volta (è già stata eseguita nel fixture)
-    from database import _migrate_feedback_schema
-
-    # Non deve sollevare eccezioni
-    _migrate_feedback_schema()
-
-    # Verifica che la colonna esista ancora
-    with database.get_connection() as conn:
-        cursor = conn.execute("PRAGMA table_info(users)")
-        columns = [row[1] for row in cursor.fetchall()]
-        assert "last_feedback_at" in columns
 
 
 def test_save_feedback_success():
@@ -797,29 +780,15 @@ def test_cascade_delete_preserves_other_users_feedback():
     assert feedbacks[0]["comment"] == "User 2 feedback 1"
 
 
-def test_migration_cascade_adds_on_delete():
-    """Test che la migration aggiunge ON DELETE CASCADE"""
-    from database import _has_cascade_delete
-
-    # Verifica che la tabella feedback abbia ON DELETE CASCADE
+def test_schema_has_cascade_delete():
+    """Test che la tabella feedback ha ON DELETE CASCADE"""
     with database.get_connection() as conn:
-        has_cascade = _has_cascade_delete(conn, "feedback")
-        assert has_cascade is True
-
-
-def test_migration_cascade_idempotent():
-    """Test che la migration cascade è idempotente (può essere eseguita più volte)"""
-    from database import _migrate_feedback_cascade
-
-    # Esegui migration una seconda volta (è già stata eseguita nel fixture)
-    _migrate_feedback_cascade()  # Non deve sollevare eccezioni
-
-    # Verifica che la tabella esista ancora e abbia CASCADE
-    from database import _has_cascade_delete
-
-    with database.get_connection() as conn:
-        has_cascade = _has_cascade_delete(conn, "feedback")
-        assert has_cascade is True
+        cursor = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='feedback'"
+        )
+        row = cursor.fetchone()
+        assert row is not None
+        assert "ON DELETE CASCADE" in row[0]
 
 
 def test_foreign_keys_enabled():
@@ -829,99 +798,3 @@ def test_foreign_keys_enabled():
         result = cursor.fetchone()
         # Il valore dovrebbe essere 1 (enabled)
         assert result[0] == 1
-
-
-def test_migration_cascade_with_orphaned_feedback(monkeypatch, temp_database):
-    """Test che la migration rimuove i feedback orfani durante l'upgrade"""
-    from database import _migrate_feedback_cascade
-
-    # Crea un database temporaneo separato
-    with tempfile.TemporaryDirectory() as tmpdir:
-        temp_db = Path(tmpdir) / "orphan_test.db"
-        monkeypatch.setattr(database, "DB_FILE", temp_db)
-
-        # Inizializza database con vecchia struttura (senza CASCADE)
-        with database.get_connection() as conn:
-            # Crea tabella users
-            conn.execute(
-                """
-                CREATE TABLE users (
-                    user_id TEXT PRIMARY KEY,
-                    luce_tipo TEXT NOT NULL,
-                    luce_fascia TEXT NOT NULL,
-                    luce_energia REAL NOT NULL,
-                    luce_commercializzazione REAL NOT NULL,
-                    gas_tipo TEXT,
-                    gas_fascia TEXT,
-                    gas_energia REAL,
-                    gas_commercializzazione REAL,
-                    luce_consumo_f1 REAL,
-                    luce_consumo_f2 REAL,
-                    luce_consumo_f3 REAL,
-                    gas_consumo_annuo REAL,
-                    last_notified_rates TEXT,
-                    last_feedback_at TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
-
-            # Crea vecchia tabella feedback SENZA ON DELETE CASCADE
-            conn.execute(
-                """
-                CREATE TABLE feedback (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    feedback_type TEXT NOT NULL,
-                    rating INTEGER,
-                    comment TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
-
-            # Inserisci un utente
-            conn.execute(
-                """
-                INSERT INTO users (
-                    user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione
-                ) VALUES ('111', 'fissa', 'monoraria', 0.145, 72.0)
-            """
-            )
-
-            # Inserisci 2 feedback: 1 valido, 1 orfano
-            conn.execute(
-                """
-                INSERT INTO feedback (user_id, feedback_type, rating, comment)
-                VALUES ('111', 'command', 5, 'Feedback valido')
-            """
-            )
-            conn.execute(
-                """
-                INSERT INTO feedback (user_id, feedback_type, rating, comment)
-                VALUES ('999', 'command', 3, 'Feedback orfano')
-            """
-            )
-
-        # Verifica che ci siano 2 feedback prima della migration
-        with database.get_connection() as conn:
-            cursor = conn.execute("SELECT COUNT(*) as count FROM feedback")
-            assert cursor.fetchone()["count"] == 2
-
-        # Esegui migration
-        _migrate_feedback_cascade()
-
-        # Verifica che rimanga solo 1 feedback (quello valido)
-        with database.get_connection() as conn:
-            cursor = conn.execute("SELECT COUNT(*) as count FROM feedback")
-            assert cursor.fetchone()["count"] == 1
-
-            # Verifica che sia quello dell'utente 111
-            cursor = conn.execute("SELECT user_id FROM feedback")
-            assert cursor.fetchone()["user_id"] == "111"
-
-            # Verifica che la tabella abbia CASCADE
-            from database import _has_cascade_delete
-
-            assert _has_cascade_delete(conn, "feedback") is True
