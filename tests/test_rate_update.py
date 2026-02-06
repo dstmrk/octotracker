@@ -810,6 +810,187 @@ def test_apply_pending_rates_db_error(sample_user_data, sample_pending_rates):
     assert reason == "db_error"
 
 
+def test_apply_pending_rates_validation_error(sample_user_data):
+    """Test apply_pending_rates con dati pendenti non validi (validation_error)"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+
+    # Salva pending_rates con tipo non valido
+    invalid_pending = {
+        "luce": {
+            "tipo": "INVALID_TYPE",
+            "fascia": "monoraria",
+            "energia": 0.130,
+            "commercializzazione": 65.0,
+        },
+    }
+    save_pending_rates(user_id, invalid_pending)
+
+    success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "validation_error"
+
+    # Tariffe originali non modificate
+    user = load_user(user_id)
+    assert user["luce"]["energia"] == 0.145
+
+
+def test_apply_pending_rates_db_error_during_transaction(
+    monkeypatch, sample_user_data, sample_pending_rates
+):
+    """Test apply_pending_rates con errore DB durante la transazione (rollback path)"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    # Dopo che i dati sono pronti, puntiamo il DB a un path inesistente
+    # per forzare un errore quando apply_pending_rates tenta di connettersi
+    monkeypatch.setattr(database, "DB_FILE", Path("/nonexistent/dir/db.sqlite"))
+    success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "db_error"
+
+
+def test_apply_pending_rates_with_gas(sample_user_data_with_gas):
+    """Test apply_pending_rates con gas"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data_with_gas)
+
+    pending_with_gas = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.130,
+            "commercializzazione": 65.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.420,
+            "commercializzazione": 80.0,
+        },
+    }
+    save_pending_rates(user_id, pending_with_gas)
+
+    success, reason = apply_pending_rates(user_id)
+
+    assert success is True
+    assert reason == "ok"
+
+    updated = load_user(user_id)
+    assert updated["luce"]["energia"] == 0.130
+    assert updated["gas"]["energia"] == 0.420
+    assert updated["gas"]["commercializzazione"] == 80.0
+    assert load_pending_rates(user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_rate_update_yes_no_user(mock_update, mock_context):
+    """Test click 'Aggiorna tariffe' quando apply_pending_rates restituisce no_user"""
+    with patch("handlers.rate_update.apply_pending_rates", return_value=(False, "no_user")):
+        await rate_update_yes(mock_update, mock_context)
+
+    # Verifica che il messaggio sia stato aggiornato con il testo di fallback
+    mock_update.callback_query.edit_message_text.assert_called_once()
+    call_args = mock_update.callback_query.edit_message_text.call_args
+    assert DECLINED_TEXT in call_args.kwargs["text"]
+
+
+def test_apply_pending_rates_no_user_race_condition(sample_user_data, sample_pending_rates):
+    """Test apply_pending_rates: utente eliminato tra le due SELECT (no_user branch)"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    original_connect = database.sqlite3.connect
+    select_count = {"n": 0}
+
+    def connect_wrapper(*args, **kwargs):
+        """Restituisce una connessione che intercetta execute per simulare race condition"""
+        conn = original_connect(*args, **kwargs)
+
+        class ProxyConnection:
+            """Proxy che wrappa la connessione reale intercettando execute"""
+
+            def __init__(self, real_conn):
+                object.__setattr__(self, "_conn", real_conn)
+
+            def execute(self, sql, params=()):
+                result = self._conn.execute(sql, params)
+                # Dopo la prima SELECT con pending_rates, elimina l'utente
+                if "SELECT" in sql and "pending_rates" in sql:
+                    select_count["n"] += 1
+                    if select_count["n"] == 1:
+                        self._conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+                return result
+
+            def __getattr__(self, name):
+                return getattr(self._conn, name)
+
+            def __setattr__(self, name, value):
+                setattr(self._conn, name, value)
+
+        return ProxyConnection(conn)
+
+    with patch("database.sqlite3.connect", side_effect=connect_wrapper):
+        success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "no_user"
+
+
+def test_apply_pending_rates_rollback_failure(sample_user_data, sample_pending_rates):
+    """Test apply_pending_rates: rollback fallisce durante sqlite3.Error"""
+    user_id = "123456789"
+    save_user(user_id, sample_user_data)
+    save_pending_rates(user_id, sample_pending_rates)
+
+    # Mock connection che solleva errore su commit e su rollback
+    mock_conn = MagicMock()
+    mock_conn.row_factory = None
+    mock_conn.execute = MagicMock()
+
+    # Prima execute → PRAGMA, seconda → BEGIN, terza → SELECT pending_rates
+    pending_row = MagicMock()
+    pending_row.__getitem__ = lambda self, key: (
+        '{"luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.130, "commercializzazione": 65.0}}'
+    )
+
+    user_row = MagicMock()
+    user_row.__getitem__ = lambda self, key: None if key == "last_notified_rates" else "value"
+    # Simuliamo che user_row sia truthy
+    user_row.__bool__ = lambda self: True
+
+    cursor_mock = MagicMock()
+
+    call_idx = {"n": 0}
+
+    def mock_execute(sql, params=None):
+        call_idx["n"] += 1
+        if "SELECT pending_rates" in sql:
+            cursor_mock.fetchone.return_value = pending_row
+            return cursor_mock
+        elif "SELECT *" in sql:
+            cursor_mock.fetchone.return_value = user_row
+            return cursor_mock
+        elif "UPDATE" in sql:
+            raise database.sqlite3.Error("disk I/O error")
+        return MagicMock()
+
+    mock_conn.execute = mock_execute
+    mock_conn.rollback = MagicMock(side_effect=database.sqlite3.Error("rollback failed"))
+
+    with patch("database.sqlite3.connect", return_value=mock_conn):
+        success, reason = apply_pending_rates(user_id)
+
+    assert success is False
+    assert reason == "db_error"
+    mock_conn.rollback.assert_called_once()
+    mock_conn.close.assert_called_once()
+
+
 def test_build_pending_rates_backward_compatible():
     """Test che la funzione funziona senza parametri (backward compatibility)"""
     from checker import _build_pending_rates
