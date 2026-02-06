@@ -8,29 +8,18 @@ Testa:
 - Funzioni database feedback
 """
 
-import os
-import sys
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from telegram import CallbackQuery, Message, Update, User
+from telegram import CallbackQuery, Message
 from telegram.ext import ConversationHandler
-
-# Mock WEBHOOK_SECRET prima di importare bot
-os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
-
-# Import funzioni del bot e database
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import database
 from database import (
     get_feedback_count,
     get_last_feedback_time,
     get_recent_feedbacks,
-    init_db,
     remove_user,
     save_feedback,
     save_user,
@@ -46,39 +35,10 @@ from handlers.feedback import (
     feedback_skip_comment,
 )
 
-# ========== FIXTURES ==========
-
-
-@pytest.fixture(autouse=True)
-def temp_database(monkeypatch):
-    """Usa database temporaneo per ogni test"""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        temp_db = Path(tmpdir) / "test_octotracker.db"
-        monkeypatch.setattr(database, "DB_FILE", temp_db)
-        init_db()
-        yield temp_db
-
-
-@pytest.fixture
-def mock_update():
-    """Crea mock Update con message"""
-    update = MagicMock(spec=Update)
-    update.effective_user = MagicMock(spec=User)
-    update.effective_user.id = 123456789
-    update.effective_user.first_name = "TestUser"
-
-    update.message = MagicMock(spec=Message)
-    update.message.reply_text = AsyncMock()
-    update.message.text = ""
-
-    update.callback_query = None
-
-    return update
-
 
 @pytest.fixture
 def mock_callback_query():
-    """Crea mock CallbackQuery per pulsanti inline"""
+    """Crea mock CallbackQuery per pulsanti inline (senza Update wrapper)"""
     query = MagicMock(spec=CallbackQuery)
     query.answer = AsyncMock()
     query.edit_message_text = AsyncMock()
@@ -86,14 +46,6 @@ def mock_callback_query():
     query.data = ""
 
     return query
-
-
-@pytest.fixture
-def mock_context():
-    """Crea mock context"""
-    context = MagicMock()
-    context.user_data = {}
-    return context
 
 
 # ========== TEST DATABASE FEEDBACK ==========
