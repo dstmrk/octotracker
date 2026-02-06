@@ -432,6 +432,9 @@ function setupEventListeners() {
       // Aggiorna fascia disponibili per gas (solo monoraria)
       updateFasciaOptions();
 
+      // Ricrea i grafici con l'unità corretta (€/kWh vs €/Smc)
+      initChart();
+
       // Reload data
       loadData();
     });
