@@ -9,9 +9,6 @@ Testa:
 - Funzione _build_pending_rates del checker
 """
 
-import os
-import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -19,16 +16,10 @@ import pytest
 from telegram import CallbackQuery, Message, Update, User
 from telegram.constants import ParseMode
 
-# Mock WEBHOOK_SECRET prima di importare bot
-os.environ["WEBHOOK_SECRET"] = "test_secret_token_for_testing_only"
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import database
 from database import (
     apply_pending_rates,
     clear_pending_rates,
-    init_db,
     load_pending_rates,
     load_user,
     save_pending_rates,
@@ -43,16 +34,6 @@ from handlers.rate_update import (
 )
 
 # ========== FIXTURES ==========
-
-
-@pytest.fixture(autouse=True)
-def temp_database(monkeypatch):
-    """Usa database temporaneo per ogni test"""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        temp_db = Path(tmpdir) / "test_octotracker.db"
-        monkeypatch.setattr(database, "DB_FILE", temp_db)
-        init_db()
-        yield temp_db
 
 
 @pytest.fixture
