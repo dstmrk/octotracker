@@ -11,6 +11,7 @@ authors = [
 dependencies = [
     "python-telegram-bot[webhooks]>=20.7",
     "python-dotenv>=1.0.0",
+    "defusedxml>=0.7.0",
 ]
 
 [project.optional-dependencies]

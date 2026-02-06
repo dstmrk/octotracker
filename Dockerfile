@@ -14,7 +14,8 @@ COPY pyproject.toml .
 # Il progetto è un'applicazione standalone, non una libreria da installare
 RUN uv pip install --system \
     "python-telegram-bot[webhooks]>=20.7" \
-    "python-dotenv>=1.0.0" && \
+    "python-dotenv>=1.0.0" \
+    "defusedxml>=0.7.0" && \
     # Pulizia per ridurre dimensione
     rm -rf ~/.cache/uv && \
     apt-get clean && \

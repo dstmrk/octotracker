@@ -849,3 +849,37 @@ def test_empty_structure_invalid_service():
     """Test struttura vuota per servizio non valido"""
     result = _empty_structure("INVALID")
     assert result == {}
+
+
+# ========== SECURITY TESTS ==========
+
+
+def test_parse_arera_xml_xxe_attack_blocked():
+    """Test che attacchi XXE (XML External Entity) vengano bloccati"""
+    xxe_xml = """<?xml version="1.0"?>
+    <!DOCTYPE foo [
+      <!ENTITY xxe SYSTEM "file:///etc/passwd">
+    ]>
+    <root>
+        <offerta>&xxe;</offerta>
+    </root>"""
+
+    # defusedxml deve bloccare le external entity
+    result = _parse_arera_xml(xxe_xml, "E")
+    assert result == {"luce": {"fissa": {}, "variabile": {}}}
+
+
+def test_parse_arera_xml_entity_expansion_blocked():
+    """Test che attacchi billion laughs (entity expansion bomb) vengano bloccati"""
+    bomb_xml = """<?xml version="1.0"?>
+    <!DOCTYPE lolz [
+      <!ENTITY lol "lol">
+      <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+      <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+      <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+    ]>
+    <root>&lol4;</root>"""
+
+    # defusedxml deve bloccare l'entity expansion
+    result = _parse_arera_xml(bomb_xml, "E")
+    assert result == {"luce": {"fissa": {}, "variabile": {}}}

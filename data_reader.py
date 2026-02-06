@@ -41,6 +41,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import Any
 
+import defusedxml.ElementTree as DefusedET
+
 from database import save_rates_batch
 
 # Setup logger
@@ -425,9 +427,9 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     Returns:
         Dict con struttura parziale (solo luce o solo gas)
     """
-    # Parse XML con gestione errori robusta
+    # Parse XML con gestione errori robusta (defusedxml protegge da XXE e entity expansion)
     try:
-        root = ET.fromstring(xml_content)
+        root = DefusedET.fromstring(xml_content)
     except ET.ParseError as e:
         service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
         logger.error(f"❌ XML malformato per {service_name}: {e}")
