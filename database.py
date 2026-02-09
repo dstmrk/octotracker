@@ -418,6 +418,15 @@ def clear_pending_rates(user_id: str) -> bool:
         return False
 
 
+def _safe_rollback(conn):
+    """Esegue rollback in modo sicuro, gestendo conn None e errori"""
+    if conn:
+        try:
+            conn.rollback()
+        except sqlite3.Error:
+            pass
+
+
 def apply_pending_rates(user_id: str) -> tuple[bool, str]:
     """
     Applica le tariffe pendenti in modo atomico (singola transazione).
@@ -510,16 +519,11 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
 
     except (KeyError, ValueError) as e:
         logger.error(f"❌ Validazione fallita per {user_id}: {e}")
-        if conn:
-            conn.rollback()
+        _safe_rollback(conn)
         return False, "validation_error"
     except sqlite3.Error as e:
         logger.error(f"❌ Errore database apply_pending_rates per {user_id}: {e}")
-        if conn:
-            try:
-                conn.rollback()
-            except sqlite3.Error:
-                pass
+        _safe_rollback(conn)
         return False, "db_error"
     finally:
         if conn:
