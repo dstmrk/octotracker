@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 # Token del bot per validazione auth
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
+# Messaggi di errore comuni
+ERR_MISSING_AUTH_HEADER = "Missing X-Telegram-Init-Data header"
+ERR_INTERNAL_SERVER = "Internal server error"
+
 # Valori validi per validazione parametri
 VALID_SERVIZI = {"luce", "gas"}
 VALID_TIPI = {"fissa", "variabile"}
@@ -91,7 +95,7 @@ class RatesHistoryHandler(BaseAPIHandler):
             # Verifica autenticazione
             auth_data = self.get_auth_data()
             if auth_data is None:
-                self.write_error_json("Missing X-Telegram-Init-Data header", 401)
+                self.write_error_json(ERR_MISSING_AUTH_HEADER, 401)
                 return
 
             # Estrai e valida parametri
@@ -161,7 +165,7 @@ class RatesHistoryHandler(BaseAPIHandler):
 
         except Exception as e:
             logger.error(f"Unexpected error in RatesHistoryHandler: {e}", exc_info=True)
-            self.write_error_json("Internal server error", 500)
+            self.write_error_json(ERR_INTERNAL_SERVER, 500)
 
 
 class RatesCurrentHandler(BaseAPIHandler):
@@ -176,7 +180,7 @@ class RatesCurrentHandler(BaseAPIHandler):
             # Verifica autenticazione
             auth_data = self.get_auth_data()
             if auth_data is None:
-                self.write_error_json("Missing X-Telegram-Init-Data header", 401)
+                self.write_error_json(ERR_MISSING_AUTH_HEADER, 401)
                 return
 
             # Recupera tariffe correnti
@@ -207,7 +211,7 @@ class RatesCurrentHandler(BaseAPIHandler):
 
         except Exception as e:
             logger.error(f"Unexpected error in RatesCurrentHandler: {e}", exc_info=True)
-            self.write_error_json("Internal server error", 500)
+            self.write_error_json(ERR_INTERNAL_SERVER, 500)
 
 
 class UserRatesHandler(BaseAPIHandler):
@@ -222,7 +226,7 @@ class UserRatesHandler(BaseAPIHandler):
             # Verifica autenticazione
             auth_data = self.get_auth_data()
             if auth_data is None:
-                self.write_error_json("Missing X-Telegram-Init-Data header", 401)
+                self.write_error_json(ERR_MISSING_AUTH_HEADER, 401)
                 return
 
             # Recupera dati utente
@@ -249,4 +253,4 @@ class UserRatesHandler(BaseAPIHandler):
 
         except Exception as e:
             logger.error(f"Unexpected error in UserRatesHandler: {e}", exc_info=True)
-            self.write_error_json("Internal server error", 500)
+            self.write_error_json(ERR_INTERNAL_SERVER, 500)
