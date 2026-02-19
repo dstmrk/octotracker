@@ -596,10 +596,16 @@ def test_should_notify_user_already_notified():
 
     assert should_notify is False
 
+
 def test_should_notify_user_after_user_rate_update_with_lower_octopus_rates():
     """Dopo update utente, deve notificare se Octopus scende ancora."""
     user_rates = {
-        "luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.130, "commercializzazione": 60.0},
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.130,
+            "commercializzazione": 60.0,
+        },
         "gas": None,
         "last_notified_rates": {"luce": {"energia": 0.130, "commercializzazione": 60.0}},
     }
@@ -609,7 +615,6 @@ def test_should_notify_user_after_user_rate_update_with_lower_octopus_rates():
     should_notify = _should_notify_user(user_rates, current_octopus)
 
     assert should_notify is True
-
 
 
 # ========== TESTS FOR FORMATTING FUNCTIONS ==========
