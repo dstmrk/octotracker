@@ -458,17 +458,27 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
 
         pending_rates = json.loads(row["pending_rates"])
 
-        # 2. Carica dati utente corrente per preservare last_notified_rates
+        # 2. Carica dati utente corrente per validare esistenza utente
         cursor = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         user_row = cursor.fetchone()
         if not user_row:
             conn.rollback()
             return False, "no_user"
 
-        # 3. Preserva last_notified_rates dall'utente corrente
-        pending_rates["last_notified_rates"] = (
-            json.loads(user_row["last_notified_rates"]) if user_row["last_notified_rates"] else None
-        )
+        # 3. Allinea last_notified_rates alle nuove tariffe applicate.
+        # In questo modo la deduplica parte dalla nuova baseline utente
+        # e non da una notifica precedente potenzialmente non più rilevante.
+        pending_rates["last_notified_rates"] = {
+            "luce": {
+                "energia": pending_rates["luce"]["energia"],
+                "commercializzazione": pending_rates["luce"]["commercializzazione"],
+            }
+        }
+        if pending_rates.get("gas") is not None:
+            pending_rates["last_notified_rates"]["gas"] = {
+                "energia": pending_rates["gas"]["energia"],
+                "commercializzazione": pending_rates["gas"]["commercializzazione"],
+            }
 
         # 4. Estrai e valida dati
         luce = pending_rates["luce"]
