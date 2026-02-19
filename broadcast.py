@@ -76,18 +76,18 @@ async def send_broadcasts_parallel(
     """
     semaphore = asyncio.Semaphore(batch_size)
 
-    async def send_with_limit(user_id: str) -> bool:
+    async def send_with_limit(position: int, user_id: str) -> bool:
         async with semaphore:
             success = await send_broadcast_message(bot, user_id, message)
             if success:
-                logger.info(f"  ✅ Messaggio inviato a {user_id}")
+                logger.info(f"  ✅ Messaggio inviato al destinatario #{position}")
             else:
-                logger.warning(f"  ❌ Invio fallito per {user_id}")
+                logger.warning(f"  ❌ Invio fallito per il destinatario #{position}")
             return success
 
     logger.info(f"📨 Invio {len(user_ids)} messaggi in parallelo (max {batch_size} simultanei)...")
 
-    tasks = [send_with_limit(user_id) for user_id in user_ids]
+    tasks = [send_with_limit(index, user_id) for index, user_id in enumerate(user_ids, start=1)]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     successful = sum(1 for r in results if r is True)

@@ -431,8 +431,8 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
     """
     Applica le tariffe pendenti in modo atomico (singola transazione).
 
-    Carica pending_rates, carica i dati utente correnti, preserva last_notified_rates
-    e consumi, salva le nuove tariffe e pulisce pending_rates in un'unica transazione.
+    Carica pending_rates, carica i dati utente correnti, resetta last_notified_rates
+    e preserva i consumi, salva le nuove tariffe e pulisce pending_rates in un'unica transazione.
 
     Args:
         user_id: ID utente Telegram
@@ -458,17 +458,16 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
 
         pending_rates = json.loads(row["pending_rates"])
 
-        # 2. Carica dati utente corrente per preservare last_notified_rates
+        # 2. Carica dati utente corrente per validare esistenza utente
         cursor = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         user_row = cursor.fetchone()
         if not user_row:
             conn.rollback()
             return False, "no_user"
 
-        # 3. Preserva last_notified_rates dall'utente corrente
-        pending_rates["last_notified_rates"] = (
-            json.loads(user_row["last_notified_rates"]) if user_row["last_notified_rates"] else None
-        )
+        # 3. Reset last_notified_rates per allinearsi al comportamento di /update.
+        # Dopo una scelta esplicita dell'utente, la deduplica riparte senza storico.
+        last_notified_json = None
 
         # 4. Estrai e valida dati
         luce = pending_rates["luce"]
@@ -479,8 +478,6 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
             _validate_gas_data(gas)
 
         gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
-        last_notified = pending_rates.get("last_notified_rates")
-        last_notified_json = json.dumps(last_notified) if last_notified else None
 
         # 5. Aggiorna utente e pulisci pending_rates in un'unica transazione
         conn.execute(

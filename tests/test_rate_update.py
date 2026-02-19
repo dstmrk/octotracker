@@ -251,10 +251,10 @@ async def test_rate_update_yes_no_pending(mock_update, mock_context, sample_user
 
 
 @pytest.mark.asyncio
-async def test_rate_update_yes_preserves_last_notified(
+async def test_rate_update_yes_clears_last_notified_rates(
     mock_update, mock_context, sample_user_data, sample_pending_rates
 ):
-    """Test che l'aggiornamento preserva last_notified_rates"""
+    """Test che l'aggiornamento azzera last_notified_rates"""
     user_id = str(mock_update.effective_user.id)
     last_notified = {"luce": {"energia": 0.130, "commercializzazione": 65.0}}
     sample_user_data["last_notified_rates"] = last_notified
@@ -264,7 +264,7 @@ async def test_rate_update_yes_preserves_last_notified(
     await rate_update_yes(mock_update, mock_context)
 
     updated_user = load_user(user_id)
-    assert updated_user.get("last_notified_rates") == last_notified
+    assert "last_notified_rates" not in updated_user
 
 
 @pytest.mark.asyncio
@@ -744,8 +744,8 @@ def test_apply_pending_rates_no_user():
     assert reason == "no_pending"
 
 
-def test_apply_pending_rates_preserves_last_notified(sample_pending_rates):
-    """Test che apply_pending_rates preserva last_notified_rates"""
+def test_apply_pending_rates_clears_last_notified_rates(sample_pending_rates):
+    """Test che apply_pending_rates azzera last_notified_rates"""
     user_id = "123456789"
     user_data = {
         "luce": {
@@ -763,7 +763,7 @@ def test_apply_pending_rates_preserves_last_notified(sample_pending_rates):
     assert success is True
 
     updated = load_user(user_id)
-    assert updated["last_notified_rates"] == {"luce": {"energia": 0.130}}
+    assert "last_notified_rates" not in updated
 
 
 def test_apply_pending_rates_db_error(sample_user_data, sample_pending_rates):
