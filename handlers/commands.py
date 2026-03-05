@@ -170,6 +170,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     # Pulisci eventuali dati di conversazione in corso
     context.user_data.clear()
 
+     # Link canale Telegram (se configurato)
+    telegram_channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
+    channel_info = ""
+    if telegram_channel:
+        # Rimuovi @ iniziale per URL Telegram (https://t.me/ richiede solo il nome)
+        channel_name = telegram_channel.lstrip("@")
+        channel_info = (
+            f"Per avere aggiornamenti sulle nuove funzionalità, iscriviti al canale "
+            f'<a href="https://t.me/{channel_name}">@{channel_name}</a>!\n\n'
+        )
+
     help_text = (
         "👋 <b>Benvenuto su OctoTracker!</b>\n\n"
         "Questo bot ti aiuta a monitorare le tariffe luce e gas di Octopus Energy "
@@ -184,7 +195,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "• /cancel – Annulla la registrazione in corso\n"
         "• /help – Mostra questo messaggio di aiuto\n\n"
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
-        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy."
+        "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy.\n\n"
+        f"{channel_info}"
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
