@@ -170,7 +170,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     # Pulisci eventuali dati di conversazione in corso
     context.user_data.clear()
 
-     # Link canale Telegram (se configurato)
+    # Link canale Telegram (se configurato)
     telegram_channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
     channel_info = ""
     if telegram_channel:
