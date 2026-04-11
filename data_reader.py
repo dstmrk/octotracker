@@ -40,6 +40,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.error import HTTPError, URLError
 
 import defusedxml.ElementTree as DefusedET
 
@@ -54,6 +55,23 @@ ARERA_BASE_URL = "https://www.ilportaleofferte.it/portaleOfferte/resources/opend
 SERVICE_NAME_ELECTRICITY = "elettricità"  # Nome servizio per elettricità
 SERVICE_NAME_GAS = "gas"  # Nome servizio per gas
 REQUEST_TIMEOUT = 30  # Timeout per richieste HTTP (secondi)
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; OctoTracker/1.0; +https://github.com/)",
+    "Accept": "application/xml,text/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+}
+
+
+def _normalized_code(value: str | None) -> str | None:
+    """Normalizza codici ARERA rimuovendo spazi e zeri iniziali"""
+    if value is None:
+        return None
+
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+
+    return str(int(cleaned)) if cleaned.isdigit() else cleaned
 
 
 def _build_arera_url(date: datetime, service: str = "E") -> str:
@@ -93,10 +111,19 @@ def _download_xml(url: str) -> str:
         urllib.error.HTTPError: Se download fallisce
     """
     logger.debug(f"Downloading {url}")
-    with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as response:
-        content = response.read().decode("utf-8")
-        logger.debug(f"Downloaded {len(content)} bytes")
-        return content
+    request = urllib.request.Request(url, headers=HTTP_HEADERS)
+
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+            content = response.read().decode("utf-8")
+            logger.debug(f"Downloaded {len(content)} bytes")
+            return content
+    except HTTPError as e:
+        logger.warning(f"⚠️  HTTP {e.code} durante download {url}")
+        raise
+    except URLError as e:
+        logger.warning(f"⚠️  Errore rete durante download {url}: {e.reason}")
+        raise
 
 
 def _remove_namespace(tree: ET.Element) -> None:
@@ -210,20 +237,28 @@ def _validate_and_extract_luce_metadata(
 
     # Verifica che sia offerta luce (TIPO_MERCATO=01)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
-    if tipo_mercato_elem is None or tipo_mercato_elem.text != "01":
+    tipo_mercato = _normalized_code(
+        tipo_mercato_elem.text if tipo_mercato_elem is not None else None
+    )
+    if tipo_mercato != "1":
         return None
 
     # Determina tipo offerta (01=fissa, 02=variabile)
     tipo_offerta_elem = offerta_elem.find(".//TIPO_OFFERTA")
-    if tipo_offerta_elem is None:
+    tipo_offerta_code = _normalized_code(
+        tipo_offerta_elem.text if tipo_offerta_elem is not None else None
+    )
+    if tipo_offerta_code is None:
         return None
-    tipo_offerta = "fissa" if tipo_offerta_elem.text == "01" else "variabile"
+    tipo_offerta = "fissa" if tipo_offerta_code == "1" else "variabile"
 
     # Determina tipo fascia (01=monoraria, 03=trioraria)
+    # Se il campo manca/è non standard, usa fallback monoraria per non perdere il record
     tipo_fascia_elem = offerta_elem.find(".//TIPOLOGIA_FASCE")
-    if tipo_fascia_elem is None:
-        return None
-    tipo_fascia = "monoraria" if tipo_fascia_elem.text == "01" else "trioraria"
+    tipo_fascia_code = _normalized_code(
+        tipo_fascia_elem.text if tipo_fascia_elem is not None else None
+    )
+    tipo_fascia = "trioraria" if tipo_fascia_code == "3" else "monoraria"
 
     # Estrai codice offerta (opzionale)
     cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
@@ -260,8 +295,11 @@ def _parse_offerta_luce(offerta_elem: ET.Element) -> tuple[str, str, dict[str, f
         # Il costo è in €/anno (UNITA_MISURA=01)
         commercializzazione = comp_comm["intervalli"][0]["prezzo"]
 
-    # Estrai prezzo energia (MACROAREA=04)
+    # Estrai prezzo energia (MACROAREA=04 legacy, MACROAREA=06 nuovo tracciato)
     comp_energia = _extract_componente_impresa(offerta_elem, "04")
+    if comp_energia is None:
+        comp_energia = _extract_componente_impresa(offerta_elem, "06")
+
     energia = None
     if comp_energia and "intervalli" in comp_energia and len(comp_energia["intervalli"]) > 0:
         # Per tariffe monorarie, prendi il primo prezzo
@@ -319,16 +357,21 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
 
     # Verifica che sia offerta gas (TIPO_MERCATO=02)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
-    if tipo_mercato_elem is None or tipo_mercato_elem.text != "02":
+    tipo_mercato = _normalized_code(
+        tipo_mercato_elem.text if tipo_mercato_elem is not None else None
+    )
+    if tipo_mercato != "2":
         return None
 
     # Determina tipo offerta (01=fissa, 02=variabile)
     tipo_offerta_elem = offerta_elem.find(".//TIPO_OFFERTA")
-    if tipo_offerta_elem is None:
+    tipo_offerta_code = _normalized_code(
+        tipo_offerta_elem.text if tipo_offerta_elem is not None else None
+    )
+    if tipo_offerta_code is None:
         return None
 
-    tipo_offerta_code = tipo_offerta_elem.text
-    tipo_offerta = "fissa" if tipo_offerta_code == "01" else "variabile"
+    tipo_offerta = "fissa" if tipo_offerta_code == "1" else "variabile"
 
     # Estrai costo commercializzazione (MACROAREA=01)
     comp_comm = _extract_componente_impresa(offerta_elem, "01")
@@ -443,8 +486,10 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
     # Rimuovi namespace per semplificare il parsing
     _remove_namespace(root)
 
-    # Trova tutte le offerte
+    # Trova tutte le offerte (supporto tag legacy <offerta> e formato <Offerta>)
     offerte = root.findall(".//offerta")
+    if not offerte:
+        offerte = root.findall(".//Offerta")
     logger.debug(f"Trovate {len(offerte)} offerte nel file XML")
 
     # Processa offerte in base al servizio
