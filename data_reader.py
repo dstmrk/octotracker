@@ -237,13 +237,17 @@ def _validate_and_extract_luce_metadata(
 
     # Verifica che sia offerta luce (TIPO_MERCATO=01)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
-    tipo_mercato = _normalized_code(tipo_mercato_elem.text if tipo_mercato_elem is not None else None)
+    tipo_mercato = _normalized_code(
+        tipo_mercato_elem.text if tipo_mercato_elem is not None else None
+    )
     if tipo_mercato != "1":
         return None
 
     # Determina tipo offerta (01=fissa, 02=variabile)
     tipo_offerta_elem = offerta_elem.find(".//TIPO_OFFERTA")
-    tipo_offerta_code = _normalized_code(tipo_offerta_elem.text if tipo_offerta_elem is not None else None)
+    tipo_offerta_code = _normalized_code(
+        tipo_offerta_elem.text if tipo_offerta_elem is not None else None
+    )
     if tipo_offerta_code is None:
         return None
     tipo_offerta = "fissa" if tipo_offerta_code == "1" else "variabile"
@@ -251,7 +255,9 @@ def _validate_and_extract_luce_metadata(
     # Determina tipo fascia (01=monoraria, 03=trioraria)
     # Se il campo manca/è non standard, usa fallback monoraria per non perdere il record
     tipo_fascia_elem = offerta_elem.find(".//TIPOLOGIA_FASCE")
-    tipo_fascia_code = _normalized_code(tipo_fascia_elem.text if tipo_fascia_elem is not None else None)
+    tipo_fascia_code = _normalized_code(
+        tipo_fascia_elem.text if tipo_fascia_elem is not None else None
+    )
     tipo_fascia = "trioraria" if tipo_fascia_code == "3" else "monoraria"
 
     # Estrai codice offerta (opzionale)
@@ -351,13 +357,17 @@ def _parse_offerta_gas(offerta_elem: ET.Element) -> tuple[str, dict[str, float]]
 
     # Verifica che sia offerta gas (TIPO_MERCATO=02)
     tipo_mercato_elem = offerta_elem.find(".//TIPO_MERCATO")
-    tipo_mercato = _normalized_code(tipo_mercato_elem.text if tipo_mercato_elem is not None else None)
+    tipo_mercato = _normalized_code(
+        tipo_mercato_elem.text if tipo_mercato_elem is not None else None
+    )
     if tipo_mercato != "2":
         return None
 
     # Determina tipo offerta (01=fissa, 02=variabile)
     tipo_offerta_elem = offerta_elem.find(".//TIPO_OFFERTA")
-    tipo_offerta_code = _normalized_code(tipo_offerta_elem.text if tipo_offerta_elem is not None else None)
+    tipo_offerta_code = _normalized_code(
+        tipo_offerta_elem.text if tipo_offerta_elem is not None else None
+    )
     if tipo_offerta_code is None:
         return None
 
