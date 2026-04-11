@@ -14,13 +14,13 @@ import pytest
 
 from data_reader import (
     HTTP_HEADERS,
-    _download_xml,
     _build_arera_url,
-    _normalized_code,
+    _download_xml,
     _empty_structure,
     _extract_componente_impresa,
     _fetch_service_data,
     _flatten_rates,
+    _normalized_code,
     _parse_arera_xml,
     _parse_offerta_gas,
     _parse_offerta_luce,

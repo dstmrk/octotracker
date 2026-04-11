@@ -37,10 +37,10 @@ import asyncio
 import logging
 import time
 import urllib.request
-from urllib.error import HTTPError, URLError
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.error import HTTPError, URLError
 
 import defusedxml.ElementTree as DefusedET
 
