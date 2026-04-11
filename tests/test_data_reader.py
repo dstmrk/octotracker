@@ -13,7 +13,10 @@ from unittest.mock import patch
 import pytest
 
 from data_reader import (
+    HTTP_HEADERS,
+    _download_xml,
     _build_arera_url,
+    _normalized_code,
     _empty_structure,
     _extract_componente_impresa,
     _fetch_service_data,
@@ -51,6 +54,101 @@ def test_build_arera_url_different_month():
     # Nota: il path usa il mese senza zero iniziale (es: 2025_1, non 2025_01)
     expected = "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_1/PO_Offerte_E_MLIBERO_20250105.xml"
     assert url == expected
+
+
+def test_download_xml_sets_headers_and_decodes_response():
+    """Test download XML con headers HTTP corretti"""
+
+    class DummyResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b"<root/>"
+
+    with patch("urllib.request.urlopen", return_value=DummyResponse()) as mock_urlopen:
+        content = _download_xml("https://example.com/file.xml")
+
+    assert content == "<root/>"
+    request = mock_urlopen.call_args[0][0]
+    assert request.headers["User-agent"] == HTTP_HEADERS["User-Agent"]
+    assert request.headers["Accept"] == HTTP_HEADERS["Accept"]
+
+
+def test_parse_arera_xml_supports_uppercase_offerta_tag():
+    """Test parsing XML con tag <Offerta> (formato alternativo)"""
+    xml_str = """<?xml version="1.0"?>
+    <ListaOfferteMercatoLibero>
+        <Offerta>
+            <IdentificativiOfferta>
+                <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+            </IdentificativiOfferta>
+            <DettaglioOfferta>
+                <TIPO_MERCATO>01</TIPO_MERCATO>
+                <TIPO_OFFERTA>01</TIPO_OFFERTA>
+            </DettaglioOfferta>
+            <TipoPrezzo>
+                <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
+            </TipoPrezzo>
+            <ComponenteImpresa>
+                <MACROAREA>01</MACROAREA>
+                <IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi>
+            </ComponenteImpresa>
+            <ComponenteImpresa>
+                <MACROAREA>04</MACROAREA>
+                <IntervalloPrezzi><PREZZO>0.10</PREZZO></IntervalloPrezzi>
+            </ComponenteImpresa>
+        </Offerta>
+    </ListaOfferteMercatoLibero>
+    """
+
+    result = _parse_arera_xml(xml_str, "E")
+
+    assert result["luce"]["fissa"]["monoraria"]["energia"] == 0.10
+
+
+def test_normalized_code_handles_zero_padding_and_spaces():
+    """Test normalizzazione codici ARERA"""
+    assert _normalized_code("01") == "1"
+    assert _normalized_code(" 02 ") == "2"
+    assert _normalized_code("ABC") == "ABC"
+    assert _normalized_code("") is None
+    assert _normalized_code(None) is None
+
+
+def test_parse_offerta_luce_without_tipologia_fasce_uses_fallback_mono():
+    """Se TIPOLOGIA_FASCE manca, non scartare l'offerta luce"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>1</TIPO_MERCATO>
+            <TIPO_OFFERTA>1</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi><PREZZO>0.11</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+    """
+
+    offerta = ET.fromstring(xml_str)
+    parsed = _parse_offerta_luce(offerta)
+
+    assert parsed is not None
+    tipo_offerta, tipo_fascia, dati = parsed
+    assert tipo_offerta == "fissa"
+    assert tipo_fascia == "monoraria"
+    assert dati["energia"] == 0.11
 
 
 # ========== XML NAMESPACE TESTS ==========
@@ -321,6 +419,41 @@ def test_parse_offerta_luce_without_cod_offerta():
     assert result is not None
     tipo_offerta, tipo_fascia, dati = result
     assert dati["cod_offerta"] is None
+
+
+def test_parse_offerta_luce_uses_macroarea_06_when_04_missing():
+    """Nel nuovo tracciato luce il prezzo energia può stare in MACROAREA=06"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>01</TIPO_MERCATO>
+            <TIPO_OFFERTA>02</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <TipoPrezzo>
+            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>
+        </TipoPrezzo>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>06</MACROAREA>
+            <IntervalloPrezzi><PREZZO>0.0088</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+    """
+
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_luce(offerta)
+
+    assert result is not None
+    tipo_offerta, tipo_fascia, dati = result
+    assert tipo_offerta == "variabile"
+    assert tipo_fascia == "trioraria"
+    assert dati["energia"] == 0.0088
 
 
 # ========== GAS PARSING TESTS ==========
