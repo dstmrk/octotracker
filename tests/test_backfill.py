@@ -102,21 +102,24 @@ class TestBackfill:
             # In dry-run, save_rates_batch non deve essere chiamato
             mock_save.assert_not_called()
 
-    def test_backfill_skips_existing_dates(self):
-        """Test che date già presenti vengono saltate"""
+    def test_backfill_skips_existing_keys(self):
+        """Test che tariffe già presenti non vengono risalvate"""
         today = datetime.now().strftime("%Y-%m-%d")
+        mock_rates = [{"servizio": "luce", "tipo": "fissa", "fascia": "monoraria", "energia": 0.10}]
+        # La chiave (data, servizio, tipo, fascia) è già nel DB
+        existing_keys = {(today, "luce", "fissa", "monoraria")}
 
         with (
             patch("backfill_rate_history.init_db"),
-            patch("backfill_rate_history.get_rate_history_dates", return_value={today}),
-            patch("backfill_rate_history._download_and_parse_date") as mock_download,
-            patch("backfill_rate_history.save_rates_batch"),
+            patch("backfill_rate_history.get_rate_history_dates", return_value=existing_keys),
+            patch("backfill_rate_history._download_and_parse_date", return_value=mock_rates),
+            patch("backfill_rate_history.save_rates_batch") as mock_save,
             patch("backfill_rate_history.time.sleep"),
         ):
             backfill(days=0, dry_run=False, delay=0)
 
-            # Non deve scaricare per date già presenti
-            mock_download.assert_not_called()
+            # Tutte le tariffe già presenti: save non deve essere chiamato
+            mock_save.assert_not_called()
 
     def test_backfill_saves_new_rates(self):
         """Test che nuove tariffe vengono salvate"""

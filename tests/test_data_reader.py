@@ -237,6 +237,25 @@ def test_extract_componente_impresa_multiple_fasce():
     assert result["intervalli"][1]["fascia"] == "02"
 
 
+def test_extract_componente_impresa_normalizes_macroarea_zero_padding():
+    """Test che MACROAREA viene confrontata senza zero iniziali (es: '6' == '06')"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <ComponenteImpresa>
+            <NOME>Energia</NOME>
+            <MACROAREA>6</MACROAREA>
+            <IntervalloPrezzi><PREZZO>0.0099</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>"""
+    offerta = ET.fromstring(xml_str)
+
+    # Ricerca con "06" deve trovare MACROAREA "6" (stesso codice, formato diverso)
+    result = _extract_componente_impresa(offerta, "06")
+
+    assert result is not None
+    assert result["intervalli"][0]["prezzo"] == 0.0099
+
+
 # ========== LUCE PARSING TESTS ==========
 
 
@@ -454,6 +473,74 @@ def test_parse_offerta_luce_uses_macroarea_06_when_04_missing():
     assert tipo_offerta == "variabile"
     assert tipo_fascia == "trioraria"
     assert dati["energia"] == 0.0088
+
+
+def test_parse_offerta_luce_bioraria_fascia():
+    """Test che TIPOLOGIA_FASCE=02 viene classificata come bioraria (non monoraria)"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>01</TIPO_MERCATO>
+            <TIPO_OFFERTA>02</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <TipoPrezzo>
+            <TIPOLOGIA_FASCE>02</TIPOLOGIA_FASCE>
+        </TipoPrezzo>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>04</MACROAREA>
+            <IntervalloPrezzi><PREZZO>0.0050</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+    """
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_luce(offerta)
+
+    assert result is not None
+    tipo_offerta, tipo_fascia, dati = result
+    assert tipo_offerta == "variabile"
+    assert tipo_fascia == "bioraria"
+    assert dati["energia"] == 0.0050
+
+
+def test_parse_offerta_luce_fissa_with_macroarea_06_no_padding():
+    """Test che luce fissa con MACROAREA '6' (senza zero) viene letta correttamente"""
+    xml_str = """<?xml version="1.0"?>
+    <offerta>
+        <IdentificativiOfferta>
+            <PIVA_UTENTE>01771990445</PIVA_UTENTE>
+        </IdentificativiOfferta>
+        <DettaglioOfferta>
+            <TIPO_MERCATO>01</TIPO_MERCATO>
+            <TIPO_OFFERTA>01</TIPO_OFFERTA>
+        </DettaglioOfferta>
+        <TipoPrezzo>
+            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>
+        </TipoPrezzo>
+        <ComponenteImpresa>
+            <MACROAREA>01</MACROAREA>
+            <IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+        <ComponenteImpresa>
+            <MACROAREA>6</MACROAREA>
+            <IntervalloPrezzi><PREZZO>0.1150</PREZZO></IntervalloPrezzi>
+        </ComponenteImpresa>
+    </offerta>
+    """
+    offerta = ET.fromstring(xml_str)
+    result = _parse_offerta_luce(offerta)
+
+    assert result is not None
+    tipo_offerta, tipo_fascia, dati = result
+    assert tipo_offerta == "fissa"
+    assert tipo_fascia == "monoraria"
+    assert dati["energia"] == 0.1150
 
 
 # ========== GAS PARSING TESTS ==========

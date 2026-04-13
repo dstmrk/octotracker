@@ -59,9 +59,9 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
         delay: Secondi di attesa tra una richiesta e l'altra (rispetto rate limit)
     """
     init_db()
-    existing_dates = get_rate_history_dates()
+    existing_keys = get_rate_history_dates()
 
-    logger.info(f"📊 Date già presenti nello storico: {len(existing_dates)}")
+    logger.info(f"📊 Combinazioni già presenti nello storico: {len(existing_keys)}")
     logger.info(f"📅 Periodo: ultimi {days} giorni")
     if dry_run:
         logger.info("🔍 Modalità dry-run: nessuna scrittura nel DB")
@@ -75,11 +75,6 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
         target_date = datetime.now() - timedelta(days=days_back)
         date_str = target_date.strftime("%Y-%m-%d")
 
-        # Salta date già presenti
-        if date_str in existing_dates:
-            total_skipped += 1
-            continue
-
         # Scarica e parsea
         rates = _download_and_parse_date(target_date)
 
@@ -88,14 +83,28 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
             logger.debug(f"   {date_str}: nessun dato disponibile")
             continue
 
+        # Filtra le tariffe già presenti per questa data
+        new_rates = [
+            r
+            for r in rates
+            if (date_str, r["servizio"], r["tipo"], r["fascia"]) not in existing_keys
+        ]
+
+        if not new_rates:
+            total_skipped += 1
+            logger.debug(f"   {date_str}: tutte le tariffe già presenti")
+            continue
+
         if dry_run:
-            logger.info(f"   {date_str}: {len(rates)} tariffe trovate (dry-run, non salvate)")
-            total_inserted += len(rates)
+            logger.info(
+                f"   {date_str}: {len(new_rates)} tariffe nuove trovate (dry-run, non salvate)"
+            )
+            total_inserted += len(new_rates)
             continue
 
         # Salva nel DB
         try:
-            inserted = save_rates_batch(date_str, rates)
+            inserted = save_rates_batch(date_str, new_rates)
             total_inserted += inserted
             logger.info(f"   {date_str}: {inserted} tariffe salvate")
         except Exception as e:
