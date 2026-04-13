@@ -806,12 +806,17 @@ def get_latest_rate_date() -> str | None:
         return None
 
 
-def get_rate_history_dates() -> set[str]:
-    """Ritorna le date già presenti nello storico (formato YYYY-MM-DD)"""
+def get_rate_history_dates() -> set[tuple[str, str, str, str]]:
+    """Ritorna le chiavi (data_fonte, servizio, tipo, fascia) già presenti nello storico"""
     try:
         with get_connection() as conn:
-            cursor = conn.execute("SELECT DISTINCT data_fonte FROM rate_history")
-            return {row["data_fonte"] for row in cursor.fetchall()}
+            cursor = conn.execute(
+                "SELECT DISTINCT data_fonte, servizio, tipo, fascia FROM rate_history"
+            )
+            return {
+                (row["data_fonte"], row["servizio"], row["tipo"], row["fascia"])
+                for row in cursor.fetchall()
+            }
     except sqlite3.Error as e:
         logger.error(f"❌ Errore lettura date storico: {e}")
         return set()

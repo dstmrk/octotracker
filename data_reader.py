@@ -210,9 +210,10 @@ def _extract_componente_impresa(offerta_elem: ET.Element, macroarea: str) -> dic
     Returns:
         Dict con dati componente o None se non trovato
     """
+    normalized_target = _normalized_code(macroarea)
     for comp in offerta_elem.findall(".//ComponenteImpresa"):
         macro = comp.find("MACROAREA")
-        if macro is not None and macro.text == macroarea:
+        if macro is not None and _normalized_code(macro.text) == normalized_target:
             intervalli = _extract_intervalli_prezzi(comp)
             return _build_componente_result(comp, intervalli)
 
@@ -252,13 +253,18 @@ def _validate_and_extract_luce_metadata(
         return None
     tipo_offerta = "fissa" if tipo_offerta_code == "1" else "variabile"
 
-    # Determina tipo fascia (01=monoraria, 03=trioraria)
+    # Determina tipo fascia (01=monoraria, 02=bioraria, 03=trioraria)
     # Se il campo manca/è non standard, usa fallback monoraria per non perdere il record
     tipo_fascia_elem = offerta_elem.find(".//TIPOLOGIA_FASCE")
     tipo_fascia_code = _normalized_code(
         tipo_fascia_elem.text if tipo_fascia_elem is not None else None
     )
-    tipo_fascia = "trioraria" if tipo_fascia_code == "3" else "monoraria"
+    if tipo_fascia_code == "3":
+        tipo_fascia = "trioraria"
+    elif tipo_fascia_code == "2":
+        tipo_fascia = "bioraria"
+    else:
+        tipo_fascia = "monoraria"
 
     # Estrai codice offerta (opzionale)
     cod_offerta_elem = offerta_elem.find(".//COD_OFFERTA")
