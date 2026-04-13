@@ -321,7 +321,11 @@ class TestGetRateHistoryDates:
             )
 
             result = get_rate_history_dates()
-            assert result == {"2025-01-10", "2025-01-15", "2025-01-20"}
+            assert result == {
+                ("2025-01-10", "luce", "fissa", "monoraria"),
+                ("2025-01-15", "luce", "fissa", "monoraria"),
+                ("2025-01-20", "gas", "fissa", "monoraria"),
+            }
 
     def test_get_rate_history_dates_empty_db(self, temp_db):
         """Test con database senza tariffe"""
