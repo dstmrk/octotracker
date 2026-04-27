@@ -500,7 +500,7 @@ docker compose version
 
 ## 📜 Licenza
 
-Questo progetto usa la Licenza O'Saasy – guarda il file [LICENSE](LICENSE) per dettagli.
+Questo progetto usa la Licenza MIT – guarda il file [LICENSE](LICENSE) per dettagli.
 
 ---
 
