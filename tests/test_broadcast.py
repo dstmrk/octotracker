@@ -518,6 +518,21 @@ def test_main_file_not_found():
                 assert exc_info.value.code == 1
 
 
+def test_main_value_error():
+    """Test main con ValueError (es. dati non validi)."""
+    with patch("broadcast.load_dotenv"):
+        with patch(
+            "os.getenv",
+            side_effect=lambda k, d=None: "fake_token" if k == "TELEGRAM_BOT_TOKEN" else d,
+        ):
+            with patch("asyncio.run", side_effect=ValueError("Dato non valido")):
+                with pytest.raises(SystemExit) as exc_info:
+                    from broadcast import main
+
+                    main()
+                assert exc_info.value.code == 1
+
+
 def test_main_keyboard_interrupt():
     """Test main con interruzione da tastiera."""
     with patch("broadcast.load_dotenv"):

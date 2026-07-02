@@ -164,7 +164,7 @@ class RatesHistoryHandler(BaseAPIHandler):
             self.write_error_json(str(e), 401)
 
         except Exception as e:
-            logger.error(f"Unexpected error in RatesHistoryHandler: {e}", exc_info=True)
+            logger.exception(f"Unexpected error in RatesHistoryHandler: {e}")
             self.write_error_json(ERR_INTERNAL_SERVER, 500)
 
 
@@ -210,7 +210,7 @@ class RatesCurrentHandler(BaseAPIHandler):
             self.write_error_json(str(e), 401)
 
         except Exception as e:
-            logger.error(f"Unexpected error in RatesCurrentHandler: {e}", exc_info=True)
+            logger.exception(f"Unexpected error in RatesCurrentHandler: {e}")
             self.write_error_json(ERR_INTERNAL_SERVER, 500)
 
 
@@ -252,5 +252,5 @@ class UserRatesHandler(BaseAPIHandler):
             self.write_error_json(str(e), 401)
 
         except Exception as e:
-            logger.error(f"Unexpected error in UserRatesHandler: {e}", exc_info=True)
+            logger.exception(f"Unexpected error in UserRatesHandler: {e}")
             self.write_error_json(ERR_INTERNAL_SERVER, 500)

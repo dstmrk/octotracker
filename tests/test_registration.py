@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from telegram import CallbackQuery, InlineKeyboardMarkup, Message, Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 
 from database import load_user, save_user
 from handlers.registration import (
@@ -44,6 +44,7 @@ from handlers.registration import (
     luce_consumo_f3,
     luce_energia,
     luce_tipo_variabile,
+    salva_e_conferma,
     start,
     tipo_tariffa,
     validate_numeric_input,
@@ -1310,3 +1311,15 @@ async def test_gas_consumo_too_long_input(mock_update, mock_context):
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args
     assert "troppo lungo" in call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_salva_e_conferma_missing_data_returns_end(mock_update, mock_context):
+    """Test che dati mancanti in user_data vengano gestiti con logging.exception()"""
+    # context.user_data è vuoto: _build_user_data solleva KeyError
+    result = await salva_e_conferma(mock_update, mock_context, solo_luce=True)
+
+    assert result == ConversationHandler.END
+    mock_update.message.reply_text.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args
+    assert "errore" in call_args[0][0].lower()

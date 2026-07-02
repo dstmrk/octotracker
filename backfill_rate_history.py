@@ -109,7 +109,7 @@ def backfill(days: int = 365, dry_run: bool = False, delay: float = 0.5) -> None
             logger.info(f"   {date_str}: {inserted} tariffe salvate")
         except Exception as e:
             total_errors += 1
-            logger.error(f"   {date_str}: errore salvataggio: {e}")
+            logger.exception(f"   {date_str}: errore salvataggio: {e}")
 
         # Rate limiting
         time.sleep(delay)
