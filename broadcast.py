@@ -31,6 +31,32 @@ logger = logging.getLogger(__name__)
 DEFAULT_BATCH_SIZE = 10
 
 
+def _resolve_safe_path(file_path: str, base_dir: Path | None = None) -> Path:
+    """
+    Risolve un path fornito da CLI verificando che resti entro base_dir.
+
+    Previene path traversal (es. '../../etc/passwd') impedendo l'accesso
+    a file fuori dalla directory consentita.
+
+    Args:
+        file_path: Path relativo o assoluto fornito da CLI
+        base_dir: Directory base consentita (default: cwd)
+
+    Returns:
+        Path risolto e validato
+
+    Raises:
+        ValueError: Se il path risolto è fuori da base_dir
+    """
+    base = (base_dir or Path.cwd()).resolve()
+    candidate = (base / file_path).resolve()
+
+    if candidate != base and base not in candidate.parents:
+        raise ValueError(f"Percorso non consentito, fuori dalla directory di lavoro: {file_path}")
+
+    return candidate
+
+
 async def send_broadcast_message(bot: Bot, user_id: str, message: str) -> bool:
     """
     Invia un messaggio broadcast a un singolo utente.
@@ -110,7 +136,7 @@ def load_message(message_file: str) -> str:
         FileNotFoundError: Se il file non esiste
         ValueError: Se il file è vuoto
     """
-    message_path = Path(message_file)
+    message_path = _resolve_safe_path(message_file)
     if not message_path.exists():
         raise FileNotFoundError(f"File messaggio non trovato: {message_file}")
 
@@ -138,7 +164,7 @@ def load_users_from_file(users_file: str) -> list[str]:
         FileNotFoundError: Se il file non esiste
         ValueError: Se il file è vuoto o non contiene user_id validi
     """
-    users_path = Path(users_file)
+    users_path = _resolve_safe_path(users_file)
     if not users_path.exists():
         raise FileNotFoundError(f"File utenti non trovato: {users_file}")
 

@@ -184,8 +184,9 @@ async def test_send_broadcasts_parallel_custom_batch_size():
     assert max_concurrent <= 5
 
 
-def test_load_message_success(tmp_path):
+def test_load_message_success(tmp_path, monkeypatch):
     """Test caricamento messaggio da file con successo."""
+    monkeypatch.chdir(tmp_path)
     message_file = tmp_path / "test_message.txt"
     message_file.write_text("Test message content", encoding="utf-8")
 
@@ -194,14 +195,23 @@ def test_load_message_success(tmp_path):
     assert result == "Test message content"
 
 
-def test_load_message_file_not_found():
+def test_load_message_file_not_found(tmp_path, monkeypatch):
     """Test caricamento messaggio con file non esistente."""
+    monkeypatch.chdir(tmp_path)
     with pytest.raises(FileNotFoundError):
-        load_message("/path/to/nonexistent/file.txt")
+        load_message("nonexistent/file.txt")
 
 
-def test_load_message_empty_file(tmp_path):
+def test_load_message_path_traversal(tmp_path, monkeypatch):
+    """Test caricamento messaggio con path traversal fuori dalla working dir."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="non consentito"):
+        load_message("/etc/passwd")
+
+
+def test_load_message_empty_file(tmp_path, monkeypatch):
     """Test caricamento messaggio da file vuoto."""
+    monkeypatch.chdir(tmp_path)
     message_file = tmp_path / "empty.txt"
     message_file.write_text("   \n  \t  ", encoding="utf-8")
 
@@ -209,8 +219,9 @@ def test_load_message_empty_file(tmp_path):
         load_message(str(message_file))
 
 
-def test_load_message_with_whitespace(tmp_path):
+def test_load_message_with_whitespace(tmp_path, monkeypatch):
     """Test caricamento messaggio con spazi bianchi iniziali e finali."""
+    monkeypatch.chdir(tmp_path)
     message_file = tmp_path / "whitespace.txt"
     message_file.write_text("  \n  Test message  \n  ", encoding="utf-8")
 
@@ -219,8 +230,9 @@ def test_load_message_with_whitespace(tmp_path):
     assert result == "Test message"
 
 
-def test_load_users_from_file_success(tmp_path):
+def test_load_users_from_file_success(tmp_path, monkeypatch):
     """Test caricamento utenti da file con successo."""
+    monkeypatch.chdir(tmp_path)
     users_file = tmp_path / "users.txt"
     users_file.write_text("123456\n789012\n345678", encoding="utf-8")
 
@@ -229,8 +241,9 @@ def test_load_users_from_file_success(tmp_path):
     assert result == ["123456", "789012", "345678"]
 
 
-def test_load_users_from_file_with_comments(tmp_path):
+def test_load_users_from_file_with_comments(tmp_path, monkeypatch):
     """Test caricamento utenti ignorando commenti."""
+    monkeypatch.chdir(tmp_path)
     users_file = tmp_path / "users.txt"
     users_file.write_text("# Utenti test\n123456\n# Altro commento\n789012", encoding="utf-8")
 
@@ -239,8 +252,9 @@ def test_load_users_from_file_with_comments(tmp_path):
     assert result == ["123456", "789012"]
 
 
-def test_load_users_from_file_with_empty_lines(tmp_path):
+def test_load_users_from_file_with_empty_lines(tmp_path, monkeypatch):
     """Test caricamento utenti ignorando righe vuote."""
+    monkeypatch.chdir(tmp_path)
     users_file = tmp_path / "users.txt"
     users_file.write_text("123456\n\n  \n789012\n", encoding="utf-8")
 
@@ -249,14 +263,16 @@ def test_load_users_from_file_with_empty_lines(tmp_path):
     assert result == ["123456", "789012"]
 
 
-def test_load_users_from_file_not_found():
+def test_load_users_from_file_not_found(tmp_path, monkeypatch):
     """Test caricamento utenti con file non esistente."""
+    monkeypatch.chdir(tmp_path)
     with pytest.raises(FileNotFoundError, match="File utenti non trovato"):
-        load_users_from_file("/path/to/nonexistent/users.txt")
+        load_users_from_file("nonexistent/users.txt")
 
 
-def test_load_users_from_file_empty(tmp_path):
+def test_load_users_from_file_empty(tmp_path, monkeypatch):
     """Test caricamento utenti da file vuoto."""
+    monkeypatch.chdir(tmp_path)
     users_file = tmp_path / "empty.txt"
     users_file.write_text("   \n# solo commenti\n  ", encoding="utf-8")
 
@@ -307,8 +323,9 @@ def test_confirm_send_lowercase():
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_success(tmp_path):
+async def test_broadcast_to_users_success(tmp_path, monkeypatch):
     """Test broadcast completo con successo."""
+    monkeypatch.chdir(tmp_path)
     # Crea file messaggio
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test broadcast message", encoding="utf-8")
@@ -332,8 +349,9 @@ async def test_broadcast_to_users_success(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_no_users(tmp_path):
+async def test_broadcast_to_users_no_users(tmp_path, monkeypatch):
     """Test broadcast con file utenti vuoto."""
+    monkeypatch.chdir(tmp_path)
     # Crea file messaggio
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test broadcast message", encoding="utf-8")
@@ -347,8 +365,9 @@ async def test_broadcast_to_users_no_users(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_cancelled(tmp_path):
+async def test_broadcast_to_users_cancelled(tmp_path, monkeypatch):
     """Test broadcast annullato dall'utente."""
+    monkeypatch.chdir(tmp_path)
     # Crea file messaggio
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test broadcast message", encoding="utf-8")
@@ -366,8 +385,9 @@ async def test_broadcast_to_users_cancelled(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_partial_failure(tmp_path):
+async def test_broadcast_to_users_partial_failure(tmp_path, monkeypatch):
     """Test broadcast con alcuni fallimenti."""
+    monkeypatch.chdir(tmp_path)
     # Crea file messaggio
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test broadcast message", encoding="utf-8")
@@ -390,25 +410,36 @@ async def test_broadcast_to_users_partial_failure(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_file_not_found():
+async def test_broadcast_to_users_file_not_found(tmp_path, monkeypatch):
     """Test broadcast con file messaggio non esistente."""
+    monkeypatch.chdir(tmp_path)
     with pytest.raises(FileNotFoundError):
-        await broadcast_to_users("/path/to/nonexistent.txt", "users.txt", "fake_token")
+        await broadcast_to_users("nonexistent.txt", "users.txt", "fake_token")
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_users_file_not_found(tmp_path):
+async def test_broadcast_to_users_path_traversal(tmp_path, monkeypatch):
+    """Test broadcast con path traversal fuori dalla working dir."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="non consentito"):
+        await broadcast_to_users("/etc/passwd", "users.txt", "fake_token")
+
+
+@pytest.mark.asyncio
+async def test_broadcast_to_users_users_file_not_found(tmp_path, monkeypatch):
     """Test broadcast con file utenti non esistente."""
+    monkeypatch.chdir(tmp_path)
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test message", encoding="utf-8")
 
     with pytest.raises(FileNotFoundError, match="File utenti non trovato"):
-        await broadcast_to_users(str(message_file), "/path/to/nonexistent.txt", "fake_token")
+        await broadcast_to_users(str(message_file), "nonexistent.txt", "fake_token")
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_empty_message(tmp_path):
+async def test_broadcast_to_users_empty_message(tmp_path, monkeypatch):
     """Test broadcast con messaggio vuoto."""
+    monkeypatch.chdir(tmp_path)
     # Crea file messaggio vuoto
     message_file = tmp_path / "empty.txt"
     message_file.write_text("   ", encoding="utf-8")
@@ -418,8 +449,9 @@ async def test_broadcast_to_users_empty_message(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_broadcast_to_users_custom_batch_size(tmp_path):
+async def test_broadcast_to_users_custom_batch_size(tmp_path, monkeypatch):
     """Test broadcast con batch size personalizzato."""
+    monkeypatch.chdir(tmp_path)
     message_file = tmp_path / "message.txt"
     message_file.write_text("Test message", encoding="utf-8")
 
