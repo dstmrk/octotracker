@@ -173,10 +173,10 @@ async def run_checker(bot_token: str) -> None:
     try:
         await check_and_notify_users(bot_token)
         logger.info("✅ Checker completato")
-    except TelegramError as e:
-        logger.exception(f"❌ Errore Telegram checker: {e}")
     except NetworkError as e:
         logger.exception(f"🌐 Errore di rete checker: {e}")
+    except TelegramError as e:
+        logger.exception(f"❌ Errore Telegram checker: {e}")
     except OSError as e:
         logger.exception(f"💾 Errore I/O checker: {e}")
     except Exception as e:

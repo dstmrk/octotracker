@@ -158,6 +158,14 @@ class TestVerifyTelegramAuth:
         result = verify_telegram_auth("", TEST_BOT_TOKEN)
         assert result is None
 
+    def test_verify_unexpected_exception_returns_none(self):
+        """Test che un'eccezione inattesa durante la verifica venga gestita (logging.exception)"""
+        init_data = generate_test_init_data()
+        # bot_token non-stringa: passa il controllo "truthy" ma fallisce su .encode()
+        result = verify_telegram_auth(init_data, 12345)
+
+        assert result is None
+
     def test_verify_returns_parsed_user(self):
         """Test che ritorna user come dict"""
         init_data = generate_test_init_data(user_id=42, first_name="Alice", last_name="Wonder")
