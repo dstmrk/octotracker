@@ -90,7 +90,7 @@ def get_connection():
     except sqlite3.Error as e:
         if conn:
             conn.rollback()
-        logger.error(f"❌ Errore database: {e}")
+        logger.exception(f"❌ Errore database: {e}")
         raise
     finally:
         if conn:
@@ -104,7 +104,7 @@ def init_db() -> None:
             conn.executescript(SCHEMA)
         logger.info("✅ Database inizializzato")
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore inizializzazione database: {e}")
+        logger.exception(f"❌ Errore inizializzazione database: {e}")
         raise
 
 
@@ -165,7 +165,7 @@ def load_users() -> dict[str, Any]:
             return users
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore caricamento utenti: {e}")
+        logger.exception(f"❌ Errore caricamento utenti: {e}")
         return {}
 
 
@@ -184,7 +184,7 @@ def load_user(user_id: str) -> dict[str, Any] | None:
             return None
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore caricamento utente {user_id}: {e}")
+        logger.exception(f"❌ Errore caricamento utente {user_id}: {e}")
         return None
 
 
@@ -301,12 +301,12 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
         return False
     except ValueError as e:
         # Validazione fallita: tipo/fascia non validi
-        logger.error(f"❌ Validazione fallita per {user_id}: {e}")
+        logger.exception(f"❌ Validazione fallita per {user_id}: {e}")
         logger.debug(f"   user_data ricevuto: {user_data}")
         return False
     except sqlite3.Error as e:
         # Problema database: connessione, lock, corruzione, etc.
-        logger.error(f"❌ Errore database salvando {user_id}: {e}")
+        logger.exception(f"❌ Errore database salvando {user_id}: {e}")
         return False
 
 
@@ -322,7 +322,7 @@ def remove_user(user_id: str) -> bool:
         return deleted
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore rimozione utente {user_id}: {e}")
+        logger.exception(f"❌ Errore rimozione utente {user_id}: {e}")
         return False
 
 
@@ -334,7 +334,7 @@ def user_exists(user_id: str) -> bool:
             return cursor.fetchone() is not None
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore controllo esistenza utente {user_id}: {e}")
+        logger.exception(f"❌ Errore controllo esistenza utente {user_id}: {e}")
         return False
 
 
@@ -347,7 +347,7 @@ def get_user_count() -> int:
             return row["count"] if row else 0
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore conteggio utenti: {e}")
+        logger.exception(f"❌ Errore conteggio utenti: {e}")
         return 0
 
 
@@ -375,7 +375,7 @@ def save_pending_rates(user_id: str, pending_rates: dict[str, Any]) -> bool:
         logger.debug(f"Pending rates salvate per utente {user_id}")
         return True
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore salvataggio pending_rates per {user_id}: {e}")
+        logger.exception(f"❌ Errore salvataggio pending_rates per {user_id}: {e}")
         return False
 
 
@@ -394,7 +394,7 @@ def load_pending_rates(user_id: str) -> dict[str, Any] | None:
                 return json.loads(row["pending_rates"])
             return None
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore caricamento pending_rates per {user_id}: {e}")
+        logger.exception(f"❌ Errore caricamento pending_rates per {user_id}: {e}")
         return None
 
 
@@ -414,7 +414,7 @@ def clear_pending_rates(user_id: str) -> bool:
         logger.debug(f"Pending rates rimosse per utente {user_id}")
         return True
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore rimozione pending_rates per {user_id}: {e}")
+        logger.exception(f"❌ Errore rimozione pending_rates per {user_id}: {e}")
         return False
 
 
@@ -515,11 +515,11 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
         return True, "ok"
 
     except (KeyError, ValueError) as e:
-        logger.error(f"❌ Validazione fallita per {user_id}: {e}")
+        logger.exception(f"❌ Validazione fallita per {user_id}: {e}")
         _safe_rollback(conn)
         return False, "validation_error"
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore database apply_pending_rates per {user_id}: {e}")
+        logger.exception(f"❌ Errore database apply_pending_rates per {user_id}: {e}")
         _safe_rollback(conn)
         return False, "db_error"
     finally:
@@ -564,7 +564,7 @@ def save_feedback(
         return True
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore salvataggio feedback: {e}")
+        logger.exception(f"❌ Errore salvataggio feedback: {e}")
         return False
 
 
@@ -584,7 +584,7 @@ def get_last_feedback_time(user_id: str) -> str | None:
             return row["last_feedback_at"] if row else None
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore recupero last_feedback_time: {e}")
+        logger.exception(f"❌ Errore recupero last_feedback_time: {e}")
         return None
 
 
@@ -629,7 +629,7 @@ def get_recent_feedbacks(limit: int = 10) -> list[dict[str, Any]]:
             return feedbacks
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore recupero feedback recenti: {e}")
+        logger.exception(f"❌ Errore recupero feedback recenti: {e}")
         return []
 
 
@@ -642,7 +642,7 @@ def get_feedback_count() -> int:
             return row["count"] if row else 0
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore conteggio feedback: {e}")
+        logger.exception(f"❌ Errore conteggio feedback: {e}")
         return 0
 
 
@@ -676,7 +676,7 @@ def save_rate(
             )
             return True
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore salvataggio tariffa storico: {e}")
+        logger.exception(f"❌ Errore salvataggio tariffa storico: {e}")
         return False
 
 
@@ -729,7 +729,7 @@ def save_rates_batch(data_fonte: str, rates: list[dict[str, Any]]) -> int:
         return inserted
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore salvataggio batch tariffe: {e}")
+        logger.exception(f"❌ Errore salvataggio batch tariffe: {e}")
         if conn:
             try:
                 conn.rollback()
@@ -790,7 +790,7 @@ def get_current_rates() -> dict[str, Any] | None:
         return result
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore lettura tariffe correnti: {e}")
+        logger.exception(f"❌ Errore lettura tariffe correnti: {e}")
         return None
 
 
@@ -802,7 +802,7 @@ def get_latest_rate_date() -> str | None:
             row = cursor.fetchone()
             return row["max_date"] if row else None
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore lettura data tariffe: {e}")
+        logger.exception(f"❌ Errore lettura data tariffe: {e}")
         return None
 
 
@@ -818,7 +818,7 @@ def get_rate_history_dates() -> set[tuple[str, str, str, str]]:
                 for row in cursor.fetchall()
             }
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore lettura date storico: {e}")
+        logger.exception(f"❌ Errore lettura date storico: {e}")
         return set()
 
 
@@ -913,7 +913,7 @@ def get_rate_history(
         return result
 
     except sqlite3.Error as e:
-        logger.error(f"❌ Errore lettura storico tariffe: {e}")
+        logger.exception(f"❌ Errore lettura storico tariffe: {e}")
         return empty_result
 
 

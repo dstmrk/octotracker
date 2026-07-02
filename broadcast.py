@@ -50,10 +50,10 @@ async def send_broadcast_message(bot: Bot, user_id: str, message: str) -> bool:
         logger.warning(f"⏱️  Rate limit per utente {user_id}: riprova dopo {e.retry_after}s")
         return False
     except (TimedOut, NetworkError) as e:
-        logger.error(f"❌ Errore di rete per utente {user_id}: {e}")
+        logger.exception(f"❌ Errore di rete per utente {user_id}: {e}")
         return False
     except TelegramError as e:
-        logger.error(f"❌ Errore Telegram per utente {user_id}: {e}")
+        logger.exception(f"❌ Errore Telegram per utente {user_id}: {e}")
         return False
 
 
@@ -269,16 +269,16 @@ def main():
     try:
         asyncio.run(broadcast_to_users(message_file, users_file, bot_token, batch_size))
     except FileNotFoundError as e:
-        logger.error(f"❌ {e}")
+        logger.exception(f"❌ {e}")
         sys.exit(1)
     except ValueError as e:
-        logger.error(f"❌ {e}")
+        logger.exception(f"❌ {e}")
         sys.exit(1)
     except KeyboardInterrupt:
         logger.info("\n❌ Invio interrotto dall'utente")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"❌ Errore durante l'invio broadcast: {e}")
+        logger.exception(f"❌ Errore durante l'invio broadcast: {e}")
         sys.exit(1)
 
 

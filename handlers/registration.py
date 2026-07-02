@@ -735,7 +735,7 @@ async def salva_e_conferma(
         user_data = _build_user_data(context, solo_luce)
     except KeyError as e:
         # Dati mancanti - chiedi all'utente di riprovare
-        logger.error(f"User {user_id}: Errore costruzione dati utente - {e}")
+        logger.exception(f"User {user_id}: Errore costruzione dati utente - {e}")
         await send_message(
             "❌ Si è verificato un errore durante il salvataggio dei dati.\n\n"
             "Per favore riprova usando il comando /start per ricominciare la registrazione.",

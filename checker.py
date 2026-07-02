@@ -678,10 +678,10 @@ async def send_notification(
         logger.warning(f"⏱️  Rate limit per utente {user_id}: riprova tra {e.retry_after}s")
         return False
     except TimedOut:
-        logger.error(f"⏱️  Timeout invio messaggio a {user_id}")
+        logger.exception(f"⏱️  Timeout invio messaggio a {user_id}")
         return False
     except NetworkError as e:
-        logger.error(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
+        logger.exception(f"🌐 Errore di rete invio messaggio a {user_id}: {e}")
         return False
     except TelegramError as e:
         error_msg = str(e).lower()  # Case-insensitive per robustezza
@@ -696,7 +696,7 @@ async def send_notification(
             remove_user(user_id)
             return False
 
-        logger.error(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
+        logger.exception(f"❌ Errore Telegram invio messaggio a {user_id}: {e}")
         return False
 
 

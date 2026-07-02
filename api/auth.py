@@ -117,7 +117,7 @@ def verify_telegram_auth(init_data: str, bot_token: str) -> dict | None:
         return params
 
     except Exception as e:
-        logger.error(f"Error verifying Telegram auth: {e}")
+        logger.exception(f"Error verifying Telegram auth: {e}")
         return None
 
 

@@ -49,7 +49,7 @@ class HealthHandler(RequestHandler):
             self.write(json.dumps(health_data, indent=2))
 
         except Exception as e:
-            logger.error(f"❌ Errore health check: {e}", exc_info=True)
+            logger.exception(f"❌ Errore health check: {e}")
             self.set_status(503)
             self.set_header("Content-Type", "application/json")
             self.write(
@@ -137,7 +137,7 @@ def _check_database() -> dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"❌ Errore check database: {e}")
+        logger.exception(f"❌ Errore check database: {e}")
         return {
             "status": "error",
             "error": str(e),
@@ -181,7 +181,7 @@ def _check_tariffe() -> dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"❌ Errore check tariffe: {e}")
+        logger.exception(f"❌ Errore check tariffe: {e}")
         return {
             "status": "error",
             "error": str(e),
@@ -237,7 +237,7 @@ def _check_tasks(application_data: dict[str, Any]) -> dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"❌ Errore check tasks: {e}")
+        logger.exception(f"❌ Errore check tasks: {e}")
         return {
             "status": "error",
             "error": str(e),
