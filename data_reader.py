@@ -481,12 +481,14 @@ def _parse_arera_xml(xml_content: str, service: str) -> dict[str, Any]:
         root = DefusedET.fromstring(xml_content)
     except ET.ParseError as e:
         service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
-        logger.error(f"❌ XML malformato per {service_name}: {e}")
+        logger.exception(f"❌ XML malformato per {service_name}: {e}")
         logger.debug(f"   Primi 500 caratteri: {xml_content[:500]}")
         return _empty_structure(service)
     except Exception as e:
         service_name = SERVICE_NAME_ELECTRICITY if service == "E" else SERVICE_NAME_GAS
-        logger.error(f"❌ Errore inaspettato parsing XML {service_name}: {type(e).__name__}: {e}")
+        logger.exception(
+            f"❌ Errore inaspettato parsing XML {service_name}: {type(e).__name__}: {e}"
+        )
         return _empty_structure(service)
 
     # Rimuovi namespace per semplificare il parsing

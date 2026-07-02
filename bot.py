@@ -160,11 +160,11 @@ async def run_scraper() -> None:
         result = await fetch_octopus_tariffe()
         logger.info(f"✅ Scraper completato: {result}")
     except ConnectionError as e:
-        logger.error(f"🌐 Errore di connessione scraper: {e}")
+        logger.exception(f"🌐 Errore di connessione scraper: {e}")
     except OSError as e:
-        logger.error(f"💾 Errore I/O scraper: {e}")
+        logger.exception(f"💾 Errore I/O scraper: {e}")
     except Exception as e:
-        logger.error(f"❌ Errore inatteso scraper: {e}")
+        logger.exception(f"❌ Errore inatteso scraper: {e}")
 
 
 async def run_checker(bot_token: str) -> None:
@@ -174,13 +174,13 @@ async def run_checker(bot_token: str) -> None:
         await check_and_notify_users(bot_token)
         logger.info("✅ Checker completato")
     except TelegramError as e:
-        logger.error(f"❌ Errore Telegram checker: {e}")
+        logger.exception(f"❌ Errore Telegram checker: {e}")
     except NetworkError as e:
-        logger.error(f"🌐 Errore di rete checker: {e}")
+        logger.exception(f"🌐 Errore di rete checker: {e}")
     except OSError as e:
-        logger.error(f"💾 Errore I/O checker: {e}")
+        logger.exception(f"💾 Errore I/O checker: {e}")
     except Exception as e:
-        logger.error(f"❌ Errore inatteso checker: {e}")
+        logger.exception(f"❌ Errore inatteso checker: {e}")
 
 
 def calculate_seconds_until_next_run(target_hour: int) -> float:
@@ -218,7 +218,7 @@ async def scraper_daily_task() -> None:
         try:
             await run_scraper()
         except Exception as e:
-            logger.error(f"❌ Errore non gestito in scraper_daily_task: {e}", exc_info=True)
+            logger.exception(f"❌ Errore non gestito in scraper_daily_task: {e}")
 
         # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
         seconds_until_next = calculate_seconds_until_next_run(SCRAPER_HOUR)
@@ -242,7 +242,7 @@ async def checker_daily_task(bot_token: str) -> None:
         try:
             await run_checker(bot_token)
         except Exception as e:
-            logger.error(f"❌ Errore non gestito in checker_daily_task: {e}", exc_info=True)
+            logger.exception(f"❌ Errore non gestito in checker_daily_task: {e}")
 
         # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
         seconds_until_next = calculate_seconds_until_next_run(CHECKER_HOUR)
@@ -306,7 +306,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
                 )
                 logger.info(f"📨 Alert errore inviato all'admin {ADMIN_USER_ID}")
             except Exception as e:
-                logger.error(f"❌ Errore invio alert admin: {e}")
+                logger.exception(f"❌ Errore invio alert admin: {e}")
 
 
 # ========== MAIN ==========
