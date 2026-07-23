@@ -53,36 +53,45 @@ from handlers.feedback import (
 )
 from handlers.rate_update import rate_update_no, rate_update_yes
 from handlers.registration import (
+    GAS_ATTIVAZIONE,
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,
     GAS_TIPO,
     HA_GAS,
+    LUCE_ATTIVAZIONE,
     LUCE_COMM,
     LUCE_CONSUMO_F1,
     LUCE_CONSUMO_F2,
     LUCE_CONSUMO_F3,
     LUCE_ENERGIA,
     LUCE_TIPO_VARIABILE,
+    SKIP_SCADENZA_GAS,
+    SKIP_SCADENZA_LUCE,
     TIPO_TARIFFA,
     VUOI_CONSUMI_GAS,
     VUOI_CONSUMI_LUCE,
+    gas_attivazione,
     gas_comm,
     gas_consumo,
     gas_energia,
     gas_tipo_tariffa,
     ha_gas,
+    luce_attivazione,
     luce_comm,
     luce_consumo_f1,
     luce_consumo_f2,
     luce_consumo_f3,
     luce_energia,
     luce_tipo_variabile,
+    skip_gas_attivazione,
+    skip_luce_attivazione,
     start,
     tipo_tariffa,
     vuoi_consumi_gas,
     vuoi_consumi_luce,
 )
+from reminder import check_and_send_reminders
 
 load_dotenv()
 
@@ -129,6 +138,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # Configurazione scheduler
 SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
 CHECKER_HOUR = int(os.getenv("CHECKER_HOUR", "10"))  # Default: 10:00 ora italiana
+REMINDER_HOUR = int(os.getenv("REMINDER_HOUR", "11"))  # Default: 11:00 ora italiana
 
 # Configurazione webhook
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")  # Es: https://octotracker.tuodominio.xyz
@@ -181,6 +191,22 @@ async def run_checker(bot_token: str) -> None:
         logger.exception(f"💾 Errore I/O checker: {e}")
     except Exception as e:
         logger.exception(f"❌ Errore inatteso checker: {e}")
+
+
+async def run_reminder(bot_token: str) -> None:
+    """Esegue il controllo scadenze e invia i reminder"""
+    logger.info("📅 Avvio reminder scadenze...")
+    try:
+        await check_and_send_reminders(bot_token)
+        logger.info("✅ Reminder scadenze completato")
+    except NetworkError as e:
+        logger.exception(f"🌐 Errore di rete reminder: {e}")
+    except TelegramError as e:
+        logger.exception(f"❌ Errore Telegram reminder: {e}")
+    except OSError as e:
+        logger.exception(f"💾 Errore I/O reminder: {e}")
+    except Exception as e:
+        logger.exception(f"❌ Errore inatteso reminder: {e}")
 
 
 def calculate_seconds_until_next_run(target_hour: int) -> float:
@@ -249,6 +275,32 @@ async def checker_daily_task(bot_token: str) -> None:
         hours_until_next = seconds_until_next / 3600
 
         logger.info(f"⏰ Prossimo checker tra {hours_until_next:.1f} ore (alle {CHECKER_HOUR}:00)")
+        await asyncio.sleep(seconds_until_next)
+
+
+async def reminder_daily_task(bot_token: str) -> None:
+    """Task giornaliero per i reminder di scadenza - si esegue una volta al giorno"""
+    # Calcola quanto dormire fino alla prima esecuzione
+    seconds_until_run = calculate_seconds_until_next_run(REMINDER_HOUR)
+    hours_until_run = seconds_until_run / 3600
+
+    logger.info(f"📅 Reminder schedulato per le {REMINDER_HOUR}:00 (tra {hours_until_run:.1f} ore)")
+    await asyncio.sleep(seconds_until_run)
+
+    # Loop infinito: esegui e ricalcola il prossimo run time
+    while True:
+        try:
+            await run_reminder(bot_token)
+        except Exception as e:
+            logger.exception(f"❌ Errore non gestito in reminder_daily_task: {e}")
+
+        # Ricalcola secondi fino alla prossima esecuzione (previene drift temporale)
+        seconds_until_next = calculate_seconds_until_next_run(REMINDER_HOUR)
+        hours_until_next = seconds_until_next / 3600
+
+        logger.info(
+            f"⏰ Prossimo reminder tra {hours_until_next:.1f} ore (alle {REMINDER_HOUR}:00)"
+        )
         await asyncio.sleep(seconds_until_next)
 
 
@@ -375,21 +427,23 @@ async def post_init(application: Application) -> None:
     """
     bot_token = application.bot.token
 
-    # Avvia i due task giornalieri separati in background
+    # Avvia i task giornalieri separati in background
     # Salva i task per evitare garbage collection prematura
     scraper_task = asyncio.create_task(scraper_daily_task(), name="scraper_daily")
     checker_task = asyncio.create_task(checker_daily_task(bot_token), name="checker_daily")
+    reminder_task = asyncio.create_task(reminder_daily_task(bot_token), name="reminder_daily")
 
     # Avvia health check server separato
     health_task = asyncio.create_task(run_health_server(application.bot_data), name="health_server")
 
     # Registra callback per rilevare crash dei background task
-    for task in (scraper_task, checker_task, health_task):
+    for task in (scraper_task, checker_task, reminder_task, health_task):
         task.add_done_callback(_task_done_callback)
 
     # Salva i task nell'application per mantenerli vivi
     application.bot_data["scraper_task"] = scraper_task
     application.bot_data["checker_task"] = checker_task
+    application.bot_data["reminder_task"] = reminder_task
     application.bot_data["health_task"] = health_task
 
     # Yield control per permettere all'event loop di schedulare i task
@@ -410,6 +464,7 @@ def main() -> None:
     logger.info("📡 Modalità: WEBHOOK")
     logger.info(f"⏰ Scraper schedulato: {SCRAPER_HOUR}:00")
     logger.info(f"⏰ Checker schedulato: {CHECKER_HOUR}:00")
+    logger.info(f"⏰ Reminder schedulato: {REMINDER_HOUR}:00")
     logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
     logger.info(f"🔌 Porta webhook: {WEBHOOK_PORT}")
     logger.info(f"🏥 Porta health check: {HEALTH_PORT}")
@@ -438,10 +493,18 @@ def main() -> None:
             LUCE_CONSUMO_F1: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f1)],
             LUCE_CONSUMO_F2: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f2)],
             LUCE_CONSUMO_F3: [MessageHandler(filters.TEXT & ~filters.COMMAND, luce_consumo_f3)],
+            LUCE_ATTIVAZIONE: [
+                CallbackQueryHandler(skip_luce_attivazione, pattern=f"^{SKIP_SCADENZA_LUCE}$"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, luce_attivazione),
+            ],
             HA_GAS: [CallbackQueryHandler(ha_gas)],
             GAS_TIPO: [CallbackQueryHandler(gas_tipo_tariffa)],
             GAS_ENERGIA: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_energia)],
             GAS_COMM: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_comm)],
+            GAS_ATTIVAZIONE: [
+                CallbackQueryHandler(skip_gas_attivazione, pattern=f"^{SKIP_SCADENZA_GAS}$"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, gas_attivazione),
+            ],
             VUOI_CONSUMI_GAS: [CallbackQueryHandler(vuoi_consumi_gas)],
             GAS_CONSUMO: [MessageHandler(filters.TEXT & ~filters.COMMAND, gas_consumo)],
         },

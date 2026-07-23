@@ -148,3 +148,85 @@ async def test_checker_daily_task_logs_unhandled_error(monkeypatch, caplog):
         await bot.checker_daily_task("fake-token")
 
     assert "Errore non gestito in checker_daily_task" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_reminder_telegram_error(monkeypatch, caplog):
+    """run_reminder logga con logging.exception() su TelegramError"""
+    monkeypatch.setattr(
+        bot,
+        "check_and_send_reminders",
+        AsyncMock(side_effect=TelegramError("telegram down")),
+    )
+
+    with caplog.at_level("ERROR"):
+        await bot.run_reminder("fake-token")
+
+    assert "Errore Telegram reminder" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_reminder_network_error(monkeypatch, caplog):
+    """run_reminder logga con logging.exception() su NetworkError"""
+    monkeypatch.setattr(
+        bot,
+        "check_and_send_reminders",
+        AsyncMock(side_effect=NetworkError("network down")),
+    )
+
+    with caplog.at_level("ERROR"):
+        await bot.run_reminder("fake-token")
+
+    assert "Errore di rete reminder" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_reminder_os_error(monkeypatch, caplog):
+    """run_reminder logga con logging.exception() su OSError"""
+    monkeypatch.setattr(
+        bot, "check_and_send_reminders", AsyncMock(side_effect=OSError("disk full"))
+    )
+
+    with caplog.at_level("ERROR"):
+        await bot.run_reminder("fake-token")
+
+    assert "Errore I/O reminder" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_reminder_generic_exception(monkeypatch, caplog):
+    """run_reminder logga con logging.exception() su errore generico"""
+    monkeypatch.setattr(bot, "check_and_send_reminders", AsyncMock(side_effect=ValueError("boom")))
+
+    with caplog.at_level("ERROR"):
+        await bot.run_reminder("fake-token")
+
+    assert "Errore inatteso reminder" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_run_reminder_success(monkeypatch, caplog):
+    """run_reminder logga il completamento in caso di successo"""
+    monkeypatch.setattr(bot, "check_and_send_reminders", AsyncMock())
+
+    with caplog.at_level("INFO"):
+        await bot.run_reminder("fake-token")
+
+    assert "Reminder scadenze completato" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_reminder_daily_task_logs_unhandled_error(monkeypatch, caplog):
+    """reminder_daily_task logga con logging.exception() se run_reminder propaga un errore"""
+    monkeypatch.setattr(bot, "calculate_seconds_until_next_run", lambda hour: 0)
+    monkeypatch.setattr(bot.asyncio, "sleep", AsyncMock())
+    monkeypatch.setattr(
+        bot,
+        "run_reminder",
+        AsyncMock(side_effect=[ValueError("boom"), asyncio.CancelledError()]),
+    )
+
+    with caplog.at_level("ERROR"), pytest.raises(asyncio.CancelledError):
+        await bot.reminder_daily_task("fake-token")
+
+    assert "Errore non gestito in reminder_daily_task" in caplog.text

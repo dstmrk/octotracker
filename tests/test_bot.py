@@ -25,6 +25,7 @@ from handlers.commands import (
     unknown_command,
 )
 from handlers.registration import (
+    GAS_ATTIVAZIONE,
     GAS_COMM,
     GAS_CONSUMO,
     GAS_ENERGIA,
@@ -51,6 +52,7 @@ from handlers.registration import (
     luce_consumo_f3,
     luce_energia,
     luce_tipo_variabile,
+    skip_gas_attivazione,
     start,
     tipo_tariffa,
     validate_numeric_input,
@@ -272,6 +274,53 @@ async def test_status_with_data(mock_update, mock_context):
     assert "Luce" in message_text
     assert "0,145" in message_text or "0.145" in message_text
     assert "72" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_shows_luce_scadenza(mock_update, mock_context):
+    """Test /status mostra la scadenza dell'offerta fissa luce"""
+    user_data = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+            "scadenza": "2026-03-15",
+        }
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    message_text = mock_update.message.reply_text.call_args[0][0]
+    assert "Scadenza offerta" in message_text
+    assert "15/03/2026" in message_text
+
+
+@pytest.mark.asyncio
+async def test_status_shows_gas_scadenza(mock_update, mock_context):
+    """Test /status mostra la scadenza dell'offerta fissa gas"""
+    user_data = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.02,
+            "commercializzazione": 72.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.456,
+            "commercializzazione": 84.0,
+            "scadenza": "2026-05-20",
+        },
+    }
+    save_user("123456789", user_data)
+
+    await status(mock_update, mock_context)
+
+    message_text = mock_update.message.reply_text.call_args[0][0]
+    assert "20/05/2026" in message_text
 
 
 @pytest.mark.asyncio
@@ -783,13 +832,26 @@ async def test_complete_flow_fissa_with_gas(mock_update, mock_context):
     mock_update.message.text = "84"
     result = await gas_comm(mock_update, mock_context)
 
-    assert result == VUOI_CONSUMI_GAS  # Chiede se vuole indicare consumo gas
+    # Gas fissa → chiede la data di attivazione (reminder scadenza)
+    assert result == GAS_ATTIVAZIONE
 
-    # Simula risposta "No" alla domanda consumo gas
     # Usa SimpleNamespace per avere attributi semplici senza auto-mocking
     from types import SimpleNamespace
 
     mock_user = SimpleNamespace(id=int(user_id))
+
+    # Simula "Salta" alla domanda data attivazione gas
+    skip_query = MagicMock(spec=CallbackQuery)
+    skip_query.data = "skip_scadenza_gas"
+    skip_query.answer = AsyncMock()
+    skip_query.edit_message_text = AsyncMock()
+    skip_query.from_user = mock_user
+    mock_update.callback_query = skip_query
+
+    result = await skip_gas_attivazione(mock_update, mock_context)
+    assert result == VUOI_CONSUMI_GAS  # Chiede se vuole indicare consumo gas
+
+    # Simula risposta "No" alla domanda consumo gas
     mock_query = MagicMock(spec=CallbackQuery)
     mock_query.data = "consumi_gas_no"
     mock_query.answer = AsyncMock()

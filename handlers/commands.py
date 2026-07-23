@@ -12,6 +12,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, ConversationHandler
 
 from database import load_user, remove_user, user_exists
+from date_utils import format_date_display
 from formatters import format_luce_consumption, format_number, format_utility_header
 
 # Setup logger
@@ -113,6 +114,11 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Mostra consumi luce se presenti
     messaggio += format_luce_consumption(data["luce"], prefix="  - ")
 
+    # Mostra scadenza offerta fissa luce se presente
+    luce_scadenza = data["luce"].get("scadenza")
+    if luce_scadenza:
+        messaggio += f"  - Scadenza offerta: <b>{format_date_display(luce_scadenza)}</b>\n"
+
     if data.get("gas") is not None:
         gas_energia_fmt = format_number(data["gas"]["energia"], max_decimals=4)
         gas_comm_fmt = format_number(data["gas"]["commercializzazione"], max_decimals=2)
@@ -132,6 +138,11 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             messaggio += (
                 f"  - Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
             )
+
+        # Mostra scadenza offerta fissa gas se presente
+        gas_scadenza = data["gas"].get("scadenza")
+        if gas_scadenza:
+            messaggio += f"  - Scadenza offerta: <b>{format_date_display(gas_scadenza)}</b>\n"
 
     messaggio += "\nPer modificarli usa /update"
     await update.message.reply_text(messaggio, parse_mode=ParseMode.HTML)
@@ -195,6 +206,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "• /cancel – Annulla la registrazione in corso\n"
         "• /help – Mostra questo messaggio di aiuto\n\n"
         f"💡 Il bot controlla le tariffe ogni giorno alle {CHECKER_HOUR}:00.\n\n"
+        "📅 Se hai un'offerta a prezzo fisso e registri la data di attivazione, ti avviso "
+        "un mese prima della scadenza dei 12 mesi.\n\n"
         "⚠️ OctoTracker non è affiliato né collegato in alcun modo a Octopus Energy.\n\n"
         f"{channel_info}"
     )
