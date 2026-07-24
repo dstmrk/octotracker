@@ -51,7 +51,18 @@ from handlers.feedback import (
     feedback_rating,
     feedback_skip_comment,
 )
-from handlers.rate_update import rate_update_no, rate_update_yes
+from handlers.rate_update import (
+    ASK_SCADENZA,
+    CALLBACK_NO,
+    CALLBACK_SCADENZA_SKIP,
+    CALLBACK_YES,
+    UPDATE_DATE,
+    rate_update_no,
+    rate_update_yes,
+    scadenza_update_choice,
+    skip_scadenza_date,
+    update_scadenza_date,
+)
 from handlers.registration import (
     GAS_ATTIVAZIONE,
     GAS_COMM,
@@ -533,9 +544,24 @@ def main() -> None:
 
     app.add_handler(feedback_handler)
 
-    # Handler per pulsanti aggiornamento tariffe nelle notifiche
-    app.add_handler(CallbackQueryHandler(rate_update_yes, pattern=r"^rate_update_yes$"))
-    app.add_handler(CallbackQueryHandler(rate_update_no, pattern=r"^rate_update_no$"))
+    # Handler per pulsanti aggiornamento tariffe nelle notifiche.
+    # È una conversazione: dopo aver adottato un'offerta fissa, chiede la nuova scadenza.
+    rate_update_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(rate_update_yes, pattern=f"^{CALLBACK_YES}$")],
+        states={
+            ASK_SCADENZA: [
+                CallbackQueryHandler(scadenza_update_choice, pattern=r"^scadenza_update_(yes|no)$")
+            ],
+            UPDATE_DATE: [
+                CallbackQueryHandler(skip_scadenza_date, pattern=f"^{CALLBACK_SCADENZA_SKIP}$"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, update_scadenza_date),
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", cancel_conversation)],
+        per_message=False,
+    )
+    app.add_handler(rate_update_handler)
+    app.add_handler(CallbackQueryHandler(rate_update_no, pattern=f"^{CALLBACK_NO}$"))
 
     app.add_handler(CommandHandler("cancel", cancel_conversation))
     app.add_handler(CommandHandler("status", status))

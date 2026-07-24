@@ -791,6 +791,18 @@ def _build_pending_rates(
             pending["gas"]["energia"] = user_rates["gas"]["energia"]
             pending["gas"]["commercializzazione"] = user_rates["gas"]["commercializzazione"]
 
+    # Traccia quali servizi vengono effettivamente aggiornati con le nuove offerte
+    # Octopus. Serve ad apply_pending_rates per azzerare la scadenza dell'offerta
+    # solo per i servizi che cambiano davvero (non quelli lasciati invariati).
+    updated_services = []
+    if show_luce and luce_rate:
+        updated_services.append("luce")
+    if user_rates.get("gas"):
+        gas_rate = current_rates.get("gas", {}).get(gas_tipo, {}).get(gas_fascia)
+        if show_gas and gas_rate:
+            updated_services.append("gas")
+    pending["updated_services"] = updated_services
+
     return pending
 
 

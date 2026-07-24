@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from telegram import CallbackQuery, Message, Update, User
 from telegram.constants import ParseMode
+from telegram.ext import ConversationHandler
 
 import database
 from database import (
@@ -26,11 +27,20 @@ from database import (
     save_user,
 )
 from handlers.rate_update import (
+    ASK_SCADENZA,
     CONFIRMED_TEXT,
     DECLINED_TEXT,
+    MSG_DATE_INVALID,
     PROMPT_TEXT,
+    SCADENZA_ASK_TEXT,
+    SCADENZA_DECLINED_TEXT,
+    UPDATE_DATE,
+    _updated_fissa_services,
     rate_update_no,
     rate_update_yes,
+    scadenza_update_choice,
+    skip_scadenza_date,
+    update_scadenza_date,
 )
 
 # ========== FIXTURES ==========
@@ -984,3 +994,325 @@ def test_build_pending_rates_backward_compatible():
     # Deve aggiornare come prima (default behavior)
     assert pending["luce"]["energia"] == 0.130
     assert pending["luce"]["commercializzazione"] == 65.0
+
+
+# ========== TEST updated_services in _build_pending_rates ==========
+
+
+def test_build_pending_rates_marks_updated_luce():
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+    }
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {},
+    }
+    pending = _build_pending_rates(user_rates, current_rates)
+    assert pending["updated_services"] == ["luce"]
+
+
+def test_build_pending_rates_marks_only_shown_service():
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+        "gas": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.456,
+            "commercializzazione": 84.0,
+        },
+    }
+    current_rates = {
+        "luce": {"fissa": {"monoraria": {"energia": 0.130, "commercializzazione": 65.0}}},
+        "gas": {"fissa": {"monoraria": {"energia": 0.420, "commercializzazione": 80.0}}},
+    }
+    # Solo la luce è mostrata come conveniente
+    pending = _build_pending_rates(user_rates, current_rates, show_luce=True, show_gas=False)
+    assert pending["updated_services"] == ["luce"]
+
+
+def test_build_pending_rates_no_updated_when_rate_missing():
+    from checker import _build_pending_rates
+
+    user_rates = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.145,
+            "commercializzazione": 72.0,
+        },
+    }
+    current_rates = {"luce": {}, "gas": {}}
+    pending = _build_pending_rates(user_rates, current_rates)
+    assert pending["updated_services"] == []
+
+
+# ========== TEST _updated_fissa_services ==========
+
+
+def test_updated_fissa_services_none():
+    assert _updated_fissa_services(None) == []
+
+
+def test_updated_fissa_services_filters_variabile():
+    pending = {
+        "luce": {"tipo": "variabile"},
+        "gas": {"tipo": "fissa"},
+        "updated_services": ["luce", "gas"],
+    }
+    assert _updated_fissa_services(pending) == ["gas"]
+
+
+def test_updated_fissa_services_respects_updated_list():
+    pending = {
+        "luce": {"tipo": "fissa"},
+        "gas": {"tipo": "fissa"},
+        "updated_services": ["luce"],  # gas non aggiornato
+    }
+    assert _updated_fissa_services(pending) == ["luce"]
+
+
+# ========== TEST CONVERSAZIONE SCADENZA POST-AGGIORNAMENTO ==========
+
+
+def _callback_update(user_id=123456789, data="", text_html="testo"):
+    """Costruisce un Update basato su callback query"""
+    query = MagicMock(spec=CallbackQuery)
+    query.answer = AsyncMock()
+    query.edit_message_text = AsyncMock()
+    query.data = data
+    query.message = MagicMock(spec=Message)
+    query.message.text_html = text_html
+    query.message.reply_text = AsyncMock()
+
+    update = MagicMock(spec=Update)
+    update.effective_user = MagicMock(spec=User)
+    update.effective_user.id = user_id
+    update.callback_query = query
+    update.effective_message = query.message
+    update.message = None
+    return update
+
+
+def _message_update(user_id=123456789, text=""):
+    """Costruisce un Update basato su un messaggio di testo"""
+    update = MagicMock(spec=Update)
+    update.effective_user = MagicMock(spec=User)
+    update.effective_user.id = user_id
+    message = MagicMock(spec=Message)
+    message.text = text
+    message.reply_text = AsyncMock()
+    update.message = message
+    update.effective_message = message
+    update.callback_query = None
+    return update
+
+
+@pytest.mark.asyncio
+async def test_rate_update_yes_fissa_asks_scadenza(mock_context):
+    """Adottando un'offerta fissa aggiornata, chiede di registrare la scadenza"""
+    user_id = "123456789"
+    save_user(
+        user_id,
+        {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.145,
+                "commercializzazione": 72.0,
+            }
+        },
+    )
+    pending = {
+        "luce": {
+            "tipo": "fissa",
+            "fascia": "monoraria",
+            "energia": 0.130,
+            "commercializzazione": 65.0,
+        },
+        "updated_services": ["luce"],
+    }
+    save_pending_rates(user_id, pending)
+
+    update = _callback_update(
+        int(user_id), data="rate_update_yes", text_html=f"x\n\n{PROMPT_TEXT}\n\ny"
+    )
+    result = await rate_update_yes(update, mock_context)
+
+    assert result == ASK_SCADENZA
+    update.callback_query.message.reply_text.assert_awaited_once()
+    assert SCADENZA_ASK_TEXT in update.callback_query.message.reply_text.call_args.args[0]
+    assert mock_context.user_data["scadenza_update_services"] == ["luce"]
+
+
+@pytest.mark.asyncio
+async def test_rate_update_yes_variabile_no_scadenza(mock_context):
+    """Adottando un'offerta variabile non chiede la scadenza"""
+    user_id = "123456789"
+    save_user(
+        user_id,
+        {
+            "luce": {
+                "tipo": "variabile",
+                "fascia": "monoraria",
+                "energia": 0.02,
+                "commercializzazione": 72.0,
+            }
+        },
+    )
+    pending = {
+        "luce": {
+            "tipo": "variabile",
+            "fascia": "monoraria",
+            "energia": 0.01,
+            "commercializzazione": 65.0,
+        },
+        "updated_services": ["luce"],
+    }
+    save_pending_rates(user_id, pending)
+
+    update = _callback_update(
+        int(user_id), data="rate_update_yes", text_html=f"x\n\n{PROMPT_TEXT}\n\ny"
+    )
+    result = await rate_update_yes(update, mock_context)
+
+    assert result == ConversationHandler.END
+    update.callback_query.message.reply_text.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_scadenza_choice_no_ends(mock_context):
+    """Rispondere 'No' termina la conversazione"""
+    mock_context.user_data["scadenza_update_services"] = ["luce"]
+    update = _callback_update(data="scadenza_update_no")
+
+    result = await scadenza_update_choice(update, mock_context)
+
+    assert result == ConversationHandler.END
+    assert "scadenza_update_services" not in mock_context.user_data
+    assert SCADENZA_DECLINED_TEXT in update.callback_query.edit_message_text.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_scadenza_choice_yes_asks_date(mock_context):
+    """Rispondere 'Sì' chiede la data del primo servizio"""
+    mock_context.user_data["scadenza_update_services"] = ["luce"]
+    update = _callback_update(data="scadenza_update_yes")
+
+    result = await scadenza_update_choice(update, mock_context)
+
+    assert result == UPDATE_DATE
+    assert "data di attivazione" in update.callback_query.edit_message_text.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_update_scadenza_date_valid_single_service(mock_context):
+    """Data valida salva la scadenza e termina (un solo servizio)"""
+    user_id = "123456789"
+    save_user(
+        user_id,
+        {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.13,
+                "commercializzazione": 65.0,
+            }
+        },
+    )
+    mock_context.user_data["scadenza_update_services"] = ["luce"]
+
+    update = _message_update(int(user_id), text="15/03/2025")
+    result = await update_scadenza_date(update, mock_context)
+
+    assert result == ConversationHandler.END
+    assert load_user(user_id)["luce"]["scadenza"] == "2026-03-15"
+    assert "scadenza_update_services" not in mock_context.user_data
+
+
+@pytest.mark.asyncio
+async def test_update_scadenza_date_invalid_reasks(mock_context):
+    """Data non valida → messaggio di errore e resta nello stato"""
+    mock_context.user_data["scadenza_update_services"] = ["luce"]
+    update = _message_update(text="data-sbagliata")
+
+    result = await update_scadenza_date(update, mock_context)
+
+    assert result == UPDATE_DATE
+    assert update.message.reply_text.call_args.args[0] == MSG_DATE_INVALID
+
+
+@pytest.mark.asyncio
+async def test_update_scadenza_date_two_services(mock_context):
+    """Con luce e gas fisse aggiornate, chiede entrambe le date in sequenza"""
+    user_id = "123456789"
+    save_user(
+        user_id,
+        {
+            "luce": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.13,
+                "commercializzazione": 65.0,
+            },
+            "gas": {
+                "tipo": "fissa",
+                "fascia": "monoraria",
+                "energia": 0.42,
+                "commercializzazione": 80.0,
+            },
+        },
+    )
+    mock_context.user_data["scadenza_update_services"] = ["luce", "gas"]
+
+    # Prima data (luce) → resta in UPDATE_DATE e chiede la data gas
+    update1 = _message_update(int(user_id), text="15/03/2025")
+    result1 = await update_scadenza_date(update1, mock_context)
+    assert result1 == UPDATE_DATE
+    assert load_user(user_id)["luce"]["scadenza"] == "2026-03-15"
+    assert mock_context.user_data["scadenza_update_services"] == ["gas"]
+
+    # Seconda data (gas) → termina
+    update2 = _message_update(int(user_id), text="01/06/2025")
+    result2 = await update_scadenza_date(update2, mock_context)
+    assert result2 == ConversationHandler.END
+    assert load_user(user_id)["gas"]["scadenza"] == "2026-06-01"
+    assert "scadenza_update_services" not in mock_context.user_data
+
+
+@pytest.mark.asyncio
+async def test_skip_scadenza_date_single(mock_context):
+    """Saltare l'unico servizio termina la conversazione"""
+    mock_context.user_data["scadenza_update_services"] = ["luce"]
+    update = _callback_update(data="skip_scadenza_update")
+
+    result = await skip_scadenza_date(update, mock_context)
+
+    assert result == ConversationHandler.END
+    assert "scadenza_update_services" not in mock_context.user_data
+
+
+@pytest.mark.asyncio
+async def test_skip_scadenza_date_moves_to_next(mock_context):
+    """Saltare luce passa a chiedere la data gas"""
+    mock_context.user_data["scadenza_update_services"] = ["luce", "gas"]
+    update = _callback_update(data="skip_scadenza_update")
+
+    result = await skip_scadenza_date(update, mock_context)
+
+    assert result == UPDATE_DATE
+    assert mock_context.user_data["scadenza_update_services"] == ["gas"]
+    update.effective_message.reply_text.assert_awaited()

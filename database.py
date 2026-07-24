@@ -533,6 +533,15 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
 
         gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
 
+        # 4b. Azzera la scadenza (e il relativo marker reminder) SOLO per i servizi
+        # effettivamente aggiornati: adottando una nuova offerta la vecchia scadenza
+        # non è più valida. I servizi lasciati invariati conservano la loro scadenza.
+        updated_services = pending_rates.get("updated_services", [])
+        luce_scadenza = None if "luce" in updated_services else user_row["luce_scadenza"]
+        gas_scadenza = None if "gas" in updated_services else user_row["gas_scadenza"]
+        luce_reminded = None if "luce" in updated_services else user_row["luce_scadenza_reminded"]
+        gas_reminded = None if "gas" in updated_services else user_row["gas_scadenza_reminded"]
+
         # 5. Aggiorna utente e pulisci pending_rates in un'unica transazione
         conn.execute(
             """
@@ -541,6 +550,8 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
                 gas_tipo = ?, gas_fascia = ?, gas_energia = ?, gas_commercializzazione = ?,
                 luce_consumo_f1 = ?, luce_consumo_f2 = ?, luce_consumo_f3 = ?,
                 gas_consumo_annuo = ?,
+                luce_scadenza = ?, gas_scadenza = ?,
+                luce_scadenza_reminded = ?, gas_scadenza_reminded = ?,
                 last_notified_rates = ?,
                 pending_rates = NULL,
                 updated_at = CURRENT_TIMESTAMP
@@ -559,6 +570,10 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
                 luce.get("consumo_f2"),
                 luce.get("consumo_f3"),
                 gas_consumo,
+                luce_scadenza,
+                gas_scadenza,
+                luce_reminded,
+                gas_reminded,
                 last_notified_json,
                 user_id,
             ),
@@ -638,6 +653,41 @@ def mark_scadenza_reminded(user_id: str, servizio: str, scadenza: str) -> bool:
         return True
     except sqlite3.Error as e:
         logger.exception(f"❌ Errore aggiornamento reminder scadenza per {user_id}: {e}")
+        return False
+
+
+def update_user_scadenza(user_id: str, servizio: str, scadenza: str) -> bool:
+    """
+    Imposta la data di scadenza di un servizio e azzera il relativo marker reminder.
+
+    Usato quando l'utente inserisce una nuova data dopo aver adottato una nuova
+    offerta a prezzo fisso.
+
+    Args:
+        user_id: ID utente Telegram
+        servizio: "luce" o "gas"
+        scadenza: Data di scadenza (ISO) da salvare
+
+    Returns:
+        True se aggiornato con successo, False altrimenti
+    """
+    if servizio not in ("luce", "gas"):
+        logger.error(f"❌ Servizio non valido per update_user_scadenza: {servizio}")
+        return False
+
+    scadenza_col = f"{servizio}_scadenza"
+    reminded_col = f"{servizio}_scadenza_reminded"
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                f"UPDATE users SET {scadenza_col} = ?, {reminded_col} = NULL, "
+                "updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (scadenza, user_id),
+            )
+        logger.debug(f"Scadenza {servizio} aggiornata per utente {user_id}: {scadenza}")
+        return True
+    except sqlite3.Error as e:
+        logger.exception(f"❌ Errore aggiornamento scadenza per {user_id}: {e}")
         return False
 
 
