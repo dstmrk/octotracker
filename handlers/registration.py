@@ -15,6 +15,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from constants import ERROR_INPUT_TOO_LONG, ERROR_VALUE_NEGATIVE, MAX_NUMERIC_INPUT_LENGTH
 from database import save_user, user_exists
+from date_utils import compute_expiry_date, format_date_display, parse_activation_date
 from formatters import format_luce_consumption, format_number, format_utility_header
 from handlers import safe_answer_callback
 
@@ -24,6 +25,11 @@ logger = logging.getLogger(__name__)
 # Costanti messaggi
 MSG_HAS_GAS = "Hai anche una fornitura gas attiva con Octopus Energy?"
 MSG_GAS_CONSUMO = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
+MSG_DATE_INVALID = "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)"
+
+# Callback data per saltare l'inserimento della data di attivazione
+SKIP_SCADENZA_LUCE = "skip_scadenza_luce"
+SKIP_SCADENZA_GAS = "skip_scadenza_gas"
 
 
 # ========== INPUT VALIDATION ==========
@@ -77,10 +83,12 @@ class ConversationState(IntEnum):
     LUCE_CONSUMO_F1 = 8
     LUCE_CONSUMO_F2 = 9
     LUCE_CONSUMO_F3 = 10
+    LUCE_ATTIVAZIONE = 14  # Data attivazione offerta fissa luce (per reminder scadenza)
     HA_GAS = 4
     GAS_TIPO = 13  # Scelta tipo tariffa gas (fissa/variabile)
     GAS_ENERGIA = 5
     GAS_COMM = 6
+    GAS_ATTIVAZIONE = 15  # Data attivazione offerta fissa gas (per reminder scadenza)
     VUOI_CONSUMI_GAS = 11
     GAS_CONSUMO = 12
 
@@ -94,12 +102,72 @@ VUOI_CONSUMI_LUCE = ConversationState.VUOI_CONSUMI_LUCE
 LUCE_CONSUMO_F1 = ConversationState.LUCE_CONSUMO_F1
 LUCE_CONSUMO_F2 = ConversationState.LUCE_CONSUMO_F2
 LUCE_CONSUMO_F3 = ConversationState.LUCE_CONSUMO_F3
+LUCE_ATTIVAZIONE = ConversationState.LUCE_ATTIVAZIONE
 HA_GAS = ConversationState.HA_GAS
 GAS_TIPO = ConversationState.GAS_TIPO
 GAS_ENERGIA = ConversationState.GAS_ENERGIA
 GAS_COMM = ConversationState.GAS_COMM
+GAS_ATTIVAZIONE = ConversationState.GAS_ATTIVAZIONE
 VUOI_CONSUMI_GAS = ConversationState.VUOI_CONSUMI_GAS
 GAS_CONSUMO = ConversationState.GAS_CONSUMO
+
+
+# ========== PROMPT BUILDERS ==========
+
+
+def _consumi_luce_prompt() -> tuple[str, InlineKeyboardMarkup]:
+    """Costruisce testo e tastiera per la domanda sui consumi luce"""
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
+            ]
+        ]
+    )
+    text = (
+        "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
+        "💡 Serve solo per valutare meglio quando una tariffa può convenirti."
+    )
+    return text, keyboard
+
+
+def _consumi_gas_prompt() -> tuple[str, InlineKeyboardMarkup]:
+    """Costruisce testo e tastiera per la domanda sui consumi gas"""
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
+                InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
+            ]
+        ]
+    )
+    text = (
+        "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
+        "🔥 Serve solo per valutare meglio quando una tariffa può convenirti."
+    )
+    return text, keyboard
+
+
+def _attivazione_prompt(servizio: str, skip_callback: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Costruisce testo e tastiera per la domanda sulla data di attivazione.
+
+    Args:
+        servizio: "luce" o "gas" (per personalizzare il testo)
+        skip_callback: callback_data del pulsante "Salta"
+    """
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("⏭️ Salta", callback_data=skip_callback)]]
+    )
+    text = (
+        "📅 <b>Reminder scadenza offerta</b>\n\n"
+        f"Le offerte a prezzo fisso durano 12 mesi dall'attivazione: alla scadenza Octopus "
+        f"Energy passa in automatico alla tariffa variabile del momento.\n\n"
+        f"Se vuoi, indicami la <b>data di attivazione</b> della tua offerta {servizio} e ti "
+        f"invierò un promemoria un mese prima della scadenza.\n\n"
+        "💬 Scrivila nel formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta»."
+    )
+    return text, keyboard
 
 
 # ========== CONVERSATION HANDLERS ==========
@@ -253,7 +321,11 @@ async def luce_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 
 async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva costo commercializzazione luce e chiedi se vuole inserire consumi"""
+    """Salva costo commercializzazione luce.
+
+    Se la tariffa è fissa chiede la data di attivazione (per il reminder di scadenza),
+    altrimenti passa direttamente alla domanda sui consumi.
+    """
     if update.message is None or update.message.text is None:
         return LUCE_COMM
 
@@ -270,19 +342,48 @@ async def luce_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     context.user_data["luce_comm"] = value
 
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ Sì", callback_data="consumi_luce_si"),
-            InlineKeyboardButton("❌ No", callback_data="consumi_luce_no"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Solo per tariffe fisse chiediamo la data di attivazione (reminder scadenza)
+    if context.user_data.get("luce_tipo") == "fissa":
+        text, reply_markup = _attivazione_prompt("luce", SKIP_SCADENZA_LUCE)
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return LUCE_ATTIVAZIONE
+
+    text, reply_markup = _consumi_luce_prompt()
+    await update.message.reply_text(text, reply_markup=reply_markup)
+    return VUOI_CONSUMI_LUCE
+
+
+async def luce_attivazione(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva la data di scadenza (attivazione + 12 mesi) per l'offerta fissa luce"""
+    if update.message is None or update.message.text is None:
+        return LUCE_ATTIVAZIONE
+
+    activation = parse_activation_date(update.message.text)
+    if activation is None:
+        await update.message.reply_text(MSG_DATE_INVALID)
+        return LUCE_ATTIVAZIONE
+
+    scadenza = compute_expiry_date(activation)
+    context.user_data["luce_scadenza"] = scadenza.isoformat()
 
     await update.message.reply_text(
-        "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n"
-        "💡 Serve solo per valutare meglio quando una tariffa può convenirti.",
-        reply_markup=reply_markup,
+        f"✅ Perfetto! La tua offerta luce scade il <b>{format_date_display(scadenza)}</b>.\n"
+        "Ti avviserò un mese prima. 🔔",
+        parse_mode=ParseMode.HTML,
     )
+
+    text, reply_markup = _consumi_luce_prompt()
+    await update.message.reply_text(text, reply_markup=reply_markup)
+    return VUOI_CONSUMI_LUCE
+
+
+async def skip_luce_attivazione(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salta l'inserimento della data di attivazione luce"""
+    query = update.callback_query
+    await safe_answer_callback(query)
+
+    text, reply_markup = _consumi_luce_prompt()
+    await query.edit_message_text(text, reply_markup=reply_markup)
     return VUOI_CONSUMI_LUCE
 
 
@@ -508,7 +609,11 @@ async def gas_energia(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 
 async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Salva commercializzazione gas e chiedi se vuole inserire consumi"""
+    """Salva commercializzazione gas.
+
+    Se la tariffa gas è fissa chiede la data di attivazione (per il reminder di scadenza),
+    altrimenti passa direttamente alla domanda sui consumi.
+    """
     if update.message is None or update.message.text is None:
         return GAS_COMM
 
@@ -525,19 +630,48 @@ async def gas_comm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     context.user_data["gas_comm"] = value
 
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ Sì", callback_data="consumi_gas_si"),
-            InlineKeyboardButton("❌ No", callback_data="consumi_gas_no"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Solo per tariffe fisse chiediamo la data di attivazione (reminder scadenza)
+    if context.user_data.get("gas_tipo") == "fissa":
+        text, reply_markup = _attivazione_prompt("gas", SKIP_SCADENZA_GAS)
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        return GAS_ATTIVAZIONE
+
+    text, reply_markup = _consumi_gas_prompt()
+    await update.message.reply_text(text, reply_markup=reply_markup)
+    return VUOI_CONSUMI_GAS
+
+
+async def gas_attivazione(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salva la data di scadenza (attivazione + 12 mesi) per l'offerta fissa gas"""
+    if update.message is None or update.message.text is None:
+        return GAS_ATTIVAZIONE
+
+    activation = parse_activation_date(update.message.text)
+    if activation is None:
+        await update.message.reply_text(MSG_DATE_INVALID)
+        return GAS_ATTIVAZIONE
+
+    scadenza = compute_expiry_date(activation)
+    context.user_data["gas_scadenza"] = scadenza.isoformat()
 
     await update.message.reply_text(
-        "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n"
-        "🔥 Serve solo per valutare meglio quando una tariffa può convenirti.",
-        reply_markup=reply_markup,
+        f"✅ Perfetto! La tua offerta gas scade il <b>{format_date_display(scadenza)}</b>.\n"
+        "Ti avviserò un mese prima. 🔔",
+        parse_mode=ParseMode.HTML,
     )
+
+    text, reply_markup = _consumi_gas_prompt()
+    await update.message.reply_text(text, reply_markup=reply_markup)
+    return VUOI_CONSUMI_GAS
+
+
+async def skip_gas_attivazione(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Salta l'inserimento della data di attivazione gas"""
+    query = update.callback_query
+    await safe_answer_callback(query)
+
+    text, reply_markup = _consumi_gas_prompt()
+    await query.edit_message_text(text, reply_markup=reply_markup)
     return VUOI_CONSUMI_GAS
 
 
@@ -626,6 +760,10 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
     if "luce_consumo_f3" in context.user_data:
         user_data["luce"]["consumo_f3"] = context.user_data["luce_consumo_f3"]
 
+    # Aggiungi scadenza offerta fissa luce se presente
+    if "luce_scadenza" in context.user_data:
+        user_data["luce"]["scadenza"] = context.user_data["luce_scadenza"]
+
     if not solo_luce:
         # Verifica che tutti i dati necessari per gas esistano
         required_gas_keys = ["gas_tipo", "gas_fascia", "gas_energia", "gas_comm"]
@@ -651,6 +789,9 @@ def _build_user_data(context: ContextTypes.DEFAULT_TYPE, solo_luce: bool) -> dic
         # Aggiungi consumo gas se presente
         if "gas_consumo_annuo" in context.user_data:
             user_data["gas"]["consumo_annuo"] = context.user_data["gas_consumo_annuo"]
+        # Aggiungi scadenza offerta fissa gas se presente
+        if "gas_scadenza" in context.user_data:
+            user_data["gas"]["scadenza"] = context.user_data["gas_scadenza"]
     else:
         user_data["gas"] = None
 
@@ -685,6 +826,11 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
     # Aggiungi consumi luce se presenti
     messaggio += format_luce_consumption(user_data["luce"])
 
+    # Aggiungi scadenza offerta fissa luce se presente
+    luce_scadenza = user_data["luce"].get("scadenza")
+    if luce_scadenza:
+        messaggio += f"- Scadenza offerta: <b>{format_date_display(luce_scadenza)}</b>\n"
+
     # Aggiungi sezione gas se presente
     if user_data["gas"] is not None:
         gas_energia_fmt = format_number(user_data["gas"]["energia"], max_decimals=4)
@@ -705,6 +851,11 @@ def _format_confirmation_message(user_data: dict[str, Any]) -> str:
             messaggio += (
                 f"- Consumo: <b>{format_number(consumo_gas, max_decimals=0)}</b> Smc/anno\n"
             )
+
+        # Aggiungi scadenza offerta fissa gas se presente
+        gas_scadenza = user_data["gas"].get("scadenza")
+        if gas_scadenza:
+            messaggio += f"- Scadenza offerta: <b>{format_date_display(gas_scadenza)}</b>\n"
 
     # Aggiungi footer
     messaggio += (

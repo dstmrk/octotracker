@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS users (
     luce_consumo_f2 REAL,
     luce_consumo_f3 REAL,
     gas_consumo_annuo REAL,
+    luce_scadenza TEXT,
+    gas_scadenza TEXT,
+    luce_scadenza_reminded TEXT,
+    gas_scadenza_reminded TEXT,
     last_notified_rates TEXT,
     pending_rates TEXT,
     last_feedback_at TIMESTAMP,
@@ -97,15 +101,49 @@ def get_connection():
             conn.close()
 
 
+# Colonne aggiunte dopo la creazione iniziale della tabella users.
+# Vengono applicate via ALTER TABLE per i database già esistenti (migrazione idempotente).
+_USERS_MIGRATIONS = {
+    "luce_scadenza": "TEXT",
+    "gas_scadenza": "TEXT",
+    "luce_scadenza_reminded": "TEXT",
+    "gas_scadenza_reminded": "TEXT",
+}
+
+
+def _migrate_users_schema(conn: sqlite3.Connection) -> None:
+    """Aggiunge le colonne mancanti alla tabella users (migrazione idempotente).
+
+    SQLite non supporta ADD COLUMN IF NOT EXISTS, quindi controlliamo prima
+    le colonne esistenti tramite PRAGMA table_info.
+    """
+    cursor = conn.execute("PRAGMA table_info(users)")
+    existing_columns = {row["name"] for row in cursor.fetchall()}
+
+    for column, column_type in _USERS_MIGRATIONS.items():
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {column} {column_type}")
+            logger.info(f"🔧 Migrazione DB: aggiunta colonna users.{column}")
+
+
 def init_db() -> None:
     """Inizializza database e crea tabelle"""
     try:
         with get_connection() as conn:
             conn.executescript(SCHEMA)
+            _migrate_users_schema(conn)
         logger.info("✅ Database inizializzato")
     except sqlite3.Error as e:
         logger.exception(f"❌ Errore inizializzazione database: {e}")
         raise
+
+
+def _row_has_column(row: sqlite3.Row, column: str) -> bool:
+    """Verifica se una Row SQLite contiene una determinata colonna.
+
+    Difesa contro database non ancora migrati (colonna assente).
+    """
+    return column in row.keys()
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
@@ -127,6 +165,10 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     if row["luce_consumo_f3"] is not None:
         user_data["luce"]["consumo_f3"] = row["luce_consumo_f3"]
 
+    # Aggiungi scadenza offerta fissa luce se presente
+    if _row_has_column(row, "luce_scadenza") and row["luce_scadenza"]:
+        user_data["luce"]["scadenza"] = row["luce_scadenza"]
+
     # Aggiungi gas solo se presente
     if row["gas_tipo"]:
         user_data["gas"] = {
@@ -138,6 +180,9 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
         # Aggiungi consumo gas se presente
         if row["gas_consumo_annuo"] is not None:
             user_data["gas"]["consumo_annuo"] = row["gas_consumo_annuo"]
+        # Aggiungi scadenza offerta fissa gas se presente
+        if _row_has_column(row, "gas_scadenza") and row["gas_scadenza"]:
+            user_data["gas"]["scadenza"] = row["gas_scadenza"]
 
     # Aggiungi last_notified_rates se presente
     if row["last_notified_rates"]:
@@ -237,12 +282,16 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
         luce_consumo_f2 = luce.get("consumo_f2")
         luce_consumo_f3 = luce.get("consumo_f3")
 
+        # Scadenza offerta fissa luce (opzionale, solo per tariffe fisse)
+        luce_scadenza = luce.get("scadenza")
+
         # Estrai e valida dati gas (opzionali)
         gas = user_data.get("gas")
         if gas is not None:
             _validate_gas_data(gas)
 
         gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
+        gas_scadenza = gas.get("scadenza") if gas is not None else None
 
         # Serializza last_notified_rates se presente
         last_notified = user_data.get("last_notified_rates")
@@ -255,8 +304,9 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
                     gas_tipo, gas_fascia, gas_energia, gas_commercializzazione,
                     luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, gas_consumo_annuo,
+                    luce_scadenza, gas_scadenza,
                     last_notified_rates, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(user_id) DO UPDATE SET
                     luce_tipo = excluded.luce_tipo,
                     luce_fascia = excluded.luce_fascia,
@@ -270,6 +320,8 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     luce_consumo_f2 = excluded.luce_consumo_f2,
                     luce_consumo_f3 = excluded.luce_consumo_f3,
                     gas_consumo_annuo = excluded.gas_consumo_annuo,
+                    luce_scadenza = excluded.luce_scadenza,
+                    gas_scadenza = excluded.gas_scadenza,
                     last_notified_rates = excluded.last_notified_rates,
                     updated_at = CURRENT_TIMESTAMP
             """,
@@ -287,6 +339,8 @@ def save_user(user_id: str, user_data: dict[str, Any]) -> bool:
                     luce_consumo_f2,
                     luce_consumo_f3,
                     gas_consumo,
+                    luce_scadenza,
+                    gas_scadenza,
                     last_notified_json,
                 ),
             )
@@ -479,6 +533,15 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
 
         gas_tipo, gas_fascia, gas_energia, gas_comm, gas_consumo = _extract_gas_fields(gas)
 
+        # 4b. Azzera la scadenza (e il relativo marker reminder) SOLO per i servizi
+        # effettivamente aggiornati: adottando una nuova offerta la vecchia scadenza
+        # non è più valida. I servizi lasciati invariati conservano la loro scadenza.
+        updated_services = pending_rates.get("updated_services", [])
+        luce_scadenza = None if "luce" in updated_services else user_row["luce_scadenza"]
+        gas_scadenza = None if "gas" in updated_services else user_row["gas_scadenza"]
+        luce_reminded = None if "luce" in updated_services else user_row["luce_scadenza_reminded"]
+        gas_reminded = None if "gas" in updated_services else user_row["gas_scadenza_reminded"]
+
         # 5. Aggiorna utente e pulisci pending_rates in un'unica transazione
         conn.execute(
             """
@@ -487,6 +550,8 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
                 gas_tipo = ?, gas_fascia = ?, gas_energia = ?, gas_commercializzazione = ?,
                 luce_consumo_f1 = ?, luce_consumo_f2 = ?, luce_consumo_f3 = ?,
                 gas_consumo_annuo = ?,
+                luce_scadenza = ?, gas_scadenza = ?,
+                luce_scadenza_reminded = ?, gas_scadenza_reminded = ?,
                 last_notified_rates = ?,
                 pending_rates = NULL,
                 updated_at = CURRENT_TIMESTAMP
@@ -505,6 +570,10 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
                 luce.get("consumo_f2"),
                 luce.get("consumo_f3"),
                 gas_consumo,
+                luce_scadenza,
+                gas_scadenza,
+                luce_reminded,
+                gas_reminded,
                 last_notified_json,
                 user_id,
             ),
@@ -525,6 +594,101 @@ def apply_pending_rates(user_id: str) -> tuple[bool, str]:
     finally:
         if conn:
             conn.close()
+
+
+# ========== FUNZIONI REMINDER SCADENZA ==========
+
+
+def get_scadenza_reminded_map() -> dict[str, dict[str, str | None]]:
+    """
+    Restituisce, per ogni utente, la scadenza per cui è già stato inviato un reminder.
+
+    Serve al task reminder per non inviare più volte lo stesso avviso.
+
+    Returns:
+        Dict {user_id: {"luce": <scadenza_reminded>, "gas": <scadenza_reminded>}}
+        dove i valori sono la stringa ISO della scadenza già notificata (o None).
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT user_id, luce_scadenza_reminded, gas_scadenza_reminded FROM users"
+            )
+            return {
+                row["user_id"]: {
+                    "luce": row["luce_scadenza_reminded"],
+                    "gas": row["gas_scadenza_reminded"],
+                }
+                for row in cursor.fetchall()
+            }
+    except sqlite3.Error as e:
+        logger.exception(f"❌ Errore lettura reminder scadenza: {e}")
+        return {}
+
+
+def mark_scadenza_reminded(user_id: str, servizio: str, scadenza: str) -> bool:
+    """
+    Registra che il reminder di scadenza è stato inviato per un servizio.
+
+    Args:
+        user_id: ID utente Telegram
+        servizio: "luce" o "gas"
+        scadenza: Data di scadenza (ISO) per cui è stato inviato l'avviso
+
+    Returns:
+        True se aggiornato con successo, False altrimenti
+    """
+    if servizio not in ("luce", "gas"):
+        logger.error(f"❌ Servizio non valido per mark_scadenza_reminded: {servizio}")
+        return False
+
+    column = f"{servizio}_scadenza_reminded"
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                f"UPDATE users SET {column} = ? WHERE user_id = ?",
+                (scadenza, user_id),
+            )
+        logger.debug(f"Reminder scadenza {servizio} marcato per utente {user_id}")
+        return True
+    except sqlite3.Error as e:
+        logger.exception(f"❌ Errore aggiornamento reminder scadenza per {user_id}: {e}")
+        return False
+
+
+def update_user_scadenza(user_id: str, servizio: str, scadenza: str) -> bool:
+    """
+    Imposta la data di scadenza di un servizio e azzera il relativo marker reminder.
+
+    Usato quando l'utente inserisce una nuova data dopo aver adottato una nuova
+    offerta a prezzo fisso.
+
+    Args:
+        user_id: ID utente Telegram
+        servizio: "luce" o "gas"
+        scadenza: Data di scadenza (ISO) da salvare
+
+    Returns:
+        True se aggiornato con successo, False altrimenti
+    """
+    if servizio not in ("luce", "gas"):
+        logger.error(f"❌ Servizio non valido per update_user_scadenza: {servizio}")
+        return False
+
+    scadenza_col = f"{servizio}_scadenza"
+    reminded_col = f"{servizio}_scadenza_reminded"
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                f"UPDATE users SET {scadenza_col} = ?, {reminded_col} = NULL, "
+                "updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (scadenza, user_id),
+            )
+        logger.debug(f"Scadenza {servizio} aggiornata per utente {user_id}: {scadenza}")
+        return True
+    except sqlite3.Error as e:
+        logger.exception(f"❌ Errore aggiornamento scadenza per {user_id}: {e}")
+        return False
 
 
 # ========== FUNZIONI FEEDBACK ==========

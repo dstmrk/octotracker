@@ -26,6 +26,7 @@ async def test_post_init_creates_health_task():
     with (
         patch("bot.scraper_daily_task", new_callable=AsyncMock),
         patch("bot.checker_daily_task", new_callable=AsyncMock),
+        patch("bot.reminder_daily_task", new_callable=AsyncMock),
         patch("bot.run_health_server", new_callable=AsyncMock),
         patch("asyncio.create_task") as mock_create_task,
     ):
@@ -33,21 +34,23 @@ async def test_post_init_creates_health_task():
         mock_task_1 = MagicMock()
         mock_task_2 = MagicMock()
         mock_task_3 = MagicMock()
-        mock_create_task.side_effect = [mock_task_1, mock_task_2, mock_task_3]
+        mock_task_4 = MagicMock()
+        mock_create_task.side_effect = [mock_task_1, mock_task_2, mock_task_3, mock_task_4]
 
         # Run post_init
         await post_init(mock_app)
 
-        # Verifica che tutti e 3 i task siano stati creati
-        assert mock_create_task.call_count == 3
+        # Verifica che tutti e 4 i task siano stati creati
+        assert mock_create_task.call_count == 4
 
         # Verifica che i task siano stati salvati in bot_data
         assert "scraper_task" in mock_app.bot_data
         assert "checker_task" in mock_app.bot_data
+        assert "reminder_task" in mock_app.bot_data
         assert "health_task" in mock_app.bot_data
 
         # Verifica che add_done_callback sia stato chiamato su ogni task
-        for task_mock in (mock_task_1, mock_task_2, mock_task_3):
+        for task_mock in (mock_task_1, mock_task_2, mock_task_3, mock_task_4):
             task_mock.add_done_callback.assert_called_once()
 
 
