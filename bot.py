@@ -150,6 +150,9 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 SCRAPER_HOUR = int(os.getenv("SCRAPER_HOUR", "9"))  # Default: 9:00 ora italiana
 CHECKER_HOUR = int(os.getenv("CHECKER_HOUR", "10"))  # Default: 10:00 ora italiana
 REMINDER_HOUR = int(os.getenv("REMINDER_HOUR", "11"))  # Default: 11:00 ora italiana
+# Limite massimo per un'esecuzione dello scraper (evita che un download bloccato
+# resti appeso per sempre senza mai loggare un errore)
+SCRAPER_TIMEOUT_SECONDS = int(os.getenv("SCRAPER_TIMEOUT_SECONDS", "600"))
 
 # Configurazione webhook
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")  # Es: https://octotracker.tuodominio.xyz
@@ -178,8 +181,13 @@ async def run_scraper() -> None:
     """Esegue scraper delle tariffe"""
     logger.info("🕷️  Avvio scraper...")
     try:
-        result = await fetch_octopus_tariffe()
+        result = await asyncio.wait_for(fetch_octopus_tariffe(), timeout=SCRAPER_TIMEOUT_SECONDS)
         logger.info(f"✅ Scraper completato: {result}")
+    except TimeoutError:
+        logger.error(
+            f"⏱️  Scraper interrotto: nessuna risposta entro {SCRAPER_TIMEOUT_SECONDS}s "
+            "(probabile download bloccato lato ARERA)"
+        )
     except ConnectionError as e:
         logger.exception(f"🌐 Errore di connessione scraper: {e}")
     except OSError as e:
