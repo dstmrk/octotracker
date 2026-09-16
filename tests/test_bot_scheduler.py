@@ -39,6 +39,22 @@ async def test_run_scraper_os_error(monkeypatch, caplog):
 
 
 @pytest.mark.asyncio
+async def test_run_scraper_timeout(monkeypatch, caplog):
+    """run_scraper logga un errore chiaro se fetch_octopus_tariffe non risponde entro il timeout"""
+
+    async def hang(*args, **kwargs):
+        await asyncio.sleep(10)
+
+    monkeypatch.setattr(bot, "fetch_octopus_tariffe", hang)
+    monkeypatch.setattr(bot, "SCRAPER_TIMEOUT_SECONDS", 0.01)
+
+    with caplog.at_level("ERROR"):
+        await bot.run_scraper()
+
+    assert "Scraper interrotto" in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_run_scraper_generic_exception(monkeypatch, caplog):
     """run_scraper logga con logging.exception() su errore generico"""
     monkeypatch.setattr(bot, "fetch_octopus_tariffe", AsyncMock(side_effect=ValueError("boom")))
