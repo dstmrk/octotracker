@@ -26,3 +26,9 @@ test-results/
 .coverage
 coverage.xml
 htmlcov/
+
+# Go
+/octotracker
+/bin/
+coverage.out
+*.coverprofile
