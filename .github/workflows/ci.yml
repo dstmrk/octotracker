@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # La toolchain è quella di go.mod, installata da setup-go: niente download
+  # automatici a metà job.
+  GOTOOLCHAIN: local
+  # Gli strumenti vanno compilati con la stessa Go del progetto: una
+  # versione più vecchia non legge l'export data di Go 1.27.
+  STATICCHECK_VERSION: v0.8.2
+  GOVULNCHECK_VERSION: v1.8.0
+  MIN_COVERAGE: "80"
+
+jobs:
+  go:
+    name: Go (lint, test, coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # SonarCloud usa la history git
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l cmd internal webapp)
+          if [ -n "$unformatted" ]; then
+            echo "File da formattare con gofmt -w:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION} ./...
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION} ./...
+
+      # La coverage conta solo internal/ (escluso cmd/), ma i test di cmd/
+      # girano lo stesso.
+      - name: go test -race
+        run: go test -race -coverpkg=./internal/... -coverprofile=coverage.out ./...
+
+      - name: Coverage ≥ ${{ env.MIN_COVERAGE }}%
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%", "", $3); print $3}')
+          echo "Coverage totale: ${total}%"
+          awk -v t="$total" -v min="$MIN_COVERAGE" 'BEGIN { exit !(t >= min) }' || {
+            echo "Coverage sotto il ${MIN_COVERAGE}%"
+            exit 1
+          }
+
+      - name: SonarCloud Scan
+        # Le PR di Dependabot non hanno accesso ai secret
+        if: github.actor != 'dependabot[bot]'
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
+      # Build multi-arch senza push: il cross-compile avviene nello stage Go,
+      # quindi niente QEMU.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          build-args: VERSION=ci
+      - name: Immagine amd64 < 30 MB e binario avviabile
+        run: |
+          docker buildx build --load --platform linux/amd64 --build-arg VERSION=ci -t octotracker:ci .
+          size=$(docker image inspect octotracker:ci --format '{{.Size}}')
+          echo "Immagine: $((size / 1024 / 1024)) MB"
+          [ "$size" -lt $((30 * 1024 * 1024)) ]
+          docker run --rm octotracker:ci version
+      - name: docker-compose.yml valido
+        run: docker compose config --quiet
