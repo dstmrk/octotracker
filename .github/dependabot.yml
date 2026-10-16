@@ -3,8 +3,8 @@
 
 version: 2
 updates:
-  # Aggiornamenti per le dipendenze Python
-  - package-ecosystem: "pip"
+  # Aggiornamenti per i moduli Go
+  - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -25,7 +25,25 @@ updates:
       - "dstmrk"
     labels:
       - "dependencies"
-      - "python"
+      - "go"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # Aggiornamenti per le immagini base del Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Rome"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "dstmrk"
+    labels:
+      - "dependencies"
+      - "docker"
     commit-message:
       prefix: "deps"
       include: "scope"

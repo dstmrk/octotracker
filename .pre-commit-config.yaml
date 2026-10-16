@@ -1,7 +1,15 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.4
+  - repo: local
     hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
+      - id: gofmt
+        name: gofmt
+        entry: bash -c 'out=$(gofmt -l cmd internal webapp); if [ -n "$out" ]; then echo "$out"; exit 1; fi'
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: go-vet
+        name: go vet
+        entry: go vet ./...
+        language: system
+        types: [go]
+        pass_filenames: false

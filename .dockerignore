@@ -1,65 +1,13 @@
-# Git
-.git
-.gitignore
+# Allowlist: nel contesto di build entra solo ciò che serve a compilare
+# il binario. Tutto il resto (dati, test, documentazione, CI) resta fuori.
+*
 
-# Python
-__pycache__
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-ENV/
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-*.db-journal
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!webapp/
 
-# Dati locali (saranno montati come volume)
-data/
-
-# Environment
-.env
-.env.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Documentazione
-README.md
-LICENSE
-CLAUDE.md
-
-# File statici (non servono in produzione)
-static/
-
-# Test (non servono in produzione)
-tests/
-test_data/
-
-# CI/CD e sviluppo
-.github/
-.pre-commit-config.yaml
-sonar-project.properties
-
-# Render (non serve in Docker)
-render.yaml
-build.sh
+# Test e fixture non servono per il binario di produzione
+**/*_test.go
+**/testdata/

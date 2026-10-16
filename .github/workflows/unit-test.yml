@@ -38,15 +38,10 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # Test se ci sono modifiche a file rilevanti e NON solo a static/
-          if echo "$CHANGED_FILES" | grep -qE '\.(py|toml)$|tests/|\.github/workflows/unit-test\.yml'; then
-            if echo "$CHANGED_FILES" | grep -qv '^static/'; then
-              echo "should_test=true" >> $GITHUB_OUTPUT
-              echo "✅ Rilevate modifiche che richiedono test"
-            else
-              echo "should_test=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Solo modifiche a static/, skip test"
-            fi
+          # Test se ci sono modifiche al codice Go, alle fixture o alla Mini App embeddata
+          if echo "$CHANGED_FILES" | grep -qE '\.go$|^go\.(mod|sum)$|testdata/|^webapp/|sonar-project\.properties|\.github/workflows/unit-test\.yml'; then
+            echo "should_test=true" >> $GITHUB_OUTPUT
+            echo "✅ Rilevate modifiche che richiedono test"
           else
             echo "should_test=false" >> $GITHUB_OUTPUT
             echo "⏭️ Nessuna modifica rilevante, skip test"
@@ -65,27 +60,20 @@ jobs:
       with:
         fetch-depth: 0  # SonarCloud needs full git history
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v7
+    - name: Set up Go
+      uses: actions/setup-go@v7
       with:
-        python-version: '3.11'
+        go-version-file: go.mod
 
-    - name: Install uv
-      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+    - name: Run go test with race detector and coverage
+      run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
-    - name: Add uv to PATH
-      run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Install dependencies
-      run: uv sync --extra dev
-
-    - name: Run pytest with coverage
-      run: uv run pytest tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
+    - name: Coverage summary
+      run: go tool cover -func=coverage.out | tail -1
 
     - name: SonarCloud Scan
       # Skip SonarCloud for Dependabot PRs (secrets not available for security)
       if: github.actor != 'dependabot[bot]'
-      uses: SonarSource/sonarcloud-github-action@master
+      uses: SonarSource/sonarqube-scan-action@v8
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

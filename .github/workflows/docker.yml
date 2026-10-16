@@ -39,7 +39,7 @@ jobs:
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
           # Build se ci sono modifiche a file rilevanti e NON solo a static/
-          if echo "$CHANGED_FILES" | grep -qE '\.(py|toml)$|Dockerfile|docker-compose\.yml|\.github/workflows/docker\.yml'; then
+          if echo "$CHANGED_FILES" | grep -qE '\.go$|^go\.(mod|sum)$|^webapp/|Dockerfile|\.dockerignore|docker-compose\.yml|\.github/workflows/docker\.yml'; then
             if echo "$CHANGED_FILES" | grep -qv '^static/'; then
               echo "should_build=true" >> $GITHUB_OUTPUT
               echo "✅ Rilevate modifiche che richiedono build Docker"
@@ -86,7 +86,8 @@ jobs:
           exit 1
         fi
 
-    - name: Test container starts (dry-run)
+    - name: Test binary runs inside the image
       run: |
-        # Test che il container parta (senza token, fallirà ma verificherà sintassi)
+        # L'immagine distroless non ha shell: verifichiamo che il binario parta
+        docker run --rm octotracker:test version
         docker compose config --quiet && echo "✅ Docker Compose configuration valid"

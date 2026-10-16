@@ -38,15 +38,10 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # Lint se ci sono modifiche a file rilevanti e NON solo a static/
-          if echo "$CHANGED_FILES" | grep -qE '\.(py|toml|yaml)$|\.github/workflows/lint\.yml|\.pre-commit-config\.yaml'; then
-            if echo "$CHANGED_FILES" | grep -qv '^static/'; then
-              echo "should_lint=true" >> $GITHUB_OUTPUT
-              echo "✅ Rilevate modifiche che richiedono lint"
-            else
-              echo "should_lint=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Solo modifiche a static/, skip lint"
-            fi
+          # Lint se ci sono modifiche al codice Go o alla configurazione del lint
+          if echo "$CHANGED_FILES" | grep -qE '\.go$|^go\.(mod|sum)$|\.golangci\.yml|\.github/workflows/lint\.yml'; then
+            echo "should_lint=true" >> $GITHUB_OUTPUT
+            echo "✅ Rilevate modifiche che richiedono lint"
           else
             echo "should_lint=false" >> $GITHUB_OUTPUT
             echo "⏭️ Nessuna modifica rilevante, skip lint"
@@ -54,7 +49,7 @@ jobs:
         fi
 
   lint:
-    name: Lint (Ruff)
+    name: Lint (gofmt, go vet, golangci-lint)
     needs: check-changes
     if: needs.check-changes.outputs.should_lint == 'true'
     runs-on: ubuntu-latest
@@ -63,33 +58,26 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v7
+    - name: Set up Go
+      uses: actions/setup-go@v7
       with:
-        python-version: '3.11'
+        go-version-file: go.mod
 
-    - name: Install uv
-      run: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-    - name: Add uv to PATH
-      run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Install dependencies
-      run: uv sync --extra dev
-
-    - name: Run Ruff format (check only)
-      run: uv run ruff format --check --diff .
-
-    - name: Run Ruff check
-      run: uv run ruff check .
-
-    - name: Lint summary
-      if: always()
+    - name: gofmt (check only)
       run: |
-        if [ $? -eq 0 ]; then
-          echo "✅ All lint checks passed!"
-        else
-          echo "❌ Lint checks failed"
-          echo "Run locally: 'ruff format .' and 'ruff check --fix .'"
+        UNFORMATTED=$(gofmt -l cmd internal webapp)
+        if [ -n "$UNFORMATTED" ]; then
+          echo "❌ File non formattati:"
+          echo "$UNFORMATTED"
+          gofmt -d cmd internal webapp
           exit 1
         fi
+        echo "✅ gofmt ok"
+
+    - name: go vet
+      run: go vet ./...
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: v2.15.0
