@@ -6,12 +6,12 @@
 package config
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // Config contiene tutti i parametri di runtime.
@@ -47,11 +47,12 @@ var ErrMissingWebhookSecret = errors.New(
 func Load() (Config, error) {
 	var errs []error
 	intVar := func(name string, def int) int {
-		raw := strings.TrimSpace(os.Getenv(name))
-		if raw == "" {
+		raw := os.Getenv(name)
+		if strings.TrimFunc(raw, pyIntSpace) == "" {
+			// Python solleverebbe ValueError su int(""): qui si usa il default
 			return def
 		}
-		v, err := strconv.Atoi(raw)
+		v, err := pyAtoi(raw)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s non valido: %q", name, raw))
 			return def
@@ -71,7 +72,7 @@ func Load() (Config, error) {
 		ScraperTimeoutSeconds: intVar("SCRAPER_TIMEOUT_SECONDS", 600),
 		AdminUserID:           os.Getenv("ADMIN_USER_ID"),
 		WebappURL:             os.Getenv("WEBAPP_URL"),
-		TelegramChannel:       strings.TrimSpace(os.Getenv("TELEGRAM_CHANNEL")),
+		TelegramChannel:       strings.TrimFunc(os.Getenv("TELEGRAM_CHANNEL"), pyIsSpace),
 		LogLevel:              strings.ToUpper(envOr("LOG_LEVEL", "INFO")),
 		BroadcastBatchSize:    intVar("BROADCAST_BATCH_SIZE", 10),
 		DataDir:               envOr("DATA_DIR", "data"),
@@ -79,13 +80,15 @@ func Load() (Config, error) {
 	return cfg, errors.Join(errs...)
 }
 
-// ValidateBot verifica i campi obbligatori per avviare il bot in modalità webhook.
+// ValidateBot verifica i campi obbligatori per avviare il bot in modalità
+// webhook, nello stesso ordine della versione Python (WEBHOOK_SECRET è
+// controllato all'import di bot.py, prima del token).
 func (c Config) ValidateBot() error {
-	if c.BotToken == "" {
-		return errors.New("TELEGRAM_BOT_TOKEN non impostato")
-	}
 	if c.WebhookSecret == "" {
 		return ErrMissingWebhookSecret
+	}
+	if c.BotToken == "" {
+		return errors.New("TELEGRAM_BOT_TOKEN non impostato")
 	}
 	if c.WebhookURL == "" {
 		return errors.New("WEBHOOK_URL richiesto")
@@ -93,50 +96,67 @@ func (c Config) ValidateBot() error {
 	return nil
 }
 
-// LoadDotEnv carica un file .env (se esiste) senza sovrascrivere le variabili
-// già presenti nell'ambiente, come python-dotenv con override=False.
-// Supporta righe KEY=VALUE, commenti con #, prefisso "export " e valori tra
-// virgolette singole o doppie.
-func LoadDotEnv(path string) error {
-	f, err := os.Open(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		line = strings.TrimPrefix(line, "export ")
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		value = strings.TrimSpace(value)
-		if len(value) >= 2 && (value[0] == '"' || value[0] == '\'') && value[len(value)-1] == value[0] {
-			value = value[1 : len(value)-1]
-		} else if i := strings.Index(value, " #"); i >= 0 {
-			value = strings.TrimSpace(value[:i])
-		}
-		if _, exists := os.LookupEnv(key); !exists {
-			if err := os.Setenv(key, value); err != nil {
-				return err
-			}
-		}
-	}
-	return scanner.Err()
-}
-
 func envOr(name, def string) string {
 	if v := os.Getenv(name); v != "" {
 		return v
 	}
 	return def
+}
+
+// pyIsSpace replica str.isspace() di Python (usato da strip() e int()).
+func pyIsSpace(r rune) bool {
+	return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f)
+}
+
+// pyIntSpace indica i caratteri ignorati ai lati da int() di Python: gli
+// spazi ASCII " \t\n\v\f\r" e gli spazi Unicode non ASCII (U+001C..U+001F
+// invece non sono ammessi, a differenza di str.strip()).
+func pyIntSpace(r rune) bool {
+	return r == ' ' || (r >= '\t' && r <= '\r') || (r >= 0x80 && pyIsSpace(r))
+}
+
+// pyAtoi replica int(s) di Python in base 10: spazi ai lati, segno
+// opzionale, cifre decimali Unicode separate al più da singoli underscore
+// (es. " 8_443 ").
+func pyAtoi(s string) (int, error) {
+	t := strings.TrimFunc(s, pyIntSpace)
+	invalid := fmt.Errorf("invalid literal for int() with base 10: %q", s)
+	var b strings.Builder
+	if t != "" && (t[0] == '+' || t[0] == '-') {
+		b.WriteByte(t[0])
+		t = t[1:]
+	}
+	prevDigit := false
+	for _, r := range t {
+		switch {
+		case r == '_' && prevDigit:
+			prevDigit = false
+		case unicode.IsDigit(r):
+			b.WriteByte(byte('0' + digitValue(r)))
+			prevDigit = true
+		default:
+			return 0, invalid
+		}
+	}
+	if !prevDigit {
+		return 0, invalid // vuoto o underscore finale
+	}
+	v, err := strconv.Atoi(b.String())
+	if err != nil {
+		return 0, invalid
+	}
+	return v, nil
+}
+
+// digitValue restituisce il valore di una cifra Unicode (categoria Nd): le
+// cifre sono assegnate in blocchi contigui da 0 a 9.
+func digitValue(r rune) int {
+	if r >= '0' && r <= '9' {
+		return int(r - '0')
+	}
+	n := 0
+	for unicode.IsDigit(r - rune(n) - 1) {
+		n++
+	}
+	return n % 10
 }

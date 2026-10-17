@@ -1,18 +1,28 @@
 // Package tg contiene helper Telegram condivisi tra gli handler:
 // filtri equivalenti a quelli di python-telegram-bot, risposta sicura
-// alle callback query e lo store per-utente equivalente a context.user_data.
+// alle callback query (port di handlers/__init__.py), conversione degli
+// errori API nel messaggio che python-telegram-bot mostrerebbe e lo store
+// per-utente equivalente a context.user_data.
 package tg
 
 import (
 	"errors"
-	"log/slog"
+	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters"
+
+	"github.com/dstmrk/octotracker/internal/logging"
 )
+
+// logger replica logging.getLogger(__name__) di handlers/__init__.py.
+var logger = logging.Logger("handlers")
 
 // IsCommand replica filters.COMMAND di PTB: la prima entità del messaggio
 // è un bot_command con offset 0.
@@ -35,20 +45,32 @@ func AnyCommand(msg *gotgbot.Message) bool {
 }
 
 // CallbackPattern replica CallbackQueryHandler(pattern=...) di PTB, che usa
-// re.match (ancorato all'inizio della stringa).
+// re.match (ancorato all'inizio della stringa, non alla fine).
+//
+// Come PTB (v22), una callback senza data corrisponde solo se non ha nemmeno
+// game_short_name (caso che Telegram non produce mai).
 func CallbackPattern(pattern string) filters.CallbackQuery {
 	if !strings.HasPrefix(pattern, "^") {
 		pattern = "^(?:" + pattern + ")"
 	}
 	re := regexp.MustCompile(pattern)
 	return func(cq *gotgbot.CallbackQuery) bool {
+		if cq.Data == "" {
+			return cq.GameShortName == ""
+		}
 		return re.MatchString(cq.Data)
 	}
 }
 
 // SafeAnswerCallback risponde a una callback query ignorando l'errore se la
-// query è scaduta ("query is too old" / "query id is invalid").
-// Port di handlers.safe_answer_callback.
+// query è scaduta.
+//
+// Telegram impone un timeout di ~30 secondi per rispondere alle callback
+// query: se il bot risponde dopo il timeout, l'API restituisce "Query is too
+// old and response timeout expired". L'errore è innocuo e non deve bloccare
+// il flusso della conversazione. Come in Python vengono ignorati solo i
+// BadRequest (HTTP 400) che contengono "too old" o "query id is invalid";
+// ogni altro errore viene restituito. Port di handlers.safe_answer_callback.
 func SafeAnswerCallback(b *gotgbot.Bot, cq *gotgbot.CallbackQuery) error {
 	if cq == nil {
 		return nil
@@ -57,15 +79,86 @@ func SafeAnswerCallback(b *gotgbot.Bot, cq *gotgbot.CallbackQuery) error {
 	if err == nil {
 		return nil
 	}
-	var tgErr *gotgbot.TelegramError
-	if errors.As(err, &tgErr) && tgErr.Code == 400 {
-		desc := strings.ToLower(tgErr.Description)
-		if strings.Contains(desc, "too old") || strings.Contains(desc, "query id is invalid") {
-			slog.Debug("Callback query scaduta (ignorata)", "error", err)
+	if IsBadRequest(err) {
+		msg := strings.ToLower(ErrorString(err))
+		if strings.Contains(msg, "too old") || strings.Contains(msg, "query id is invalid") {
+			logger.Debug(fmt.Sprintf("Callback query scaduta (ignorata): %s", ErrorString(err)))
 			return nil
 		}
 	}
 	return err
+}
+
+// IsBadRequest indica se l'errore corrisponde a telegram.error.BadRequest di
+// PTB: risposta HTTP 400 che non è un ChatMigrated o un RetryAfter.
+func IsBadRequest(err error) bool {
+	var tgErr *gotgbot.TelegramError
+	if !errors.As(err, &tgErr) || tgErr.Code != http.StatusBadRequest {
+		return false
+	}
+	p := tgErr.ResponseParams
+	return p == nil || (p.MigrateToChatId == 0 && p.RetryAfter == 0)
+}
+
+// ErrorString restituisce il messaggio dell'errore come lo mostrerebbe
+// str(e) per le eccezioni di python-telegram-bot (v22), così i log restano
+// identici alla versione Python. Per esempio la descrizione
+// "Bad Request: chat not found" diventa "Chat not found", mentre un 429 con
+// retry_after diventa "Flood control exceeded. Retry in 5 seconds".
+// Gli errori che non provengono dall'API Telegram restituiscono err.Error().
+func ErrorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	var tgErr *gotgbot.TelegramError
+	if !errors.As(err, &tgErr) {
+		return err.Error()
+	}
+	if p := tgErr.ResponseParams; p != nil {
+		if p.MigrateToChatId != 0 {
+			return fmt.Sprintf("Group migrated to supergroup. New chat id: %d", p.MigrateToChatId)
+		}
+		if p.RetryAfter != 0 {
+			return fmt.Sprintf("Flood control exceeded. Retry in %d seconds", p.RetryAfter)
+		}
+	}
+	message := tgErr.Description
+	if message == "" {
+		if phrase := http.StatusText(tgErr.Code); phrase != "" {
+			message = fmt.Sprintf("%s (%d)", phrase, tgErr.Code)
+		} else {
+			message = fmt.Sprintf("Unknown HTTPError (%d)", tgErr.Code)
+		}
+	}
+	return ptbErrorMessage(message)
+}
+
+// ptbErrorMessage replica TelegramError.__init__ di PTB: rimuove i prefissi
+// "Error: ", "[Error]: " e "Bad Request: " e, se ne ha rimosso almeno uno,
+// applica str.capitalize() al resto.
+func ptbErrorMessage(message string) string {
+	msg := strings.TrimPrefix(message, "Error: ")
+	msg = strings.TrimPrefix(msg, "[Error]: ")
+	msg = strings.TrimPrefix(msg, "Bad Request: ")
+	if msg != message {
+		msg = pyCapitalize(msg)
+	}
+	return msg
+}
+
+// pyCapitalize replica str.capitalize() di Python (mappature Unicode semplici).
+func pyCapitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	r, size := utf8.DecodeRuneInString(s)
+	var b strings.Builder
+	b.Grow(len(s))
+	b.WriteRune(unicode.ToTitle(r))
+	for _, c := range s[size:] {
+		b.WriteRune(unicode.ToLower(c))
+	}
+	return b.String()
 }
 
 // UserData è l'equivalente di context.user_data di PTB: un dizionario

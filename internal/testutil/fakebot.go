@@ -163,6 +163,7 @@ func (f *FakeClient) LastCall(t testing.TB, method string) Call {
 	calls := f.CallsTo(method)
 	if len(calls) == 0 {
 		t.Fatalf("nessuna chiamata a %s (chiamate: %v)", method, f.methods())
+		return Call{}
 	}
 	return calls[len(calls)-1]
 }

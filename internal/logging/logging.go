@@ -19,6 +19,7 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -47,10 +48,13 @@ func Critical(l *slog.Logger, msg string, args ...any) {
 }
 
 // ParseLevel converte LOG_LEVEL ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-// nel livello slog. Valori sconosciuti diventano INFO, come getattr(logging, x, INFO).
+// nel livello slog, come getattr(logging, LOG_LEVEL.upper(), logging.INFO):
+// sono riconosciuti anche gli alias WARN e FATAL e NOTSET (livello 0, che
+// lascia passare tutto come DEBUG). Valori sconosciuti, anche solo per spazi
+// attorno al nome, diventano INFO.
 func ParseLevel(s string) slog.Level {
-	switch strings.ToUpper(strings.TrimSpace(s)) {
-	case "DEBUG":
+	switch strings.ToUpper(s) {
+	case "DEBUG", "NOTSET":
 		return slog.LevelDebug
 	case "WARNING", "WARN":
 		return slog.LevelWarn
@@ -113,22 +117,24 @@ func (h *TextHandler) Enabled(_ context.Context, l slog.Level) bool {
 func (h *TextHandler) Handle(_ context.Context, r slog.Record) error {
 	name := "root"
 	var extra []string
-	collect := func(a slog.Attr) {
+	collect := func(a slog.Attr, group string) {
 		if a.Key == nameKey {
 			name = a.Value.String()
 			return
 		}
 		key := a.Key
-		if h.group != "" {
-			key = h.group + "." + key
+		if group != "" {
+			key = group + "." + key
 		}
 		extra = append(extra, fmt.Sprintf("%s=%v", key, a.Value.Any()))
 	}
+	// Gli attributi di WithAttrs sono già qualificati con il gruppo attivo
+	// al momento della chiamata; quelli del record con il gruppo corrente.
 	for _, a := range h.attrs {
-		collect(a)
+		collect(a, "")
 	}
 	r.Attrs(func(a slog.Attr) bool {
-		collect(a)
+		collect(a, h.group)
 		return true
 	})
 
@@ -159,7 +165,13 @@ func (h *TextHandler) Handle(_ context.Context, r slog.Record) error {
 // WithAttrs implementa slog.Handler.
 func (h *TextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	cp := *h
-	cp.attrs = append(append([]slog.Attr{}, h.attrs...), attrs...)
+	cp.attrs = append([]slog.Attr{}, h.attrs...)
+	for _, a := range attrs {
+		if h.group != "" && a.Key != nameKey {
+			a.Key = h.group + "." + a.Key
+		}
+		cp.attrs = append(cp.attrs, a)
+	}
 	return &cp
 }
 
@@ -191,15 +203,29 @@ func LevelName(l slog.Level) string {
 }
 
 // lazyHandler risolve slog.Default() a ogni chiamata e aggiunge il nome.
+// Le chiamate WithAttrs/WithGroup vengono memorizzate e riapplicate, in
+// ordine, sul handler di default corrente.
 type lazyHandler struct {
 	name  string
+	steps []lazyStep
+}
+
+// lazyStep è una chiamata WithAttrs (attrs) o WithGroup (group).
+type lazyStep struct {
 	attrs []slog.Attr
+	group string
 }
 
 func (h lazyHandler) target() slog.Handler {
-	t := slog.Default().Handler()
-	attrs := append([]slog.Attr{slog.String(nameKey, h.name)}, h.attrs...)
-	return t.WithAttrs(attrs)
+	t := slog.Default().Handler().WithAttrs([]slog.Attr{slog.String(nameKey, h.name)})
+	for _, s := range h.steps {
+		if s.group != "" {
+			t = t.WithGroup(s.group)
+		} else {
+			t = t.WithAttrs(s.attrs)
+		}
+	}
+	return t
 }
 
 func (h lazyHandler) Enabled(ctx context.Context, l slog.Level) bool {
@@ -210,11 +236,24 @@ func (h lazyHandler) Handle(ctx context.Context, r slog.Record) error {
 	return h.target().Handle(ctx, r)
 }
 
-func (h lazyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return lazyHandler{name: h.name, attrs: append(append([]slog.Attr{}, h.attrs...), attrs...)}
+func (h lazyHandler) with(s lazyStep) lazyHandler {
+	steps := append(append([]lazyStep{}, h.steps...), s)
+	return lazyHandler{name: h.name, steps: steps}
 }
 
-func (h lazyHandler) WithGroup(string) slog.Handler { return h }
+func (h lazyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	if len(attrs) == 0 {
+		return h
+	}
+	return h.with(lazyStep{attrs: append([]slog.Attr{}, attrs...)})
+}
+
+func (h lazyHandler) WithGroup(name string) slog.Handler {
+	if name == "" {
+		return h
+	}
+	return h.with(lazyStep{group: name})
+}
 
 // ========== File con rotazione giornaliera ==========
 
@@ -258,28 +297,38 @@ func (w *DailyRotatingWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if today := w.now().Format("2006-01-02"); today != w.day {
-		if err := w.rotate(); err != nil {
+		// Un errore di rotazione non blocca la scrittura se il nuovo file
+		// è stato comunque aperto.
+		if err := w.rotate(); err != nil && w.file == nil {
 			return 0, err
 		}
 	}
 	return w.file.Write(p)
 }
 
+// rotate rinomina il file corrente in <file>.<giorno> e ne apre uno nuovo.
+// Il nuovo file viene aperto anche se la rinomina fallisce, così il logging
+// non resta bloccato su un file chiuso.
 func (w *DailyRotatingWriter) rotate() error {
+	var errs []error
 	if w.file != nil {
 		if err := w.file.Close(); err != nil {
-			return err
+			errs = append(errs, err)
 		}
+		w.file = nil
 	}
 	rotated := w.path + "." + w.day
 	if _, err := os.Stat(rotated); err == nil {
 		_ = os.Remove(rotated)
 	}
 	if err := os.Rename(w.path, rotated); err != nil && !os.IsNotExist(err) {
-		return err
+		errs = append(errs, err)
 	}
 	w.cleanup()
-	return w.open()
+	if err := w.open(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 func (w *DailyRotatingWriter) cleanup() {

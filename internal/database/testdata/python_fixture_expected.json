@@ -1,0 +1,1700 @@
+{
+ "load_users": [
+  [
+   "1001",
+   {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   }
+  ],
+  [
+   "1002",
+   {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "trioraria",
+     "energia": 0.012,
+     "commercializzazione": 96.0,
+     "consumo_f1": 900.5,
+     "consumo_f2": 800.25,
+     "consumo_f3": 700.0,
+     "scadenza": "2026-11-30"
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0,
+     "consumo_annuo": 1200.0,
+     "scadenza": "2027-02-01"
+    }
+   }
+  ],
+  [
+   "1003",
+   {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "bioraria",
+     "energia": 0.30000000000000004,
+     "commercializzazione": 65.5,
+     "consumo_f1": 1500.0,
+     "consumo_f2": 1200.0,
+     "scadenza": "2026-10-20"
+    },
+    "gas": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.05,
+     "commercializzazione": 84.0
+    },
+    "last_notified_rates": {
+     "luce": {
+      "energia": 0.1078,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "energia": 0.39,
+      "commercializzazione": 84.0
+     }
+    }
+   }
+  ],
+  [
+   "1004",
+   {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.15,
+     "commercializzazione": 70.0,
+     "scadenza": "2026-12-01"
+    }
+   }
+  ],
+  [
+   "1005",
+   {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.01,
+     "commercializzazione": 96.0
+    },
+    "last_notified_rates": {
+     "luce_energia": 0.12,
+     "luce_comm": 72,
+     "timestamp": "2024-01-15T10:00:00",
+     "note": "città €"
+    }
+   }
+  ],
+  [
+   "1006",
+   {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.0088,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.39,
+     "commercializzazione": 84.0,
+     "consumo_annuo": 999.9
+    }
+   }
+  ],
+  [
+   "-1001234567890",
+   {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 1e-05,
+     "commercializzazione": 1e+16
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.4,
+     "commercializzazione": 90.0,
+     "scadenza": "2026-11-11"
+    }
+   }
+  ]
+ ],
+ "load_user": {
+  "1001": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.145,
+    "commercializzazione": 72.0
+   }
+  },
+  "1002": {
+   "luce": {
+    "tipo": "variabile",
+    "fascia": "trioraria",
+    "energia": 0.012,
+    "commercializzazione": 96.0,
+    "consumo_f1": 900.5,
+    "consumo_f2": 800.25,
+    "consumo_f3": 700.0,
+    "scadenza": "2026-11-30"
+   },
+   "gas": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.456,
+    "commercializzazione": 84.0,
+    "consumo_annuo": 1200.0,
+    "scadenza": "2027-02-01"
+   }
+  },
+  "1003": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "bioraria",
+    "energia": 0.30000000000000004,
+    "commercializzazione": 65.5,
+    "consumo_f1": 1500.0,
+    "consumo_f2": 1200.0,
+    "scadenza": "2026-10-20"
+   },
+   "gas": {
+    "tipo": "variabile",
+    "fascia": "monoraria",
+    "energia": 0.05,
+    "commercializzazione": 84.0
+   },
+   "last_notified_rates": {
+    "luce": {
+     "energia": 0.1078,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "energia": 0.39,
+     "commercializzazione": 84.0
+    }
+   }
+  },
+  "1004": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.15,
+    "commercializzazione": 70.0,
+    "scadenza": "2026-12-01"
+   }
+  },
+  "1005": {
+   "luce": {
+    "tipo": "variabile",
+    "fascia": "monoraria",
+    "energia": 0.01,
+    "commercializzazione": 96.0
+   },
+   "last_notified_rates": {
+    "luce_energia": 0.12,
+    "luce_comm": 72,
+    "timestamp": "2024-01-15T10:00:00",
+    "note": "città €"
+   }
+  },
+  "1006": {
+   "luce": {
+    "tipo": "variabile",
+    "fascia": "monoraria",
+    "energia": 0.0088,
+    "commercializzazione": 72.0
+   },
+   "gas": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.39,
+    "commercializzazione": 84.0,
+    "consumo_annuo": 999.9
+   }
+  },
+  "-1001234567890": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 1e-05,
+    "commercializzazione": 1e+16
+   },
+   "gas": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.4,
+    "commercializzazione": 90.0,
+    "scadenza": "2026-11-11"
+   }
+  },
+  "nonexistent": null
+ },
+ "load_pending_rates": {
+  "1001": null,
+  "1002": null,
+  "1003": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "bioraria",
+    "consumo_f1": 1500.0,
+    "consumo_f2": 1200.0,
+    "energia": 0.0999,
+    "commercializzazione": 60.0
+   },
+   "gas": {
+    "tipo": "variabile",
+    "fascia": "monoraria",
+    "energia": 0.05,
+    "commercializzazione": 84.0
+   },
+   "updated_services": [
+    "luce"
+   ]
+  },
+  "1004": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.14,
+    "commercializzazione": 70.0
+   }
+  },
+  "1005": null,
+  "1006": {
+   "luce": {
+    "tipo": "variabile",
+    "fascia": "monoraria",
+    "energia": 0.0088,
+    "commercializzazione": 72.0
+   },
+   "gas": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "consumo_annuo": 999.9,
+    "energia": 0.39,
+    "commercializzazione": 84.0
+   },
+   "updated_services": []
+  },
+  "-1001234567890": {
+   "luce": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 1e-05,
+    "commercializzazione": 1e+16
+   },
+   "gas": {
+    "tipo": "fissa",
+    "fascia": "monoraria",
+    "energia": 0.35,
+    "commercializzazione": 80.0
+   },
+   "updated_services": [
+    "gas"
+   ]
+  },
+  "nonexistent": null
+ },
+ "user_exists": {
+  "1001": true,
+  "1002": true,
+  "1003": true,
+  "1004": true,
+  "1005": true,
+  "1006": true,
+  "-1001234567890": true,
+  "nonexistent": false
+ },
+ "user_count": 7,
+ "scadenza_reminded_map": {
+  "1001": {
+   "luce": null,
+   "gas": null
+  },
+  "1002": {
+   "luce": "2026-11-30",
+   "gas": "2027-02-01"
+  },
+  "1003": {
+   "luce": "2026-10-20",
+   "gas": null
+  },
+  "1004": {
+   "luce": "2026-12-01",
+   "gas": null
+  },
+  "1005": {
+   "luce": null,
+   "gas": null
+  },
+  "1006": {
+   "luce": null,
+   "gas": null
+  },
+  "-1001234567890": {
+   "luce": null,
+   "gas": "2026-11-11"
+  }
+ },
+ "last_feedback_time": {
+  "1001": "2025-12-31 23:59:59",
+  "1002": "2026-06-01 12:00:00",
+  "1003": null,
+  "1004": null,
+  "1005": null,
+  "1006": "2026-03-05 23:30:15",
+  "-1001234567890": null,
+  "nonexistent": null
+ },
+ "recent_feedbacks": [
+  {
+   "id": 5,
+   "user_id": "1002",
+   "feedback_type": "command",
+   "rating": null,
+   "comment": null,
+   "created_at": "2026-06-01 12:00:00"
+  },
+  {
+   "id": 3,
+   "user_id": "1006",
+   "feedback_type": "periodic_survey",
+   "rating": 5,
+   "comment": "Commento con 'apici' e \"virgolette\"",
+   "created_at": "2026-03-05 23:30:15"
+  },
+  {
+   "id": 2,
+   "user_id": "1006",
+   "feedback_type": "notification_rating",
+   "rating": 1,
+   "comment": null,
+   "created_at": "2026-01-10 08:00:00"
+  },
+  {
+   "id": 1,
+   "user_id": "1006",
+   "feedback_type": "command",
+   "rating": null,
+   "comment": "Ottimo bot! 👍",
+   "created_at": "2026-01-10 08:00:00"
+  },
+  {
+   "id": 4,
+   "user_id": "1001",
+   "feedback_type": "notification_rating",
+   "rating": 0,
+   "comment": null,
+   "created_at": "2025-12-31 23:59:59"
+  }
+ ],
+ "recent_feedbacks_limit2": [
+  {
+   "id": 5,
+   "user_id": "1002",
+   "feedback_type": "command",
+   "rating": null,
+   "comment": null,
+   "created_at": "2026-06-01 12:00:00"
+  },
+  {
+   "id": 3,
+   "user_id": "1006",
+   "feedback_type": "periodic_survey",
+   "rating": 5,
+   "comment": "Commento con 'apici' e \"virgolette\"",
+   "created_at": "2026-03-05 23:30:15"
+  }
+ ],
+ "feedback_count": 5,
+ "current_rates": {
+  "luce": {
+   "fissa": {
+    "monoraria": {
+     "energia": 0.11800000000000001,
+     "commercializzazione": 72.0,
+     "cod_offerta": "LF3"
+    },
+    "bioraria": {
+     "energia": 0.113
+    }
+   },
+   "variabile": {
+    "monoraria": {
+     "energia": 0.0095,
+     "commercializzazione": 72.0
+    },
+    "trioraria": {
+     "energia": 0.0123,
+     "commercializzazione": 96.0,
+     "cod_offerta": "LVT"
+    }
+   }
+  },
+  "gas": {
+   "fissa": {
+    "monoraria": {
+     "energia": 0.405,
+     "commercializzazione": 84.0,
+     "cod_offerta": "GF3"
+    }
+   },
+   "variabile": {
+    "monoraria": {
+     "energia": 0.056
+    }
+   }
+  }
+ },
+ "latest_rate_date": "2026-01-02",
+ "rate_history_dates": [
+  [
+   "2025-12-30",
+   "gas",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2025-12-30",
+   "gas",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2025-12-30",
+   "luce",
+   "fissa",
+   "bioraria"
+  ],
+  [
+   "2025-12-30",
+   "luce",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2025-12-30",
+   "luce",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2025-12-31",
+   "gas",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2025-12-31",
+   "gas",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2025-12-31",
+   "luce",
+   "fissa",
+   "bioraria"
+  ],
+  [
+   "2025-12-31",
+   "luce",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2025-12-31",
+   "luce",
+   "variabile",
+   "bioraria"
+  ],
+  [
+   "2025-12-31",
+   "luce",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2026-01-01",
+   "gas",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2026-01-01",
+   "gas",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2026-01-01",
+   "luce",
+   "fissa",
+   "bioraria"
+  ],
+  [
+   "2026-01-01",
+   "luce",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2026-01-01",
+   "luce",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "acqua",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "gas",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "gas",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "luce",
+   "fissa",
+   "bioraria"
+  ],
+  [
+   "2026-01-02",
+   "luce",
+   "fissa",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "luce",
+   "mista",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "luce",
+   "variabile",
+   "monoraria"
+  ],
+  [
+   "2026-01-02",
+   "luce",
+   "variabile",
+   "trioraria"
+  ]
+ ],
+ "rate_history": [
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.115,
+     0.116,
+     0.117,
+     0.11800000000000001
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.115,
+     0.116,
+     0.117,
+     0.11800000000000001
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     72.0,
+     72.0,
+     72.0
+    ]
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.115,
+     0.116,
+     0.117,
+     0.11800000000000001
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "stats": {
+     "min": 0.115,
+     "max": 0.118,
+     "avg": 0.1165
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.115,
+     0.116,
+     0.117,
+     0.11800000000000001
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     72.0,
+     72.0,
+     72.0
+    ],
+    "stats": {
+     "min": 0.115,
+     "max": 0.118,
+     "avg": 0.1165
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "bioraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.11,
+     0.111,
+     0.112,
+     0.113
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "bioraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.11,
+     0.111,
+     0.112,
+     0.113
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     null,
+     72.0,
+     null
+    ]
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "bioraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.11,
+     0.111,
+     0.112,
+     0.113
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "stats": {
+     "min": 0.11,
+     "max": 0.113,
+     "avg": 0.1115
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "bioraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.11,
+     0.111,
+     0.112,
+     0.113
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     null,
+     72.0,
+     null
+    ],
+    "stats": {
+     "min": 0.11,
+     "max": 0.113,
+     "avg": 0.1115
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "monoraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.008,
+     0.0085,
+     0.009000000000000001,
+     0.0095
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "monoraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.008,
+     0.0085,
+     0.009000000000000001,
+     0.0095
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     72.0,
+     72.0,
+     72.0
+    ]
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "monoraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.008,
+     0.0085,
+     0.009000000000000001,
+     0.0095
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "stats": {
+     "min": 0.008,
+     "max": 0.0095,
+     "avg": 0.00875
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "monoraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.008,
+     0.0085,
+     0.009000000000000001,
+     0.0095
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     72.0,
+     72.0,
+     72.0,
+     72.0
+    ],
+    "stats": {
+     "min": 0.008,
+     "max": 0.0095,
+     "avg": 0.00875
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "bioraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-31"
+    ],
+    "data": [
+     0.0101
+    ],
+    "period": {
+     "from": "2025-12-31",
+     "to": "2025-12-31"
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "bioraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-31"
+    ],
+    "data": [
+     0.0101
+    ],
+    "period": {
+     "from": "2025-12-31",
+     "to": "2025-12-31"
+    },
+    "commercializzazione": [
+     null
+    ]
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "bioraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-31"
+    ],
+    "data": [
+     0.0101
+    ],
+    "period": {
+     "from": "2025-12-31",
+     "to": "2025-12-31"
+    },
+    "stats": {
+     "min": 0.0101,
+     "max": 0.0101,
+     "avg": 0.0101
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "variabile",
+    "bioraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-31"
+    ],
+    "data": [
+     0.0101
+    ],
+    "period": {
+     "from": "2025-12-31",
+     "to": "2025-12-31"
+    },
+    "commercializzazione": [
+     null
+    ],
+    "stats": {
+     "min": 0.0101,
+     "max": 0.0101,
+     "avg": 0.0101
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "fissa",
+    "monoraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.39,
+     0.395,
+     0.4,
+     0.405
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "fissa",
+    "monoraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.39,
+     0.395,
+     0.4,
+     0.405
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     84.0,
+     84.0,
+     84.0,
+     84.0
+    ]
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "fissa",
+    "monoraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.39,
+     0.395,
+     0.4,
+     0.405
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "stats": {
+     "min": 0.39,
+     "max": 0.405,
+     "avg": 0.3975
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "fissa",
+    "monoraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.39,
+     0.395,
+     0.4,
+     0.405
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     84.0,
+     84.0,
+     84.0,
+     84.0
+    ],
+    "stats": {
+     "min": 0.39,
+     "max": 0.405,
+     "avg": 0.3975
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "variabile",
+    "monoraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.05,
+     0.052000000000000005,
+     0.054000000000000006,
+     0.056
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "variabile",
+    "monoraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.05,
+     0.052000000000000005,
+     0.054000000000000006,
+     0.056
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     null,
+     null,
+     null,
+     null
+    ]
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "variabile",
+    "monoraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.05,
+     0.052000000000000005,
+     0.054000000000000006,
+     0.056
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "stats": {
+     "min": 0.05,
+     "max": 0.056,
+     "avg": 0.053
+    }
+   }
+  },
+  {
+   "args": [
+    "gas",
+    "variabile",
+    "monoraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [
+     "2025-12-30",
+     "2025-12-31",
+     "2026-01-01",
+     "2026-01-02"
+    ],
+    "data": [
+     0.05,
+     0.052000000000000005,
+     0.054000000000000006,
+     0.056
+    ],
+    "period": {
+     "from": "2025-12-30",
+     "to": "2026-01-02"
+    },
+    "commercializzazione": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "stats": {
+     "min": 0.05,
+     "max": 0.056,
+     "avg": 0.053
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "trioraria",
+    36500,
+    false,
+    false
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "trioraria",
+    36500,
+    true,
+    false
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    },
+    "commercializzazione": []
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "trioraria",
+    36500,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    },
+    "stats": {
+     "min": null,
+     "max": null,
+     "avg": null
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "trioraria",
+    36500,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    },
+    "commercializzazione": [],
+    "stats": {
+     "min": null,
+     "max": null,
+     "avg": null
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    0,
+    true,
+    true
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    },
+    "commercializzazione": [],
+    "stats": {
+     "min": null,
+     "max": null,
+     "avg": null
+    }
+   }
+  },
+  {
+   "args": [
+    "luce",
+    "fissa",
+    "monoraria",
+    -1,
+    false,
+    true
+   ],
+   "result": {
+    "labels": [],
+    "data": [],
+    "period": {
+     "from": null,
+     "to": null
+    },
+    "stats": {
+     "min": null,
+     "max": null,
+     "avg": null
+    }
+   }
+  }
+ ],
+ "raw": {
+  "1001": {
+   "last_notified_rates": null,
+   "pending_rates": null
+  },
+  "1002": {
+   "last_notified_rates": null,
+   "pending_rates": null
+  },
+  "1003": {
+   "last_notified_rates": "{\"luce\": {\"energia\": 0.1078, \"commercializzazione\": 72.0}, \"gas\": {\"energia\": 0.39, \"commercializzazione\": 84.0}}",
+   "pending_rates": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"bioraria\", \"consumo_f1\": 1500.0, \"consumo_f2\": 1200.0, \"energia\": 0.0999, \"commercializzazione\": 60.0}, \"gas\": {\"tipo\": \"variabile\", \"fascia\": \"monoraria\", \"energia\": 0.05, \"commercializzazione\": 84.0}, \"updated_services\": [\"luce\"]}"
+  },
+  "1004": {
+   "last_notified_rates": null,
+   "pending_rates": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.14, \"commercializzazione\": 70.0}}"
+  },
+  "1005": {
+   "last_notified_rates": "{\"luce_energia\": 0.12, \"luce_comm\": 72, \"timestamp\": \"2024-01-15T10:00:00\", \"note\": \"citt\\u00e0 \\u20ac\"}",
+   "pending_rates": null
+  },
+  "1006": {
+   "last_notified_rates": null,
+   "pending_rates": "{\"luce\": {\"tipo\": \"variabile\", \"fascia\": \"monoraria\", \"energia\": 0.0088, \"commercializzazione\": 72.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"consumo_annuo\": 999.9, \"energia\": 0.39, \"commercializzazione\": 84.0}, \"updated_services\": []}"
+  },
+  "-1001234567890": {
+   "last_notified_rates": null,
+   "pending_rates": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 1e-05, \"commercializzazione\": 1e+16}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.35, \"commercializzazione\": 80.0}, \"updated_services\": [\"gas\"]}"
+  }
+ },
+ "after_apply": [
+  {
+   "user_id": "1003",
+   "result": [
+    true,
+    "ok"
+   ],
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "bioraria",
+     "energia": 0.0999,
+     "commercializzazione": 60.0,
+     "consumo_f1": 1500.0,
+     "consumo_f2": 1200.0
+    },
+    "gas": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.05,
+     "commercializzazione": 84.0
+    }
+   },
+   "reminded": {
+    "luce": null,
+    "gas": null
+   },
+   "pending": null,
+   "raw": {
+    "last_notified_rates": null,
+    "pending_rates": null
+   }
+  },
+  {
+   "user_id": "1004",
+   "result": [
+    true,
+    "ok"
+   ],
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.14,
+     "commercializzazione": 70.0,
+     "scadenza": "2026-12-01"
+    }
+   },
+   "reminded": {
+    "luce": "2026-12-01",
+    "gas": null
+   },
+   "pending": null,
+   "raw": {
+    "last_notified_rates": null,
+    "pending_rates": null
+   }
+  },
+  {
+   "user_id": "1006",
+   "result": [
+    true,
+    "ok"
+   ],
+   "user": {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.0088,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.39,
+     "commercializzazione": 84.0,
+     "consumo_annuo": 999.9
+    }
+   },
+   "reminded": {
+    "luce": null,
+    "gas": null
+   },
+   "pending": null,
+   "raw": {
+    "last_notified_rates": null,
+    "pending_rates": null
+   }
+  },
+  {
+   "user_id": "-1001234567890",
+   "result": [
+    true,
+    "ok"
+   ],
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 1e-05,
+     "commercializzazione": 1e+16
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.35,
+     "commercializzazione": 80.0
+    }
+   },
+   "reminded": {
+    "luce": null,
+    "gas": null
+   },
+   "pending": null,
+   "raw": {
+    "last_notified_rates": null,
+    "pending_rates": null
+   }
+  },
+  {
+   "user_id": "1001",
+   "result": [
+    false,
+    "no_pending"
+   ],
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "reminded": {
+    "luce": null,
+    "gas": null
+   },
+   "pending": null,
+   "raw": {
+    "last_notified_rates": null,
+    "pending_rates": null
+   }
+  },
+  {
+   "user_id": "nonexistent",
+   "result": [
+    false,
+    "no_pending"
+   ],
+   "user": null,
+   "reminded": null,
+   "pending": null,
+   "raw": null
+  }
+ ]
+}
