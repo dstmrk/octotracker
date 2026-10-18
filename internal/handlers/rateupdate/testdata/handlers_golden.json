@@ -1,0 +1,2855 @@
+[
+ {
+  "name": "yes_luce_fissa_flow",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0,
+     "scadenza": "2026-01-01"
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 65.0
+    },
+    "updated_services": [
+     "luce"
+    ]
+   },
+   "user_data": {
+    "luce_energia": 0.145
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "scelta"
+    }
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "data-sbagliata"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": " 15/03/2025 "
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 65.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta luce.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 65.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 65.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>15/03/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 65.0,
+      "scadenza": "2026-03-15"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_luce_gas_flow",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0,
+     "scadenza": "2026-02-02"
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.42,
+     "commercializzazione": 80.0
+    },
+    "updated_services": [
+     "luce",
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "scelta"
+    }
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "15-03-2025"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "29.02.2024"
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 80.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta luce.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 80.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>15/03/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0,
+      "scadenza": "2026-03-15"
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 80.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta gas: scadenza impostata al <b>28/02/2025</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0,
+      "scadenza": "2026-03-15"
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 80.0,
+      "scadenza": "2025-02-28"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_luce_gas_skip_luce",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.42,
+     "commercializzazione": 84.0
+    },
+    "updated_services": [
+     "luce",
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "scelta"
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "prompt luce"
+    }
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "01/06/2025"
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta luce.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta gas: scadenza impostata al <b>01/06/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0,
+      "scadenza": "2026-06-01"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_luce_gas_skip_both",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.42,
+     "commercializzazione": 84.0
+    },
+    "updated_services": [
+     "luce",
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "scelta"
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "prompt luce"
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "prompt gas"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta luce.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_then_no",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.42,
+     "commercializzazione": 84.0
+    },
+    "updated_services": [
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_no",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "scelta"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.42,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_variabile",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.02,
+     "commercializzazione": 72.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.01,
+     "commercializzazione": 65.0
+    },
+    "updated_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.01,
+      "commercializzazione": 65.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_gas_variabile_luce_fissa_not_updated",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.1,
+     "commercializzazione": 84.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.09,
+     "commercializzazione": 84.0
+    },
+    "updated_services": [
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.09,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_old_row_no_updated_services",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0,
+     "scadenza": "2026-05-05"
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    }
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0,
+      "scadenza": "2026-05-05"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_preserves_consumption",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0,
+     "consumo_f1": 2700.0
+    },
+    "last_notified_rates": {
+     "luce": {
+      "energia": 0.13
+     }
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0,
+     "consumo_f1": 2700.0
+    },
+    "updated_services": []
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n✅ Tariffe aggiornate!\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0,
+      "consumo_f1": 2700.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_no_pending",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n🔧 Puoi sempre aggiornare le tariffe con /update.\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": [
+     "WARNING handlers.rate_update ⚠️ Utente 123456789: nessuna tariffa pendente trovata"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "yes_no_user",
+  "setup": {},
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n🔧 Puoi sempre aggiornare le tariffe con /update.\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": [
+     "WARNING handlers.rate_update ⚠️ Utente 123456789: nessuna tariffa pendente trovata"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "yes_validation_error",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "INVALID_TYPE",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    }
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n❌ Errore nell'aggiornamento. Riprova con /update.\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": {
+     "luce": {
+      "tipo": "INVALID_TYPE",
+      "fascia": "monoraria",
+      "energia": 0.13,
+      "commercializzazione": 72.0
+     }
+    },
+    "logs": [
+     "ERROR handlers.rate_update ❌ Utente 123456789: errore aggiornamento tariffe (validation_error)"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "yes_prompt_twice_and_entities",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.1,
+     "commercializzazione": 72.0
+    },
+    "updated_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "<&> 👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove? l'altro 👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?",
+     "entities": [
+      {
+       "type": "italic",
+       "offset": 0,
+       "length": 3
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "ASK_SCADENZA",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "<i>&lt;&amp;&gt;</i> ✅ Tariffe aggiornate! l&#x27;altro ✅ Tariffe aggiornate!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Hai adottato una nuova offerta a <b>prezzo fisso</b>: la scadenza precedente non è più valida.\n\nVuoi registrare la nuova data di scadenza per ricevere il promemoria un mese prima?",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "scadenza_update_yes",
+          "text": "✅ Sì"
+         },
+         {
+          "callback_data": "scadenza_update_no",
+          "text": "❌ No"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.1,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "yes_no_prompt",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "variabile",
+     "fascia": "monoraria",
+     "energia": 0.01,
+     "commercializzazione": 72.0
+    },
+    "updated_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "yes",
+    "data": "rate_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "messaggio senza domanda"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "messaggio senza domanda",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "variabile",
+      "fascia": "monoraria",
+      "energia": 0.01,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "no_with_pending",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "pending": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.13,
+     "commercializzazione": 72.0
+    }
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "no",
+    "data": "rate_update_no",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "⚡️ Buone notizie!\nTesto notifica...\n\n👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?\n\n🔗 Maggiori info: https://octopusenergy.it",
+     "entities": [
+      {
+       "type": "bold",
+       "offset": 3,
+       "length": 15
+      }
+     ]
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": null,
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "⚡️ <b>Buone notizie!\n</b>Testo notifica...\n\n🔧 Puoi sempre aggiornare le tariffe con /update.\n\n🔗 Maggiori info: https://octopusenergy.it",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": [
+     "INFO handlers.rate_update ℹ️ Utente 123456789: ha rifiutato aggiornamento tariffe via bottone"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "no_without_user",
+  "setup": {},
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "no",
+    "data": "rate_update_no",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "a 'b' & 👇 Vuoi aggiornare le tariffe memorizzate su OctoTracker con quelle nuove?"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": null,
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "a &#x27;b&#x27; &amp; 🔧 Puoi sempre aggiornare le tariffe con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": [
+     "INFO handlers.rate_update ℹ️ Utente 123456789: ha rifiutato aggiornamento tariffe via bottone"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "choice_yes_empty",
+  "setup": {
+   "user_data": {}
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "choice_yes_gas",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_yes",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "choice_no_empty",
+  "setup": {
+   "user_data": {
+    "altro": 1
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_no",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "altro": 1
+    },
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "choice_no_newline_is_yes",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "choice",
+    "data": "scadenza_update_no\n",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta luce.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_empty_services",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "15/03/2025"
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_none_text",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": null
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_user_missing",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "15/03/2025"
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>15/03/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_formats",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    },
+    "gas": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.456,
+     "commercializzazione": 84.0
+    }
+   },
+   "user_data": {
+    "scadenza_update_services": [
+     "luce",
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "15/03/2014"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "31/12/2024"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "1/1/2025"
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce",
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.456,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>31/12/2025</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0,
+      "scadenza": "2025-12-31"
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.456,
+      "commercializzazione": 84.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta gas: scadenza impostata al <b>01/01/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0,
+      "scadenza": "2025-12-31"
+     },
+     "gas": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.456,
+      "commercializzazione": 84.0,
+      "scadenza": "2026-01-01"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_feb29",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "29/02/2024"
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>28/02/2025</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0,
+      "scadenza": "2025-02-28"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "date_garbage",
+  "setup": {
+   "user": {
+    "luce": {
+     "tipo": "fissa",
+     "fascia": "monoraria",
+     "energia": 0.145,
+     "commercializzazione": 72.0
+    }
+   },
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "domani"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "32/01/2025"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": "15/13/2025"
+   },
+   {
+    "kind": "message",
+    "handler": "date",
+    "text": " 15/03/2025　"
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "luce"
+     ]
+    },
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ Offerta luce: scadenza impostata al <b>15/03/2026</b>.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     },
+     {
+      "method": "reply_text",
+      "text": "🔔 Perfetto, ti avviserò un mese prima della scadenza!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": {
+     "luce": {
+      "tipo": "fissa",
+      "fascia": "monoraria",
+      "energia": 0.145,
+      "commercializzazione": 72.0,
+      "scadenza": "2026-03-15"
+     }
+    },
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "skip_empty",
+  "setup": {
+   "user_data": {}
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "skip_single",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "luce"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ },
+ {
+  "name": "skip_two",
+  "setup": {
+   "user_data": {
+    "scadenza_update_services": [
+     "luce",
+     "gas"
+    ]
+   }
+  },
+  "steps": [
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "x"
+    }
+   },
+   {
+    "kind": "callback",
+    "handler": "skip",
+    "data": "skip_scadenza_update",
+    "message": {
+     "message_id": 42,
+     "date": 1700000000,
+     "chat": {
+      "id": 123456789,
+      "type": "private"
+     },
+     "text": "y"
+    }
+   }
+  ],
+  "out": [
+   {
+    "result": "UPDATE_DATE",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "reply_text",
+      "text": "📅 Inserisci la <b>data di attivazione</b> della tua nuova offerta gas.\n\nCalcolerò la scadenza a 12 mesi e ti avviserò un mese prima.\n\n💬 Formato GG/MM/AAAA (es. 15/03/2025), oppure premi «Salta».",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_scadenza_update",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "scadenza_update_services": [
+      "gas"
+     ]
+    },
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   },
+   {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "👍 Ok! Se cambi idea puoi impostare la scadenza in qualsiasi momento con /update.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "user_after": null,
+    "pending_after": null,
+    "logs": []
+   }
+  ]
+ }
+]

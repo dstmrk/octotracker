@@ -1,0 +1,665 @@
+{
+ "now": [
+  2026,
+  10,
+  18,
+  12,
+  0,
+  0,
+  123456
+ ],
+ "cases": [
+  {
+   "last": null,
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "invalid",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: 'invalid'"
+   ]
+  },
+  {
+   "last": "",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: ''"
+   ]
+  },
+  {
+   "last": "2026-10-18",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 11h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T12:00:00+00:00",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: can't subtract offset-naive and offset-aware datetimes"
+   ]
+  },
+  {
+   "last": "2026-10-18 10:00:00Z",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: can't subtract offset-naive and offset-aware datetimes"
+   ]
+  },
+  {
+   "last": "2026-10-18 10:00:00+01:00",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: can't subtract offset-naive and offset-aware datetimes"
+   ]
+  },
+  {
+   "last": "0001-01-01 00:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "9999-12-31 23:59:59.999999",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 69891683h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 24:00:00",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: hour must be in 0..23"
+   ]
+  },
+  {
+   "last": "2026-02-30 10:00:00",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: day is out of range for month"
+   ]
+  },
+  {
+   "last": "1700000000",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: '1700000000'"
+   ]
+  },
+  {
+   "last": "1.5",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: '1.5'"
+   ]
+  },
+  {
+   "last": "2026-10-18 10:00:00 ",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: '2026-10-18 10:00:00 '"
+   ]
+  },
+  {
+   "last": " 2026-10-18 10:00:00",
+   "can": true,
+   "msg": null,
+   "logs": [
+    "WARNING handlers.feedback Errore parsing timestamp feedback per 123456789: Invalid isoformat string: ' 2026-10-18 10:00:00'"
+   ]
+  },
+  {
+   "last": "2058-06-26 13:46:40",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 277801h.",
+   "logs": []
+  },
+  {
+   "last": "2058-06-26T13:46:40.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 277801h.",
+   "logs": []
+  },
+  {
+   "last": "2058-06-26 13:46:40.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 277801h.",
+   "logs": []
+  },
+  {
+   "last": "2027-11-22 12:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 9623h.",
+   "logs": []
+  },
+  {
+   "last": "2027-11-22T12:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 9624h.",
+   "logs": []
+  },
+  {
+   "last": "2027-11-22 12:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 9623h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-20 12:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 71h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-20T12:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 72h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-20 12:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 71h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 17:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 28h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T17:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 29h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 17:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 28h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 13:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T13:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 25h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 13:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:01",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T12:00:01.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:01.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T12:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 24h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T12:00:00.123455",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 12:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:59",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:59:59.623456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:59.623",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:59",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:59:59.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:59.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:01",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:59:01.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:59:01.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:01",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:00:01.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:01.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:00:00.123455",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 10:59:59",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T10:59:59.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 10:59:59.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 10:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 21h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T10:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 10:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 21h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 02:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 13h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T02:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 14h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 02:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 13h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 13:00:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T13:00:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 1h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 13:00:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:01:00",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:01:00.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:01:00.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:01",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:00:01.123456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:01.123",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:00:00.623456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00.623",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:00:00.123457",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 0h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:00:00.123456",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T12:00:00.123455",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 11:59:59",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T11:59:59.123456",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 11:59:59.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-16 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-16T12:00:00.123456",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-16 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2025-10-18 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2025-10-18T12:00:00.123456",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2025-10-18 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "1726-12-30 12:00:00",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "1726-12-30T12:00:00.123456",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "1726-12-30 12:00:00.123",
+   "can": true,
+   "msg": null,
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 23:59:59",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 11h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17T23:59:59.873456",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 11h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-17 23:59:59.873",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 11h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:39:25",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18T11:39:25.555565",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  },
+  {
+   "last": "2026-10-18 11:39:25.555",
+   "can": false,
+   "msg": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 23h.",
+   "logs": []
+  }
+ ]
+}

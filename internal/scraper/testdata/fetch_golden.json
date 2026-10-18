@@ -1,0 +1,1511 @@
+[
+ {
+  "name": "both_today",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVFL91XXXXXXXXOCTOFLEXv91</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>02</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>03</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESFML14XXXXXXXXOCTOFIXv114</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <DESCRIZIONE>Prezzo</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.107800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>00000000000</PIVA_UTENTE>\n            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>\n        </DettaglioOfferta>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.390000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.080000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n</ListaOfferteMercatoLibero>\n"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVFL91XXXXXXXXOCTOFLEXv91</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>02</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>03</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESFML14XXXXXXXXOCTOFIXv114</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <DESCRIZIONE>Prezzo</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.107800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>00000000000</PIVA_UTENTE>\n            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>\n        </DettaglioOfferta>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.390000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.080000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 7,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": 5,
+  "repr": "{'luce': {'fissa': {'monoraria': {'energia': 0.1078, 'commercializzazione': 72.0, 'cod_offerta': '000129ESFML14XXXXXXXXOCTOFIXv114'}}, 'variabile': {'trioraria': {'energia': 0.0088, 'commercializzazione': 72.0, 'cod_offerta': '000129ESVFL91XXXXXXXXOCTOFLEXv91'}, 'monoraria': {'energia': 0.0088, 'commercializzazione': 72.0, 'cod_offerta': '000129ESVML77XXXXXOCTOFLEXMONv77'}}}, 'gas': {'fissa': {'monoraria': {'energia': 0.39, 'commercializzazione': 84.0, 'cod_offerta': '000129GSFML34XXXXXXXXOCTOFIXGv34'}}, 'variabile': {'monoraria': {'energia': 0.08, 'commercializzazione': 84.0, 'cod_offerta': '000129GSVML13XXXXXXXOCTOFLEXGv13'}}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.1078,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"000129ESFML14XXXXXXXXOCTOFIXv114\"\n      }\n    },\n    \"variabile\": {\n      \"trioraria\": {\n        \"energia\": 0.0088,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"000129ESVFL91XXXXXXXXOCTOFLEXv91\"\n      },\n      \"monoraria\": {\n        \"energia\": 0.0088,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"000129ESVML77XXXXXOCTOFLEXMONv77\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.39,\n        \"commercializzazione\": 84.0,\n        \"cod_offerta\": \"000129GSFML34XXXXXXXXOCTOFIXGv34\"\n      }\n    },\n    \"variabile\": {\n      \"monoraria\": {\n        \"energia\": 0.08,\n        \"commercializzazione\": 84.0,\n        \"cod_offerta\": \"000129GSVML13XXXXXXXOCTOFLEXGv13\"\n      }\n    }\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-03",
+    [
+     [
+      "luce",
+      "fissa",
+      "monoraria",
+      "0.1078",
+      "72.0",
+      "000129ESFML14XXXXXXXXOCTOFIXv114"
+     ],
+     [
+      "luce",
+      "variabile",
+      "trioraria",
+      "0.0088",
+      "72.0",
+      "000129ESVFL91XXXXXXXXOCTOFLEXv91"
+     ],
+     [
+      "luce",
+      "variabile",
+      "monoraria",
+      "0.0088",
+      "72.0",
+      "000129ESVML77XXXXXOCTOFLEXMONv77"
+     ],
+     [
+      "gas",
+      "fissa",
+      "monoraria",
+      "0.39",
+      "84.0",
+      "000129GSFML34XXXXXXXXOCTOFIXGv34"
+     ],
+     [
+      "gas",
+      "variabile",
+      "monoraria",
+      "0.08",
+      "84.0",
+      "000129GSVML13XXXXXXXOCTOFLEXGv13"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 8115 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 6 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile trioraria: PUN + 0.0088 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile monoraria: PUN + 0.0088 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa monoraria: 0.1078 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 8115 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File gas scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 6 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Gas fisso monorario: 0.39 €/Smc, comm: 84.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Gas variabile monorario: PSV + 0.08 €/Smc, comm: 84.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Lettura ARERA completata in 0.00s - Trovate 5/5 tariffe"
+   ],
+   [
+    "INFO",
+    "💾 5 tariffe salvate nel database"
+   ]
+  ]
+ },
+ {
+  "name": "partial_walk_back",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 7,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": 1,
+  "repr": "{'luce': {'fissa': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LF'}}, 'variabile': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LV'}}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-01'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LF\"\n      }\n    },\n    \"variabile\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LV\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-01\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-01",
+    [
+     [
+      "luce",
+      "fissa",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LF"
+     ],
+     [
+      "luce",
+      "variabile",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LV"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 1254 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-01)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 2 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa monoraria: 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile monoraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-31..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251230.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-30..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251230.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251230.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251229.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-29..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251229.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251229.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251228.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-28..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251228.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251228.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251227.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-27..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251227.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251227.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "INFO",
+    "✅ Lettura ARERA completata in 0.00s - Trovate 2/5 tariffe"
+   ],
+   [
+    "INFO",
+    "💾 1/2 tariffe salvate (resto già presenti)"
+   ]
+  ]
+ },
+ {
+  "name": "partial_save_extra_fasce",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LF3</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV2</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>02</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV3</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>GF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>84</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.39</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 7,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": 2,
+  "repr": "{'luce': {'fissa': {'trioraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LF3'}}, 'variabile': {'bioraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LV2'}, 'trioraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LV3'}}}, 'gas': {'fissa': {'monoraria': {'energia': 0.39, 'commercializzazione': 84.0, 'cod_offerta': 'GF'}}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"trioraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LF3\"\n      }\n    },\n    \"variabile\": {\n      \"bioraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LV2\"\n      },\n      \"trioraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LV3\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.39,\n        \"commercializzazione\": 84.0,\n        \"cod_offerta\": \"GF\"\n      }\n    },\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-03",
+    [
+     [
+      "luce",
+      "fissa",
+      "trioraria",
+      "0.1",
+      "72.0",
+      "LF3"
+     ],
+     [
+      "luce",
+      "variabile",
+      "bioraria",
+      "0.1",
+      "72.0",
+      "LV2"
+     ],
+     [
+      "luce",
+      "variabile",
+      "trioraria",
+      "0.1",
+      "72.0",
+      "LV3"
+     ],
+     [
+      "gas",
+      "fissa",
+      "monoraria",
+      "0.39",
+      "84.0",
+      "GF"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 1836 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 3 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa trioraria: 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile bioraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile trioraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2025-12-31..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_G_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 674 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File gas scaricato (data: 2025-12-31)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 1 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Gas fisso monorario: 0.39 €/Smc, comm: 84.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Lettura ARERA completata in 0.00s - Trovate 2/5 tariffe"
+   ],
+   [
+    "INFO",
+    "💾 2/4 tariffe salvate (resto già presenti)"
+   ]
+  ]
+ },
+ {
+  "name": "nothing_found",
+  "routes": {},
+  "max_days_back": 2,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": null,
+  "repr": "{'luce': {'fissa': {}, 'variabile': {}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato elettricità disponibile (download fallito)"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260101.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "WARNING",
+    "⚠️  Lettura ARERA completata in 0.00s - Nessuna tariffa trovata"
+   ]
+  ]
+ },
+ {
+  "name": "db_error",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 0,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": -1,
+  "repr": "{'luce': {'fissa': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LF'}}, 'variabile': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LV'}}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LF\"\n      }\n    },\n    \"variabile\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LV\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-03",
+    [
+     [
+      "luce",
+      "fissa",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LF"
+     ],
+     [
+      "luce",
+      "variabile",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LV"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 1254 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 2 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa monoraria: 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile monoraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "ERROR",
+    "❌ Lettura ARERA completata in 0.00s - Trovate 2/5 tariffe MA ERRORE SALVATAGGIO DB"
+   ]
+  ]
+ },
+ {
+  "name": "malformed_luce_gas_ok",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<html><body>Errore<br></body></html>"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>GF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>84</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.39</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 1,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": 1,
+  "repr": "{'luce': {'fissa': {}, 'variabile': {}}, 'gas': {'fissa': {'monoraria': {'energia': 0.39, 'commercializzazione': 84.0, 'cod_offerta': 'GF'}}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"gas\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.39,\n        \"commercializzazione\": 84.0,\n        \"cod_offerta\": \"GF\"\n      }\n    },\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-03",
+    [
+     [
+      "gas",
+      "fissa",
+      "monoraria",
+      "0.39",
+      "84.0",
+      "GF"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 36 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "ERROR",
+    "❌ XML malformato per elettricità: mismatched tag: line 1, column 24"
+   ],
+   [
+    "DEBUG",
+    "   Primi 500 caratteri: <html><body>Errore<br></body></html>"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 674 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File gas scaricato (data: 2026-01-02)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 1 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Gas fisso monorario: 0.39 €/Smc, comm: 84.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Lettura ARERA completata in 0.00s - Trovate 1/5 tariffe"
+   ],
+   [
+    "INFO",
+    "💾 1 tariffe salvate nel database"
+   ]
+  ]
+ },
+ {
+  "name": "network_errors",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "urlerror": "refused"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml": {
+    "status": 500,
+    "reason": "Internal Server Error"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml": {
+    "incomplete": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+    "fail_after": 100
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_E_MLIBERO_20251231.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LV</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml": {
+    "hex": "3c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c4c697374614f66666572ff74654d65726361746f4c696265726f3e0a3c6f6666657274613e3c4964656e746966696361746976694f6666657274613e3c504956415f5554454e54453e30313737313939303434353c2f504956415f5554454e54453e3c434f445f4f4646455254413e47463c2f434f445f4f4646455254413e3c2f4964656e746966696361746976694f6666657274613e3c4465747461676c696f4f6666657274613e3c5449504f5f4d45524341544f3e30323c2f5449504f5f4d45524341544f3e3c5449504f5f4f4646455254413e30313c2f5449504f5f4f4646455254413e3c4e4f4d455f4f4646455254413e4f66666572746120546573743c2f4e4f4d455f4f4646455254413e3c2f4465747461676c696f4f6666657274613e3c5469706f5072657a7a6f3e3c5449504f4c4f4749415f46415343453e30313c2f5449504f4c4f4749415f46415343453e3c2f5469706f5072657a7a6f3e3c436f6d706f6e656e7465496d70726573613e3c4d4143524f415245413e30313c2f4d4143524f415245413e3c496e74657276616c6c6f5072657a7a693e3c5052455a5a4f3e38343c2f5052455a5a4f3e3c2f496e74657276616c6c6f5072657a7a693e3c2f436f6d706f6e656e7465496d70726573613e3c436f6d706f6e656e7465496d70726573613e3c4d4143524f415245413e30343c2f4d4143524f415245413e3c496e74657276616c6c6f5072657a7a693e3c5052455a5a4f3e302e33393c2f5052455a5a4f3e3c2f496e74657276616c6c6f5072657a7a693e3c2f436f6d706f6e656e7465496d70726573613e3c2f6f6666657274613e0a3c2f4c697374614f6666657274654d65726361746f4c696265726f3e0a"
+   },
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>GF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>84</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.39</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 7,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": 3,
+  "repr": "{'luce': {'fissa': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LF'}}, 'variabile': {'monoraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'LV'}}}, 'gas': {'fissa': {'monoraria': {'energia': 0.39, 'commercializzazione': 84.0, 'cod_offerta': 'GF'}}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-02'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LF\"\n      }\n    },\n    \"variabile\": {\n      \"monoraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"LV\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {\n      \"monoraria\": {\n        \"energia\": 0.39,\n        \"commercializzazione\": 84.0,\n        \"cod_offerta\": \"GF\"\n      }\n    },\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-02\"\n}",
+  "exception": null,
+  "saved": [
+   [
+    "2026-01-02",
+    [
+     [
+      "luce",
+      "fissa",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LF"
+     ],
+     [
+      "luce",
+      "variabile",
+      "monoraria",
+      "0.1",
+      "72.0",
+      "LV"
+     ],
+     [
+      "gas",
+      "fissa",
+      "monoraria",
+      "0.39",
+      "84.0",
+      "GF"
+     ]
+    ]
+   ]
+  ],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Errore rete durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml: [Errno 111] Connection refused"
+   ],
+   [
+    "DEBUG",
+    "⚠️  Errore download elettricità per 2026-01-03: <urlopen error [Errno 111] Connection refused>"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 500 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-01-01..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260101.xml"
+   ],
+   [
+    "DEBUG",
+    "⚠️  Errore download elettricità per 2026-01-01: IncompleteRead(100 bytes read, 1154 more expected)"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_E_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2025-12-31..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2025_12/PO_Offerte_E_MLIBERO_20251231.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 1254 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2025-12-31)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 2 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa monoraria: 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile monoraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "⚠️  Errore download gas per 2026-01-03: 'utf-8' codec can't decode byte 0xff in position 50: invalid start byte"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-01-02..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260102.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 674 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File gas scaricato (data: 2026-01-02)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 1 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Gas fisso monorario: 0.39 €/Smc, comm: 84.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Lettura ARERA completata in 0.00s - Trovate 3/5 tariffe"
+   ],
+   [
+    "INFO",
+    "💾 3 tariffe salvate nel database"
+   ]
+  ]
+ },
+ {
+  "name": "only_extra_fasce_not_counted",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>02</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 0,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": null,
+  "repr": "{'luce': {'fissa': {'trioraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'COD'}}, 'variabile': {'bioraria': {'energia': 0.1, 'commercializzazione': 72.0, 'cod_offerta': 'COD'}}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03', 'data_fonte_xml': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {\n      \"trioraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"COD\"\n      }\n    },\n    \"variabile\": {\n      \"bioraria\": {\n        \"energia\": 0.1,\n        \"commercializzazione\": 72.0,\n        \"cod_offerta\": \"COD\"\n      }\n    }\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\",\n  \"data_fonte_xml\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 1256 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 2 offerte nel file XML"
+   ],
+   [
+    "INFO",
+    "✅ Luce fissa trioraria: 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "INFO",
+    "✅ Luce variabile bioraria: PUN + 0.1 €/kWh, comm: 72.0 €/anno"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_G_MLIBERO_20260103.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "WARNING",
+    "⚠️  Lettura ARERA completata in 0.00s - Nessuna tariffa trovata"
+   ]
+  ]
+ },
+ {
+  "name": "attribute_error_raises",
+  "routes": {
+   "https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml": {
+    "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n"
+   }
+  },
+  "max_days_back": 0,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": null,
+  "repr": null,
+  "json_indent": null,
+  "exception": {
+   "type": "AttributeError",
+   "msg": "'NoneType' object has no attribute 'text'"
+  },
+  "saved": [],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-01-03)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_1/PO_Offerte_E_MLIBERO_20260103.xml"
+   ],
+   [
+    "DEBUG",
+    "Downloaded 512 bytes"
+   ],
+   [
+    "INFO",
+    "✅ File elettricità scaricato (data: 2026-01-03)"
+   ],
+   [
+    "DEBUG",
+    "Trovate 1 offerte nel file XML"
+   ]
+  ]
+ },
+ {
+  "name": "month_boundary_urls",
+  "routes": {},
+  "max_days_back": 3,
+  "now": [
+   2026,
+   3,
+   1,
+   0,
+   0,
+   1
+  ],
+  "save_returns": null,
+  "repr": "{'luce': {'fissa': {}, 'variabile': {}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-03-01'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-03-01\"\n}",
+  "exception": null,
+  "saved": [],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_E_MLIBERO_20260301.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati elettricità (data: 2026-03-01)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_E_MLIBERO_20260301.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_E_MLIBERO_20260301.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260228.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-02-28..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260228.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260228.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260227.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-02-27..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260227.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260227.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260226.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo elettricità con data: 2026-02-26..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260226.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_E_MLIBERO_20260226.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato elettricità disponibile (download fallito)"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_G_MLIBERO_20260301.xml"
+   ],
+   [
+    "INFO",
+    "📄 Download dati gas (data: 2026-03-01)..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_G_MLIBERO_20260301.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_3/PO_Offerte_G_MLIBERO_20260301.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260228.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-02-28..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260228.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260228.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260227.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-02-27..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260227.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260227.xml"
+   ],
+   [
+    "DEBUG",
+    "URL costruito: https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260226.xml"
+   ],
+   [
+    "DEBUG",
+    "   Tentativo gas con data: 2026-02-26..."
+   ],
+   [
+    "DEBUG",
+    "Downloading https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260226.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  HTTP 404 durante download https://www.ilportaleofferte.it/portaleOfferte/resources/opendata/csv/offerteML/2026_2/PO_Offerte_G_MLIBERO_20260226.xml"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "WARNING",
+    "⚠️  Lettura ARERA completata in 0.00s - Nessuna tariffa trovata"
+   ]
+  ]
+ },
+ {
+  "name": "negative_max_days_back",
+  "routes": {},
+  "max_days_back": -1,
+  "now": [
+   2026,
+   1,
+   3,
+   10,
+   30,
+   0
+  ],
+  "save_returns": null,
+  "repr": "{'luce': {'fissa': {}, 'variabile': {}}, 'gas': {'fissa': {}, 'variabile': {}}, 'data_aggiornamento': '2026-01-03'}",
+  "json_indent": "{\n  \"luce\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"gas\": {\n    \"fissa\": {},\n    \"variabile\": {}\n  },\n  \"data_aggiornamento\": \"2026-01-03\"\n}",
+  "exception": null,
+  "saved": [],
+  "logs": [
+   [
+    "INFO",
+    "🔍 Avvio lettura tariffe Octopus da ARERA Open Data..."
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato elettricità disponibile (download fallito)"
+   ],
+   [
+    "WARNING",
+    "⚠️  Nessun dato gas disponibile (download fallito)"
+   ],
+   [
+    "WARNING",
+    "⚠️  Lettura ARERA completata in 0.00s - Nessuna tariffa trovata"
+   ]
+  ]
+ }
+]

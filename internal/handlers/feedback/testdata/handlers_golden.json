@@ -1,0 +1,2123 @@
+{
+ "now": [
+  2026,
+  10,
+  18,
+  12,
+  0,
+  0,
+  123456
+ ],
+ "cases": [
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": null,
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "RATING",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "💬 <b>Grazie per il tuo feedback!</b>\n\nCome valuteresti OctoTracker?\nSeleziona il numero di stelle:",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "rating_1",
+          "text": "⭐"
+         },
+         {
+          "callback_data": "rating_2",
+          "text": "⭐⭐"
+         },
+         {
+          "callback_data": "rating_3",
+          "text": "⭐⭐⭐"
+         }
+        ],
+        [
+         {
+          "callback_data": "rating_4",
+          "text": "⭐⭐⭐⭐"
+         },
+         {
+          "callback_data": "rating_5",
+          "text": "⭐⭐⭐⭐⭐"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": "2026-10-18 10:30:00",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 22h.",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y"
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": "2026-10-17 12:00:00",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "RATING",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "💬 <b>Grazie per il tuo feedback!</b>\n\nCome valuteresti OctoTracker?\nSeleziona il numero di stelle:",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "rating_1",
+          "text": "⭐"
+         },
+         {
+          "callback_data": "rating_2",
+          "text": "⭐⭐"
+         },
+         {
+          "callback_data": "rating_3",
+          "text": "⭐⭐⭐"
+         }
+        ],
+        [
+         {
+          "callback_data": "rating_4",
+          "text": "⭐⭐⭐⭐"
+         },
+         {
+          "callback_data": "rating_5",
+          "text": "⭐⭐⭐⭐⭐"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": "2026-10-17 11:59:59",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "RATING",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "💬 <b>Grazie per il tuo feedback!</b>\n\nCome valuteresti OctoTracker?\nSeleziona il numero di stelle:",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "rating_1",
+          "text": "⭐"
+         },
+         {
+          "callback_data": "rating_2",
+          "text": "⭐⭐"
+         },
+         {
+          "callback_data": "rating_3",
+          "text": "⭐⭐⭐"
+         }
+        ],
+        [
+         {
+          "callback_data": "rating_4",
+          "text": "⭐⭐⭐⭐"
+         },
+         {
+          "callback_data": "rating_5",
+          "text": "⭐⭐⭐⭐⭐"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": "invalid",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "RATING",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "💬 <b>Grazie per il tuo feedback!</b>\n\nCome valuteresti OctoTracker?\nSeleziona il numero di stelle:",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "rating_1",
+          "text": "⭐"
+         },
+         {
+          "callback_data": "rating_2",
+          "text": "⭐⭐"
+         },
+         {
+          "callback_data": "rating_3",
+          "text": "⭐⭐⭐"
+         }
+        ],
+        [
+         {
+          "callback_data": "rating_4",
+          "text": "⭐⭐⭐⭐"
+         },
+         {
+          "callback_data": "rating_5",
+          "text": "⭐⭐⭐⭐⭐"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "command",
+   "with_user": true,
+   "last_feedback": "2026-10-19 12:00:00",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "⏰ Hai già inviato un feedback di recente!\n\nPer evitare spam, puoi dare feedback una volta ogni 24h.\nRiprova tra circa 47h.",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y"
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_0",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato \n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 0
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_1",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 1
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_2",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 2
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_3",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 3
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_4",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 4
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_5",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_6",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 6
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_7",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 7
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_8",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 8
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_9",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 9
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_٣",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 3
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_5\n",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_5_x",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_x",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "exception": "ValueError: invalid literal for int() with base 10: 'x'",
+    "calls": [
+     {
+      "method": "answer"
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y"
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "exception": "IndexError: list index out of range",
+    "calls": [
+     {
+      "method": "answer"
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y"
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_-1",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato \n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": -1
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "rating",
+   "data": "rating_ 4 ",
+   "user_data": {
+    "luce_energia": 0.145,
+    "x": "y"
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "Grazie! Hai dato ⭐⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": {
+       "inline_keyboard": [
+        [
+         {
+          "callback_data": "skip_comment",
+          "text": "⏭️ Salta"
+         }
+        ]
+       ]
+      }
+     }
+    ],
+    "user_data_after": {
+     "luce_energia": 0.145,
+     "x": "y",
+     "rating": 4
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "Ottimo bot, molto utile!",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "Ottimo bot, molto utile!",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "Ottimo bot, molto utile!",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "Ottimo bot, molto utile!",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "Ottimo bot, molto utile!",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "  spazi  ",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "spazi",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "  spazi  ",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "  spazi  ",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "spazi",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " x　",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "x",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " x　",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " x　",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "x",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "\u001c x \u001f",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "x",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "\u001c x \u001f",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "\u001c x \u001f",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "x",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "   ",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "   ",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "   ",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "​zero​",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "​zero​",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "​zero​",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "​zero​",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "​zero​",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1001 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb ",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb ",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": " bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb ",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1500 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1500 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "COMMENT",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ <b>Commento troppo lungo!</b>\n\nIl tuo messaggio ha 1500 caratteri, ma il limite è 1000.\n\n💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "<b>html</b> & 'apici' \"doppi\"",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "<b>html</b> & 'apici' \"doppi\"",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "<b>html</b> & 'apici' \"doppi\"",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "<b>html</b> & 'apici' \"doppi\"",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "<b>html</b> & 'apici' \"doppi\"",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "riga1\nriga2",
+   "with_user": true,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": [
+     {
+      "rating": 5,
+      "comment": "riga1\nriga2",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "riga1\nriga2",
+   "with_user": false,
+   "user_data": {
+    "rating": 5
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 5
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "comment",
+   "text": "riga1\nriga2",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": "riga1\nriga2",
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "skip",
+   "with_user": true,
+   "user_data": {
+    "rating": 3
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 3
+    },
+    "feedbacks": [
+     {
+      "rating": 3,
+      "comment": null,
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "skip",
+   "with_user": false,
+   "user_data": {
+    "rating": 3
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 3
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "skip",
+   "with_user": true,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": [
+     {
+      "rating": null,
+      "comment": null,
+      "feedback_type": "command"
+     }
+    ]
+   }
+  },
+  {
+   "handler": "skip",
+   "with_user": false,
+   "user_data": {},
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "answer"
+     },
+     {
+      "method": "edit_message_text",
+      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
+      "parse_mode": "HTML",
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {},
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "cancel_message",
+   "user_data": {
+    "rating": 4
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "reply_text",
+      "text": "❌ Feedback annullato.\n\nPuoi riavviare in qualsiasi momento con /feedback",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 4
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "cancel_callback",
+   "user_data": {
+    "rating": 4
+   },
+   "out": {
+    "result": "END",
+    "calls": [
+     {
+      "method": "edit_message_text",
+      "text": "❌ Feedback annullato.\n\nPuoi riavviare in qualsiasi momento con /feedback",
+      "parse_mode": null,
+      "reply_markup": null
+     }
+    ],
+    "user_data_after": {
+     "rating": 4
+    },
+    "feedbacks": []
+   }
+  },
+  {
+   "handler": "cancel_none",
+   "user_data": {
+    "rating": 4
+   },
+   "out": {
+    "result": "END",
+    "calls": [],
+    "user_data_after": {
+     "rating": 4
+    },
+    "feedbacks": []
+   }
+  }
+ ]
+}

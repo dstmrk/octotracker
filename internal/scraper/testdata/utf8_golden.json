@@ -1,0 +1,118 @@
+[
+ {
+  "hex": "",
+  "len": 0,
+  "head": ""
+ },
+ {
+  "hex": "3c612f3e",
+  "len": 4,
+  "head": "<a/>"
+ },
+ {
+  "hex": "efbbbf3c612f3e",
+  "len": 5,
+  "head": "﻿<a/>"
+ },
+ {
+  "hex": "63616666c3a820f09f9099",
+  "len": 7,
+  "head": "caffè 🐙"
+ },
+ {
+  "hex": "ff",
+  "error": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+ },
+ {
+  "hex": "616263ff",
+  "error": "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte"
+ },
+ {
+  "hex": "c080",
+  "error": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+ },
+ {
+  "hex": "c2",
+  "error": "'utf-8' codec can't decode byte 0xc2 in position 0: unexpected end of data"
+ },
+ {
+  "hex": "c241",
+  "error": "'utf-8' codec can't decode byte 0xc2 in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "e282",
+  "error": "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data"
+ },
+ {
+  "hex": "e28241",
+  "error": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+ },
+ {
+  "hex": "e241",
+  "error": "'utf-8' codec can't decode byte 0xe2 in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "e08080",
+  "error": "'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "e0a0",
+  "error": "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data"
+ },
+ {
+  "hex": "eda080",
+  "error": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "ed9fbf",
+  "len": 1,
+  "head": "퟿"
+ },
+ {
+  "hex": "f09080",
+  "error": "'utf-8' codec can't decode bytes in position 0-2: unexpected end of data"
+ },
+ {
+  "hex": "f0908080",
+  "len": 1,
+  "head": "𐀀"
+ },
+ {
+  "hex": "f0808080",
+  "error": "'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "f4908080",
+  "error": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte"
+ },
+ {
+  "hex": "f48fbfbf",
+  "len": 1,
+  "head": "􏿿"
+ },
+ {
+  "hex": "f580",
+  "error": "'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte"
+ },
+ {
+  "hex": "80",
+  "error": "'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte"
+ },
+ {
+  "hex": "787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878e2",
+  "error": "'utf-8' codec can't decode byte 0xe2 in position 600: unexpected end of data"
+ },
+ {
+  "hex": "c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8c3a8",
+  "len": 600,
+  "head": "èèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèèè"
+ },
+ {
+  "hex": "6f6bf09f90",
+  "error": "'utf-8' codec can't decode bytes in position 2-4: unexpected end of data"
+ },
+ {
+  "hex": "6f6bf09f9099f0",
+  "error": "'utf-8' codec can't decode byte 0xf0 in position 6: unexpected end of data"
+ }
+]

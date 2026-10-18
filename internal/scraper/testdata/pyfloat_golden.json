@@ -1,0 +1,390 @@
+[
+ {
+  "in": null,
+  "error": {
+   "type": "TypeError",
+   "msg": "float() argument must be a string or a real number, not 'NoneType'"
+  }
+ },
+ {
+  "in": "",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: ''"
+  }
+ },
+ {
+  "in": " ",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: ' '"
+  }
+ },
+ {
+  "in": "abc",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'abc'"
+  }
+ },
+ {
+  "in": "0.008800",
+  "repr": "0.0088",
+  "json": "0.0088"
+ },
+ {
+  "in": " 72.000000\n",
+  "repr": "72.0",
+  "json": "72.0"
+ },
+ {
+  "in": "72",
+  "repr": "72.0",
+  "json": "72.0"
+ },
+ {
+  "in": "1_000.5",
+  "repr": "1000.5",
+  "json": "1000.5"
+ },
+ {
+  "in": "1__0",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1__0'"
+  }
+ },
+ {
+  "in": "_1",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '_1'"
+  }
+ },
+ {
+  "in": "1_",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1_'"
+  }
+ },
+ {
+  "in": "1_.5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1_.5'"
+  }
+ },
+ {
+  "in": "1._5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1._5'"
+  }
+ },
+ {
+  "in": "1e1_0",
+  "repr": "10000000000.0",
+  "json": "10000000000.0"
+ },
+ {
+  "in": "inf",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "-Infinity",
+  "repr": "-inf",
+  "json": "-Infinity"
+ },
+ {
+  "in": "nAn",
+  "repr": "nan",
+  "json": "NaN"
+ },
+ {
+  "in": "+nan",
+  "repr": "nan",
+  "json": "NaN"
+ },
+ {
+  "in": "-nan",
+  "repr": "nan",
+  "json": "NaN"
+ },
+ {
+  "in": "+inf",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "INFINITY",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "infinit",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'infinit'"
+  }
+ },
+ {
+  "in": "0x10",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '0x10'"
+  }
+ },
+ {
+  "in": "1e400",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "-1e400",
+  "repr": "-inf",
+  "json": "-Infinity"
+ },
+ {
+  "in": "1e-400",
+  "repr": "0.0",
+  "json": "0.0"
+ },
+ {
+  "in": "1.",
+  "repr": "1.0",
+  "json": "1.0"
+ },
+ {
+  "in": ".5",
+  "repr": "0.5",
+  "json": "0.5"
+ },
+ {
+  "in": ".",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '.'"
+  }
+ },
+ {
+  "in": "e5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'e5'"
+  }
+ },
+ {
+  "in": "1e",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1e'"
+  }
+ },
+ {
+  "in": "1e+",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1e+'"
+  }
+ },
+ {
+  "in": "٣.٥",
+  "repr": "3.5",
+  "json": "3.5"
+ },
+ {
+  "in": "  1.5　",
+  "repr": "1.5",
+  "json": "1.5"
+ },
+ {
+  "in": "1.5\u0000",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1.5\\x00'"
+  }
+ },
+ {
+  "in": "²",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '²'"
+  }
+ },
+ {
+  "in": "1,5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1,5'"
+  }
+ },
+ {
+  "in": "+.5e-3",
+  "repr": "0.0005",
+  "json": "0.0005"
+ },
+ {
+  "in": "--1",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '--1'"
+  }
+ },
+ {
+  "in": "1 2",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1 2'"
+  }
+ },
+ {
+  "in": " 1",
+  "repr": "1.0",
+  "json": "1.0"
+ },
+ {
+  "in": "\u001c1",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '\\x1c1'"
+  }
+ },
+ {
+  "in": "1\u001f",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1\\x1f'"
+  }
+ },
+ {
+  "in": "-2.5E+3",
+  "repr": "-2500.0",
+  "json": "-2500.0"
+ },
+ {
+  "in": "0.1",
+  "repr": "0.1",
+  "json": "0.1"
+ },
+ {
+  "in": "0.30000000000000004",
+  "repr": "0.30000000000000004",
+  "json": "0.30000000000000004"
+ },
+ {
+  "in": "1e16",
+  "repr": "1e+16",
+  "json": "1e+16"
+ },
+ {
+  "in": "123456789012345678",
+  "repr": "1.2345678901234568e+17",
+  "json": "1.2345678901234568e+17"
+ },
+ {
+  "in": "1e-5",
+  "repr": "1e-05",
+  "json": "1e-05"
+ },
+ {
+  "in": "0.0001",
+  "repr": "0.0001",
+  "json": "0.0001"
+ },
+ {
+  "in": "-0",
+  "repr": "-0.0",
+  "json": "-0.0"
+ },
+ {
+  "in": "-0.0",
+  "repr": "-0.0",
+  "json": "-0.0"
+ },
+ {
+  "in": "4.9e-324",
+  "repr": "5e-324",
+  "json": "5e-324"
+ },
+ {
+  "in": "1.7976931348623157e308",
+  "repr": "1.7976931348623157e+308",
+  "json": "1.7976931348623157e+308"
+ },
+ {
+  "in": "1.7976931348623159e308",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "﬒",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '\\ufb12'"
+  }
+ },
+ {
+  "in": "1 _0",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1\\xa0_0'"
+  }
+ },
+ {
+  "in": "１２",
+  "repr": "12.0",
+  "json": "12.0"
+ },
+ {
+  "in": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+  "repr": "inf",
+  "json": "Infinity"
+ },
+ {
+  "in": "0.11111111111111111111111111111111111111111111111111",
+  "repr": "0.1111111111111111",
+  "json": "0.1111111111111111"
+ },
+ {
+  "in": "+",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '+'"
+  }
+ },
+ {
+  "in": "-",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '-'"
+  }
+ },
+ {
+  "in": "nan_",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'nan_'"
+  }
+ },
+ {
+  "in": "1_e5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1_e5'"
+  }
+ },
+ {
+  "in": "1e_5",
+  "error": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '1e_5'"
+  }
+ },
+ {
+  "in": "١_٢",
+  "repr": "12.0",
+  "json": "12.0"
+ }
+]
