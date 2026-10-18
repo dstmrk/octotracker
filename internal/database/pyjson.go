@@ -168,6 +168,7 @@ func writePyJSONReflect(b *strings.Builder, v any) error {
 			return writePyJSON(b, m)
 		}
 	}
+	//lint:ignore ST1005 stesso messaggio del TypeError di json.dumps in Python
 	return fmt.Errorf("Object of type %T is not JSON serializable", v)
 }
 
@@ -271,6 +272,7 @@ func pyLoads(s string) (any, error) {
 		return nil, err
 	}
 	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+		//lint:ignore ST1005 stesso messaggio del JSONDecodeError di json.loads in Python
 		return nil, errors.New("Extra data")
 	}
 	return convertJSONNumbers(v), nil
