@@ -245,7 +245,7 @@ func TestFormatNumberGolden(t *testing.T) {
 		}
 		// Come in Python va in panic (il testo dell'eccezione non conta)
 		v := parsePyFloat(t, e.Repr)
-		if got := panicMessage(func() { FormatNumber(v, 2) }); got == "" {
+		if panicMessage(func() { FormatNumber(v, 2) }) == "" {
 			t.Errorf("FormatNumber(%s): atteso panic (%s)", e.Repr, e.Error)
 		}
 	}
