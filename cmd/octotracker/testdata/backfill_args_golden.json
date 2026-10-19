@@ -1,0 +1,632 @@
+[
+ {
+  "args": [],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "-h"
+  ],
+  "stdout": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\n\nBackfill storico tariffe Octopus Energy da ARERA\n\noptions:\n  -h, --help            show this help message and exit\n  --days DAYS           Numero di giorni indietro da scaricare (default: 365)\n  --dry-run             Simula senza scrivere nel database\n  --delay DELAY         Secondi di attesa tra richieste HTTP (default: 0.5)\n  --log-level {DEBUG,INFO,WARNING,ERROR}\n                        Livello di logging (default: INFO)\n",
+  "stderr": "",
+  "exit": 0,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--help"
+  ],
+  "stdout": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\n\nBackfill storico tariffe Octopus Energy da ARERA\n\noptions:\n  -h, --help            show this help message and exit\n  --days DAYS           Numero di giorni indietro da scaricare (default: 365)\n  --dry-run             Simula senza scrivere nel database\n  --delay DELAY         Secondi di attesa tra richieste HTTP (default: 0.5)\n  --log-level {DEBUG,INFO,WARNING,ERROR}\n                        Livello di logging (default: INFO)\n",
+  "stderr": "",
+  "exit": 0,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--he"
+  ],
+  "stdout": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\n\nBackfill storico tariffe Octopus Energy da ARERA\n\noptions:\n  -h, --help            show this help message and exit\n  --days DAYS           Numero di giorni indietro da scaricare (default: 365)\n  --dry-run             Simula senza scrivere nel database\n  --delay DELAY         Secondi di attesa tra richieste HTTP (default: 0.5)\n  --log-level {DEBUG,INFO,WARNING,ERROR}\n                        Livello di logging (default: INFO)\n",
+  "stderr": "",
+  "exit": 0,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "30"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "30",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days=30"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "30",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   " 30 "
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "30",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "+30"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "30",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "1_000"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "1000",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "٣٠"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "30",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "-5"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "-5",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "0"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "0",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "abc"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: invalid int value: 'abc'\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "3.5"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: invalid int value: '3.5'\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   ""
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: invalid int value: ''\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: expected one argument\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "--dry-run"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: expected one argument\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "99999999999999999999999"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "99999999999999999999999",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--da",
+   "10"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "10",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--d",
+   "10"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: ambiguous option: --d could match --days, --dry-run, --delay\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--de",
+   "1"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "1.0",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--dr"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": true,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--dry-run"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": true,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--dry-run=yes"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --dry-run: ignored explicit argument 'yes'\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--dry-run",
+   "--dry-run"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": true,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "0"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.0",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "1e-3"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.001",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "nan"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "nan",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "-inf"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --delay: expected one argument\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--delay",
+   "1_0.5"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "10.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "-.5"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "-0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--delay",
+   "x"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --delay: invalid float value: 'x'\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--log-level",
+   "DEBUG"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "DEBUG"
+  }
+ },
+ {
+  "args": [
+   "--log-level",
+   "debug"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --log-level: invalid choice: 'debug' (choose from 'DEBUG', 'INFO', 'WARNING', 'ERROR')\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--log-level=ERROR"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "ERROR"
+  }
+ },
+ {
+  "args": [
+   "--log-level"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --log-level: expected one argument\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--l",
+   "WARNING"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "365",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "WARNING"
+  }
+ },
+ {
+  "args": [
+   "extra"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: extra\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "extra",
+   "--days",
+   "5"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: extra\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "5",
+   "extra",
+   "altro"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: extra altro\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--unknown"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: --unknown\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--unknown=1"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: --unknown=1\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "-x"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: -x\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "-"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: -\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: --\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--",
+   "--days",
+   "5"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: -- --days 5\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "5",
+   "--"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: unrecognized arguments: --\n",
+  "exit": 2,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "1",
+   "--days",
+   "2"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "2",
+   "dry_run": false,
+   "delay": "0.5",
+   "log_level": "INFO"
+  }
+ },
+ {
+  "args": [
+   "--days",
+   "5",
+   "--dry-run",
+   "--delay",
+   "2",
+   "--log-level",
+   "WARNING"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exit": null,
+  "parsed": {
+   "days": "5",
+   "dry_run": true,
+   "delay": "2.0",
+   "log_level": "WARNING"
+  }
+ },
+ {
+  "args": [
+   "-h",
+   "--days",
+   "x"
+  ],
+  "stdout": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\n\nBackfill storico tariffe Octopus Energy da ARERA\n\noptions:\n  -h, --help            show this help message and exit\n  --days DAYS           Numero di giorni indietro da scaricare (default: 365)\n  --dry-run             Simula senza scrivere nel database\n  --delay DELAY         Secondi di attesa tra richieste HTTP (default: 0.5)\n  --log-level {DEBUG,INFO,WARNING,ERROR}\n                        Livello di logging (default: INFO)\n",
+  "stderr": "",
+  "exit": 0,
+  "parsed": null
+ },
+ {
+  "args": [
+   "--days",
+   "x",
+   "-h"
+  ],
+  "stdout": "",
+  "stderr": "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\noctotracker backfill: error: argument --days: invalid int value: 'x'\n",
+  "exit": 2,
+  "parsed": null
+ }
+]

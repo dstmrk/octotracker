@@ -33,6 +33,7 @@ import (
 	// in un'immagine senza /usr/share/zoneinfo.
 	_ "time/tzdata"
 
+	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/app"
 	"github.com/dstmrk/octotracker/internal/broadcast"
 	"github.com/dstmrk/octotracker/internal/checker"
@@ -167,9 +168,12 @@ func fail(err error, s streams) int {
 	return exitError
 }
 
-// configError restituisce l'errore di config.Load relativo alla variabile
-// name (nil se il valore è valido). In Python ogni script converte solo le
-// variabili che usa, quindi un valore non valido ferma solo quegli script.
+// configError restituisce l'errore di config.Load della prima variabile di
+// names (nell'ordine in cui Python le converte) con un valore non valido, o
+// nil. In Python ogni script converte solo le variabili che usa, quindi un
+// valore non valido ferma solo quegli script. Il messaggio è quello di
+// int() ("invalid literal for int() with base 10: 'x'"); per i valori che
+// int() accetterebbe ma config rifiuta (oltre int64) resta quello di config.
 func configError(err error, names ...string) error {
 	if err == nil {
 		return nil
@@ -180,9 +184,12 @@ func configError(err error, names ...string) error {
 	} else {
 		errs = []error{err}
 	}
-	for _, e := range errs {
-		for _, name := range names {
+	for _, name := range names {
+		for _, e := range errs {
 			if strings.HasPrefix(e.Error(), name+" non valido") {
+				if _, intErr := pycompat.ParseInt(os.Getenv(name)); intErr != nil {
+					return intErr
+				}
 				return e
 			}
 		}
@@ -190,8 +197,9 @@ func configError(err error, names ...string) error {
 	return nil
 }
 
-// botIntVars sono le variabili intere convertite all'avvio di bot.py (e di
-// handlers/commands.py, importato da bot.py).
+// botIntVars sono le variabili intere convertite all'avvio di bot.py,
+// nell'ordine di esecuzione: CHECKER_HOUR di handlers/commands.py (importato
+// in cima a bot.py), poi quelle di bot.py.
 var botIntVars = []string{"CHECKER_HOUR", "SCRAPER_HOUR", "REMINDER_HOUR", "SCRAPER_TIMEOUT_SECONDS", "WEBHOOK_PORT", "HEALTH_PORT"}
 
 // runServe avvia il bot (python bot.py): logging su console e su file con

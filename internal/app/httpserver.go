@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
+	"math/big"
 	"net/http"
 	"path"
 	"regexp"
@@ -178,6 +180,11 @@ func (s *StaticHandler) resolve(h *tornado.RequestHandler, pathArg string) (stri
 		return "", &tornado.HTTPError{StatusCode: http.StatusForbidden,
 			LogMessage: fmt.Sprintf("%s is not in root static directory", pathArg)}
 	}
+	// _resolve_symlink_target: os.path.realpath fa lstat sul percorso, che
+	// con un byte NUL solleva ValueError (500 "Uncaught exception")
+	if strings.ContainsRune(pathArg, 0) {
+		return "", pycompat.NewError("ValueError", "lstat: embedded null character in path")
+	}
 
 	if info, err := fs.Stat(s.FS, name); err == nil && info.IsDir() {
 		// serve guardare request.path: path può essere vuoto
@@ -243,7 +250,8 @@ func (s *StaticHandler) get(h *tornado.RequestHandler, pathArg string, includeBo
 
 	size := len(content)
 	start, end := 0, size
-	if rangeHeader := h.Request.Header.Get("Range"); rangeHeader != "" {
+	// headers.get("Range"): più header vengono uniti con ","
+	if rangeHeader := pycompat.Latin1(strings.Join(h.Request.Header.Values("Range"), ",")); rangeHeader != "" {
 		// RFC 2616 14.16: un header Range non valido viene ignorato
 		if rs, re, ok := parseRequestRange(rangeHeader); ok {
 			if rs != nil && *rs < 0 {
@@ -308,12 +316,14 @@ func shouldReturn304(r *http.Request, etag string, modified time.Time, hasModifi
 		}
 		return false
 	}
-	ims := r.Header.Get("If-Modified-Since")
-	if ims == "" || !hasModified {
+	// headers.get("If-Modified-Since") is not None: anche un header vuoto
+	// conta (e poi non è una data valida)
+	values := r.Header.Values("If-Modified-Since")
+	if values == nil || !hasModified {
 		return false
 	}
-	ifSince, err := http.ParseTime(ims)
-	if err != nil {
+	ifSince, ok := parsedateToDatetime(pycompat.Latin1(strings.Join(values, ",")))
+	if !ok {
 		return false
 	}
 	return !ifSince.Before(modified)
@@ -324,10 +334,10 @@ func shouldReturn304(r *http.Request, etag string, modified time.Time, hasModifi
 // "bytes=-N" diventa start=-N. ok=false se l'header non è valido.
 func parseRequestRange(header string) (start, end *int, ok bool) {
 	unit, value, _ := strings.Cut(header, "=")
-	if strings.TrimSpace(unit) != "bytes" {
+	if pycompat.Strip(unit) != "bytes" {
 		return nil, nil, false
 	}
-	startB, endB, _ := strings.Cut(strings.TrimSpace(value), "-")
+	startB, endB, _ := strings.Cut(pycompat.Strip(value), "-")
 	start, okS := intOrNone(startB)
 	end, okE := intOrNone(endB)
 	if !okS || !okE {
@@ -347,15 +357,30 @@ func parseRequestRange(header string) (start, end *int, ok bool) {
 	return start, end, true
 }
 
-// intOrNone replica _int_or_none: stringa vuota → None, altrimenti int().
+// maxRangeBound limita i valori di un range: gli int di Python non hanno
+// limiti, ma oltre questa soglia (molto più grande di qualunque file) i
+// confronti con la dimensione del file danno lo stesso esito.
+const maxRangeBound = math.MaxInt64 / 4
+
+// intOrNone replica _int_or_none: stringa vuota → None, altrimenti int()
+// di Python (spazi Unicode, segno, underscore, cifre Unicode).
 func intOrNone(s string) (*int, bool) {
-	s = strings.TrimSpace(s)
+	s = pycompat.Strip(s)
 	if s == "" {
 		return nil, true
 	}
-	n, err := strconv.Atoi(s)
+	v, err := pycompat.ParseInt(s)
 	if err != nil {
 		return nil, false
+	}
+	var n int
+	switch {
+	case v.Cmp(big.NewInt(maxRangeBound)) > 0:
+		n = maxRangeBound
+	case v.Cmp(big.NewInt(-maxRangeBound)) < 0:
+		n = -maxRangeBound
+	default:
+		n = int(v.Int64())
 	}
 	return &n, true
 }

@@ -1,0 +1,616 @@
+{
+ "token": "123456:TEST-TOKEN",
+ "secret": "s3cret-token",
+ "cases": [
+  {
+   "name": "ok",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 200,
+   "reason": "OK",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "0"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": [
+    7
+   ]
+  },
+  {
+   "name": "ok_trailing_slash",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4vIEhUVFAvMS4xDQpIb3N0OiBsb2NhbGhvc3QNCkNvbm5lY3Rpb246IGNsb3NlDQpDb250ZW50LVR5cGU6IGFwcGxpY2F0aW9uL2pzb24NClgtVGVsZWdyYW0tQm90LUFwaS1TZWNyZXQtVG9rZW46IHMzY3JldC10b2tlbg0KQ29udGVudC1MZW5ndGg6IDE5OA0KDQp7InVwZGF0ZV9pZCI6IDcsICJtZXNzYWdlIjogeyJtZXNzYWdlX2lkIjogMSwgImRhdGUiOiAxNzAwMDAwMDAwLCAiY2hhdCI6IHsiaWQiOiAxMjM0NTY3ODksICJ0eXBlIjogInByaXZhdGUifSwgImZyb20iOiB7ImlkIjogMTIzNDU2Nzg5LCAiaXNfYm90IjogZmFsc2UsICJmaXJzdF9uYW1lIjogIk1hcmlvIn0sICJ0ZXh0IjogIi9zdGF0dXMifX0=",
+   "method": "POST",
+   "status": 200,
+   "reason": "OK",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "0"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": [
+    7
+   ]
+  },
+  {
+   "name": "ok_query",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4/eD0xIEhUVFAvMS4xDQpIb3N0OiBsb2NhbGhvc3QNCkNvbm5lY3Rpb246IGNsb3NlDQpDb250ZW50LVR5cGU6IGFwcGxpY2F0aW9uL2pzb24NClgtVGVsZWdyYW0tQm90LUFwaS1TZWNyZXQtVG9rZW46IHMzY3JldC10b2tlbg0KQ29udGVudC1MZW5ndGg6IDE5OA0KDQp7InVwZGF0ZV9pZCI6IDcsICJtZXNzYWdlIjogeyJtZXNzYWdlX2lkIjogMSwgImRhdGUiOiAxNzAwMDAwMDAwLCAiY2hhdCI6IHsiaWQiOiAxMjM0NTY3ODksICJ0eXBlIjogInByaXZhdGUifSwgImZyb20iOiB7ImlkIjogMTIzNDU2Nzg5LCAiaXNfYm90IjogZmFsc2UsICJmaXJzdF9uYW1lIjogIk1hcmlvIn0sICJ0ZXh0IjogIi9zdGF0dXMifX0=",
+   "method": "POST",
+   "status": 200,
+   "reason": "OK",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "0"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": [
+    7
+   ]
+  },
+  {
+   "name": "ok_minimal",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMTYNCg0KeyJ1cGRhdGVfaWQiOiAxfQ==",
+   "method": "POST",
+   "status": 200,
+   "reason": "OK",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "0"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": [
+    1
+   ]
+  },
+  {
+   "name": "ok_unknown_fields",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogNDANCg0KeyJ1cGRhdGVfaWQiOiAyLCAibnVvdm9fdGlwbyI6IHsiYSI6IDF9fQ==",
+   "method": "POST",
+   "status": 200,
+   "reason": "OK",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "0"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": [
+    2
+   ]
+  },
+  {
+   "name": "double_trailing_slash",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4vLyBIVFRQLzEuMQ0KSG9zdDogbG9jYWxob3N0DQpDb25uZWN0aW9uOiBjbG9zZQ0KQ29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9qc29uDQpYLVRlbGVncmFtLUJvdC1BcGktU2VjcmV0LVRva2VuOiBzM2NyZXQtdG9rZW4NCkNvbnRlbnQtTGVuZ3RoOiAxOTgNCg0KeyJ1cGRhdGVfaWQiOiA3LCAibWVzc2FnZSI6IHsibWVzc2FnZV9pZCI6IDEsICJkYXRlIjogMTcwMDAwMDAwMCwgImNoYXQiOiB7ImlkIjogMTIzNDU2Nzg5LCAidHlwZSI6ICJwcml2YXRlIn0sICJmcm9tIjogeyJpZCI6IDEyMzQ1Njc4OSwgImlzX2JvdCI6IGZhbHNlLCAiZmlyc3RfbmFtZSI6ICJNYXJpbyJ9LCAidGV4dCI6ICIvc3RhdHVzIn19",
+   "method": "POST",
+   "status": 404,
+   "reason": "Not Found",
+   "headers": {
+    "Content-Type": [
+     "text/html; charset=UTF-8"
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNDogTm90IEZvdW5kPC90aXRsZT48Ym9keT40MDQ6IE5vdCBGb3VuZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "other_path",
+   "raw_request_b64": "UE9TVCAvb3RoZXIgSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 404,
+   "reason": "Not Found",
+   "headers": {
+    "Content-Type": [
+     "text/html; charset=UTF-8"
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNDogTm90IEZvdW5kPC90aXRsZT48Ym9keT40MDQ6IE5vdCBGb3VuZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "root_path",
+   "raw_request_b64": "R0VUIC8gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCg0K",
+   "method": "GET",
+   "status": 404,
+   "reason": "Not Found",
+   "headers": {
+    "Content-Type": [
+     "text/html; charset=UTF-8"
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNDogTm90IEZvdW5kPC90aXRsZT48Ym9keT40MDQ6IE5vdCBGb3VuZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "other_path_unknown_method",
+   "raw_request_b64": "Rk9PIC9vdGhlciBIVFRQLzEuMQ0KSG9zdDogbG9jYWxob3N0DQpDb25uZWN0aW9uOiBjbG9zZQ0KDQo=",
+   "method": "FOO",
+   "status": 405,
+   "reason": "Method Not Allowed",
+   "headers": {
+    "Content-Type": [
+     "text/html; charset=UTF-8"
+    ],
+    "Content-Length": [
+     "87"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNTogTWV0aG9kIE5vdCBBbGxvd2VkPC90aXRsZT48Ym9keT40MDU6IE1ldGhvZCBOb3QgQWxsb3dlZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "get",
+   "raw_request_b64": "R0VUIC8xMjM0NTY6VEVTVC1UT0tFTiBIVFRQLzEuMQ0KSG9zdDogbG9jYWxob3N0DQpDb25uZWN0aW9uOiBjbG9zZQ0KDQo=",
+   "method": "GET",
+   "status": 405,
+   "reason": "Method Not Allowed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "87"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNTogTWV0aG9kIE5vdCBBbGxvd2VkPC90aXRsZT48Ym9keT40MDU6IE1ldGhvZCBOb3QgQWxsb3dlZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "put",
+   "raw_request_b64": "UFVUIC8xMjM0NTY6VEVTVC1UT0tFTiBIVFRQLzEuMQ0KSG9zdDogbG9jYWxob3N0DQpDb25uZWN0aW9uOiBjbG9zZQ0KQ29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9qc29uDQpYLVRlbGVncmFtLUJvdC1BcGktU2VjcmV0LVRva2VuOiBzM2NyZXQtdG9rZW4NCkNvbnRlbnQtTGVuZ3RoOiAxOTgNCg0KeyJ1cGRhdGVfaWQiOiA3LCAibWVzc2FnZSI6IHsibWVzc2FnZV9pZCI6IDEsICJkYXRlIjogMTcwMDAwMDAwMCwgImNoYXQiOiB7ImlkIjogMTIzNDU2Nzg5LCAidHlwZSI6ICJwcml2YXRlIn0sICJmcm9tIjogeyJpZCI6IDEyMzQ1Njc4OSwgImlzX2JvdCI6IGZhbHNlLCAiZmlyc3RfbmFtZSI6ICJNYXJpbyJ9LCAidGV4dCI6ICIvc3RhdHVzIn19",
+   "method": "PUT",
+   "status": 405,
+   "reason": "Method Not Allowed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "87"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNTogTWV0aG9kIE5vdCBBbGxvd2VkPC90aXRsZT48Ym9keT40MDU6IE1ldGhvZCBOb3QgQWxsb3dlZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "head",
+   "raw_request_b64": "SEVBRCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCg0K",
+   "method": "HEAD",
+   "status": 405,
+   "reason": "Method Not Allowed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "87"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "unknown_method",
+   "raw_request_b64": "Rk9PIC8xMjM0NTY6VEVTVC1UT0tFTiBIVFRQLzEuMQ0KSG9zdDogbG9jYWxob3N0DQpDb25uZWN0aW9uOiBjbG9zZQ0KDQo=",
+   "method": "FOO",
+   "status": 405,
+   "reason": "Method Not Allowed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "87"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwNTogTWV0aG9kIE5vdCBBbGxvd2VkPC90aXRsZT48Ym9keT40MDU6IE1ldGhvZCBOb3QgQWxsb3dlZDwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "no_content_type",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNClgtVGVsZWdyYW0tQm90LUFwaS1TZWNyZXQtVG9rZW46IHMzY3JldC10b2tlbg0KQ29udGVudC1MZW5ndGg6IDE5OA0KDQp7InVwZGF0ZV9pZCI6IDcsICJtZXNzYWdlIjogeyJtZXNzYWdlX2lkIjogMSwgImRhdGUiOiAxNzAwMDAwMDAwLCAiY2hhdCI6IHsiaWQiOiAxMjM0NTY3ODksICJ0eXBlIjogInByaXZhdGUifSwgImZyb20iOiB7ImlkIjogMTIzNDU2Nzg5LCAiaXNfYm90IjogZmFsc2UsICJmaXJzdF9uYW1lIjogIk1hcmlvIn0sICJ0ZXh0IjogIi9zdGF0dXMifX0=",
+   "method": "POST",
+   "status": 403,
+   "reason": "Forbidden",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogRm9yYmlkZGVuPC90aXRsZT48Ym9keT40MDM6IEZvcmJpZGRlbjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "content_type_charset",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbjsgY2hhcnNldD11dGYtOA0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 403,
+   "reason": "Forbidden",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogRm9yYmlkZGVuPC90aXRsZT48Ym9keT40MDM6IEZvcmJpZGRlbjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "content_type_twice",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KQ29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9qc29uDQpYLVRlbGVncmFtLUJvdC1BcGktU2VjcmV0LVRva2VuOiBzM2NyZXQtdG9rZW4NCkNvbnRlbnQtTGVuZ3RoOiAxOTgNCg0KeyJ1cGRhdGVfaWQiOiA3LCAibWVzc2FnZSI6IHsibWVzc2FnZV9pZCI6IDEsICJkYXRlIjogMTcwMDAwMDAwMCwgImNoYXQiOiB7ImlkIjogMTIzNDU2Nzg5LCAidHlwZSI6ICJwcml2YXRlIn0sICJmcm9tIjogeyJpZCI6IDEyMzQ1Njc4OSwgImlzX2JvdCI6IGZhbHNlLCAiZmlyc3RfbmFtZSI6ICJNYXJpbyJ9LCAidGV4dCI6ICIvc3RhdHVzIn19",
+   "method": "POST",
+   "status": 403,
+   "reason": "Forbidden",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogRm9yYmlkZGVuPC90aXRsZT48Ym9keT40MDM6IEZvcmJpZGRlbjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "content_type_upper",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogQXBwbGljYXRpb24vSlNPTg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 403,
+   "reason": "Forbidden",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "69"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogRm9yYmlkZGVuPC90aXRsZT48Ym9keT40MDM6IEZvcmJpZGRlbjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "missing_secret",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KQ29udGVudC1MZW5ndGg6IDE5OA0KDQp7InVwZGF0ZV9pZCI6IDcsICJtZXNzYWdlIjogeyJtZXNzYWdlX2lkIjogMSwgImRhdGUiOiAxNzAwMDAwMDAwLCAiY2hhdCI6IHsiaWQiOiAxMjM0NTY3ODksICJ0eXBlIjogInByaXZhdGUifSwgImZyb20iOiB7ImlkIjogMTIzNDU2Nzg5LCAiaXNfYm90IjogZmFsc2UsICJmaXJzdF9uYW1lIjogIk1hcmlvIn0sICJ0ZXh0IjogIi9zdGF0dXMifX0=",
+   "method": "POST",
+   "status": 403,
+   "reason": "Request did not include the secret token",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "131"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogUmVxdWVzdCBkaWQgbm90IGluY2x1ZGUgdGhlIHNlY3JldCB0b2tlbjwvdGl0bGU+PGJvZHk+NDAzOiBSZXF1ZXN0IGRpZCBub3QgaW5jbHVkZSB0aGUgc2VjcmV0IHRva2VuPC9ib2R5PjwvaHRtbD4=",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "empty_secret",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 403,
+   "reason": "Request did not include the secret token",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "131"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogUmVxdWVzdCBkaWQgbm90IGluY2x1ZGUgdGhlIHNlY3JldCB0b2tlbjwvdGl0bGU+PGJvZHk+NDAzOiBSZXF1ZXN0IGRpZCBub3QgaW5jbHVkZSB0aGUgc2VjcmV0IHRva2VuPC9ib2R5PjwvaHRtbD4=",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "wrong_secret",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogc2JhZ2xpYXRvDQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 403,
+   "reason": "Request had the wrong secret token",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "119"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogUmVxdWVzdCBoYWQgdGhlIHdyb25nIHNlY3JldCB0b2tlbjwvdGl0bGU+PGJvZHk+NDAzOiBSZXF1ZXN0IGhhZCB0aGUgd3Jvbmcgc2VjcmV0IHRva2VuPC9ib2R5PjwvaHRtbD4=",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "secret_case",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogUzNDUkVULVRPS0VODQpDb250ZW50LUxlbmd0aDogMTk4DQoNCnsidXBkYXRlX2lkIjogNywgIm1lc3NhZ2UiOiB7Im1lc3NhZ2VfaWQiOiAxLCAiZGF0ZSI6IDE3MDAwMDAwMDAsICJjaGF0IjogeyJpZCI6IDEyMzQ1Njc4OSwgInR5cGUiOiAicHJpdmF0ZSJ9LCAiZnJvbSI6IHsiaWQiOiAxMjM0NTY3ODksICJpc19ib3QiOiBmYWxzZSwgImZpcnN0X25hbWUiOiAiTWFyaW8ifSwgInRleHQiOiAiL3N0YXR1cyJ9fQ==",
+   "method": "POST",
+   "status": 403,
+   "reason": "Request had the wrong secret token",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "119"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogUmVxdWVzdCBoYWQgdGhlIHdyb25nIHNlY3JldCB0b2tlbjwvdGl0bGU+PGJvZHk+NDAzOiBSZXF1ZXN0IGhhZCB0aGUgd3Jvbmcgc2VjcmV0IHRva2VuPC9ib2R5PjwvaHRtbD4=",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "secret_twice",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpYLVRlbGVncmFtLUJvdC1BcGktU2VjcmV0LVRva2VuOiBzM2NyZXQtdG9rZW4NCkNvbnRlbnQtTGVuZ3RoOiAxOTgNCg0KeyJ1cGRhdGVfaWQiOiA3LCAibWVzc2FnZSI6IHsibWVzc2FnZV9pZCI6IDEsICJkYXRlIjogMTcwMDAwMDAwMCwgImNoYXQiOiB7ImlkIjogMTIzNDU2Nzg5LCAidHlwZSI6ICJwcml2YXRlIn0sICJmcm9tIjogeyJpZCI6IDEyMzQ1Njc4OSwgImlzX2JvdCI6IGZhbHNlLCAiZmlyc3RfbmFtZSI6ICJNYXJpbyJ9LCAidGV4dCI6ICIvc3RhdHVzIn19",
+   "method": "POST",
+   "status": 403,
+   "reason": "Request had the wrong secret token",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "119"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMzogUmVxdWVzdCBoYWQgdGhlIHdyb25nIHNlY3JldCB0b2tlbjwvdGl0bGU+PGJvZHk+NDAzOiBSZXF1ZXN0IGhhZCB0aGUgd3Jvbmcgc2VjcmV0IHRva2VuPC9ib2R5PjwvaHRtbD4=",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "invalid_json",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogOQ0KDQp7bm90IGpzb24=",
+   "method": "POST",
+   "status": 500,
+   "reason": "Internal Server Error",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "93"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjUwMDogSW50ZXJuYWwgU2VydmVyIEVycm9yPC90aXRsZT48Ym9keT41MDA6IEludGVybmFsIFNlcnZlciBFcnJvcjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "empty_body",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMA0KDQo=",
+   "method": "POST",
+   "status": 500,
+   "reason": "Internal Server Error",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "93"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjUwMDogSW50ZXJuYWwgU2VydmVyIEVycm9yPC90aXRsZT48Ym9keT41MDA6IEludGVybmFsIFNlcnZlciBFcnJvcjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "non_utf8",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMjYNCg0KeyJ1cGRhdGVfaWQiOiAxLCAieCI6ICL/In0=",
+   "method": "POST",
+   "status": 500,
+   "reason": "Internal Server Error",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "93"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjUwMDogSW50ZXJuYWwgU2VydmVyIEVycm9yPC90aXRsZT48Ym9keT41MDA6IEludGVybmFsIFNlcnZlciBFcnJvcjwvYm9keT48L2h0bWw+",
+   "logs": [],
+   "queued": []
+  },
+  {
+   "name": "empty_object",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMg0KDQp7fQ==",
+   "method": "POST",
+   "status": 400,
+   "reason": "Update could not be processed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "109"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L3RpdGxlPjxib2R5PjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L2JvZHk+PC9odG1sPg==",
+   "logs": [
+    {
+     "name": "telegram.ext.Updater",
+     "level": "CRITICAL",
+     "msg": "Something went wrong processing the data received from Telegram. Received data was *not* processed! Received data was: {}"
+    }
+   ],
+   "queued": []
+  },
+  {
+   "name": "array",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMg0KDQpbXQ==",
+   "method": "POST",
+   "status": 400,
+   "reason": "Update could not be processed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "109"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L3RpdGxlPjxib2R5PjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L2JvZHk+PC9odG1sPg==",
+   "logs": [
+    {
+     "name": "telegram.ext.Updater",
+     "level": "CRITICAL",
+     "msg": "Something went wrong processing the data received from Telegram. Received data was *not* processed! Received data was: []"
+    }
+   ],
+   "queued": []
+  },
+  {
+   "name": "null",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogNA0KDQpudWxs",
+   "method": "POST",
+   "status": 400,
+   "reason": "Update could not be processed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "109"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L3RpdGxlPjxib2R5PjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L2JvZHk+PC9odG1sPg==",
+   "logs": [
+    {
+     "name": "telegram.ext.Updater",
+     "level": "CRITICAL",
+     "msg": "Something went wrong processing the data received from Telegram. Received data was *not* processed! Received data was: None"
+    }
+   ],
+   "queued": []
+  },
+  {
+   "name": "number",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMg0KDQo0Mg==",
+   "method": "POST",
+   "status": 400,
+   "reason": "Update could not be processed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "109"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L3RpdGxlPjxib2R5PjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L2JvZHk+PC9odG1sPg==",
+   "logs": [
+    {
+     "name": "telegram.ext.Updater",
+     "level": "CRITICAL",
+     "msg": "Something went wrong processing the data received from Telegram. Received data was *not* processed! Received data was: 42"
+    }
+   ],
+   "queued": []
+  },
+  {
+   "name": "bad_message",
+   "raw_request_b64": "UE9TVCAvMTIzNDU2OlRFU1QtVE9LRU4gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdA0KQ29ubmVjdGlvbjogY2xvc2UNCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbg0KWC1UZWxlZ3JhbS1Cb3QtQXBpLVNlY3JldC1Ub2tlbjogczNjcmV0LXRva2VuDQpDb250ZW50LUxlbmd0aDogMzINCg0KeyJ1cGRhdGVfaWQiOiAzLCAibWVzc2FnZSI6ICJ4In0=",
+   "method": "POST",
+   "status": 400,
+   "reason": "Update could not be processed",
+   "headers": {
+    "Content-Type": [
+     "application/json; charset=\"utf-8\""
+    ],
+    "Content-Length": [
+     "109"
+    ]
+   },
+   "has_expires": false,
+   "body_b64": "PGh0bWw+PHRpdGxlPjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L3RpdGxlPjxib2R5PjQwMDogVXBkYXRlIGNvdWxkIG5vdCBiZSBwcm9jZXNzZWQ8L2JvZHk+PC9odG1sPg==",
+   "logs": [
+    {
+     "name": "telegram.ext.Updater",
+     "level": "CRITICAL",
+     "msg": "Something went wrong processing the data received from Telegram. Received data was *not* processed! Received data was: {'update_id': 3, 'message': 'x'}"
+    }
+   ],
+   "queued": []
+  }
+ ]
+}

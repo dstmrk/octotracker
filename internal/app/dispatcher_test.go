@@ -9,6 +9,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
@@ -16,6 +17,7 @@ import (
 	"github.com/dstmrk/octotracker/internal/checker"
 	"github.com/dstmrk/octotracker/internal/config"
 	"github.com/dstmrk/octotracker/internal/database"
+	"github.com/dstmrk/octotracker/internal/dateutil"
 	"github.com/dstmrk/octotracker/internal/handlers/rateupdate"
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
@@ -427,4 +429,80 @@ func TestMinLevelHandler(t *testing.T) {
 	assertLogContains(t, logs, "telegram.ext.Application - WARNING - warning visibile")
 	logUnhandledError(context.Canceled)
 	assertLogContains(t, logs, "CRITICAL - Errore non gestito nell'elaborazione dell'update: context canceled")
+}
+
+// TestE2ERateUpdateScadenzaDate: dopo "Aggiorna tariffe" per un'offerta
+// fissa, "Sì" chiede la data di attivazione; una data non valida lascia la
+// conversazione in UPDATE_DATE, una valida salva la nuova scadenza.
+func TestE2ERateUpdateScadenzaDate(t *testing.T) {
+	h := newHarness(t, config.Config{})
+	h.seedNotification()
+
+	h.send(notificationCallback(checker.CallbackRateUpdateYes))
+	calls := h.press(rateupdate.CallbackScadenzaYes)
+	if got := strings.Join(buttons(calls), ","); got != rateupdate.CallbackScadenzaSkip {
+		t.Fatalf("richiesta della data: pulsanti %q (%v)", got, calls)
+	}
+	if got := lastText(t, h.text("31/02/2026")); got != rateupdate.MsgDateInvalid {
+		t.Fatalf("data non valida = %q", got)
+	}
+	if got := lastText(t, h.text("15/03/2026")); got != rateupdate.ScadenzaDoneText {
+		t.Fatalf("data valida = %q", got)
+	}
+	want := dateutil.FormatISODate(dateutil.ComputeExpiryDate(dateutil.NewDate(2026, time.March, 15)))
+	if u := h.store.LoadUser("123456789"); u.Luce.Scadenza != want {
+		t.Errorf("scadenza = %q, attesa %q", u.Luce.Scadenza, want)
+	}
+	if calls := h.text("01/01/2026"); len(calls) != 0 {
+		t.Errorf("testo dopo la fine: %v", calls)
+	}
+}
+
+// TestE2ECancelEndsFeedbackAndRateUpdate: /cancel è il fallback anche delle
+// conversazioni feedback (feedback_cancel) e rate_update
+// (cancel_conversation).
+func TestE2ECancelEndsFeedbackAndRateUpdate(t *testing.T) {
+	h := newHarness(t, config.Config{})
+	h.seedNotification()
+
+	h.text("/feedback")
+	if got := lastText(t, h.text("/cancel")); !strings.HasPrefix(got, "❌ Feedback annullato.") {
+		t.Fatalf("/cancel nel feedback = %q", got)
+	}
+	if calls := h.press("rating_5"); len(calls) != 0 {
+		t.Errorf("voto dopo /cancel: %v", calls)
+	}
+
+	h.send(notificationCallback(checker.CallbackRateUpdateYes))
+	if got := lastText(t, h.text("/cancel")); !strings.HasPrefix(got, msgCancelled) {
+		t.Fatalf("/cancel nell'aggiornamento tariffe = %q", got)
+	}
+	if calls := h.press(rateupdate.CallbackScadenzaYes); len(calls) != 0 {
+		t.Errorf("pulsante dopo /cancel: %v", calls)
+	}
+}
+
+// TestE2ETwoActiveConversations: come in PTB due conversazioni possono
+// essere attive insieme (/feedback durante la registrazione non è gestito
+// dalla registrazione e avvia il feedback); /cancel va al primo handler che
+// lo accetta, cioè la registrazione, mentre il feedback resta attivo.
+func TestE2ETwoActiveConversations(t *testing.T) {
+	h := newHarness(t, config.Config{})
+	if !h.store.SaveUser("123456789", database.User{Luce: database.Utility{Tipo: "fissa", Fascia: "monoraria", Energia: 0.1, Commercializzazione: 60}}) {
+		t.Fatal("SaveUser")
+	}
+	h.startRegistration()
+
+	if got := strings.Join(buttons(h.text("/feedback")), ","); got != "rating_1,rating_2,rating_3,rating_4,rating_5" {
+		t.Fatalf("/feedback durante la registrazione: pulsanti %q", got)
+	}
+	if got := lastText(t, h.text("/cancel")); !strings.HasPrefix(got, msgCancelled) {
+		t.Fatalf("primo /cancel = %q", got)
+	}
+	if got := strings.Join(buttons(h.press("rating_4")), ","); got != "skip_comment" {
+		t.Fatalf("il feedback deve restare attivo: pulsanti %q", got)
+	}
+	if got := lastText(t, h.text("/cancel")); !strings.HasPrefix(got, "❌ Feedback annullato.") {
+		t.Fatalf("secondo /cancel = %q", got)
+	}
 }

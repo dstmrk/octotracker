@@ -188,12 +188,26 @@ func TestParseBackfillArgsOutput(t *testing.T) {
 
 // TestConfigError estrae l'errore di config.Load per una variabile.
 func TestConfigError(t *testing.T) {
+	t.Setenv("SCRAPER_HOUR", "x")
+	t.Setenv("CHECKER_HOUR", "٣_")
+	t.Setenv("WEBHOOK_PORT", "99999999999999999999")
 	joined := errors.Join(
+		errors.New(`WEBHOOK_PORT non valido: "99999999999999999999"`),
 		errors.New(`SCRAPER_HOUR non valido: "x"`),
+		errors.New(`CHECKER_HOUR non valido: "٣_"`),
 		errors.New(`BROADCAST_BATCH_SIZE non valido: "y"`),
 	)
-	if err := configError(joined, "WEBHOOK_PORT", "SCRAPER_HOUR"); err == nil || !strings.Contains(err.Error(), "SCRAPER_HOUR") {
+	// Il messaggio è quello di int() di Python
+	if err := configError(joined, "SCRAPER_HOUR", "WEBHOOK_PORT"); err == nil || err.Error() != "invalid literal for int() with base 10: 'x'" {
 		t.Errorf("configError = %v", err)
+	}
+	// Vale l'ordine di conversione di Python, non quello di config
+	if err := configError(joined, botIntVars...); err == nil || err.Error() != "invalid literal for int() with base 10: '٣_'" {
+		t.Errorf("configError(botIntVars) = %v", err)
+	}
+	// Valore accettato da int() ma rifiutato da config: messaggio di config
+	if err := configError(joined, "WEBHOOK_PORT"); err == nil || !strings.HasPrefix(err.Error(), "WEBHOOK_PORT non valido") {
+		t.Errorf("configError(WEBHOOK_PORT) = %v", err)
 	}
 	if err := configError(joined, "HEALTH_PORT"); err != nil {
 		t.Errorf("configError = %v", err)
@@ -219,7 +233,7 @@ func TestRunServeConfigErrors(t *testing.T) {
 
 	t.Setenv("SCRAPER_HOUR", "nove")
 	code, _, errOut = runCmd(context.Background(), "serve")
-	if code != exitError || !strings.Contains(errOut, `ValueError: SCRAPER_HOUR non valido: "nove"`) {
+	if code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'nove'\n" {
 		t.Errorf("serve con SCRAPER_HOUR non valido: %d %q", code, errOut)
 	}
 
@@ -321,7 +335,7 @@ func TestRunBroadcast(t *testing.T) {
 	t.Setenv("TELEGRAM_BOT_TOKEN", "123:abc")
 	t.Setenv("BROADCAST_BATCH_SIZE", "dieci")
 	code, _, errOut = runCmd(context.Background(), "broadcast")
-	if code != exitError || !strings.HasPrefix(errOut, `ValueError: BROADCAST_BATCH_SIZE non valido: "dieci"`) {
+	if code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'dieci'\n" {
 		t.Errorf("broadcast con batch non valido: %d %q", code, errOut)
 	}
 	t.Setenv("BROADCAST_BATCH_SIZE", "")
@@ -362,7 +376,7 @@ func TestRunHealthcheck(t *testing.T) {
 		t.Errorf("server spento: %d", code)
 	}
 	t.Setenv("HEALTH_PORT", "porta")
-	if code, _, errOut := runCmd(context.Background(), "healthcheck"); code != exitError || !strings.Contains(errOut, "HEALTH_PORT") {
+	if code, _, errOut := runCmd(context.Background(), "healthcheck"); code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'porta'\n" {
 		t.Errorf("HEALTH_PORT non valido: %d %q", code, errOut)
 	}
 	t.Setenv("HEALTH_PORT", strconv.Itoa(-1))

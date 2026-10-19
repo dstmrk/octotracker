@@ -1,0 +1,1314 @@
+[
+ {
+  "name": "forbidden_blocked",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was blocked by the user\"}"
+  },
+  "py_class": "Forbidden",
+  "py_str": "Forbidden: bot was blocked by the user",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: bot was blocked by the user"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was blocked by the user\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: bot was blocked by the user"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "forbidden_kicked",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was kicked from the group chat\"}"
+  },
+  "py_class": "Forbidden",
+  "py_str": "Forbidden: bot was kicked from the group chat",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: bot was kicked from the group chat"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was kicked from the group chat\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: bot was kicked from the group chat"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_chat_not_found",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: chat not found\"}"
+  },
+  "py_class": "BadRequest",
+  "py_str": "Chat not found",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Chat not found"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Chat not found"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_not_modified",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message\"}"
+  },
+  "py_class": "BadRequest",
+  "py_str": "Message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_parse",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: can't parse entities: Unsupported start tag \\\"x\\\" at byte offset 3\"}"
+  },
+  "py_class": "BadRequest",
+  "py_str": "Can't parse entities: unsupported start tag \"x\" at byte offset 3",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Can't parse entities: unsupported start tag \"x\" at byte offset 3"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Can't parse entities: unsupported start tag \"x\" at byte offset 3"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_query_old",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: query is too old and response timeout expired or query ID is invalid\"}"
+  },
+  "py_class": "BadRequest",
+  "py_str": "Query is too old and response timeout expired or query id is invalid",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Query is too old and response timeout expired or query id is invalid"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Query is too old and response timeout expired or query id is invalid"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "unauthorized",
+  "go": {
+   "kind": "http",
+   "code": 401,
+   "payload": "{\"ok\": false, \"error_code\": 401, \"description\": \"Unauthorized\"}"
+  },
+  "py_class": "InvalidToken",
+  "py_str": "Unauthorized",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Unauthorized"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: InvalidToken"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Unauthorized\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Unauthorized"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: InvalidToken"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "not_found",
+  "go": {
+   "kind": "http",
+   "code": 404,
+   "payload": "{\"ok\": false, \"error_code\": 404, \"description\": \"Not Found\"}"
+  },
+  "py_class": "InvalidToken",
+  "py_str": "Not Found",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Not Found"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: InvalidToken"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Not Found\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Not Found"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: InvalidToken"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "conflict",
+  "go": {
+   "kind": "http",
+   "code": 409,
+   "payload": "{\"ok\": false, \"error_code\": 409, \"description\": \"Conflict: terminated by other getUpdates request; make sure that only one bot instance is running\"}"
+  },
+  "py_class": "Conflict",
+  "py_str": "Conflict: terminated by other getUpdates request; make sure that only one bot instance is running",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Conflict"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Conflict\n<b>Messaggio:</b> Conflict: terminated by other getUpdates request; make sure that only one bot instance is running\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Conflict"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "retry_after",
+  "go": {
+   "kind": "http",
+   "code": 429,
+   "payload": "{\"ok\": false, \"error_code\": 429, \"description\": \"Too Many Requests: retry after 5\", \"parameters\": {\"retry_after\": 5}}"
+  },
+  "py_class": "RetryAfter",
+  "py_str": "Flood control exceeded. Retry in 5 seconds",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Flood control exceeded. Retry in 5 seconds"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Rate limit: attendo 5s"
+    }
+   ],
+   "sent": [],
+   "sleeps": [
+    5
+   ]
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Flood control exceeded. Retry in 5 seconds"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Rate limit: attendo 5s"
+    }
+   ],
+   "sent": [],
+   "sleeps": [
+    5
+   ]
+  }
+ },
+ {
+  "name": "retry_after_400",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Too Many Requests: retry after 7\", \"parameters\": {\"retry_after\": 7}}"
+  },
+  "py_class": "RetryAfter",
+  "py_str": "Flood control exceeded. Retry in 7 seconds",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Flood control exceeded. Retry in 7 seconds"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Rate limit: attendo 7s"
+    }
+   ],
+   "sent": [],
+   "sleeps": [
+    7
+   ]
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Flood control exceeded. Retry in 7 seconds"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Rate limit: attendo 7s"
+    }
+   ],
+   "sent": [],
+   "sleeps": [
+    7
+   ]
+  }
+ },
+ {
+  "name": "chat_migrated",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: group chat was upgraded to a supergroup chat\", \"parameters\": {\"migrate_to_chat_id\": -1001234567890}}"
+  },
+  "py_class": "ChatMigrated",
+  "py_str": "Group migrated to supergroup. New chat id: -1001234567890",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Group migrated to supergroup. New chat id: -1001234567890"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ChatMigrated"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ChatMigrated\n<b>Messaggio:</b> Group migrated to supergroup. New chat id: -1001234567890\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Group migrated to supergroup. New chat id: -1001234567890"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ChatMigrated"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "server_error",
+  "go": {
+   "kind": "http",
+   "code": 500,
+   "payload": "{\"ok\": false, \"error_code\": 500, \"description\": \"Internal Server Error\"}"
+  },
+  "py_class": "NetworkError",
+  "py_str": "Internal Server Error",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Internal Server Error"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Internal Server Error"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_gateway",
+  "go": {
+   "kind": "http",
+   "code": 502,
+   "payload": "{\"ok\": false, \"error_code\": 502, \"description\": \"Bad Gateway\"}"
+  },
+  "py_class": "NetworkError",
+  "py_str": "Bad Gateway",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Bad Gateway"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Bad Gateway"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "error_prefix",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Error: something odd\"}"
+  },
+  "py_class": "BadRequest",
+  "py_str": "Something odd",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Something odd"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Something odd"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "empty_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"\"}"
+  },
+  "py_class": "Forbidden",
+  "py_str": "Forbidden (403)",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden (403)"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden (403)\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden (403)"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "long_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Errore lungo \\ud83d\\udc19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+  },
+  "py_class": "Forbidden",
+  "py_str": "Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "html_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: <b>tag</b> & co\"}"
+  },
+  "py_class": "Forbidden",
+  "py_str": "Forbidden: <b>tag</b> & co",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: <b>tag</b> & co"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: <b>tag</b> & co\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Forbidden: <b>tag</b> & co"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: Forbidden"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "timed_out",
+  "go": {
+   "kind": "timeout"
+  },
+  "py_class": "TimedOut",
+  "py_str": "Timed out",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Timed out"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Timed out"
+    },
+    {
+     "level": "WARNING",
+     "msg": "⏱️  Timeout/errore di rete - probabilmente connessione lenta. Il bot riproverà automaticamente."
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "attribute_error",
+  "go": {
+   "kind": "text",
+   "text": "AttributeError: 'NoneType' object has no attribute 'reply_text'"
+  },
+  "py_class": "AttributeError",
+  "py_str": "'NoneType' object has no attribute 'reply_text'",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: 'NoneType' object has no attribute 'reply_text'"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: AttributeError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> AttributeError\n<b>Messaggio:</b> 'NoneType' object has no attribute 'reply_text'\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: 'NoneType' object has no attribute 'reply_text'"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: AttributeError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "type_error_inaccessible",
+  "go": {
+   "kind": "text",
+   "text": "TypeError: Cannot edit an inaccessible message"
+  },
+  "py_class": "TypeError",
+  "py_str": "Cannot edit an inaccessible message",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Cannot edit an inaccessible message"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: TypeError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> TypeError\n<b>Messaggio:</b> Cannot edit an inaccessible message\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Cannot edit an inaccessible message"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: TypeError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "value_error_nan",
+  "go": {
+   "kind": "text",
+   "text": "ValueError: cannot convert float NaN to integer"
+  },
+  "py_class": "ValueError",
+  "py_str": "cannot convert float NaN to integer",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: cannot convert float NaN to integer"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ValueError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> cannot convert float NaN to integer\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: cannot convert float NaN to integer"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ValueError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "overflow_error",
+  "go": {
+   "kind": "text",
+   "text": "OverflowError: cannot convert float infinity to integer"
+  },
+  "py_class": "OverflowError",
+  "py_str": "cannot convert float infinity to integer",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: cannot convert float infinity to integer"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: OverflowError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> OverflowError\n<b>Messaggio:</b> cannot convert float infinity to integer\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: cannot convert float infinity to integer"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: OverflowError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "key_error",
+  "go": {
+   "kind": "keyerror",
+   "text": "commercializzazione"
+  },
+  "py_class": "KeyError",
+  "py_str": "'commercializzazione'",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: 'commercializzazione'"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: KeyError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> KeyError\n<b>Messaggio:</b> 'commercializzazione'\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: 'commercializzazione'"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: KeyError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "runtime_error",
+  "go": {
+   "kind": "pyerror",
+   "class": "RuntimeError",
+   "text": "errore inatteso non gestito"
+  },
+  "py_class": "RuntimeError",
+  "py_str": "errore inatteso non gestito",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: errore inatteso non gestito"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: errore inatteso non gestito"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "long_value_error",
+  "go": {
+   "kind": "pyerror",
+   "class": "ValueError",
+   "text": "Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "py_class": "ValueError",
+  "py_str": "Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ValueError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: ValueError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "empty_message",
+  "go": {
+   "kind": "pyerror",
+   "class": "RuntimeError",
+   "text": ""
+  },
+  "py_class": "RuntimeError",
+  "py_str": "",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: "
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    },
+    {
+     "level": "INFO",
+     "msg": "📨 Alert errore inviato all'admin 999"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> \n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: "
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    }
+   ],
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_timed_out",
+  "go": {
+   "kind": "pyerror",
+   "class": "RuntimeError",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "timeout"
+  },
+  "py_class": "RuntimeError",
+  "py_str": "errore inatteso non gestito",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: errore inatteso non gestito"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    },
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore invio alert admin: Timed out"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_forbidden",
+  "go": {
+   "kind": "pyerror",
+   "class": "RuntimeError",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was blocked by the user\"}"
+  },
+  "py_class": "RuntimeError",
+  "py_str": "errore inatteso non gestito",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: errore inatteso non gestito"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    },
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore invio alert admin: Forbidden: bot was blocked by the user"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_bad_request",
+  "go": {
+   "kind": "pyerror",
+   "class": "RuntimeError",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: can't parse entities: Unsupported start tag\"}"
+  },
+  "py_class": "RuntimeError",
+  "py_str": "errore inatteso non gestito",
+  "admin": {
+   "logs": [
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore: errore inatteso non gestito"
+    },
+    {
+     "level": "ERROR",
+     "msg": "⚠️  Errore non gestito: RuntimeError"
+    },
+    {
+     "level": "ERROR",
+     "msg": "❌ Errore invio alert admin: Can't parse entities: unsupported start tag"
+    }
+   ],
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ }
+]

@@ -14,6 +14,9 @@
 //   - calculate_seconds_until_next_run → CalculateSecondsUntilNextRun
 //   - _task_done_callback            → taskDoneCallback
 //   - run_health_server              → NewHTTPHandler (+ task health_server)
+//   - StaticFileHandler (Tornado)    → StaticHandler, con
+//     email.utils.parsedate_to_datetime → parsedateToDatetime per
+//     If-Modified-Since
 //   - post_init                      → startBackgroundTasks
 //   - app.run_webhook(...)           → runWebhook (bootstrap con retry,
 //     webhook server, coda degli update, attesa del segnale di stop)
