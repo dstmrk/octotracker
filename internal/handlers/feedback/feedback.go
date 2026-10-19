@@ -1,28 +1,22 @@
-// Package feedback è il port di handlers/feedback.py: il sistema di
-// feedback di OctoTracker, con la conversazione guidata /feedback (voto da
-// 1 a 5 stelle, commento facoltativo, annullamento) e il limite di un
-// feedback ogni 24 ore.
+// Package feedback contiene il sistema di feedback di OctoTracker: la
+// conversazione guidata /feedback (voto da 1 a 5 stelle, commento
+// facoltativo, annullamento) con il limite di un feedback ogni 24 ore.
 //
-// Testi, tastiere, callback_data, validazione e stati sono identici alla
-// versione Python. Gli handler sono metodi di Handlers con la firma gotgbot
-// e restituiscono, come in Python, lo stato successivo
-// (handlers.NextConversationState) o handlers.EndConversation(); gli altri
-// errori corrispondono alle eccezioni che in Python arrivano all'error
-// handler. Handlers.Conversation costruisce la conversazione come bot.py.
+// Gli handler sono metodi di Handlers con la firma gotgbot e restituiscono
+// lo stato successivo (handlers.NextConversationState) o
+// handlers.EndConversation(); gli altri errori arrivano all'error handler.
+// Handlers.Conversation costruisce la conversazione.
 //
-// Il cooldown confronta users.last_feedback_at (CURRENT_TIMESTAMP di
-// SQLite, quindi UTC) con l'ora locale datetime.now(), esattamente come
-// Python: il cooldown effettivo è spostato del fuso orario (bug Python
-// replicato di proposito).
+// Il cooldown legge users.last_feedback_at (CURRENT_TIMESTAMP di SQLite,
+// quindi UTC) come ora locale, come la versione Python: il cooldown
+// effettivo è spostato del fuso orario (bug Python mantenuto di proposito).
 package feedback
 
 import (
 	"fmt"
-	"math"
-	"math/big"
 	"strconv"
 	"strings"
-	"unicode"
+	"time"
 	"unicode/utf8"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -32,27 +26,22 @@ import (
 
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/dateutil"
-	"github.com/dstmrk/octotracker/internal/handlers/commands"
 	"github.com/dstmrk/octotracker/internal/logging"
 	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// logger replica logging.getLogger(__name__) di handlers/feedback.py.
 var logger = logging.Logger("handlers.feedback")
 
-// parseModeHTML corrisponde a ParseMode.HTML di python-telegram-bot.
 const parseModeHTML = "HTML"
 
-// FeedbackCooldownHours è il rate limiting: max 1 feedback ogni 24 ore
-// (FEEDBACK_COOLDOWN_HOURS).
+// FeedbackCooldownHours è il rate limiting: max 1 feedback ogni 24 ore.
 const FeedbackCooldownHours = 24
 
-// MaxCommentLength è la lunghezza massima del commento in caratteri (code
-// point, come len() di Python) (MAX_COMMENT_LENGTH).
+// MaxCommentLength è la lunghezza massima del commento in caratteri.
 const MaxCommentLength = 1000
 
-// Stati della conversazione feedback (FeedbackState): il valore è il nome
-// del membro dell'enum Python.
+// Stati della conversazione feedback: il valore è il nome dello stato nella
+// versione Python.
 const (
 	StateRating  = "RATING"  // 0
 	StateComment = "COMMENT" // 1
@@ -66,10 +55,14 @@ const (
 	callbackRatingPrefix = "rating_"
 )
 
-// keyRating è la chiave di context.user_data con il voto scelto.
+// keyRating è la chiave di user_data con il voto scelto.
 const keyRating = "rating"
 
-// Testi (identici a handlers/feedback.py).
+// sqliteTimestamp è il formato di CURRENT_TIMESTAMP di SQLite (eventuali
+// frazioni di secondo sono accettate da time.Parse).
+const sqliteTimestamp = "2006-01-02 15:04:05"
+
+// Testi.
 const (
 	msgFeedbackStart = "💬 <b>Grazie per il tuo feedback!</b>\n\n" +
 		"Come valuteresti OctoTracker?\n" +
@@ -80,8 +73,7 @@ const (
 	msgFeedbackCancelled = "❌ Feedback annullato.\n\nPuoi riavviare in qualsiasi momento con /feedback"
 )
 
-// Store è il sottoinsieme di *database.Store usato dal feedback
-// (get_last_feedback_time, save_feedback).
+// Store è il sottoinsieme di *database.Store usato dal feedback.
 type Store interface {
 	GetLastFeedbackTime(userID string) *string
 	SaveFeedback(userID, feedbackType string, rating *int, comment *string) bool
@@ -93,81 +85,40 @@ var _ Store = (*database.Store)(nil)
 type Handlers struct {
 	// Store è il database (feedback e users.last_feedback_at).
 	Store Store
-	// UserData è l'equivalente di context.user_data, condiviso con le
-	// altre conversazioni del bot.
+	// UserData sono i dati di conversazione, condivisi con le altre
+	// conversazioni del bot.
 	UserData *tg.UserData
 }
 
 // ========== HELPER ==========
 
-// effectiveUserID replica str(update.effective_user.id).
-func effectiveUserID(ctx *ext.Context) (string, error) {
-	if ctx.EffectiveUser == nil {
-		return "", attributeError("id")
-	}
-	return strconv.FormatInt(ctx.EffectiveUser.Id, 10), nil
-}
-
-// naiveMicros restituisce i microsecondi di un datetime naive dall'epoca
-// (calendario proleptico; solo per differenze).
-func naiveMicros(year, month, day, hour, minute, second, microsecond int) int64 {
-	days := int64(ymdToOrd(year, month, day))
-	secs := days*86400 + int64(hour)*3600 + int64(minute)*60 + int64(second)
-	return secs*1_000_000 + int64(microsecond)
-}
-
-// nowMicros restituisce datetime.now() (ora locale naive, risoluzione al
-// microsecondo per difetto) in microsecondi, con l'orologio di dateutil.
-func nowMicros() int64 {
-	now := dateutil.Now()
-	y, m, d := now.Date()
-	return naiveMicros(y, int(m), d, now.Hour(), now.Minute(), now.Second(), now.Nanosecond()/1000)
-}
-
-// totalSeconds replica timedelta.total_seconds(): microsecondi / 10**6 con
-// divisione intera "vera" di Python (correttamente arrotondata).
-func totalSeconds(micros int64) float64 {
-	const exact = 1 << 53
-	if micros > -exact && micros < exact {
-		return float64(micros) / 1e6
-	}
-	f, _ := new(big.Rat).SetFrac64(micros, 1_000_000).Float64()
-	return f
-}
-
-// canGiveFeedback controlla se l'utente può dare feedback (rate limiting,
-// _can_give_feedback). Restituisce (puòProcedere, messaggioErrore): il
-// messaggio è vuoto se l'utente può procedere.
+// canGiveFeedback controlla se l'utente può dare feedback (rate limiting).
+// Restituisce (puòProcedere, messaggioErrore): il messaggio è vuoto se
+// l'utente può procedere. Un timestamp illeggibile non blocca l'utente.
 func (h *Handlers) canGiveFeedback(userID string) (bool, string) {
 	lastFeedback := h.Store.GetLastFeedbackTime(userID)
 	if lastFeedback == nil {
 		return true, ""
 	}
 
-	// Parse timestamp (formato SQLite: "YYYY-MM-DD HH:MM:SS")
-	lastTime, err := fromISOFormat(*lastFeedback)
-	if err == nil && lastTime.aware {
-		// now (naive) - last_time (aware) solleva TypeError
-		err = &pyError{typ: "TypeError", msg: "can't subtract offset-naive and offset-aware datetimes"}
-	}
+	lastTime, err := time.ParseInLocation(sqliteTimestamp, *lastFeedback, time.Local)
 	if err != nil {
-		logger.Warn(fmt.Sprintf("Errore parsing timestamp feedback per %s: %s", userID, err))
+		logger.Warn(fmt.Sprintf("Errore parsing timestamp feedback per %s: %v", userID, err))
 		// In caso di errore, permetti comunque (safe default)
 		return true, ""
 	}
 
-	timeDiff := nowMicros() - naiveMicros(lastTime.year, lastTime.month, lastTime.day,
-		lastTime.hour, lastTime.minute, lastTime.second, lastTime.microsecond)
-
-	if timeDiff < FeedbackCooldownHours*3600*1_000_000 {
-		hoursRemaining := float64(FeedbackCooldownHours) - totalSeconds(timeDiff)/3600
-		errorMsg := "⏰ Hai già inviato un feedback di recente!\n\n" +
-			"Per evitare spam, puoi dare feedback una volta ogni " + strconv.Itoa(FeedbackCooldownHours) + "h.\n" +
-			"Riprova tra circa " + strconv.FormatInt(int64(math.Trunc(hoursRemaining)), 10) + "h."
-		return false, errorMsg
+	// Microsecondi trascorsi, senza la saturazione di time.Duration (±292 anni)
+	now := dateutil.Now()
+	elapsed := (now.Unix()-lastTime.Unix())*1_000_000 + int64(now.Nanosecond()/1000-lastTime.Nanosecond()/1000)
+	if elapsed >= FeedbackCooldownHours*3600*1_000_000 {
+		return true, ""
 	}
 
-	return true, ""
+	hoursRemaining := float64(FeedbackCooldownHours) - float64(elapsed)/1e6/3600
+	return false, "⏰ Hai già inviato un feedback di recente!\n\n" +
+		"Per evitare spam, puoi dare feedback una volta ogni " + strconv.Itoa(FeedbackCooldownHours) + "h.\n" +
+		"Riprova tra circa " + strconv.FormatInt(int64(hoursRemaining), 10) + "h."
 }
 
 // ratingKeyboard è la tastiera con i pulsanti da 1 a 5 stelle.
@@ -183,11 +134,11 @@ func ratingKeyboard() gotgbot.InlineKeyboardMarkup {
 
 // ========== HANDLERS ==========
 
-// FeedbackCommand è l'handler del comando /feedback (feedback_command): avvia
-// la conversazione. Restituisce lo stato RATING se l'utente può procedere,
+// FeedbackCommand è l'handler del comando /feedback: avvia la
+// conversazione. Restituisce lo stato RATING se l'utente può procedere,
 // handlers.EndConversation() se è in cooldown.
 func (h *Handlers) FeedbackCommand(b *gotgbot.Bot, ctx *ext.Context) error {
-	userID, err := effectiveUserID(ctx)
+	userID, err := tg.UserID(ctx)
 	if err != nil {
 		return err
 	}
@@ -195,7 +146,7 @@ func (h *Handlers) FeedbackCommand(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Controlla rate limiting
 	canProceed, errorMsg := h.canGiveFeedback(userID)
 	if !canProceed {
-		if err := replyText(b, ctx.Message, errorMsg, "", nil); err != nil {
+		if err := tg.Reply(b, ctx.Message, errorMsg, "", nil); err != nil {
 			return err
 		}
 		return handlers.EndConversation()
@@ -206,34 +157,30 @@ func (h *Handlers) FeedbackCommand(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// Mostra pulsanti rating
 	replyMarkup := ratingKeyboard()
-	if err := replyText(b, ctx.Message, msgFeedbackStart, parseModeHTML, &replyMarkup); err != nil {
+	if err := tg.Reply(b, ctx.Message, msgFeedbackStart, parseModeHTML, &replyMarkup); err != nil {
 		return err
 	}
 	return handlers.NextConversationState(StateRating)
 }
 
-// FeedbackRating gestisce la selezione del voto (feedback_rating): salva il
-// numero di stelle in user_data e chiede il commento. Restituisce lo stato
-// COMMENT.
+// FeedbackRating gestisce la selezione del voto: salva il numero di stelle
+// in user_data e chiede il commento. Restituisce lo stato COMMENT.
 func (h *Handlers) FeedbackRating(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
 	// Estrai rating dal callback_data (formato: "rating_N")
 	parts := strings.Split(query.Data, "_")
 	if len(parts) < 2 {
-		return &pyError{typ: "IndexError", msg: "list index out of range"}
+		return fmt.Errorf("callback_data del voto non valida: %q", query.Data)
 	}
-	rating, err := pyInt(parts[1])
+	rating, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 	if err != nil {
 		return err
 	}
-	if ctx.EffectiveUser == nil {
-		return attributeError("__setitem__")
-	}
-	h.UserData.Set(ctx.EffectiveUser.Id, keyRating, rating)
+	h.UserData.Set(query.From.Id, keyRating, rating)
 
 	// Mostra pulsanti per commento
 	replyMarkup := gotgbot.InlineKeyboardMarkup{InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
@@ -248,13 +195,13 @@ func (h *Handlers) FeedbackRating(b *gotgbot.Bot, ctx *ext.Context) error {
 		"Vuoi aggiungere un commento per aiutarci a migliorare?\n\n" +
 		"💬 <i>Scrivi il tuo messaggio (max " + strconv.Itoa(MaxCommentLength) + " caratteri) oppure premi Salta.</i>"
 
-	if err := editMessageText(b, query, message, parseModeHTML, &replyMarkup); err != nil {
+	if err := tg.EditText(b, query, message, parseModeHTML, &replyMarkup); err != nil {
 		return err
 	}
 	return handlers.NextConversationState(StateComment)
 }
 
-// rating restituisce context.user_data.get("rating") (nil se assente).
+// rating restituisce il voto in user_data (nil se assente).
 func (h *Handlers) rating(userID int64) *int {
 	if v, ok := h.UserData.Get(userID, keyRating); ok {
 		if r, ok := v.(int); ok {
@@ -264,19 +211,19 @@ func (h *Handlers) rating(userID int64) *int {
 	return nil
 }
 
-// FeedbackComment gestisce il commento testuale (feedback_comment): salva
-// il feedback e termina la conversazione, oppure resta nello stato COMMENT
-// se il commento supera MaxCommentLength.
+// FeedbackComment gestisce il commento testuale: salva il feedback e
+// termina la conversazione, oppure resta nello stato COMMENT se il commento
+// supera MaxCommentLength.
 func (h *Handlers) FeedbackComment(b *gotgbot.Bot, ctx *ext.Context) error {
-	userID, err := effectiveUserID(ctx)
+	userID, err := tg.UserID(ctx)
 	if err != nil {
 		return err
 	}
 	rating := h.rating(ctx.EffectiveUser.Id)
 	if ctx.Message == nil {
-		return attributeError("text")
+		return tg.ErrNoMessage
 	}
-	comment := pyStrip(ctx.Message.Text)
+	comment := strings.TrimSpace(ctx.Message.Text)
 
 	// Validazione lunghezza commento
 	if length := utf8.RuneCountInString(comment); length > MaxCommentLength {
@@ -284,7 +231,7 @@ func (h *Handlers) FeedbackComment(b *gotgbot.Bot, ctx *ext.Context) error {
 			"Il tuo messaggio ha " + strconv.Itoa(length) + " caratteri, " +
 			"ma il limite è " + strconv.Itoa(MaxCommentLength) + ".\n\n" +
 			"💬 <i>Riprova con un messaggio più breve oppure premi /cancel per annullare.</i>"
-		if err := replyText(b, ctx.Message, errorMessage, parseModeHTML, nil); err != nil {
+		if err := tg.Reply(b, ctx.Message, errorMessage, parseModeHTML, nil); err != nil {
 			return err
 		}
 		// Rimani nello stato COMMENT per permettere un nuovo tentativo
@@ -298,25 +245,22 @@ func (h *Handlers) FeedbackComment(b *gotgbot.Bot, ctx *ext.Context) error {
 	if success {
 		message = msgFeedbackSaved
 	}
-	if err := replyText(b, ctx.Message, message, parseModeHTML, nil); err != nil {
+	if err := tg.Reply(b, ctx.Message, message, parseModeHTML, nil); err != nil {
 		return err
 	}
 	return handlers.EndConversation()
 }
 
-// FeedbackSkipComment gestisce il pulsante «Salta» (feedback_skip_comment):
-// salva il feedback senza commento e termina la conversazione.
+// FeedbackSkipComment gestisce il pulsante «Salta»: salva il feedback
+// senza commento e termina la conversazione.
 func (h *Handlers) FeedbackSkipComment(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
-	userID, err := effectiveUserID(ctx)
-	if err != nil {
-		return err
-	}
-	rating := h.rating(ctx.EffectiveUser.Id)
+	userID := strconv.FormatInt(query.From.Id, 10)
+	rating := h.rating(query.From.Id)
 
 	// Salva feedback senza commento
 	success := h.Store.SaveFeedback(userID, "command", rating, nil)
@@ -325,21 +269,20 @@ func (h *Handlers) FeedbackSkipComment(b *gotgbot.Bot, ctx *ext.Context) error {
 	if success {
 		message = msgFeedbackSaved
 	}
-	if err := editMessageText(b, query, message, parseModeHTML, nil); err != nil {
+	if err := tg.EditText(b, query, message, parseModeHTML, nil); err != nil {
 		return err
 	}
 	return handlers.EndConversation()
 }
 
-// FeedbackCancel annulla la conversazione feedback (feedback_cancel):
-// risponde al messaggio o, per una callback, modifica il messaggio del
-// pulsante. Restituisce sempre handlers.EndConversation().
+// FeedbackCancel annulla la conversazione feedback: risponde al messaggio
+// o, per una callback, modifica il messaggio del pulsante.
 func (h *Handlers) FeedbackCancel(b *gotgbot.Bot, ctx *ext.Context) error {
 	var err error
 	if ctx.Message != nil {
-		err = replyText(b, ctx.Message, msgFeedbackCancelled, "", nil)
+		err = tg.Reply(b, ctx.Message, msgFeedbackCancelled, "", nil)
 	} else if ctx.CallbackQuery != nil {
-		err = editMessageText(b, ctx.CallbackQuery, msgFeedbackCancelled, "", nil)
+		err = tg.EditText(b, ctx.CallbackQuery, msgFeedbackCancelled, "", nil)
 	}
 	if err != nil {
 		return err
@@ -347,111 +290,26 @@ func (h *Handlers) FeedbackCancel(b *gotgbot.Bot, ctx *ext.Context) error {
 	return handlers.EndConversation()
 }
 
-// Conversation costruisce il ConversationHandler del feedback come in
-// bot.py:
-//
-//	entry_points=[CommandHandler("feedback", feedback_command)]
-//	RATING:  [CallbackQueryHandler(feedback_rating, pattern=r"^rating_\d$")]
-//	COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, feedback_comment),
-//	          CallbackQueryHandler(feedback_skip_comment, pattern=r"^skip_comment$")]
-//	fallbacks=[CommandHandler("cancel", feedback_cancel)]
-//
-// I pattern replicano re.match di Python: \d è una cifra Unicode (Nd) e $
-// accetta anche un "\n" finale. Il MessageHandler accetta anche messaggi
-// modificati e business (filtri PTB), che FeedbackComment tratta come
-// update.message None (eccezione, stato invariato). Lo stato è in memoria
-// per utente e chat (per_user/per_chat di PTB).
+// Conversation costruisce la conversazione del feedback: /feedback avvia,
+// RATING accetta i pulsanti rating_N, COMMENT il testo (anche modificato o
+// business, che FeedbackComment rifiuta con un errore lasciando lo stato
+// invariato) o «Salta»; /cancel annulla. Lo stato è in memoria per utente e
+// chat.
 func (h *Handlers) Conversation() handlers.Conversation {
 	return handlers.NewConversation(
-		[]ext.Handler{commands.NewCommandHandler("feedback", h.FeedbackCommand)},
+		[]ext.Handler{tg.NewCommand("feedback", h.FeedbackCommand)},
 		map[string][]ext.Handler{
 			StateRating: {
-				handlers.NewCallback(tg.CallbackPattern(`^rating_\p{Nd}\n?$`), h.FeedbackRating),
+				handlers.NewCallback(tg.CallbackPattern(`^rating_\d$`), h.FeedbackRating),
 			},
 			StateComment: {
 				handlers.NewMessage(tg.TextNotCommand, h.FeedbackComment).SetAllowEdited(true).SetAllowBusiness(true),
-				handlers.NewCallback(tg.CallbackPattern(`^skip_comment\n?$`), h.FeedbackSkipComment),
+				handlers.NewCallback(tg.CallbackPattern(`^skip_comment$`), h.FeedbackSkipComment),
 			},
 		},
 		&handlers.ConversationOpts{
-			Fallbacks:    []ext.Handler{commands.NewCommandHandler("cancel", h.FeedbackCancel)},
+			Fallbacks:    []ext.Handler{tg.NewCommand("cancel", h.FeedbackCancel)},
 			StateStorage: conversation.NewInMemoryStorage(conversation.KeyStrategySenderAndChat),
 		},
 	)
 }
-
-// ========== Equivalenti di builtin Python ==========
-
-// pyIsSpace replica str.isspace() per un carattere: rispetto a
-// unicode.IsSpace include anche i separatori U+001C..U+001F.
-func pyIsSpace(r rune) bool {
-	return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f)
-}
-
-// pyStrip replica str.strip() senza argomenti.
-func pyStrip(s string) string {
-	return strings.TrimFunc(s, pyIsSpace)
-}
-
-// pyInt replica int(s) di Python per stringhe in base 10: spazi iniziali e
-// finali, segno, cifre Unicode (Nd) e underscore singoli tra le cifre.
-func pyInt(s string) (int, error) {
-	invalid := func() (int, error) {
-		return 0, valueError("invalid literal for int() with base 10: " + pyStrRepr(s))
-	}
-	t := pyStrip(s)
-	neg := false
-	if t != "" && (t[0] == '+' || t[0] == '-') {
-		neg = t[0] == '-'
-		t = t[1:]
-	}
-	if t == "" {
-		return invalid()
-	}
-	n := 0
-	prevUnderscore := true // vieta "_" iniziale
-	for _, r := range t {
-		if r == '_' {
-			if prevUnderscore {
-				return invalid()
-			}
-			prevUnderscore = true
-			continue
-		}
-		d := digitValue(r)
-		if d < 0 {
-			return invalid()
-		}
-		if n > (math.MaxInt32-d)/10 {
-			// Python costruirebbe "⭐" * rating fino a esaurire la memoria;
-			// con il pattern ^rating_\d$ il voto ha comunque una sola cifra.
-			return 0, &pyError{typ: "MemoryError", msg: ""}
-		}
-		n = n*10 + d
-		prevUnderscore = false
-	}
-	if prevUnderscore {
-		return invalid()
-	}
-	if neg {
-		n = -n
-	}
-	return n, nil
-}
-
-// digitValue restituisce il valore di una cifra decimale Unicode (Nd), -1
-// se r non è una cifra. Unicode assegna le cifre Nd in blocchi contigui da
-// 0 a 9, quindi il valore è la posizione nel blocco modulo 10.
-func digitValue(r rune) int {
-	if !unicode.IsDigit(r) {
-		return -1
-	}
-	n := 0
-	for unicode.IsDigit(r - rune(n) - 1) {
-		n++
-	}
-	return n % 10
-}
-
-// Verifica statica: la conversazione è un ext.Handler.
-var _ ext.Handler = handlers.Conversation{}

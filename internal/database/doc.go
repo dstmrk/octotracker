@@ -3,8 +3,9 @@
 // storico tariffe).
 //
 // Lo schema SQL (Schema) è identico a quello Python e i blob JSON
-// (last_notified_rates, pending_rates) vengono scritti byte per byte come
-// json.dumps di Python, così il DB di produzione resta condiviso tra le due
+// (last_notified_rates, pending_rates) hanno le stesse chiavi e gli stessi
+// valori scritti dalla versione Python (la formattazione è quella di
+// encoding/json), così il DB di produzione resta leggibile da entrambe le
 // versioni (anche in caso di rollback). Le stringhe CURRENT_TIMESTAMP
 // mantengono il formato "YYYY-MM-DD HH:MM:SS" (UTC).
 //
@@ -34,7 +35,7 @@
 //	GetUserCount() int
 //
 // User.Gas nil = solo luce. User.LastNotifiedRates è un oggetto JSON generico
-// (map[string]any) da confrontare con Equal (semantica dict Python, nil == {});
+// (map[string]any) da confrontare con Equal (72 == 72.0, nil == {});
 // SaveUser lo scrive solo se non vuoto (altrimenti NULL). Il checker lo
 // costruisce così:
 //
@@ -51,7 +52,9 @@
 // ApplyPendingRates restituisce (true, ApplyOK) oppure (false, uno tra
 // ApplyNoPending, ApplyNoUser, ApplyValidationError, ApplyDBError). Azzera
 // last_notified_rates e pending_rates; azzera scadenza e marker reminder solo
-// per i servizi in updated_services.
+// per i servizi in updated_services. Un blob non decodificabile, con
+// tipo/fascia non validi o senza energia/commercializzazione è un
+// ApplyValidationError.
 //
 // # Reminder scadenza
 //
@@ -78,7 +81,7 @@
 // GetRateHistory: days <= 0 → risultato vuoto; il default Python è days=365.
 // RateHistory si serializza con encoding/json nella stessa struttura del dict
 // Python (chiavi opzionali e null comprese); stats arrotondate come round(x, 6)
-// e media calcolata come sum() di Python 3.12+ (Neumaier).
+// e media con somma compensata come sum() di Python 3.12+.
 //
 // # Differenze note rispetto a Python
 //
@@ -87,5 +90,8 @@
 // tipo/fascia vuoti falliscono la validazione come ValueError). JSON
 // malformato in last_notified_rates/pending_rates, che in Python solleva
 // un'eccezione non gestita, qui viene loggato e trattato come errore del
-// metodo (LoadUser → nil, LoadUsers → vuoto, LoadPendingRates → nil).
+// metodo (LoadUser → nil, LoadUsers → vuoto, LoadPendingRates → nil). I
+// numeri dei blob sono float64: valori non finiti (NaN, ±Inf), che
+// json.dumps scriverebbe come NaN/Infinity, non sono serializzabili e il
+// salvataggio fallisce.
 package database

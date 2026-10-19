@@ -34,25 +34,23 @@ type DispatcherConfig struct {
 	Sleep func(time.Duration)
 }
 
-// NewDispatcher costruisce il dispatcher del bot come main() di bot.py:
-// handler registrati in RegisterHandlers, error handler ErrorHandler e
-// update elaborati uno alla volta (MaxRoutines 1), come fa
-// python-telegram-bot con concurrent_updates disabilitato (default).
+// NewDispatcher costruisce il dispatcher del bot: handler registrati in
+// RegisterHandlers, error handler ErrorHandler e update elaborati uno alla
+// volta (MaxRoutines 1).
 func NewDispatcher(cfg DispatcherConfig) *ext.Dispatcher {
 	eh := &ErrorHandler{AdminUserID: cfg.Config.AdminUserID, Sleep: cfg.Sleep}
 	d := ext.NewDispatcher(&ext.DispatcherOpts{
 		Error:            eh.HandleError,
 		Panic:            eh.HandlePanic,
 		UnhandledErrFunc: logUnhandledError,
-		Logger:           ptbLogger("telegram.ext.Application"),
+		Logger:           libLogger,
 		MaxRoutines:      1,
 	})
 	RegisterHandlers(d, cfg)
 	return d
 }
 
-// RegisterHandlers aggiunge al gruppo 0 gli handler di bot.py, nello stesso
-// ordine:
+// RegisterHandlers aggiunge al gruppo 0 gli handler, in quest'ordine:
 //
 //  1. conversazione di registrazione (/start, /update) con fallback
 //     /cancel e /help;
@@ -102,8 +100,8 @@ func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {
 	}))
 	d.AddHandler(ru.RateUpdateNoHandler())
 
-	// Comandi fuori dalle conversazioni: PTB ignora il valore restituito
-	// (ConversationHandler.END), da cui commands.Standalone.
+	// Comandi fuori dalle conversazioni (commands.Standalone ignora lo
+	// stato restituito).
 	d.AddHandler(commands.NewCommandHandler("cancel", commands.Standalone(cmd.CancelConversation)))
 	d.AddHandler(commands.NewCommandHandler("status", commands.Standalone(cmd.Status)))
 	d.AddHandler(commands.NewCommandHandler("history", commands.Standalone(cmd.HistoryCommand)))
@@ -111,9 +109,8 @@ func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {
 	d.AddHandler(commands.NewCommandHandler("help", commands.Standalone(cmd.HelpCommand)))
 
 	// Handler per comandi non riconosciuti (deve essere dopo tutti gli altri
-	// CommandHandler). Come MessageHandler di PTB considera anche i messaggi
-	// modificati, i post dei canali, i messaggi business e i messaggi
-	// inviati da bot.
+	// comandi). Considera anche i messaggi modificati, i post dei canali, i
+	// messaggi business e i messaggi inviati da bot.
 	d.AddHandler(handlers.NewMessage(tg.AnyCommand, cmd.UnknownCommand).
 		SetAllowEdited(true).
 		SetAllowChannel(true).
@@ -126,17 +123,15 @@ func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {
 // logUnhandledError logga gli errori che il dispatcher non può passare
 // all'error handler (es. update non decodificabile).
 func logUnhandledError(err error) {
-	logging.Critical(logging.Logger("telegram.ext.Application"), fmt.Sprintf("Errore non gestito nell'elaborazione dell'update: %v", err))
+	logging.Critical(logger, fmt.Sprintf("Errore non gestito nell'elaborazione dell'update: %v", err))
 }
 
-// ptbLogger restituisce il logger per i messaggi interni di gotgbot con il
-// nome del logger PTB equivalente. bot.py imposta il logger "telegram" a
-// WARNING: i messaggi DEBUG e INFO della libreria non vengono mai mostrati.
-func ptbLogger(name string) *slog.Logger {
-	return slog.New(minLevelHandler{inner: logging.Logger(name).Handler(), min: slog.LevelWarn})
-}
+// libLogger è il logger dei messaggi interni di gotgbot: solo WARNING e
+// livelli superiori, i messaggi DEBUG e INFO della libreria non vengono
+// mostrati.
+var libLogger = slog.New(minLevelHandler{inner: logging.Logger("gotgbot").Handler(), min: slog.LevelWarn})
 
-// minLevelHandler scarta i record sotto min (logger.setLevel di Python).
+// minLevelHandler scarta i record sotto min.
 type minLevelHandler struct {
 	inner slog.Handler
 	min   slog.Level

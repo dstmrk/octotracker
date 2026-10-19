@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -157,8 +158,8 @@ func TestCheckAndSendRemindersWithoutRates(t *testing.T) {
 	}
 }
 
-// Un'eccezione nella FASE 1 (es. OverflowError da format_number per una
-// tariffa infinita) esce da check_and_send_reminders: nessun invio.
+// Un panic nella FASE 1 (FormatNumber su una tariffa infinita) esce da
+// CheckAndSendReminders come errore: nessun invio.
 func TestCheckAndSendRemindersPhaseOneError(t *testing.T) {
 	luce := fissaUser("2025-01-20", nil).Luce
 	luce.Energia = math.Inf(1)
@@ -170,8 +171,8 @@ func TestCheckAndSendRemindersPhaseOneError(t *testing.T) {
 
 	err := CheckAndSendReminders(context.Background(), b, store, dp(TODAY))
 
-	if err == nil || err.Error() != "cannot convert float infinity to integer" {
-		t.Fatalf("atteso OverflowError, ottenuto %v", err)
+	if err == nil || !strings.Contains(err.Error(), "infinity") {
+		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
 	}
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {
 		t.Errorf("nessun invio atteso, ottenuti %d", n)

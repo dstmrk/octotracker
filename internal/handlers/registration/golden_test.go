@@ -3,7 +3,7 @@ package registration
 // Test differenziali: i JSON in testdata/ sono generati eseguendo il codice
 // Python (handlers/registration.py con python-telegram-bot 22.6 reale e un
 // livello HTTP che registra i parametri esatti inviati all'API) e il Go
-// deve produrre esattamente lo stesso risultato.
+// deve produrre gli stessi messaggi, stati, user_data e dati salvati.
 
 import (
 	"encoding/json"
@@ -18,75 +18,10 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/conversation"
 
 	"github.com/dstmrk/octotracker/internal/testutil"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// ---------------------------------------------------------------- float()
-
-func TestPyFloatGolden(t *testing.T) {
-	var golden struct {
-		Cases [][2]any `json:"cases"`
-	}
-	loadGolden(t, "float_golden.json", &golden)
-	if len(golden.Cases) < 1000 {
-		t.Fatalf("corpus troppo piccolo: %d", len(golden.Cases))
-	}
-	for _, c := range golden.Cases {
-		in := c[0].(string)
-		got, ok := pyFloat(in)
-		if c[1] == nil {
-			if ok {
-				t.Errorf("float(%q): want ValueError, got %v", in, got)
-			}
-			continue
-		}
-		want, _ := pyFloatRepr(t, c[1])
-		if !ok || !sameFloat(want, got) {
-			t.Errorf("float(%q): want %v, got %v (ok=%v)", in, want, got, ok)
-		}
-	}
-}
-
-// TestUnicodeTablesGolden confronta, per tutti i code point non ASCII, gli
-// spazi (str.isspace) e le cifre decimali (unicodedata.decimal) di Python
-// con pyIsSpace / pyDecimal.
-func TestUnicodeTablesGolden(t *testing.T) {
-	var golden struct {
-		Unicode struct {
-			Version  string   `json:"unidata_version"`
-			Spaces   []int32  `json:"spaces"`
-			Decimals [][2]int `json:"decimals"`
-		} `json:"unicode"`
-	}
-	loadGolden(t, "float_golden.json", &golden)
-	spaces := map[rune]bool{}
-	for _, cp := range golden.Unicode.Spaces {
-		spaces[cp] = true
-	}
-	decimals := map[rune]int{}
-	for _, d := range golden.Unicode.Decimals {
-		decimals[rune(d[0])] = d[1]
-	}
-	var spaceDiffs, digitDiffs int
-	for r := rune(128); r <= 0x10FFFF; r++ {
-		if pyIsSpace(r) != spaces[r] {
-			spaceDiffs++
-			t.Errorf("isspace(U+%04X): python %v", r, spaces[r])
-		}
-		want, ok := decimals[r]
-		if !ok {
-			want = -1
-		}
-		if got := pyDecimal(r); got != want {
-			digitDiffs++
-			if digitDiffs < 20 {
-				t.Errorf("decimal(U+%04X): python %d, go %d", r, want, got)
-			}
-		}
-	}
-	if spaceDiffs+digitDiffs > 0 {
-		t.Errorf("differenze con Unicode %s di Python: spazi %d, cifre %d", golden.Unicode.Version, spaceDiffs, digitDiffs)
-	}
-}
+// ---------------------------------------------------------------- validazione
 
 func TestValidateNumericInputGolden(t *testing.T) {
 	var cases [][3]any
@@ -125,9 +60,10 @@ func TestConfirmationMessageGolden(t *testing.T) {
 		u := userFromNorm(t, c.User)
 		got, err := confirmationMessage(u)
 		if c.Error != "" {
+			// Eccezione Python = panic del formatter (il testo non conta)
 			errorsSeen++
-			if err == nil || err.Error() != c.Error {
-				t.Errorf("case %d: want error %q, got %v", i, c.Error, err)
+			if err == nil {
+				t.Errorf("case %d: want error (%s), got %q", i, c.Error, got)
 			}
 			continue
 		}
@@ -213,7 +149,6 @@ type goldenExpected struct {
 	Calls    any          `json:"calls"`
 	UserData any          `json:"user_data"`
 	DBUser   any          `json:"db_user"`
-	Logs     [][]string   `json:"logs"`
 }
 
 type goldenScenario struct {
@@ -232,12 +167,8 @@ type goldenFlowStep struct {
 	Update   json.RawMessage   `json:"update"`
 	Fail     map[string][2]any `json:"fail"`
 	Expected struct {
-		Calls    any         `json:"calls"`
-		Events   []flowEvent `json:"events"`
-		State    *string     `json:"state"`
-		UserData any         `json:"user_data"`
-		DBUser   any         `json:"db_user"`
-		Logs     [][]string  `json:"logs"`
+		goldenExpected
+		Events []flowEvent `json:"events"`
 	} `json:"expected"`
 }
 
@@ -263,13 +194,30 @@ func channelOf(c *string) string {
 	return strings.TrimSpace(*c)
 }
 
-func compareLogs(t *testing.T, name string, want, got [][]string) {
+// newGoldenHandlers prepara handler, database e canale di uno scenario.
+func newGoldenHandlers(t *testing.T, sc goldenScenario) *Handlers {
 	t.Helper()
-	if want == nil {
-		want = [][]string{}
+	h := newHandlers(t)
+	h.TelegramChannel = channelOf(sc.Channel)
+	if sc.DBUser != nil && !h.Store.SaveUser(userIDString(testUID), userFromNorm(t, sc.DBUser)) {
+		t.Fatal("SaveUser pre-condizione fallito")
 	}
-	if fmt.Sprint(want) != fmt.Sprint(got) {
-		t.Errorf("%s logs:\nwant %q\n got %q", name, want, got)
+	return h
+}
+
+// checkEffects confronta chiamate API, user_data e utente salvato.
+func checkEffects(t *testing.T, name string, h *Handlers, fc *testutil.FakeClient, exp goldenExpected) {
+	t.Helper()
+	got := map[string]any{
+		"calls":     normalizeCalls(t, fc.Calls()),
+		"user_data": h.UserData.Snapshot(testUID),
+		"db_user":   userMap(h.Store.LoadUser(userIDString(testUID))),
+	}
+	want := map[string]any{"calls": exp.Calls, "user_data": exp.UserData, "db_user": exp.DBUser}
+	for _, k := range []string{"calls", "user_data", "db_user"} {
+		if d := diffNorm(t, k, want[k], got[k]); len(d) > 0 {
+			t.Errorf("%s: %s differ:\n%s", name, k, strings.Join(d, "\n"))
+		}
 	}
 }
 
@@ -281,18 +229,10 @@ func TestHandlersGolden(t *testing.T) {
 	}
 	for _, sc := range scenarios {
 		t.Run(sc.Name, func(t *testing.T) {
-			logs := captureLogs(t)
-			h := newHandlers(t)
-			h.TelegramChannel = channelOf(sc.Channel)
-			if sc.DBUser != nil {
-				if !h.Store.SaveUser(userIDString(testUID), userFromNorm(t, sc.DBUser)) {
-					t.Fatal("SaveUser pre-condizione fallito")
-				}
-			}
+			h := newGoldenHandlers(t, sc)
 			setUserData(h, testUID, denorm(t, sc.UserData).(map[string]any))
 			b, fc := testutil.NewBot(t)
 			failMethods(fc, sc.Fail)
-			logs.reset()
 
 			fn := handlerFuncs(h)[sc.Handler]
 			if fn == nil {
@@ -311,16 +251,7 @@ func TestHandlersGolden(t *testing.T) {
 			case exp.State == nil || *exp.State != state:
 				t.Errorf("state: want %v, got %q", exp.State, state)
 			}
-			if d := diffNorm(t, "calls", exp.Calls, normalizeCalls(t, fc.Calls())); len(d) > 0 {
-				t.Errorf("calls differ:\n%s", strings.Join(d, "\n"))
-			}
-			if d := diffNorm(t, "user_data", exp.UserData, h.UserData.Snapshot(testUID)); len(d) > 0 {
-				t.Errorf("user_data differ:\n%s", strings.Join(d, "\n"))
-			}
-			if d := diffNorm(t, "db_user", exp.DBUser, userMap(h.Store.LoadUser(userIDString(testUID)))); len(d) > 0 {
-				t.Errorf("db differ:\n%s", strings.Join(d, "\n"))
-			}
-			compareLogs(t, sc.Name, exp.Logs, logs.handlersRecords())
+			checkEffects(t, sc.Name, h, fc, exp)
 		})
 	}
 }
@@ -340,7 +271,7 @@ func (c catchAll) Name() string { return "catch_all" }
 // stubFallbacks replica stub_cancel / stub_help del generatore.
 func stubFallbacks(h *Handlers) []ext.Handler {
 	cancel := func(b *gotgbot.Bot, ctx *ext.Context) error {
-		if err := replyText(b, ctx.Message, "STUB cancel", "", nil); err != nil {
+		if err := tg.Reply(b, ctx.Message, "STUB cancel", "", nil); err != nil {
 			return err
 		}
 		h.UserData.Clear(ctx.EffectiveUser.Id)
@@ -348,12 +279,12 @@ func stubFallbacks(h *Handlers) []ext.Handler {
 	}
 	help := func(b *gotgbot.Bot, ctx *ext.Context) error {
 		h.UserData.Clear(ctx.EffectiveUser.Id)
-		if err := replyText(b, ctx.Message, "STUB help", "", nil); err != nil {
+		if err := tg.Reply(b, ctx.Message, "STUB help", "", nil); err != nil {
 			return err
 		}
 		return handlers.EndConversation()
 	}
-	return []ext.Handler{newCommandHandler("cancel", cancel), newCommandHandler("help", help)}
+	return []ext.Handler{tg.NewCommand("cancel", cancel), tg.NewCommand("help", help)}
 }
 
 // conversationState legge lo stato della conversazione dell'utente di test.
@@ -369,76 +300,72 @@ func conversationState(t *testing.T, b *gotgbot.Bot, conv handlers.Conversation)
 	return &st.Key
 }
 
+// flowDispatcher crea un dispatcher con la conversazione e un handler
+// finale che registra gli update non gestiti; gli errori finiscono in events.
+func flowDispatcher(t *testing.T, conv handlers.Conversation, events *[]flowEvent, gotErrors *[]error) *ext.Dispatcher {
+	d := ext.NewDispatcher(&ext.DispatcherOpts{
+		Error: func(_ *gotgbot.Bot, _ *ext.Context, err error) ext.DispatcherAction {
+			*events = append(*events, flowEvent{Error: &goldenError{}})
+			*gotErrors = append(*gotErrors, err)
+			return ext.DispatcherActionNoop
+		},
+		Panic: func(_ *gotgbot.Bot, _ *ext.Context, r any) {
+			t.Errorf("panic non convertito in errore: %v", r)
+		},
+	})
+	d.AddHandler(conv)
+	d.AddHandler(catchAll{hit: func() { *events = append(*events, flowEvent{Unhandled: true}) }})
+	return d
+}
+
+// checkEvents confronta gli update non gestiti e gli errori di un passo.
+func checkEvents(t *testing.T, name string, want, got []flowEvent, gotErrors []error) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Errorf("%s: events want %+v, got %+v (errors %v)", name, want, got, gotErrors)
+		return
+	}
+	ei := 0
+	for j, ev := range want {
+		if ev.Unhandled != got[j].Unhandled {
+			t.Errorf("%s: event %d want %+v, got %+v", name, j, ev, got[j])
+		}
+		if ev.Error != nil {
+			if !ev.Error.matches(gotErrors[ei]) {
+				t.Errorf("%s: error want %s: %s, got %v", name, ev.Error.Type, ev.Error.Message, gotErrors[ei])
+			}
+			ei++
+		}
+	}
+}
+
 func TestConversationFlowsGolden(t *testing.T) {
 	var flows []goldenScenario
 	loadGolden(t, "flows_golden.json", &flows)
 	for _, flow := range flows {
 		t.Run(flow.Name, func(t *testing.T) {
-			logs := captureLogs(t)
-			h := newHandlers(t)
-			h.TelegramChannel = channelOf(flow.Channel)
-			if flow.DBUser != nil {
-				h.Store.SaveUser(userIDString(testUID), userFromNorm(t, flow.DBUser))
-			}
+			h := newGoldenHandlers(t, flow)
 			b, fc := testutil.NewBot(t)
-
 			var events []flowEvent
 			var gotErrors []error
-			d := ext.NewDispatcher(&ext.DispatcherOpts{
-				Error: func(_ *gotgbot.Bot, _ *ext.Context, err error) ext.DispatcherAction {
-					events = append(events, flowEvent{Error: &goldenError{}})
-					gotErrors = append(gotErrors, err)
-					return ext.DispatcherActionNoop
-				},
-				Panic: func(_ *gotgbot.Bot, _ *ext.Context, r any) {
-					t.Errorf("panic non convertito in errore: %v", r)
-				},
-			})
 			conv := h.Conversation(stubFallbacks(h))
-			d.AddHandler(conv)
-			d.AddHandler(catchAll{hit: func() { events = append(events, flowEvent{Unhandled: true}) }})
+			d := flowDispatcher(t, conv, &events, &gotErrors)
 
 			for i, step := range flow.Steps {
 				fc.Reset()
 				failMethods(fc, step.Fail)
 				events, gotErrors = nil, nil
-				logs.reset()
 				if err := d.ProcessUpdate(b, decodeUpdate(t, step.Update), nil); err != nil {
 					t.Fatalf("step %d: ProcessUpdate: %v", i, err)
 				}
 				exp := step.Expected
 				name := fmt.Sprintf("step %d (%s)", i, step.Update)
-
-				if len(events) != len(exp.Events) {
-					t.Errorf("%s: events want %+v, got %+v (errors %v)", name, exp.Events, events, gotErrors)
-				} else {
-					ei := 0
-					for j, ev := range exp.Events {
-						switch {
-						case ev.Unhandled != events[j].Unhandled:
-							t.Errorf("%s: event %d want %+v, got %+v", name, j, ev, events[j])
-						case ev.Error != nil:
-							if !ev.Error.matches(gotErrors[ei]) {
-								t.Errorf("%s: error want %s: %s, got %v", name, ev.Error.Type, ev.Error.Message, gotErrors[ei])
-							}
-							ei++
-						}
-					}
-				}
+				checkEvents(t, name, exp.Events, events, gotErrors)
 				gotState := conversationState(t, b, conv)
-				if (gotState == nil) != (exp.State == nil) || (gotState != nil && *gotState != *exp.State) {
+				if deref(gotState) != deref(exp.State) {
 					t.Errorf("%s: state want %v, got %v", name, deref(exp.State), deref(gotState))
 				}
-				if dd := diffNorm(t, "calls", exp.Calls, normalizeCalls(t, fc.Calls())); len(dd) > 0 {
-					t.Errorf("%s: calls differ:\n%s", name, strings.Join(dd, "\n"))
-				}
-				if dd := diffNorm(t, "user_data", exp.UserData, h.UserData.Snapshot(testUID)); len(dd) > 0 {
-					t.Errorf("%s: user_data differ:\n%s", name, strings.Join(dd, "\n"))
-				}
-				if dd := diffNorm(t, "db_user", exp.DBUser, userMap(h.Store.LoadUser(userIDString(testUID)))); len(dd) > 0 {
-					t.Errorf("%s: db differ:\n%s", name, strings.Join(dd, "\n"))
-				}
-				compareLogs(t, name, exp.Logs, logs.handlersRecords())
+				checkEffects(t, name, h, fc, exp.goldenExpected)
 			}
 		})
 	}

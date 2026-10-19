@@ -12,11 +12,10 @@
 //     riuscito, salva last_notified_rates e pending_rates.
 //
 // I messaggi sono identici byte per byte a quelli Python (verificato dai
-// test golden in testdata/). Dove Python solleverebbe un'eccezione (per
-// esempio KeyError su una tariffa senza commercializzazione) le funzioni Go
-// vanno in panic con un valore error equivalente; CheckAndNotifyUsers lo
-// recupera e lo restituisce come errore, come l'eccezione che in Python
-// risale fino a run_checker.
+// test golden in testdata/). Una tariffa corrente senza commercializzazione
+// fa andare in panic le funzioni di preparazione con KeyError;
+// CheckAndNotifyUsers lo recupera e lo restituisce come errore, così l'intera
+// esecuzione si interrompe come in Python (bug replicato di proposito).
 package checker
 
 import (
@@ -24,7 +23,6 @@ import (
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
-// logger replica logging.getLogger(__name__) di checker.py.
 var logger = logging.Logger("checker")
 
 // TelegramErrorsToDelete sono gli errori Telegram che indicano che l'utente
@@ -53,17 +51,16 @@ type UserRemover interface {
 	RemoveUser(userID string) bool
 }
 
-// KeyError replica l'eccezione KeyError di Python sollevata accedendo a una
-// chiave mancante (es. rate["commercializzazione"] quando nel DB la
-// commercializzazione è NULL). Error() restituisce str(KeyError(key)),
-// cioè la chiave tra apici: 'commercializzazione'.
+// KeyError è il valore di panic per una chiave mancante (es.
+// rate["commercializzazione"] quando nel DB la commercializzazione è NULL).
+// Error() restituisce la chiave tra apici: 'commercializzazione'.
 type KeyError string
 
-// Error implementa error come str(KeyError) di Python.
+// Error implementa error.
 func (e KeyError) Error() string { return "'" + string(e) + "'" }
 
-// rateComm replica rate["commercializzazione"]: va in panic con KeyError se
-// la chiave è assente, come Python.
+// rateComm restituisce la commercializzazione della tariffa; va in panic
+// con KeyError se è assente.
 func rateComm(r database.Rate) float64 {
 	if r.Commercializzazione == nil {
 		panic(KeyError("commercializzazione"))

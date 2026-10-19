@@ -627,43 +627,6 @@
   },
   {
    "handler": "rating",
-   "data": "rating_٣",
-   "user_data": {
-    "luce_energia": 0.145,
-    "x": "y"
-   },
-   "out": {
-    "result": "COMMENT",
-    "calls": [
-     {
-      "method": "answer"
-     },
-     {
-      "method": "edit_message_text",
-      "text": "Grazie! Hai dato ⭐⭐⭐\n\nVuoi aggiungere un commento per aiutarci a migliorare?\n\n💬 <i>Scrivi il tuo messaggio (max 1000 caratteri) oppure premi Salta.</i>",
-      "parse_mode": "HTML",
-      "reply_markup": {
-       "inline_keyboard": [
-        [
-         {
-          "callback_data": "skip_comment",
-          "text": "⏭️ Salta"
-         }
-        ]
-       ]
-      }
-     }
-    ],
-    "user_data_after": {
-     "luce_energia": 0.145,
-     "x": "y",
-     "rating": 3
-    },
-    "feedbacks": []
-   }
-  },
-  {
-   "handler": "rating",
    "data": "rating_5\n",
    "user_data": {
     "luce_energia": 0.145,
@@ -1061,83 +1024,6 @@
   {
    "handler": "comment",
    "text": " x　",
-   "with_user": true,
-   "user_data": {},
-   "out": {
-    "result": "END",
-    "calls": [
-     {
-      "method": "reply_text",
-      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
-      "parse_mode": "HTML",
-      "reply_markup": null
-     }
-    ],
-    "user_data_after": {},
-    "feedbacks": [
-     {
-      "rating": null,
-      "comment": "x",
-      "feedback_type": "command"
-     }
-    ]
-   }
-  },
-  {
-   "handler": "comment",
-   "text": "\u001c x \u001f",
-   "with_user": true,
-   "user_data": {
-    "rating": 5
-   },
-   "out": {
-    "result": "END",
-    "calls": [
-     {
-      "method": "reply_text",
-      "text": "✅ <b>Feedback ricevuto!</b>\n\nGrazie per il tuo contributo. Lo useremo per migliorare OctoTracker!",
-      "parse_mode": "HTML",
-      "reply_markup": null
-     }
-    ],
-    "user_data_after": {
-     "rating": 5
-    },
-    "feedbacks": [
-     {
-      "rating": 5,
-      "comment": "x",
-      "feedback_type": "command"
-     }
-    ]
-   }
-  },
-  {
-   "handler": "comment",
-   "text": "\u001c x \u001f",
-   "with_user": false,
-   "user_data": {
-    "rating": 5
-   },
-   "out": {
-    "result": "END",
-    "calls": [
-     {
-      "method": "reply_text",
-      "text": "❌ Si è verificato un errore nel salvataggio del feedback.\nRiprova più tardi.",
-      "parse_mode": "HTML",
-      "reply_markup": null
-     }
-    ],
-    "user_data_after": {
-     "rating": 5
-    },
-    "feedbacks": []
-   }
-  },
-  {
-   "handler": "comment",
-   "text": "\u001c x \u001f",
    "with_user": true,
    "user_data": {},
    "out": {

@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
+
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
@@ -14,7 +16,8 @@ import (
 // veri handler Python di handlers/commands.py (python-telegram-bot 22.6) con
 // update e context finti su un corpus di utenti e configurazioni. Per ogni
 // caso si confrontano testo, parse_mode e reply_markup di ogni reply_text,
-// lo stato restituito, l'eventuale eccezione e user_data dopo la chiamata.
+// lo stato restituito, l'eventuale eccezione (qui un panic del formatter,
+// di cui non conta il testo) e user_data dopo la chiamata.
 
 type goldenReply struct {
 	Text        string `json:"text"`
@@ -91,6 +94,19 @@ func userFromGolden(m map[string]any) database.User {
 	return u
 }
 
+// goldenHandlers associa il nome del caso al comando e al testo inviato.
+var goldenHandlers = map[string]struct {
+	text    string
+	handler func(*Handlers) handlers.Response
+}{
+	"status":  {"/status", status},
+	"history": {"/history", historyCommand},
+	"remove":  {"/remove", removeData},
+	"help":    {"/help", helpCommand},
+	"cancel":  {"/cancel", cancelConv},
+	"unknown": {"/unknown", unknownCommand},
+}
+
 // runGolden esegue un caso: prepara DB e user_data come il generatore
 // Python ({"luce_energia": 0.145, "x": "y"} salvo "cancel" con {}), esegue
 // l'handler scelto e confronta l'esito con l'output Python.
@@ -98,10 +114,8 @@ func runGolden(t *testing.T, h *Handlers, s *database.Store, c goldenCase, name 
 	t.Helper()
 	b, fc := testutil.NewBot(t)
 	s.RemoveUser(testUserID)
-	if c.User != nil {
-		if !s.SaveUser(testUserID, userFromGolden(c.User)) {
-			t.Fatalf("SaveUser fallito per %v", c.User)
-		}
+	if c.User != nil && !s.SaveUser(testUserID, userFromGolden(c.User)) {
+		t.Fatalf("SaveUser fallito per %v", c.User)
 	}
 	h.UserData.Clear(testutil.DefaultUserID)
 	if !emptyUserData {
@@ -109,73 +123,10 @@ func runGolden(t *testing.T, h *Handlers, s *database.Store, c goldenCase, name 
 		h.UserData.Set(testutil.DefaultUserID, "x", "y")
 	}
 
-	handler := map[string]func() result{
-		"status": func() result {
-			return call(t, fc, h.UserData, h.Status, b, testutil.MessageContext(b, testutil.DefaultUserID, "/status"))
-		},
-		"history": func() result {
-			return call(t, fc, h.UserData, h.HistoryCommand, b, testutil.MessageContext(b, testutil.DefaultUserID, "/history"))
-		},
-		"remove": func() result {
-			return call(t, fc, h.UserData, h.RemoveData, b, testutil.MessageContext(b, testutil.DefaultUserID, "/remove"))
-		},
-		"help": func() result {
-			return call(t, fc, h.UserData, h.HelpCommand, b, testutil.MessageContext(b, testutil.DefaultUserID, "/help"))
-		},
-		"cancel": func() result {
-			return call(t, fc, h.UserData, h.CancelConversation, b, testutil.MessageContext(b, testutil.DefaultUserID, "/cancel"))
-		},
-		"unknown": func() result {
-			return call(t, fc, h.UserData, h.UnknownCommand, b, testutil.MessageContext(b, testutil.DefaultUserID, "/unknown"))
-		},
-	}[name]
-	res := handler()
-
-	// Stato restituito / eccezione
-	if c.Out.Exception != "" {
-		if res.panicked != c.Out.Exception {
-			t.Errorf("eccezione: got %q, want %q", res.panicked, c.Out.Exception)
-		}
-	} else {
-		if res.err != nil || res.panicked != "" {
-			t.Fatalf("errore inatteso: %v / %q", res.err, res.panicked)
-		}
-		wantState := ""
-		if c.Out.Result != nil {
-			wantState = fmt.Sprint(c.Out.Result)
-		}
-		if res.state != wantState {
-			t.Errorf("stato: got %q, want %q", res.state, wantState)
-		}
-	}
-
-	// Chiamate reply_text
-	if len(res.calls) != len(c.Out.Calls) {
-		t.Fatalf("chiamate: got %d %+v, want %d", len(res.calls), res.calls, len(c.Out.Calls))
-	}
-	for i, want := range c.Out.Calls {
-		got := res.calls[i]
-		if got.Method != "sendMessage" {
-			t.Errorf("chiamata %d: metodo %s", i, got.Method)
-		}
-		if got.Text() != want.Text {
-			t.Errorf("testo %d:\n got: %q\nwant: %q", i, got.Text(), want.Text)
-		}
-		wantPM := ""
-		if want.ParseMode != nil {
-			wantPM = want.ParseMode.(string)
-		}
-		if got.ParseMode() != wantPM {
-			t.Errorf("parse_mode %d: got %q, want %q", i, got.ParseMode(), wantPM)
-		}
-		assertDeepEqual(t, "reply_markup", generic(t, got.JSON("reply_markup")), want.ReplyMarkup)
-		if got.ChatID() != testUserID {
-			t.Errorf("chat_id: %s", got.ChatID())
-		}
-		if _, quoted := got.Params["reply_parameters"]; quoted {
-			t.Errorf("reply_text non deve citare il messaggio")
-		}
-	}
+	gh := goldenHandlers[name]
+	res := call(t, fc, h.UserData, gh.handler(h), b, testutil.MessageContext(b, testutil.DefaultUserID, gh.text))
+	checkGoldenOutcome(t, c.Out, res)
+	checkGoldenCalls(t, c.Out.Calls, res.calls)
 
 	// user_data dopo la chiamata
 	wantUD := c.Out.UserDataAfter
@@ -186,6 +137,47 @@ func runGolden(t *testing.T, h *Handlers, s *database.Store, c goldenCase, name 
 
 	if c.Out.UserExistsAfter != nil && s.UserExists(testUserID) != *c.Out.UserExistsAfter {
 		t.Errorf("user_exists dopo: got %v, want %v", s.UserExists(testUserID), *c.Out.UserExistsAfter)
+	}
+}
+
+// checkGoldenOutcome confronta lo stato restituito; un'eccezione Python
+// corrisponde a un panic del formatter (il testo non conta).
+func checkGoldenOutcome(t *testing.T, want goldenOut, res result) {
+	t.Helper()
+	if want.Exception != "" {
+		if res.panicked == "" {
+			t.Errorf("atteso un panic (%s), got state=%q err=%v", want.Exception, res.state, res.err)
+		}
+		return
+	}
+	if res.err != nil || res.panicked != "" {
+		t.Fatalf("errore inatteso: %v / %q", res.err, res.panicked)
+	}
+	wantState := ""
+	if want.Result != nil {
+		wantState = fmt.Sprint(want.Result)
+	}
+	if res.state != wantState {
+		t.Errorf("stato: got %q, want %q", res.state, wantState)
+	}
+}
+
+// checkGoldenCalls confronta le chiamate reply_text con quelle Python.
+func checkGoldenCalls(t *testing.T, want []goldenReply, got []testutil.Call) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("chiamate: got %d %+v, want %d", len(got), got, len(want))
+	}
+	for i, w := range want {
+		g := got[i]
+		wantPM, _ := w.ParseMode.(string)
+		if g.Method != "sendMessage" || g.Text() != w.Text || g.ParseMode() != wantPM || g.ChatID() != testUserID {
+			t.Errorf("chiamata %d:\n got: %s %s %q %q\nwant: sendMessage %s %q %q", i, g.Method, g.ChatID(), g.ParseMode(), g.Text(), testUserID, wantPM, w.Text)
+		}
+		assertDeepEqual(t, "reply_markup", generic(t, g.JSON("reply_markup")), w.ReplyMarkup)
+		if _, quoted := g.Params["reply_parameters"]; quoted {
+			t.Errorf("reply_text non deve citare il messaggio")
+		}
 	}
 }
 

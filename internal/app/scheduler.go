@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,23 +9,20 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/reminder"
 	"github.com/dstmrk/octotracker/internal/scraper"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// CalculateSecondsUntilNextRun è il port di calculate_seconds_until_next_run:
-// secondi da now alla prossima esecuzione alle targetHour:00.
+// CalculateSecondsUntilNextRun restituisce i secondi da now alla prossima
+// esecuzione alle targetHour:00, con la precisione dei microsecondi.
 //
-// Come in Python il calcolo usa l'ora locale "naive" (datetime.now() senza
-// fuso): la differenza è tra orari da orologio da parete, quindi nei giorni
-// di cambio dell'ora legale l'attesa reale differisce di un'ora (il task
-// parte alle 10:00 invece delle 9:00 il giorno del passaggio all'ora legale)
-// e il calcolo successivo riallinea l'orario.
-//
-// Un'ora fuori da 0..23 restituisce il ValueError di datetime.replace.
+// Il calcolo usa l'orario da orologio da parete (senza fuso): nei giorni di
+// cambio dell'ora legale l'attesa reale differisce di un'ora (il task parte
+// alle 10:00 invece delle 9:00 il giorno del passaggio all'ora legale) e il
+// calcolo successivo riallinea l'orario.
 func CalculateSecondsUntilNextRun(now time.Time, targetHour int) (float64, error) {
 	if targetHour < 0 || targetHour > 23 {
-		return 0, valueError("hour must be in 0..23")
+		return 0, fmt.Errorf("ora non valida: %d (deve essere tra 0 e 23)", targetHour)
 	}
-	// datetime.now() ha la precisione dei microsecondi
 	wall := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(),
 		now.Nanosecond()/1000*1000, time.UTC)
 	target := time.Date(now.Year(), now.Month(), now.Day(), targetHour, 0, 0, 0, time.UTC)
@@ -35,53 +31,52 @@ func CalculateSecondsUntilNextRun(now time.Time, targetHour int) (float64, error
 	if !wall.Before(target) {
 		target = target.AddDate(0, 0, 1)
 	}
-
-	// timedelta.total_seconds(): microsecondi interi / 10**6
 	return float64(target.Sub(wall).Microseconds()) / 1e6, nil
 }
 
-// dailyTaskSpec descrive uno dei tre task giornalieri (i testi dei log di
-// scraper_daily_task, checker_daily_task e reminder_daily_task).
+// secondsDuration converte secondi in Duration.
+func secondsDuration(s float64) time.Duration {
+	return time.Duration(s * float64(time.Second))
+}
+
+// dailyTaskSpec descrive uno dei tre task giornalieri.
 type dailyTaskSpec struct {
-	funcName  string // nome della coroutine Python, per "Errore non gestito in ..."
-	label     string // "scraper", "checker", "reminder" (per "⏰ Prossimo ...")
+	label     string // "scraper", "checker", "reminder"
 	schedLog  string // formato del log iniziale: %d ora, %.1f ore
 	hour      int
 	runOnce   func(ctx context.Context)
 	firstWait float64
 }
 
-// Scheduler è il port dello scheduler di bot.py: i task giornalieri dello
-// scraper (SCRAPER_HOUR), del checker (CHECKER_HOUR) e del reminder
-// (REMINDER_HOUR), in ora locale.
+// Scheduler esegue ogni giorno, in ora locale, lo scraper (SCRAPER_HOUR),
+// il checker (CHECKER_HOUR) e il reminder (REMINDER_HOUR).
 type Scheduler struct {
 	// Ore di esecuzione (0-23).
 	ScraperHour, CheckerHour, ReminderHour int
 	// ScraperTimeout è SCRAPER_TIMEOUT_SECONDS: limite di un'esecuzione
-	// dello scraper (asyncio.wait_for).
+	// dello scraper.
 	ScraperTimeout time.Duration
 
-	// FetchTariffe è fetch_octopus_tariffe().
+	// FetchTariffe scarica e salva le tariffe.
 	FetchTariffe func(ctx context.Context) (*scraper.Tariffe, error)
-	// CheckAndNotify è check_and_notify_users(bot_token).
+	// CheckAndNotify confronta le tariffe e invia le notifiche.
 	CheckAndNotify func(ctx context.Context) error
-	// SendReminders è check_and_send_reminders(bot_token).
+	// SendReminders invia i reminder delle scadenze.
 	SendReminders func(ctx context.Context) error
 
-	// Now è l'orologio (datetime.now(), ora locale); nil = time.Now.
+	// Now è l'orologio (ora locale); nil = time.Now.
 	Now func() time.Time
-	// Sleep è asyncio.sleep; nil = attesa interrompibile da ctx.
+	// Sleep è l'attesa tra le esecuzioni; nil = attesa interrompibile da ctx.
 	Sleep func(ctx context.Context, d time.Duration) error
 
-	// Sostituti di run_scraper/run_checker/run_reminder per i test (nil =
+	// Sostituti di RunScraper/RunChecker/RunReminder per i test (nil =
 	// implementazione reale).
 	runScraperFn, runCheckerFn, runReminderFn func(ctx context.Context)
 }
 
 // NewScheduler crea lo scheduler con le operazioni reali: lo scraper salva
 // nel database, checker e reminder creano a ogni esecuzione un client
-// Telegram nuovo per token (Bot(token) in Python, con i timeout di default
-// di PTB).
+// Telegram nuovo per token.
 func NewScheduler(scraperHour, checkerHour, reminderHour, scraperTimeoutSeconds int, token string, store *database.Store) *Scheduler {
 	return &Scheduler{
 		ScraperHour:    scraperHour,
@@ -116,9 +111,9 @@ func (s *Scheduler) sleep(ctx context.Context, d time.Duration) error {
 
 // ========== RUN ==========
 
-// RunScraper esegue lo scraper delle tariffe (run_scraper), con il limite
-// ScraperTimeout. Gli errori vengono loggati e non propagati; se ctx viene
-// cancellato (spegnimento) termina senza log, come una CancelledError.
+// RunScraper esegue lo scraper delle tariffe con il limite ScraperTimeout.
+// Gli errori vengono loggati e non propagati; se ctx viene cancellato
+// (spegnimento) termina senza log.
 func (s *Scheduler) RunScraper(ctx context.Context) {
 	logger.Info("🕷️  Avvio scraper...")
 	runCtx, cancel := context.WithTimeout(ctx, s.ScraperTimeout)
@@ -128,114 +123,76 @@ func (s *Scheduler) RunScraper(ctx context.Context) {
 	switch {
 	case err == nil:
 		logger.Info(fmt.Sprintf("✅ Scraper completato: %v", result))
-		return
 	case ctx.Err() != nil:
-		return // cancellato
-	}
-
-	e := describe(err)
-	switch {
-	case errors.Is(err, context.DeadlineExceeded) || isInstance(e.class, "TimeoutError"):
-		logger.Error(fmt.Sprintf("⏱️  Scraper interrotto: nessuna risposta entro %ss "+
-			"(probabile download bloccato lato ARERA)", formatSeconds(s.ScraperTimeout.Seconds())))
-	case isInstance(e.class, "ConnectionError"):
-		logger.Error(fmt.Sprintf("🌐 Errore di connessione scraper: %s", e.msg))
-	case isInstance(e.class, "OSError"):
-		logger.Error(fmt.Sprintf("💾 Errore I/O scraper: %s", e.msg))
+		// cancellato
+	case isTimeout(err):
+		logger.Error(fmt.Sprintf("⏱️  Scraper interrotto: nessuna risposta entro %gs "+
+			"(probabile download bloccato lato ARERA)", s.ScraperTimeout.Seconds()))
+	case isConnectionError(err):
+		logger.Error(fmt.Sprintf("🌐 Errore di connessione scraper: %v", err))
+	case isIOError(err):
+		logger.Error(fmt.Sprintf("💾 Errore I/O scraper: %v", err))
 	default:
-		logger.Error(fmt.Sprintf("❌ Errore inatteso scraper: %s", e.msg))
+		logger.Error(fmt.Sprintf("❌ Errore inatteso scraper: %v", err))
 	}
 }
 
-// RunChecker esegue il checker e invia le notifiche (run_checker).
+// RunChecker esegue il checker e invia le notifiche.
 func (s *Scheduler) RunChecker(ctx context.Context) {
 	logger.Info("🔍 Avvio checker...")
-	err := s.CheckAndNotify(ctx)
-	if ctx.Err() != nil {
-		return // cancellato
-	}
-	if err == nil {
-		logger.Info("✅ Checker completato")
-		return
-	}
-	logRunError(err, "checker")
+	s.runLogged(ctx, s.CheckAndNotify, "checker", "✅ Checker completato")
 }
 
-// RunReminder esegue il controllo scadenze e invia i reminder (run_reminder).
+// RunReminder esegue il controllo scadenze e invia i reminder.
 func (s *Scheduler) RunReminder(ctx context.Context) {
 	logger.Info("📅 Avvio reminder scadenze...")
-	err := s.SendReminders(ctx)
-	if ctx.Err() != nil {
-		return // cancellato
-	}
-	if err == nil {
-		logger.Info("✅ Reminder scadenze completato")
-		return
-	}
-	logRunError(err, "reminder")
+	s.runLogged(ctx, s.SendReminders, "reminder", "✅ Reminder scadenze completato")
 }
 
-// logRunError replica i rami except di run_checker e run_reminder.
-func logRunError(err error, what string) {
-	e := describe(err)
+// runLogged esegue run e ne logga l'esito (nessun log se ctx è stato
+// cancellato).
+func (s *Scheduler) runLogged(ctx context.Context, run func(context.Context) error, what, done string) {
+	err := run(ctx)
 	switch {
-	case isInstance(e.class, "NetworkError"):
-		logger.Error(fmt.Sprintf("🌐 Errore di rete %s: %s", what, e.msg))
-	case isInstance(e.class, "TelegramError"):
-		logger.Error(fmt.Sprintf("❌ Errore Telegram %s: %s", what, e.msg))
-	case isInstance(e.class, "OSError"):
-		logger.Error(fmt.Sprintf("💾 Errore I/O %s: %s", what, e.msg))
+	case ctx.Err() != nil:
+		// cancellato
+	case err == nil:
+		logger.Info(done)
+	case isNetworkError(err):
+		logger.Error(fmt.Sprintf("🌐 Errore di rete %s: %s", what, tg.ErrorString(err)))
+	case apiError(err) != nil:
+		logger.Error(fmt.Sprintf("❌ Errore Telegram %s: %s", what, tg.ErrorString(err)))
+	case isIOError(err):
+		logger.Error(fmt.Sprintf("💾 Errore I/O %s: %v", what, err))
 	default:
-		logger.Error(fmt.Sprintf("❌ Errore inatteso %s: %s", what, e.msg))
+		logger.Error(fmt.Sprintf("❌ Errore inatteso %s: %v", what, err))
 	}
 }
 
 // ========== TASK GIORNALIERI ==========
 
-func (s *Scheduler) scraperSpec() *dailyTaskSpec {
-	run := s.runScraperFn
+// newSpec crea la descrizione di un task giornaliero; run è il sostituto per
+// i test (nil = def).
+func newSpec(label, schedLog string, hour int, run, def func(context.Context)) *dailyTaskSpec {
 	if run == nil {
-		run = s.RunScraper
+		run = def
 	}
-	return &dailyTaskSpec{
-		funcName: "scraper_daily_task",
-		label:    "scraper",
-		schedLog: "🕷️  Scraper schedulato per le %d:00 (tra %.1f ore)",
-		hour:     s.ScraperHour,
-		runOnce:  run,
-	}
+	return &dailyTaskSpec{label: label, schedLog: schedLog, hour: hour, runOnce: run}
+}
+
+func (s *Scheduler) scraperSpec() *dailyTaskSpec {
+	return newSpec("scraper", "🕷️  Scraper schedulato per le %d:00 (tra %.1f ore)", s.ScraperHour, s.runScraperFn, s.RunScraper)
 }
 
 func (s *Scheduler) checkerSpec() *dailyTaskSpec {
-	run := s.runCheckerFn
-	if run == nil {
-		run = s.RunChecker
-	}
-	return &dailyTaskSpec{
-		funcName: "checker_daily_task",
-		label:    "checker",
-		schedLog: "🔍 Checker schedulato per le %d:00 (tra %.1f ore)",
-		hour:     s.CheckerHour,
-		runOnce:  run,
-	}
+	return newSpec("checker", "🔍 Checker schedulato per le %d:00 (tra %.1f ore)", s.CheckerHour, s.runCheckerFn, s.RunChecker)
 }
 
 func (s *Scheduler) reminderSpec() *dailyTaskSpec {
-	run := s.runReminderFn
-	if run == nil {
-		run = s.RunReminder
-	}
-	return &dailyTaskSpec{
-		funcName: "reminder_daily_task",
-		label:    "reminder",
-		schedLog: "📅 Reminder schedulato per le %d:00 (tra %.1f ore)",
-		hour:     s.ReminderHour,
-		runOnce:  run,
-	}
+	return newSpec("reminder", "📅 Reminder schedulato per le %d:00 (tra %.1f ore)", s.ReminderHour, s.runReminderFn, s.RunReminder)
 }
 
-// start è la prima parte di *_daily_task, fino al primo await: calcola
-// l'attesa iniziale e logga l'orario schedulato.
+// start calcola l'attesa iniziale del task e logga l'orario schedulato.
 func (s *Scheduler) start(spec *dailyTaskSpec) error {
 	secondsUntilRun, err := CalculateSecondsUntilNextRun(s.now(), spec.hour)
 	if err != nil {
@@ -246,9 +203,9 @@ func (s *Scheduler) start(spec *dailyTaskSpec) error {
 	return nil
 }
 
-// loop è il resto di *_daily_task: attende la prima esecuzione, poi
-// esegue il task e ricalcola l'attesa (previene il drift temporale), per
-// sempre. Termina con ctx.Err() quando ctx viene cancellato.
+// loop attende la prima esecuzione, poi esegue il task e ricalcola l'attesa
+// (previene il drift temporale), per sempre. Termina con ctx.Err() quando
+// ctx viene cancellato.
 func (s *Scheduler) loop(ctx context.Context, spec *dailyTaskSpec) error {
 	if err := s.sleep(ctx, secondsDuration(spec.firstWait)); err != nil {
 		return err
@@ -270,12 +227,12 @@ func (s *Scheduler) loop(ctx context.Context, spec *dailyTaskSpec) error {
 	}
 }
 
-// runGuarded esegue un'iterazione del task: un panic (l'equivalente di
-// un'eccezione che esce da run_*) viene loggato e il loop continua.
+// runGuarded esegue un'iterazione del task: un panic viene loggato e il
+// loop continua.
 func (s *Scheduler) runGuarded(ctx context.Context, spec *dailyTaskSpec) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error(fmt.Sprintf("❌ Errore non gestito in %s: %s", spec.funcName, describe(panicError(r)).msg))
+			logger.Error(fmt.Sprintf("❌ Errore non gestito nel task %s: %v", spec.label, r))
 		}
 	}()
 	spec.runOnce(ctx)
@@ -289,19 +246,18 @@ func (s *Scheduler) dailyTask(ctx context.Context, spec *dailyTaskSpec) error {
 	return s.loop(ctx, spec)
 }
 
-// ScraperDailyTask è scraper_daily_task: esegue lo scraper ogni giorno alle
-// ScraperHour:00. Termina solo per cancellazione di ctx (o errore di
-// configurazione dell'ora).
+// ScraperDailyTask esegue lo scraper ogni giorno alle ScraperHour:00.
+// Termina solo per cancellazione di ctx (o per un'ora non valida).
 func (s *Scheduler) ScraperDailyTask(ctx context.Context) error {
 	return s.dailyTask(ctx, s.scraperSpec())
 }
 
-// CheckerDailyTask è checker_daily_task.
+// CheckerDailyTask esegue il checker ogni giorno alle CheckerHour:00.
 func (s *Scheduler) CheckerDailyTask(ctx context.Context) error {
 	return s.dailyTask(ctx, s.checkerSpec())
 }
 
-// ReminderDailyTask è reminder_daily_task.
+// ReminderDailyTask esegue il reminder ogni giorno alle ReminderHour:00.
 func (s *Scheduler) ReminderDailyTask(ctx context.Context) error {
 	return s.dailyTask(ctx, s.reminderSpec())
 }

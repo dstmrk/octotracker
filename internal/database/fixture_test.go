@@ -5,7 +5,8 @@ package database
 // contiene ciò che Python legge da quel file (load_users, load_user,
 // load_pending_rates, get_current_rates, get_rate_history, ... e lo stato
 // dopo apply_pending_rates). Il package Go deve leggere esattamente gli
-// stessi valori e riscrivere i blob JSON con gli stessi byte.
+// stessi valori e riscrivere i blob JSON con le stesse chiavi e gli stessi
+// valori (leggibili da json.loads di Python).
 
 import (
 	"encoding/json"
@@ -148,8 +149,8 @@ func TestPythonFixtureUsers(t *testing.T) {
 	assertSameJSON(t, "get_scadenza_reminded_map", s.GetScadenzaRemindedMap(), exp.ScadenzaRemindedMap)
 }
 
-// TestPythonFixtureLastNotifiedEquality: il dict letto da Python e quello
-// letto da Go sono uguali secondo l'uguaglianza Python (anche con int 72).
+// TestPythonFixtureLastNotifiedEquality: il blob letto da Go è uguale alle
+// tariffe correnti come in Python (anche con l'intero 72).
 func TestPythonFixtureLastNotifiedEquality(t *testing.T) {
 	s := openFixtureCopy(t)
 	u := s.LoadUser("1003")
@@ -165,8 +166,8 @@ func TestPythonFixtureLastNotifiedEquality(t *testing.T) {
 		t.Fatal("tariffe diverse non devono risultare uguali")
 	}
 	legacy := s.LoadUser("1005").LastNotifiedRates
-	if v, ok := legacy["luce_comm"].(int64); !ok || v != 72 {
-		t.Fatalf("int Python deve restare intero: %#v", legacy["luce_comm"])
+	if legacy["luce_comm"] != 72.0 {
+		t.Fatalf("luce_comm = %#v", legacy["luce_comm"])
 	}
 	if !legacy.Equal(LastNotifiedRates{"luce_energia": 0.12, "luce_comm": 72.0, "timestamp": "2024-01-15T10:00:00", "note": "città €"}) {
 		t.Fatal("72 == 72.0 come in Python")
@@ -177,36 +178,17 @@ func TestPythonFixtureLastNotifiedEquality(t *testing.T) {
 	}
 }
 
-// TestPythonFixtureRawBlobs: Go riscrive i blob JSON con gli stessi byte di
-// json.dumps di Python (ordine chiavi canonico del checker).
+// TestPythonFixtureRawBlobs: Go riscrive i blob JSON letti dal DB Python con
+// le stesse chiavi e gli stessi valori.
 func TestPythonFixtureRawBlobs(t *testing.T) {
 	exp := loadFixtureExpected(t)
 	s := openFixtureCopy(t)
 	for id, raw := range exp.Raw {
-		if p, ok := raw["pending_rates"].(string); ok {
-			got, err := pyDumps(s.LoadPendingRates(id).toODict())
-			if err != nil || got != p {
-				t.Errorf("pending_rates %s:\n got  %s\n want %s", id, got, p)
-			}
+		if want, ok := raw["pending_rates"].(string); ok {
+			assertSameBlob(t, "pending_rates "+id, jsonString(t, s.LoadPendingRates(id)), want)
 		}
-		if l, ok := raw["last_notified_rates"].(string); ok {
-			got, err := pyDumps(map[string]any(s.LoadUser(id).LastNotifiedRates))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if id == "1005" {
-				// Formato legacy con chiavi in ordine non canonico: contenuto
-				// identico, ordine delle chiavi diverso.
-				a, _ := pyLoads(got)
-				b, _ := pyLoads(l)
-				if !pyEqual(a, b) {
-					t.Errorf("last_notified_rates %s: %s != %s", id, got, l)
-				}
-				continue
-			}
-			if got != l {
-				t.Errorf("last_notified_rates %s:\n got  %s\n want %s", id, got, l)
-			}
+		if want, ok := raw["last_notified_rates"].(string); ok {
+			assertSameBlob(t, "last_notified_rates "+id, jsonString(t, s.LoadUser(id).LastNotifiedRates), want)
 		}
 	}
 
@@ -215,9 +197,7 @@ func TestPythonFixtureRawBlobs(t *testing.T) {
 	if !s.SaveUser("copy", *u) {
 		t.Fatal("SaveUser")
 	}
-	if got, want := rawColumn(t, s, "copy", "last_notified_rates"), exp.Raw["1003"]["last_notified_rates"]; got != want {
-		t.Errorf("blob riscritto:\n got  %v\n want %v", got, want)
-	}
+	assertSameBlob(t, "blob riscritto", rawColumn(t, s, "copy", "last_notified_rates"), exp.Raw["1003"]["last_notified_rates"])
 }
 
 func TestPythonFixtureFeedbacks(t *testing.T) {
@@ -300,12 +280,8 @@ func TestPythonFixtureApplyPendingRates(t *testing.T) {
 			reminded = r
 		}
 		assertSameJSON(t, "reminded dopo apply "+c.UserID, reminded, c.Reminded)
-		if c.Raw != nil {
-			for col, want := range c.Raw {
-				if got := rawColumn(t, s, c.UserID, col); !reflect.DeepEqual(got, want) {
-					t.Errorf("%s.%s dopo apply = %v, want %v", c.UserID, col, got, want)
-				}
-			}
+		for col, want := range c.Raw {
+			assertSameBlob(t, c.UserID+"."+col+" dopo apply", rawColumn(t, s, c.UserID, col), want)
 		}
 	}
 }

@@ -2,12 +2,15 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -61,9 +64,9 @@ func newWebhookFixture(t *testing.T, block chan struct{}) *webhookFixture {
 	b, _ := testutil.NewBot(t)
 	b.Token = testToken
 	rec := &recordingHandler{block: block}
-	d := ext.NewDispatcher(&ext.DispatcherOpts{MaxRoutines: 1, Logger: ptbLogger("telegram.ext.Application")})
+	d := ext.NewDispatcher(&ext.DispatcherOpts{MaxRoutines: 1, Logger: libLogger})
 	d.AddHandler(rec)
-	updater := ext.NewUpdater(NewSequentialDispatcher(d), &ext.UpdaterOpts{Logger: ptbLogger("telegram.ext.Updater")})
+	updater := ext.NewUpdater(NewSequentialDispatcher(d), &ext.UpdaterOpts{Logger: libLogger})
 	if err := updater.AddWebhook(b, testToken, &ext.AddWebhookOpts{SecretToken: testSecret}); err != nil {
 		t.Fatal(err)
 	}
@@ -106,32 +109,27 @@ func webhookRequest(method, target, body string, headers map[string]string) *htt
 var validHeaders = map[string]string{"Content-Type": "application/json", SecretTokenHeader: testSecret}
 
 // TestWebhookAcceptsRightSecret: con il secret corretto l'update viene
-// accodato ed elaborato; la risposta è 200 con corpo vuoto.
+// accodato ed elaborato; la risposta è 200.
 func TestWebhookAcceptsRightSecret(t *testing.T) {
 	f := newWebhookFixture(t, nil)
 	for i, target := range []string{"/" + testToken, "/" + testToken + "/", "/" + testToken + "?x=1"} {
 		w := httptest.NewRecorder()
 		f.handler.ServeHTTP(w, webhookRequest(http.MethodPost, target, updateBody(int64(i+1)), validHeaders))
-		if w.Code != http.StatusOK || w.Body.Len() != 0 {
+		if w.Code != http.StatusOK {
 			t.Errorf("%s: status %d corpo %q", target, w.Code, w.Body.String())
-		}
-		if ct := w.Header().Get("Content-Type"); ct != `application/json; charset="utf-8"` {
-			t.Errorf("Content-Type = %q", ct)
 		}
 	}
 	f.stop()
-	if got := f.recorder.processed(); len(got) != 3 || got[0] != 1 || got[2] != 3 {
+	if got := f.recorder.processed(); !slices.Equal(got, []int64{1, 2, 3}) {
 		t.Errorf("update elaborati = %v", got)
 	}
 }
 
-// TestWebhookRejectsRequests copre i controlli di TelegramHandler e della
-// route Tornado.
+// TestWebhookRejectsRequests: secret token assente o errato, metodo,
+// percorso e corpo non validi vengono rifiutati senza accodare l'update.
 func TestWebhookRejectsRequests(t *testing.T) {
 	logs := captureLogs(t)
 	f := newWebhookFixture(t, nil)
-	jsonCT := `application/json; charset="utf-8"`
-	htmlCT := "text/html; charset=UTF-8"
 	cases := []struct {
 		name    string
 		method  string
@@ -139,32 +137,21 @@ func TestWebhookRejectsRequests(t *testing.T) {
 		body    string
 		headers map[string]string
 		code    int
-		page    string
-		ct      string
 	}{
 		{"secret errato", "POST", "/" + testToken, updateBody(1),
-			map[string]string{"Content-Type": "application/json", SecretTokenHeader: "sbagliato"},
-			403, "403: Request had the wrong secret token", jsonCT},
+			map[string]string{"Content-Type": "application/json", SecretTokenHeader: "sbagliato"}, 403},
+		{"secret come prefisso", "POST", "/" + testToken, updateBody(1),
+			map[string]string{"Content-Type": "application/json", SecretTokenHeader: testSecret[:3]}, 403},
 		{"secret assente", "POST", "/" + testToken, updateBody(1),
-			map[string]string{"Content-Type": "application/json"},
-			403, "403: Request did not include the secret token", jsonCT},
+			map[string]string{"Content-Type": "application/json"}, 403},
 		{"secret vuoto", "POST", "/" + testToken, updateBody(1),
-			map[string]string{"Content-Type": "application/json", SecretTokenHeader: ""},
-			403, "403: Request did not include the secret token", jsonCT},
-		{"content type con charset", "POST", "/" + testToken, updateBody(1),
-			map[string]string{"Content-Type": "application/json; charset=utf-8", SecretTokenHeader: testSecret},
-			403, "403: Forbidden", jsonCT},
-		{"content type assente", "POST", "/" + testToken, updateBody(1),
-			map[string]string{SecretTokenHeader: testSecret}, 403, "403: Forbidden", jsonCT},
-		{"GET", "GET", "/" + testToken, "", validHeaders, 405, "405: Method Not Allowed", jsonCT},
-		{"percorso sconosciuto", "POST", "/altro", updateBody(1), validHeaders, 404, "404: Not Found", htmlCT},
-		{"token come prefisso", "POST", "/" + testToken + "x", updateBody(1), validHeaders, 404, "404: Not Found", htmlCT},
-		{"metodo sconosciuto", "PROPFIND", "/altro", "", nil, 405, "405: Method Not Allowed", htmlCT},
-		{"JSON non valido", "POST", "/" + testToken, "{non json", validHeaders, 500, "500: Internal Server Error", jsonCT},
-		{"non UTF-8", "POST", "/" + testToken, "\xff\xfe", validHeaders, 500, "500: Internal Server Error", jsonCT},
-		{"lista", "POST", "/" + testToken, "[1, 2]", validHeaders, 400, "400: Update could not be processed", jsonCT},
-		{"senza update_id", "POST", "/" + testToken, `{"message": {}}`, validHeaders, 400, "400: Update could not be processed", jsonCT},
-		{"tipo errato", "POST", "/" + testToken, `{"update_id": 1, "message": 5}`, validHeaders, 400, "400: Update could not be processed", jsonCT},
+			map[string]string{"Content-Type": "application/json", SecretTokenHeader: ""}, 403},
+		{"GET", "GET", "/" + testToken, "", validHeaders, 405},
+		{"percorso sconosciuto", "POST", "/altro", updateBody(1), validHeaders, 404},
+		{"token come prefisso", "POST", "/" + testToken + "x", updateBody(1), validHeaders, 404},
+		{"JSON non valido", "POST", "/" + testToken, "{non json", validHeaders, 400},
+		{"lista", "POST", "/" + testToken, "[1, 2]", validHeaders, 400},
+		{"tipo errato", "POST", "/" + testToken, `{"update_id": 1, "message": 5}`, validHeaders, 400},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -173,26 +160,31 @@ func TestWebhookRejectsRequests(t *testing.T) {
 			if w.Code != tc.code {
 				t.Errorf("status = %d, atteso %d", w.Code, tc.code)
 			}
-			wantBody := "<html><title>" + tc.page + "</title><body>" + tc.page + "</body></html>"
-			if w.Body.String() != wantBody {
-				t.Errorf("corpo = %q, atteso %q", w.Body.String(), wantBody)
-			}
-			if ct := w.Header().Get("Content-Type"); ct != tc.ct {
-				t.Errorf("Content-Type = %q, atteso %q", ct, tc.ct)
-			}
 		})
 	}
 	f.stop()
 	if got := f.recorder.processed(); len(got) != 0 {
 		t.Errorf("update elaborati nonostante il rifiuto: %v", got)
 	}
-	assertLogContains(t, logs, "telegram.ext.Updater - CRITICAL - Something went wrong processing the data received from Telegram. "+
-		"Received data was *not* processed! Received data was: [1, 2]")
-	assertLogContains(t, logs, "Received data was: {'update_id': 1, 'message': 5}")
+	assertLogContains(t, logs, "ERROR - ❌ Update non valido ricevuto dal webhook: ")
+	assertLogNotContains(t, logs, "[1, 2]")
+}
+
+// TestWebhookBodyReadError: un corpo che non si riesce a leggere viene
+// rifiutato.
+func TestWebhookBodyReadError(t *testing.T) {
+	f := newWebhookFixture(t, nil)
+	r := httptest.NewRequest(http.MethodPost, "/"+testToken, iotest.ErrReader(errors.New("interrotto")))
+	r.Header.Set(SecretTokenHeader, testSecret)
+	w := httptest.NewRecorder()
+	f.handler.ServeHTTP(w, r)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d", w.Code)
+	}
 }
 
 // TestWebhookDoesNotBlockAndKeepsOrder: il webhook risponde subito anche
-// mentre un update è in elaborazione (coda illimitata di PTB) e gli update
+// mentre un update è in elaborazione (coda illimitata) e gli update
 // vengono elaborati uno alla volta nell'ordine di arrivo.
 func TestWebhookDoesNotBlockAndKeepsOrder(t *testing.T) {
 	block := make(chan struct{})
@@ -258,17 +250,5 @@ func TestPumpUpdates(t *testing.T) {
 	<-done
 	if n != 100 {
 		t.Errorf("ricevuti %d messaggi", n)
-	}
-}
-
-// TestRawRequestPath verifica request.path di Tornado (senza decodifica).
-func TestRawRequestPath(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "/app/a%20b?v=3", nil)
-	if got := rawRequestPath(r); got != "/app/a%20b" {
-		t.Errorf("rawRequestPath = %q", got)
-	}
-	r.RequestURI = ""
-	if got := rawRequestPath(r); got != "/app/a%20b" {
-		t.Errorf("rawRequestPath senza RequestURI = %q", got)
 	}
 }

@@ -1,11 +1,9 @@
 package database
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestSaveLoadClearPendingRates(t *testing.T) {
@@ -22,13 +20,11 @@ func TestSaveLoadClearPendingRates(t *testing.T) {
 	if !s.SavePendingRates("1", p) {
 		t.Fatal("SavePendingRates fallito")
 	}
-	// Stesso testo di json.dumps(_build_pending_rates(...))
+	// Stesso contenuto di json.dumps(_build_pending_rates(...))
 	want := `{"luce": {"tipo": "fissa", "fascia": "monoraria", "consumo_f1": 2700.0, "energia": 0.13, "commercializzazione": 65.0}, ` +
 		`"gas": {"tipo": "variabile", "fascia": "monoraria", "consumo_annuo": 1000.0, "energia": 0.05, "commercializzazione": 84.0}, ` +
 		`"updated_services": ["luce"]}`
-	if raw := rawColumn(t, s, "1", "pending_rates"); raw != want {
-		t.Fatalf("blob:\n got  %v\n want %s", raw, want)
-	}
+	assertSameBlob(t, "blob", rawColumn(t, s, "1", "pending_rates"), want)
 	loaded := s.LoadPendingRates("1")
 	if loaded == nil || jsonString(t, loaded) != jsonString(t, p) {
 		t.Fatalf("round-trip: %+v", loaded)
@@ -61,13 +57,13 @@ func TestLoadPendingRatesMalformed(t *testing.T) {
 		}
 	}
 	assertLogContains(t, logs, "❌ Errore caricamento pending_rates per 1:")
-	// Formato permissivo: valori mancanti → zero, updated_services non lista → []
-	if _, err := s.db.Exec(`UPDATE users SET pending_rates = '{"luce": {"tipo": "fissa", "energia": 1, "consumo_f1": null}, "gas": null, "updated_services": "luce"}' WHERE user_id = '1'`); err != nil {
+	// Valori mancanti → zero (load_pending_rates restituisce il dict così com'è)
+	if _, err := s.db.Exec(`UPDATE users SET pending_rates = '{"luce": {"tipo": "fissa", "energia": 1, "consumo_f1": null}, "gas": null, "updated_services": []}' WHERE user_id = '1'`); err != nil {
 		t.Fatal(err)
 	}
 	p := s.LoadPendingRates("1")
 	if p.Luce.Tipo != "fissa" || p.Luce.Fascia != "" || p.Luce.Energia != 1 || p.Luce.ConsumoF1 != nil || p.Gas != nil || p.UpdatedServices == nil || len(p.UpdatedServices) != 0 {
-		t.Fatalf("decodifica permissiva: %+v", p)
+		t.Fatalf("decodifica: %+v", p)
 	}
 }
 
@@ -87,58 +83,14 @@ func TestPendingDbErrors(t *testing.T) {
 		"❌ Errore rimozione pending_rates per 1:")
 }
 
-func TestPendingRatesJSONMethods(t *testing.T) {
-	p := PendingRates{Luce: Utility{Tipo: "fissa", Fascia: "monoraria", Energia: 0.1, Commercializzazione: 72, Scadenza: "2030-01-01"}, UpdatedServices: []string{}}
-	b, err := json.Marshal(p)
-	if err != nil {
-		t.Fatal(err)
+func TestPendingRatesJSON(t *testing.T) {
+	p := PendingRates{Luce: Utility{Tipo: "fissa", Fascia: "monoraria", Energia: 0.1, Commercializzazione: 72}, UpdatedServices: []string{}}
+	if got := jsonString(t, p); got != `{"luce":{"tipo":"fissa","fascia":"monoraria","energia":0.1,"commercializzazione":72},"updated_services":[]}` {
+		t.Fatalf("Marshal = %s", got)
 	}
-	if string(b) != `{"luce":{"tipo":"fissa","fascia":"monoraria","energia":0.1,"commercializzazione":72.0,"scadenza":"2030-01-01"},"updated_services":[]}` {
-		t.Fatalf("Marshal = %s", b)
-	}
-	var back PendingRates
-	if err := json.Unmarshal(b, &back); err != nil {
-		t.Fatal(err)
-	}
-	if back.Luce != p.Luce || back.UpdatedServices == nil {
-		t.Fatalf("Unmarshal = %+v", back)
-	}
-	if err := json.Unmarshal([]byte(`[1]`), &back); err == nil {
-		t.Fatal("array: atteso errore")
-	}
-	if err := back.UnmarshalJSON([]byte(`{`)); err == nil {
-		t.Fatal("JSON non valido: atteso errore")
-	}
-}
-
-func TestLastNotifiedRatesJSONMethods(t *testing.T) {
-	var l LastNotifiedRates
-	if err := json.Unmarshal([]byte(`{"gas": {"commercializzazione": 84, "energia": 0.39}, "luce": {"energia": 0.1, "commercializzazione": 72.0}}`), &l); err != nil {
-		t.Fatal(err)
-	}
-	b, err := l.MarshalJSON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(b) != `{"luce": {"energia": 0.1, "commercializzazione": 72.0}, "gas": {"energia": 0.39, "commercializzazione": 84}}` {
-		t.Fatalf("MarshalJSON = %s", b)
-	}
-	if err := l.UnmarshalJSON([]byte("null")); err != nil || l != nil {
-		t.Fatalf("null: %v %v", l, err)
-	}
-	if err := l.UnmarshalJSON([]byte("[1]")); err == nil {
-		t.Fatal("array: atteso errore")
-	}
-	if err := l.UnmarshalJSON([]byte("{")); err == nil {
-		t.Fatal("JSON non valido: atteso errore")
-	}
-	// Uguaglianza Python: nil == {}, chiave mancante != None
-	if !LastNotifiedRates(nil).Equal(LastNotifiedRates{}) {
-		t.Fatal("nil deve essere uguale a {}")
-	}
-	a := LastNotifiedRates{"luce": map[string]any{"energia": 0.1}}
-	if a.Equal(LastNotifiedRates{"luce": map[string]any{"energia": 0.1, "commercializzazione": nil}}) {
-		t.Fatal("chiave mancante != None")
+	// updated_services nil (righe precedenti) → chiave assente
+	if got := jsonString(t, PendingRates{Luce: p.Luce}); got != `{"luce":{"tipo":"fissa","fascia":"monoraria","energia":0.1,"commercializzazione":72}}` {
+		t.Fatalf("Marshal senza updated_services = %s", got)
 	}
 }
 
@@ -150,7 +102,7 @@ func TestLoadUserMalformedLastNotified(t *testing.T) {
 		if _, err := s.db.Exec("UPDATE users SET last_notified_rates = ? WHERE user_id = '1'", raw); err != nil {
 			t.Fatal(err)
 		}
-		if u := s.LoadUser("1"); u != nil {
+		if s.LoadUser("1") != nil {
 			t.Fatalf("%s: atteso nil", raw)
 		}
 		if users := s.LoadUsers(); len(users) != 0 {
@@ -171,7 +123,7 @@ func TestSaveUserUnserializableLastNotified(t *testing.T) {
 	if s.UserExists("1") {
 		t.Fatal("utente non deve essere salvato")
 	}
-	assertLogContains(t, logs, "❌ Validazione fallita per 1: Object of type chan int is not JSON serializable")
+	assertLogContains(t, logs, "❌ Validazione fallita per 1: json: unsupported type: chan int")
 }
 
 func TestSaveUserEmptyLastNotifiedIsNull(t *testing.T) {
@@ -187,63 +139,6 @@ func TestSaveUserEmptyLastNotifiedIsNull(t *testing.T) {
 	}
 	if s.LoadUser("1").LastNotifiedRates != nil {
 		t.Fatal("chiave last_notified_rates deve essere assente")
-	}
-}
-
-// TestRowToUserLegacyRow: riga senza le colonne di migrazione (_row_has_column).
-func TestRowToUserLegacyRow(t *testing.T) {
-	m := rowMap{
-		"user_id": "x", "luce_tipo": "fissa", "luce_fascia": "monoraria", "luce_energia": int64(1),
-		"luce_commercializzazione": "70.5", "luce_consumo_f1": nil, "luce_consumo_f2": []byte("2"),
-		"luce_consumo_f3": nil, "gas_tipo": []byte("fissa"), "gas_fascia": []byte("monoraria"),
-		"gas_energia": 0.4, "gas_commercializzazione": true, "gas_consumo_annuo": nil, "last_notified_rates": nil,
-	}
-	u, err := rowToUser(m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := `{"luce":{"tipo":"fissa","fascia":"monoraria","energia":1,"commercializzazione":70.5,"consumo_f2":2},` +
-		`"gas":{"tipo":"fissa","fascia":"monoraria","energia":0.4,"commercializzazione":1}}`
-	if got := jsonString(t, u); got != want {
-		t.Fatalf("got %s", got)
-	}
-}
-
-func TestValueHelpers(t *testing.T) {
-	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-	strs := []struct {
-		v    any
-		want string
-	}{{nil, ""}, {"a", "a"}, {[]byte("b"), "b"}, {int64(7), "7"}, {72.0, "72.0"}, {ts, "2026-01-02 03:04:05"}, {true, "true"}}
-	for _, c := range strs {
-		if got := valueString(c.v); got != c.want {
-			t.Errorf("valueString(%#v) = %q", c.v, got)
-		}
-	}
-	floats := []struct {
-		v  any
-		f  float64
-		ok bool
-	}{{1.5, 1.5, true}, {int64(2), 2, true}, {true, 1, true}, {false, 0, true}, {" 3.5 ", 3.5, true}, {"x", 0, false}, {[]byte("4"), 4, true}, {nil, 0, false}}
-	for _, c := range floats {
-		if f, ok := valueFloat(c.v); f != c.f || ok != c.ok {
-			t.Errorf("valueFloat(%#v) = %v %v", c.v, f, ok)
-		}
-	}
-	truthy := []struct {
-		v    any
-		want bool
-	}{{nil, false}, {"", false}, {"a", true}, {[]byte{}, false}, {[]byte("a"), true}, {int64(0), false}, {int64(2), true}, {0.0, false}, {0.5, true}, {false, false}, {true, true}, {ts, true}}
-	for _, c := range truthy {
-		if got := pyTruthy(c.v); got != c.want {
-			t.Errorf("pyTruthy(%#v) = %v", c.v, got)
-		}
-	}
-	if sqlParam(true) != int64(1) || sqlParam(false) != int64(0) || sqlParam("x") != "x" {
-		t.Error("sqlParam")
-	}
-	if _, err := pendingFromValue("x"); err == nil {
-		t.Error("pendingFromValue su stringa: atteso errore")
 	}
 }
 

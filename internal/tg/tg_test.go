@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 
 	"github.com/dstmrk/octotracker/internal/logging"
 	"github.com/dstmrk/octotracker/internal/testutil"
@@ -29,85 +30,43 @@ func callbackQuery() *gotgbot.CallbackQuery {
 	return testutil.CallbackUpdate(testutil.DefaultUserID, "data").CallbackQuery
 }
 
-// ========== Test portati da tests/test_handlers_init.py ==========
+// ========== SafeAnswerCallback ==========
 
 func TestSafeAnswerCallbackSuccess(t *testing.T) {
-	// query.answer() va a buon fine
 	b, fc := testutil.NewBot(t)
 	if err := SafeAnswerCallback(b, callbackQuery()); err != nil {
 		t.Fatalf("errore inatteso: %v", err)
 	}
 	calls := fc.CallsTo("answerCallbackQuery")
-	if len(calls) != 1 {
-		t.Fatalf("answerCallbackQuery chiamato %d volte, want 1", len(calls))
-	}
-	if got := calls[0].String("callback_query_id"); got != "cbq-1" {
-		t.Errorf("callback_query_id = %q", got)
+	if len(calls) != 1 || calls[0].String("callback_query_id") != "cbq-1" {
+		t.Fatalf("answerCallbackQuery: %+v", calls)
 	}
 }
 
-func TestSafeAnswerCallbackQueryTooOld(t *testing.T) {
-	// query.answer() fallisce con 'Query is too old' - errore ignorato
-	b, fc := testutil.NewBot(t)
-	logs := captureLogs(t, slog.LevelDebug)
-	fc.FailMethod("answerCallbackQuery", testutil.TelegramError("answerCallbackQuery", 400,
-		"Bad Request: query is too old and response timeout expired or query id is invalid"))
-
-	if err := SafeAnswerCallback(b, callbackQuery()); err != nil {
-		t.Fatalf("l'errore doveva essere ignorato: %v", err)
-	}
-	if n := len(fc.CallsTo("answerCallbackQuery")); n != 1 {
-		t.Fatalf("answerCallbackQuery chiamato %d volte, want 1", n)
-	}
-	want := " - handlers - DEBUG - Callback query scaduta (ignorata): " +
-		"Query is too old and response timeout expired or query id is invalid\n"
-	if !strings.HasSuffix(logs.String(), want) {
-		t.Errorf("log = %q, want suffisso %q", logs.String(), want)
+func TestSafeAnswerCallbackExpiredQueryIgnored(t *testing.T) {
+	for _, desc := range []string{
+		"Bad Request: query is too old and response timeout expired or query id is invalid",
+		"Bad Request: Query ID is invalid",
+	} {
+		b, fc := testutil.NewBot(t)
+		logs := captureLogs(t, slog.LevelDebug)
+		fc.FailMethod("answerCallbackQuery", testutil.TelegramError("answerCallbackQuery", 400, desc))
+		if err := SafeAnswerCallback(b, callbackQuery()); err != nil {
+			t.Fatalf("%q: l'errore doveva essere ignorato: %v", desc, err)
+		}
+		want := " - handlers - DEBUG - Callback query scaduta (ignorata): " + desc + "\n"
+		if !strings.HasSuffix(logs.String(), want) {
+			t.Errorf("log = %q, want suffisso %q", logs.String(), want)
+		}
 	}
 }
 
-func TestSafeAnswerCallbackQueryIDInvalid(t *testing.T) {
-	// query.answer() fallisce con 'query id is invalid' - errore ignorato
-	b, fc := testutil.NewBot(t)
-	fc.FailMethod("answerCallbackQuery", testutil.TelegramError("answerCallbackQuery", 400, "Query id is invalid"))
-	if err := SafeAnswerCallback(b, callbackQuery()); err != nil {
-		t.Fatalf("l'errore doveva essere ignorato: %v", err)
-	}
-	if n := len(fc.CallsTo("answerCallbackQuery")); n != 1 {
-		t.Fatalf("answerCallbackQuery chiamato %d volte, want 1", n)
-	}
-}
-
-func TestSafeAnswerCallbackOtherBadRequestReraises(t *testing.T) {
-	// query.answer() fallisce con altro BadRequest - errore rilanciato
-	b, fc := testutil.NewBot(t)
-	fc.FailMethod("answerCallbackQuery", testutil.TelegramError("answerCallbackQuery", 400, "Some other error"))
-	err := SafeAnswerCallback(b, callbackQuery())
-	if err == nil || !strings.Contains(err.Error(), "Some other error") {
-		t.Fatalf("err = %v, want errore con 'Some other error'", err)
-	}
-	if !IsBadRequest(err) {
-		t.Error("l'errore rilanciato deve essere un BadRequest")
-	}
-}
-
-// ========== Test aggiuntivi ==========
-
-func TestSafeAnswerCallbackNilQuery(t *testing.T) {
-	b, fc := testutil.NewBot(t)
-	if err := SafeAnswerCallback(b, nil); err != nil {
-		t.Fatal(err)
-	}
-	if n := len(fc.Calls()); n != 0 {
-		t.Fatalf("nessuna chiamata attesa, trovate %d", n)
-	}
-}
-
-func TestSafeAnswerCallbackNonBadRequestReraises(t *testing.T) {
+func TestSafeAnswerCallbackOtherErrorsReturned(t *testing.T) {
 	tests := []struct {
 		name string
 		err  error
 	}{
+		{"altro bad request", testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: some other error")},
 		// Solo i BadRequest vengono ignorati, anche se il testo combacia
 		{"forbidden", testutil.TelegramError("answerCallbackQuery", 403, "Forbidden: query is too old")},
 		{"retry after", &gotgbot.TelegramError{
@@ -126,6 +85,18 @@ func TestSafeAnswerCallbackNonBadRequestReraises(t *testing.T) {
 		})
 	}
 }
+
+func TestSafeAnswerCallbackNilQuery(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	if err := SafeAnswerCallback(b, nil); !errors.Is(err, ErrNoCallback) {
+		t.Fatalf("err = %v", err)
+	}
+	if n := len(fc.Calls()); n != 0 {
+		t.Fatalf("nessuna chiamata attesa, trovate %d", n)
+	}
+}
+
+// ========== Errori ==========
 
 func TestIsBadRequest(t *testing.T) {
 	tests := []struct {
@@ -149,64 +120,45 @@ func TestIsBadRequest(t *testing.T) {
 	}
 }
 
+// ErrorString restituisce la descrizione di Telegram: internal/checker vi
+// cerca (in minuscolo) le frasi che fanno rimuovere l'utente.
 func TestErrorString(t *testing.T) {
 	tests := []struct {
-		name string
 		err  error
 		want string
 	}{
-		{"nil", nil, ""},
-		{"non telegram", errors.New("dial tcp: timeout"), "dial tcp: timeout"},
-		{"bad request", testutil.TelegramError("m", 400, "Bad Request: chat not found"), "Chat not found"},
-		{"bad request maiuscole", testutil.TelegramError("m", 400, "Bad Request: Message Is Not Modified"), "Message is not modified"},
-		{"forbidden", testutil.TelegramError("m", 403, "Forbidden: bot was blocked by the user"), "Forbidden: bot was blocked by the user"},
-		{"error prefix", testutil.TelegramError("m", 500, "Error: Internal"), "Internal"},
-		{"error brackets", testutil.TelegramError("m", 500, "[Error]: Bad Request: X Y"), "X y"},
-		{"senza prefisso", testutil.TelegramError("m", 400, "Query id is invalid"), "Query id is invalid"},
-		{"vuoto dopo prefisso", testutil.TelegramError("m", 400, "Bad Request: "), ""},
-		{"retry after", testutil.RetryAfterError("m", 5), "Flood control exceeded. Retry in 5 seconds"},
-		{"migrated", &gotgbot.TelegramError{Code: 400, Description: "Bad Request: group chat was upgraded",
-			ResponseParams: &gotgbot.ResponseParameters{MigrateToChatId: -1001234}},
-			"Group migrated to supergroup. New chat id: -1001234"},
-		{"senza descrizione", &gotgbot.TelegramError{Code: 502}, "Bad Gateway (502)"},
-		{"codice ignoto", &gotgbot.TelegramError{Code: 599}, "Unknown HTTPError (599)"},
+		{nil, ""},
+		{errors.New("dial tcp: timeout"), "dial tcp: timeout"},
+		{testutil.TelegramError("m", 400, "Bad Request: chat not found"), "Bad Request: chat not found"},
+		{fmt.Errorf("wrap: %w", testutil.TelegramError("m", 403, "Forbidden: bot was blocked by the user")), "Forbidden: bot was blocked by the user"},
+		{testutil.TelegramError("m", 403, "Forbidden: user is deactivated"), "Forbidden: user is deactivated"},
+		{testutil.TelegramError("m", 403, "Forbidden: bot was kicked from the group chat"), "Forbidden: bot was kicked from the group chat"},
+		{&gotgbot.TelegramError{Method: "m", Code: 502}, "unable to m: "},
 	}
 	for _, tt := range tests {
 		if got := ErrorString(tt.err); got != tt.want {
-			t.Errorf("%s: ErrorString = %q, want %q", tt.name, got, tt.want)
+			t.Errorf("ErrorString(%v) = %q, want %q", tt.err, got, tt.want)
 		}
 	}
 }
 
-func TestIsCommandAndTextFilters(t *testing.T) {
-	cmd := testutil.MessageUpdate(1, "/start").Message
-	cmdArgs := testutil.MessageUpdate(1, "/status arg").Message
-	text := testutil.MessageUpdate(1, "ciao").Message
-	notAtStart := &gotgbot.Message{Text: "ciao /start", Entities: []gotgbot.MessageEntity{{Type: "bot_command", Offset: 5, Length: 6}}}
-	otherEntity := &gotgbot.Message{Text: "/x", Entities: []gotgbot.MessageEntity{{Type: "bold", Offset: 0, Length: 2}}}
-	secondEntity := &gotgbot.Message{Text: "*a* /start", Entities: []gotgbot.MessageEntity{
-		{Type: "bold", Offset: 0, Length: 3}, {Type: "bot_command", Offset: 0, Length: 6},
-	}}
-	empty := &gotgbot.Message{}
+// ========== Filtri e comandi ==========
 
+func TestCommandFilters(t *testing.T) {
 	tests := []struct {
 		name            string
 		msg             *gotgbot.Message
 		isCmd, textOnly bool
 	}{
-		{"comando", cmd, true, false},
-		{"comando con argomenti", cmdArgs, true, false},
-		{"testo", text, false, true},
-		{"comando non in testa", notAtStart, false, true},
-		{"entità non comando", otherEntity, false, true},
-		{"solo prima entità conta", secondEntity, false, true},
-		{"messaggio senza testo", empty, false, false},
+		{"comando", testutil.MessageUpdate(1, "/start").Message, true, false},
+		{"comando con argomenti", testutil.MessageUpdate(1, "/status arg").Message, true, false},
+		{"testo", testutil.MessageUpdate(1, "ciao").Message, false, true},
+		{"comando non in testa", &gotgbot.Message{Text: "ciao /start", Entities: []gotgbot.MessageEntity{{Type: "bot_command", Offset: 5, Length: 6}}}, false, true},
+		{"entità non comando", &gotgbot.Message{Text: "/x", Entities: []gotgbot.MessageEntity{{Type: "bold", Offset: 0, Length: 2}}}, false, true},
+		{"messaggio senza testo", &gotgbot.Message{}, false, false},
 		{"nil", nil, false, false},
 	}
 	for _, tt := range tests {
-		if got := IsCommand(tt.msg); got != tt.isCmd {
-			t.Errorf("%s: IsCommand = %v, want %v", tt.name, got, tt.isCmd)
-		}
 		if got := AnyCommand(tt.msg); got != tt.isCmd {
 			t.Errorf("%s: AnyCommand = %v, want %v", tt.name, got, tt.isCmd)
 		}
@@ -221,94 +173,210 @@ func TestCallbackPattern(t *testing.T) {
 		pattern, data string
 		want          bool
 	}{
-		{"^tipo_", "tipo_fissa", true},
-		{"tipo_", "tipo_fissa", true},  // re.match: ancorato all'inizio
-		{"fissa", "tipo_fissa", false}, // non cerca nel mezzo
 		{"^rate_update_yes$", "rate_update_yes", true},
 		{"^rate_update_yes$", "rate_update_yes_2", false},
-		{"rate_update_yes", "rate_update_yes_2", true}, // non ancorato alla fine
-		{"a|b", "b", true},                             // alternativa raggruppata
-		{"a|b", "cb", false},
-		{"^(luce|gas)$", "gas", true},
+		{`^rating_\d$`, "rating_4", true},
+		{`^rating_\d$`, "rating_10", false},
+		{"^scadenza_update_(yes|no)$", "scadenza_update_no", true},
+		{"^scadenza_update_(yes|no)$", "scadenza_update_maybe", false},
 	}
 	for _, tt := range tests {
-		f := CallbackPattern(tt.pattern)
-		if got := f(&gotgbot.CallbackQuery{Data: tt.data}); got != tt.want {
+		if got := CallbackPattern(tt.pattern)(&gotgbot.CallbackQuery{Data: tt.data}); got != tt.want {
 			t.Errorf("CallbackPattern(%q)(%q) = %v, want %v", tt.pattern, tt.data, got, tt.want)
 		}
 	}
-
-	// Callback senza data: come PTB v22, corrisponde solo se non è un gioco
-	f := CallbackPattern("^x$")
-	if !f(&gotgbot.CallbackQuery{}) {
-		t.Error("callback senza data né gioco deve corrispondere")
-	}
-	if f(&gotgbot.CallbackQuery{GameShortName: "game"}) {
-		t.Error("callback di un gioco non deve corrispondere a un pattern sui dati")
-	}
 }
 
-func TestCallbackPatternInvalidRegexPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("pattern non valido deve andare in panic")
+func commandUpdate(text string, entities ...gotgbot.MessageEntity) *gotgbot.Update {
+	u := testutil.MessageUpdate(testutil.DefaultUserID, text)
+	if entities != nil {
+		u.Message.Entities = entities
+	}
+	return u
+}
+
+func TestCommandCheckUpdate(t *testing.T) {
+	b, _ := testutil.NewBot(t)
+	h := NewCommand("status", func(*gotgbot.Bot, *ext.Context) error { return nil })
+	cmd := func(n int64) gotgbot.MessageEntity { return gotgbot.MessageEntity{Type: "bot_command", Length: n} }
+
+	edited := testutil.MessageUpdate(testutil.DefaultUserID, "/status")
+	edited.EditedMessage, edited.Message = edited.Message, nil
+	caption := testutil.MessageUpdate(testutil.DefaultUserID, "")
+	caption.Message.Caption, caption.Message.CaptionEntities = "/status", []gotgbot.MessageEntity{cmd(7)}
+
+	cases := []struct {
+		name   string
+		update *gotgbot.Update
+		want   bool
+	}{
+		{"semplice", commandUpdate("/status"), true},
+		{"con argomenti", commandUpdate("/status ciao"), true},
+		{"maiuscole", commandUpdate("/STATUS"), true},
+		{"username del bot", commandUpdate("/status@" + testutil.BotUsername), true},
+		{"username maiuscolo", commandUpdate("/status@OCTOTRACKER_TEST_BOT"), true},
+		{"messaggio modificato", edited, true},
+		{"altro bot", commandUpdate("/status@altro_bot"), false},
+		{"altro comando", commandUpdate("/statusx"), false},
+		{"prefisso", commandUpdate("/stat"), false},
+		{"entità oltre il testo", commandUpdate("/status", cmd(50)), true},
+		{"entità non in testa", commandUpdate("x /status", gotgbot.MessageEntity{Type: "bot_command", Offset: 2, Length: 7}), false},
+		{"senza entità", commandUpdate("/status", []gotgbot.MessageEntity{}...), false},
+		{"caption", caption, false},
+		{"callback", testutil.CallbackUpdate(testutil.DefaultUserID, "/status"), false},
+	}
+	for _, c := range cases {
+		if got := h.CheckUpdate(b, ext.NewContext(b, c.update, nil)); got != c.want {
+			t.Errorf("%s: CheckUpdate = %v, want %v", c.name, got, c.want)
 		}
-	}()
-	CallbackPattern("(")
+	}
 }
 
-func TestUserData(t *testing.T) {
-	u := NewUserData()
-	const user, other int64 = 1, 2
+func TestCommandHandleUpdate(t *testing.T) {
+	b, _ := testutil.NewBot(t)
+	called := false
+	h := NewCommand("help", func(*gotgbot.Bot, *ext.Context) error { called = true; return nil })
+	if err := h.HandleUpdate(b, testutil.MessageContext(b, testutil.DefaultUserID, "/help")); err != nil || !called {
+		t.Fatalf("HandleUpdate: %v %v", err, called)
+	}
+	if h.Name() != "command_help" {
+		t.Errorf("Name = %q", h.Name())
+	}
+}
 
-	if _, ok := u.Get(user, "k"); ok {
+// ========== Messaggi e callback ==========
+
+func TestUserID(t *testing.T) {
+	b, _ := testutil.NewBot(t)
+	if id, err := UserID(testutil.MessageContext(b, 42, "x")); err != nil || id != "42" {
+		t.Errorf("UserID = %q, %v", id, err)
+	}
+	u := testutil.MessageUpdate(42, "x")
+	u.Message.From = nil
+	if _, err := UserID(ext.NewContext(b, u, nil)); !errors.Is(err, ErrNoUser) {
+		t.Errorf("senza utente: %v", err)
+	}
+}
+
+func TestReply(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	msg := &gotgbot.Message{Chat: gotgbot.Chat{Id: 4}, IsTopicMessage: true, MessageThreadId: 12,
+		BusinessConnectionId: "bc", DirectMessagesTopic: &gotgbot.DirectMessagesTopic{TopicId: 3}}
+	markup := &gotgbot.InlineKeyboardMarkup{InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "a", CallbackData: "b"}}}}
+	if err := Reply(b, msg, "x", "HTML", markup); err != nil {
+		t.Fatal(err)
+	}
+	c := fc.LastCall(t, "sendMessage")
+	for k, want := range map[string]string{"chat_id": "4", "text": "x", "parse_mode": "HTML", "message_thread_id": "12",
+		"business_connection_id": "bc", "direct_messages_topic_id": "3"} {
+		if got := c.String(k); got != want {
+			t.Errorf("%s = %q, want %q", k, got, want)
+		}
+	}
+	if kb := c.InlineKeyboard(); len(kb) != 1 || kb[0][0].CallbackData != "b" {
+		t.Errorf("reply_markup: %+v", kb)
+	}
+	if _, quoted := c.Params["reply_parameters"]; quoted {
+		t.Error("il messaggio non va citato")
+	}
+
+	// Il thread vale solo per i messaggi in un topic; senza opzioni nessun parametro
+	fc.Reset()
+	if err := Reply(b, &gotgbot.Message{Chat: gotgbot.Chat{Id: 9}, MessageThreadId: 3}, "x", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"message_thread_id", "parse_mode", "reply_markup"} {
+		if _, ok := fc.LastCall(t, "sendMessage").Params[k]; ok {
+			t.Errorf("%s non atteso", k)
+		}
+	}
+	if err := Reply(b, nil, "x", "", nil); !errors.Is(err, ErrNoMessage) {
+		t.Errorf("msg nil: %v", err)
+	}
+}
+
+func TestEditText(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	cases := []struct {
+		name string
+		cq   *gotgbot.CallbackQuery
+		want map[string]string
+		err  error
+	}{
+		{"inline", &gotgbot.CallbackQuery{InlineMessageId: "im-1"}, map[string]string{"inline_message_id": "im-1"}, nil},
+		{"valore", &gotgbot.CallbackQuery{Message: gotgbot.Message{MessageId: 7, Chat: gotgbot.Chat{Id: 9}, BusinessConnectionId: "bc"}},
+			map[string]string{"chat_id": "9", "message_id": "7", "business_connection_id": "bc"}, nil},
+		{"puntatore", &gotgbot.CallbackQuery{Message: &gotgbot.Message{MessageId: 8, Chat: gotgbot.Chat{Id: 10}}},
+			map[string]string{"chat_id": "10", "message_id": "8"}, nil},
+		{"inaccessibile", &gotgbot.CallbackQuery{Message: gotgbot.InaccessibleMessage{MessageId: 5, Chat: gotgbot.Chat{Id: 11}}},
+			map[string]string{"chat_id": "11", "message_id": "5"}, nil},
+		{"senza messaggio", &gotgbot.CallbackQuery{}, nil, ErrNoMessage},
+		{"query nil", nil, nil, ErrNoCallback},
+	}
+	for _, c := range cases {
+		fc.Reset()
+		err := EditText(b, c.cq, "testo", "", nil)
+		if !errors.Is(err, c.err) {
+			t.Errorf("%s: err = %v, want %v", c.name, err, c.err)
+		}
+		if c.err != nil {
+			continue
+		}
+		call := fc.LastCall(t, "editMessageText")
+		for k, v := range c.want {
+			if call.String(k) != v {
+				t.Errorf("%s: %s = %q, want %q", c.name, k, call.String(k), v)
+			}
+		}
+		if _, ok := call.Params["parse_mode"]; ok {
+			t.Errorf("%s: parse_mode non richiesto", c.name)
+		}
+	}
+}
+
+func TestCallbackMessage(t *testing.T) {
+	if CallbackMessage(nil) != nil || CallbackMessage(&gotgbot.CallbackQuery{}) != nil {
+		t.Error("callback senza messaggio")
+	}
+	m := CallbackMessage(&gotgbot.CallbackQuery{Message: gotgbot.InaccessibleMessage{MessageId: 5, Chat: gotgbot.Chat{Id: 11}}})
+	if m == nil || m.MessageId != 5 || m.Chat.Id != 11 || m.Text != "" {
+		t.Errorf("inaccessibile: %+v", m)
+	}
+}
+
+// ========== user_data ==========
+
+func TestUserDataGetSet(t *testing.T) {
+	u := NewUserData()
+	if _, ok := u.Get(1, "k"); ok {
 		t.Fatal("chiave inattesa")
 	}
-	u.Set(user, "energia", 0.123)
-	u.Set(user, "tipo", "fissa")
-	u.Set(other, "tipo", "variabile")
-
-	if v, ok := u.Float(user, "energia"); !ok || v != 0.123 {
-		t.Errorf("Float = %v, %v", v, ok)
+	u.Set(1, "tipo", "fissa")
+	u.Set(2, "tipo", "variabile")
+	if v, ok := u.Get(1, "tipo"); !ok || v != "fissa" {
+		t.Errorf("Get = %v, %v", v, ok)
 	}
-	if _, ok := u.Float(user, "tipo"); ok {
-		t.Error("Float su stringa deve fallire")
-	}
-	if _, ok := u.Float(user, "manca"); ok {
-		t.Error("Float su chiave assente deve fallire")
-	}
-	if v, ok := u.String(user, "tipo"); !ok || v != "fissa" {
-		t.Errorf("String = %v, %v", v, ok)
-	}
-	if _, ok := u.String(user, "energia"); ok {
-		t.Error("String su float deve fallire")
-	}
-	if _, ok := u.String(user, "manca"); ok {
-		t.Error("String su chiave assente deve fallire")
-	}
-
-	snap := u.Snapshot(user)
-	if len(snap) != 2 || snap["tipo"] != "fissa" {
-		t.Errorf("Snapshot = %v", snap)
-	}
+	snap := u.Snapshot(1)
 	snap["tipo"] = "modificato"
-	if v, _ := u.String(user, "tipo"); v != "fissa" {
+	if v, _ := u.Get(1, "tipo"); v != "fissa" {
 		t.Error("Snapshot deve essere una copia")
 	}
+}
 
-	u.Delete(user, "tipo")
-	u.Delete(user, "manca")      // pop(key, None) su chiave assente
-	u.Delete(12345, "qualsiasi") // utente sconosciuto
-	if _, ok := u.Get(user, "tipo"); ok {
-		t.Error("Delete non ha rimosso la chiave")
+func TestUserDataDeleteClear(t *testing.T) {
+	u := NewUserData()
+	u.Set(1, "a", 1)
+	u.Set(1, "b", 2)
+	u.Set(2, "a", 3)
+	u.Delete(1, "a")
+	u.Delete(1, "manca")
+	u.Delete(12345, "qualsiasi")
+	if snap := u.Snapshot(1); len(snap) != 1 || snap["b"] != 2 {
+		t.Errorf("dopo Delete: %v", snap)
 	}
-
-	u.Clear(user)
-	if len(u.Snapshot(user)) != 0 {
-		t.Error("Clear non ha svuotato i dati")
-	}
-	if v, ok := u.String(other, "tipo"); !ok || v != "variabile" {
-		t.Error("Clear non deve toccare gli altri utenti")
+	u.Clear(1)
+	if len(u.Snapshot(1)) != 0 || len(u.Snapshot(2)) != 1 {
+		t.Error("Clear deve svuotare solo l'utente indicato")
 	}
 }
 
@@ -330,12 +398,4 @@ func TestUserDataConcurrent(t *testing.T) {
 		}(int64(i))
 	}
 	wg.Wait()
-}
-
-func TestPyCapitalize(t *testing.T) {
-	for in, want := range map[string]string{"": "", "query": "Query", "QUERY ID": "Query id", "ǆa": "ǅa"} {
-		if got := pyCapitalize(in); got != want {
-			t.Errorf("pyCapitalize(%q) = %q, want %q", in, got, want)
-		}
-	}
 }

@@ -1,6 +1,5 @@
 // Package webapp incorpora nel binario i file statici della Mini App
-// Telegram (index.html, css/, js/), che in Python erano serviti da Tornado
-// con StaticFileHandler a partire dalla directory webapp/.
+// Telegram (index.html, css/, js/), serviti da internal/app sotto /app/.
 //
 // I file web non vanno modificati qui: questo package li espone soltanto
 // come fs.FS.

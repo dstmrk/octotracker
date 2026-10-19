@@ -1,22 +1,19 @@
-// Package registration è il port di handlers/registration.py: la
-// conversazione di registrazione (e aggiornamento) delle tariffe luce/gas
-// degli utenti di OctoTracker.
+// Package registration contiene la conversazione di registrazione (e
+// aggiornamento) delle tariffe luce/gas degli utenti di OctoTracker.
 //
-// Testi, tastiere inline, callback_data, regole di validazione e stati della
-// conversazione sono identici alla versione Python. Le chiavi di
-// context.user_data sono le stesse e vengono salvate in tg.UserData
-// (numeri come float64, is_variabile come bool, il resto come stringhe).
+// I dati inseriti sono salvati in tg.UserData con le chiavi della versione
+// Python (numeri come float64, is_variabile come bool, il resto come
+// stringhe).
 //
 // Ogni handler è un metodo di Handlers con la firma gotgbot
-// func(b *gotgbot.Bot, ctx *ext.Context) error e restituisce, come la
-// versione Python, sempre lo stato successivo (handlers.NextConversationState)
-// oppure handlers.EndConversation(); gli altri errori corrispondono alle
-// eccezioni che in Python arrivano all'error handler dell'applicazione.
-// La conversazione completa si ottiene con Handlers.Conversation.
+// func(b *gotgbot.Bot, ctx *ext.Context) error e restituisce lo stato
+// successivo (handlers.NextConversationState) oppure
+// handlers.EndConversation(); gli altri errori arrivano all'error handler
+// dell'applicazione. La conversazione completa si ottiene con
+// Handlers.Conversation.
 package registration
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -30,10 +27,8 @@ import (
 	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// logger replica logging.getLogger(__name__) di handlers/registration.py.
 var logger = logging.Logger("handlers.registration")
 
-// parseModeHTML corrisponde a ParseMode.HTML di python-telegram-bot.
 const parseModeHTML = "HTML"
 
 // Costanti messaggi.
@@ -44,6 +39,11 @@ const (
 	MsgGasConsumo = "Inserisci il tuo consumo annuo di gas in Smc.\n\n💬 Esempio: 1200"
 	// MsgDateInvalid è l'errore per una data di attivazione non valida (MSG_DATE_INVALID).
 	MsgDateInvalid = "❌ Data non valida. Usa il formato GG/MM/AAAA (es. 15/03/2025)"
+
+	// fonteOctopus chiude l'indicazione su come inserire i prezzi.
+	fonteOctopus = "(come riportato sul sito Octopus Energy/ARERA)\n\n"
+	// esempioConsumoFascia è l'esempio delle domande sui consumi per fascia.
+	esempioConsumoFascia = "💬 Esempio: 900"
 )
 
 // Callback data per saltare l'inserimento della data di attivazione.
@@ -54,8 +54,8 @@ const (
 	SkipScadenzaGas = "skip_scadenza_gas"
 )
 
-// Stati della conversazione di registrazione (ConversationState). Il valore
-// è il nome del membro dell'enum Python; tra parentesi il valore intero.
+// Stati della conversazione di registrazione: il valore è il nome dello
+// stato nella versione Python (tra parentesi il suo valore intero).
 const (
 	StateTipoTariffa       = "TIPO_TARIFFA"        // 0
 	StateLuceTipoVariabile = "LUCE_TIPO_VARIABILE" // 1
@@ -75,7 +75,7 @@ const (
 	StateGasConsumo        = "GAS_CONSUMO"         // 12
 )
 
-// Chiavi di context.user_data usate dalla conversazione (stessi nomi Python).
+// Chiavi di user_data usate dalla conversazione.
 const (
 	keyIsVariabile     = "is_variabile"
 	keyLuceTipo        = "luce_tipo"
@@ -96,22 +96,22 @@ const (
 
 // Handlers raccoglie le dipendenze degli handler di registrazione.
 type Handlers struct {
-	// Store è il database degli utenti (save_user, user_exists).
+	// Store è il database degli utenti.
 	Store *database.Store
-	// UserData è l'equivalente di context.user_data (condiviso con le
-	// altre conversazioni del bot).
+	// UserData sono i dati di conversazione (condivisi con le altre
+	// conversazioni del bot).
 	UserData *tg.UserData
-	// TelegramChannel è TELEGRAM_CHANNEL già ripulito con strip(); vuoto se
-	// il canale non è configurato.
+	// TelegramChannel è TELEGRAM_CHANNEL senza spazi; vuoto se il canale
+	// non è configurato.
 	TelegramChannel string
 }
 
-// next restituisce il cambio di stato verso state (return STATE in Python).
+// next restituisce il cambio di stato verso state.
 func next(state string) error {
 	return handlers.NextConversationState(state)
 }
 
-// userIDString replica str(user.id).
+// userIDString è l'id utente come chiave del database.
 func userIDString(id int64) string {
 	return strconv.FormatInt(id, 10)
 }
@@ -134,7 +134,7 @@ func haGasKeyboard() gotgbot.InlineKeyboardMarkup {
 }
 
 // consumiLucePrompt costruisce testo e tastiera per la domanda sui consumi
-// luce (_consumi_luce_prompt).
+// luce.
 func consumiLucePrompt() (string, gotgbot.InlineKeyboardMarkup) {
 	kb := keyboard([2]string{"✅ Sì", "consumi_luce_si"}, [2]string{"❌ No", "consumi_luce_no"})
 	text := "Vuoi indicare anche il tuo consumo annuale di energia elettrica (in kWh)?\n\n" +
@@ -143,7 +143,7 @@ func consumiLucePrompt() (string, gotgbot.InlineKeyboardMarkup) {
 }
 
 // consumiGasPrompt costruisce testo e tastiera per la domanda sui consumi
-// gas (_consumi_gas_prompt).
+// gas.
 func consumiGasPrompt() (string, gotgbot.InlineKeyboardMarkup) {
 	kb := keyboard([2]string{"✅ Sì", "consumi_gas_si"}, [2]string{"❌ No", "consumi_gas_no"})
 	text := "Vuoi indicare anche il tuo consumo annuale di gas (in Smc)?\n\n" +
@@ -152,8 +152,8 @@ func consumiGasPrompt() (string, gotgbot.InlineKeyboardMarkup) {
 }
 
 // attivazionePrompt costruisce testo e tastiera per la domanda sulla data di
-// attivazione (_attivazione_prompt). servizio è "luce" o "gas" (per
-// personalizzare il testo), skipCallback la callback_data del pulsante «Salta».
+// attivazione. servizio è "luce" o "gas" (per personalizzare il testo),
+// skipCallback la callback_data del pulsante «Salta».
 func attivazionePrompt(servizio, skipCallback string) (string, gotgbot.InlineKeyboardMarkup) {
 	kb := keyboard([2]string{"⏭️ Salta", skipCallback})
 	text := "📅 <b>Reminder scadenza offerta</b>\n\n" +
@@ -167,10 +167,10 @@ func attivazionePrompt(servizio, skipCallback string) (string, gotgbot.InlineKey
 
 // ========== CONVERSATION HANDLERS ==========
 
-// Start avvia la registrazione tariffe (start), entry point di /start e /update.
+// Start avvia la registrazione tariffe, entry point di /start e /update.
 func (h *Handlers) Start(b *gotgbot.Bot, ctx *ext.Context) error {
 	if ctx.EffectiveUser == nil {
-		return attributeError("id")
+		return tg.ErrNoUser
 	}
 	userID := userIDString(ctx.EffectiveUser.Id)
 	isUpdate := h.Store.UserExists(userID)
@@ -206,16 +206,16 @@ func (h *Handlers) Start(b *gotgbot.Bot, ctx *ext.Context) error {
 			"👉 Iniziamo: che tipo di tariffa <b>luce</b> hai?"
 	}
 
-	if err := replyText(b, ctx.Message, messaggio, parseModeHTML, &replyMarkup); err != nil {
+	if err := tg.Reply(b, ctx.Message, messaggio, parseModeHTML, &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateTipoTariffa)
 }
 
-// TipoTariffa gestisce la scelta del tipo tariffa luce, Fissa/Variabile (tipo_tariffa).
+// TipoTariffa gestisce la scelta del tipo tariffa luce, Fissa/Variabile.
 func (h *Handlers) TipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 	uid := ctx.EffectiveUser.Id
@@ -226,12 +226,12 @@ func (h *Handlers) TipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 		h.UserData.Set(uid, keyLuceFascia, "monoraria")
 		// gas_tipo e gas_fascia verranno chiesti separatamente in GAS_TIPO
 
-		err := editMessageText(b, query,
+		err := tg.EditText(b, query,
 			"📊 <b>Tariffa Fissa</b>\n\n"+
 				"Perfetto! Ora inserisci i dati della tua tariffa luce.\n\n"+
 				"👉 Quanto paghi per la materia energia luce (€/kWh)?\n\n"+
 				"ℹ️ Inserisci il prezzo <b>IVA e imposte escluse, perdite incluse</b> "+
-				"(come riportato sul sito Octopus Energy/ARERA)\n\n"+
+				fonteOctopus+
 				"💬 Esempio: 0,145",
 			parseModeHTML, nil)
 		if err != nil {
@@ -244,7 +244,7 @@ func (h *Handlers) TipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 	h.UserData.Set(uid, keyIsVariabile, true)
 
 	replyMarkup := keyboard([2]string{"⏱️ Monoraria", "luce_mono"}, [2]string{"⏱️⏱️⏱️ Trioraria", "luce_tri"})
-	err := editMessageText(b, query,
+	err := tg.EditText(b, query,
 		"📈 <b>Tariffa Variabile</b>\n\n"+
 			"La tua tariffa luce è monoraria o trioraria (F1/F2/F3)?",
 		parseModeHTML, &replyMarkup)
@@ -255,10 +255,10 @@ func (h *Handlers) TipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 }
 
 // LuceTipoVariabile gestisce la scelta del tipo luce variabile,
-// Monoraria/Trioraria (luce_tipo_variabile).
+// Monoraria/Trioraria.
 func (h *Handlers) LuceTipoVariabile(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 	uid := ctx.EffectiveUser.Id
@@ -276,11 +276,11 @@ func (h *Handlers) LuceTipoVariabile(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// gas_tipo e gas_fascia verranno chiesti separatamente in GAS_TIPO
 
-	err := editMessageText(b, query,
+	err := tg.EditText(b, query,
 		"⚡ <b>Luce variabile "+tipoMsg+"</b>\n\n"+
 			"Ora inserisci lo spread della tua tariffa rispetto al PUN.\n\n"+
 			"ℹ️ Inserisci il valore <b>IVA e imposte escluse, perdite incluse</b> "+
-			"(come riportato sul sito Octopus Energy/ARERA)\n\n"+
+			fonteOctopus+
 			"💬 Esempio: se la tua tariffa è <b>PUN + 0,0088</b> €/kWh, scrivi <code>0,0088</code>",
 		parseModeHTML, nil)
 	if err != nil {
@@ -289,31 +289,26 @@ func (h *Handlers) LuceTipoVariabile(b *gotgbot.Bot, ctx *ext.Context) error {
 	return next(StateLuceEnergia)
 }
 
-// numericStep raccoglie la logica comune agli step numerici: valida
-// update.message.text, risponde con l'errore (restando in state) oppure
-// restituisce il valore valido. done è true quando l'handler deve terminare
-// subito restituendo err.
+// numericStep raccoglie la logica comune agli step numerici: valida il
+// testo del messaggio, risponde con l'errore (restando in state) oppure
+// restituisce il valore valido. invalidMsg è la risposta per un testo che
+// non è un numero. done è true quando l'handler deve terminare subito
+// restituendo err.
 func numericStep(b *gotgbot.Bot, msg *gotgbot.Message, state, invalidMsg string) (value float64, done bool, err error) {
 	value, ok, errMsg := ValidateNumericInput(msg.Text)
-
-	if errMsg != "" {
-		if err := replyText(b, msg, errMsg, "", nil); err != nil {
-			return 0, true, err
-		}
-		return 0, true, next(state)
+	if ok {
+		return value, false, nil
 	}
-
-	if !ok {
-		// Errore di conversione (non è un numero)
-		if err := replyText(b, msg, invalidMsg, "", nil); err != nil {
-			return 0, true, err
-		}
-		return 0, true, next(state)
+	if errMsg == "" {
+		errMsg = invalidMsg // Errore di conversione (non è un numero)
 	}
-	return value, false, nil
+	if err := tg.Reply(b, msg, errMsg, "", nil); err != nil {
+		return 0, true, err
+	}
+	return 0, true, next(state)
 }
 
-// LuceEnergia salva il costo energia luce, spread o prezzo fisso (luce_energia).
+// LuceEnergia salva il costo energia luce, spread o prezzo fisso.
 func (h *Handlers) LuceEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -322,7 +317,7 @@ func (h *Handlers) LuceEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	uid := ctx.EffectiveUser.Id
 
 	invalid := "❌ Inserisci un numero valido (es: 0,145)"
-	if v, _ := h.UserData.Get(uid, keyIsVariabile); pyTruthy(v) {
+	if v, _ := h.UserData.Get(uid, keyIsVariabile); v == true {
 		invalid = "❌ Inserisci un numero valido (es: 0,0088)"
 	}
 	value, done, err := numericStep(b, msg, StateLuceEnergia, invalid)
@@ -331,7 +326,7 @@ func (h *Handlers) LuceEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	h.UserData.Set(uid, keyLuceEnergia, value)
-	if err := replyText(b, msg,
+	if err := tg.Reply(b, msg,
 		"Perfetto! Ora indica il costo di commercializzazione luce, in euro/anno.\n\n"+
 			"💬 Esempio: 72 (se paghi 6 €/mese)",
 		"", nil); err != nil {
@@ -340,7 +335,7 @@ func (h *Handlers) LuceEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	return next(StateLuceComm)
 }
 
-// LuceComm salva il costo di commercializzazione luce (luce_comm).
+// LuceComm salva il costo di commercializzazione luce.
 //
 // Se la tariffa è fissa chiede la data di attivazione (per il reminder di
 // scadenza), altrimenti passa direttamente alla domanda sui consumi.
@@ -361,20 +356,20 @@ func (h *Handlers) LuceComm(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Solo per tariffe fisse chiediamo la data di attivazione (reminder scadenza)
 	if v, _ := h.UserData.Get(uid, keyLuceTipo); v == "fissa" {
 		text, replyMarkup := attivazionePrompt("luce", SkipScadenzaLuce)
-		if err := replyText(b, msg, text, parseModeHTML, &replyMarkup); err != nil {
+		if err := tg.Reply(b, msg, text, parseModeHTML, &replyMarkup); err != nil {
 			return err
 		}
 		return next(StateLuceAttivazione)
 	}
 
 	text, replyMarkup := consumiLucePrompt()
-	if err := replyText(b, msg, text, "", &replyMarkup); err != nil {
+	if err := tg.Reply(b, msg, text, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateVuoiConsumiLuce)
 }
 
-// attivazioneStep è la logica comune a luce_attivazione e gas_attivazione:
+// attivazioneStep è la logica comune a LuceAttivazione e GasAttivazione:
 // salva la scadenza (attivazione + 12 mesi) in user_data[key].
 func (h *Handlers) attivazioneStep(b *gotgbot.Bot, ctx *ext.Context, servizio, key, state string,
 	prompt func() (string, gotgbot.InlineKeyboardMarkup), nextState string) error {
@@ -385,7 +380,7 @@ func (h *Handlers) attivazioneStep(b *gotgbot.Bot, ctx *ext.Context, servizio, k
 
 	activation, ok := dateutil.ParseActivationDate(msg.Text)
 	if !ok {
-		if err := replyText(b, msg, MsgDateInvalid, "", nil); err != nil {
+		if err := tg.Reply(b, msg, MsgDateInvalid, "", nil); err != nil {
 			return err
 		}
 		return next(state)
@@ -394,7 +389,7 @@ func (h *Handlers) attivazioneStep(b *gotgbot.Bot, ctx *ext.Context, servizio, k
 	scadenza := dateutil.ComputeExpiryDate(activation)
 	h.UserData.Set(ctx.EffectiveUser.Id, key, dateutil.FormatISODate(scadenza))
 
-	if err := replyText(b, msg,
+	if err := tg.Reply(b, msg,
 		"✅ Perfetto! La tua offerta "+servizio+" scade il <b>"+dateutil.FormatDateDisplay(scadenza)+"</b>.\n"+
 			"Ti avviserò un mese prima. 🔔",
 		parseModeHTML, nil); err != nil {
@@ -402,38 +397,36 @@ func (h *Handlers) attivazioneStep(b *gotgbot.Bot, ctx *ext.Context, servizio, k
 	}
 
 	text, replyMarkup := prompt()
-	if err := replyText(b, msg, text, "", &replyMarkup); err != nil {
+	if err := tg.Reply(b, msg, text, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(nextState)
 }
 
 // LuceAttivazione salva la data di scadenza (attivazione + 12 mesi) per
-// l'offerta fissa luce (luce_attivazione).
+// l'offerta fissa luce.
 func (h *Handlers) LuceAttivazione(b *gotgbot.Bot, ctx *ext.Context) error {
 	return h.attivazioneStep(b, ctx, "luce", keyLuceScadenza, StateLuceAttivazione, consumiLucePrompt, StateVuoiConsumiLuce)
 }
 
-// SkipLuceAttivazione salta l'inserimento della data di attivazione luce
-// (skip_luce_attivazione).
+// SkipLuceAttivazione salta l'inserimento della data di attivazione luce.
 func (h *Handlers) SkipLuceAttivazione(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
 	text, replyMarkup := consumiLucePrompt()
-	if err := editMessageText(b, query, text, "", &replyMarkup); err != nil {
+	if err := tg.EditText(b, query, text, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateVuoiConsumiLuce)
 }
 
-// VuoiConsumiLuce gestisce la risposta alla domanda sui consumi luce
-// (vuoi_consumi_luce).
+// VuoiConsumiLuce gestisce la risposta alla domanda sui consumi luce.
 func (h *Handlers) VuoiConsumiLuce(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
@@ -449,13 +442,13 @@ func (h *Handlers) VuoiConsumiLuce(b *gotgbot.Bot, ctx *ext.Context) error {
 		case "trioraria":
 			messaggio = "Inserisci il tuo consumo annuo in fascia F1 in kWh.\n\n" +
 				"(F1 = feriali 8–19)\n\n" +
-				"💬 Esempio: 900"
+				esempioConsumoFascia
 		default:
 			// Fallback (non dovrebbe mai succedere)
 			messaggio = "Inserisci il tuo consumo annuo in kWh."
 		}
 
-		if err := editMessageText(b, query, messaggio, parseModeHTML, nil); err != nil {
+		if err := tg.EditText(b, query, messaggio, parseModeHTML, nil); err != nil {
 			return err
 		}
 		return next(StateLuceConsumoF1)
@@ -463,14 +456,13 @@ func (h *Handlers) VuoiConsumiLuce(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// Non vuole inserire consumi, vai direttamente a chiedere se ha gas
 	replyMarkup := haGasKeyboard()
-	if err := editMessageText(b, query, MsgHasGas, "", &replyMarkup); err != nil {
+	if err := tg.EditText(b, query, MsgHasGas, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateHaGas)
 }
 
-// LuceConsumoF1 salva il consumo F1 luce e procede in base alla fascia
-// (luce_consumo_f1).
+// LuceConsumoF1 salva il consumo F1 luce e procede in base alla fascia.
 func (h *Handlers) LuceConsumoF1(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -488,24 +480,24 @@ func (h *Handlers) LuceConsumoF1(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Se monoraria, abbiamo finito con i consumi luce → vai a HA_GAS
 	if h.getDefault(uid, keyLuceFascia, "monoraria") == "monoraria" {
 		replyMarkup := haGasKeyboard()
-		if err := replyText(b, msg, MsgHasGas, "", &replyMarkup); err != nil {
+		if err := tg.Reply(b, msg, MsgHasGas, "", &replyMarkup); err != nil {
 			return err
 		}
 		return next(StateHaGas)
 	}
 
 	// Se trioraria, chiedi F2
-	if err := replyText(b, msg,
+	if err := tg.Reply(b, msg,
 		"Ora inserisci il tuo consumo annuo in fascia F2 in kWh.\n\n"+
 			"(F2 = feriali 7–8 e 19–23, sabato 7–23)\n\n"+
-			"💬 Esempio: 900",
+			esempioConsumoFascia,
 		"", nil); err != nil {
 		return err
 	}
 	return next(StateLuceConsumoF2)
 }
 
-// LuceConsumoF2 salva il consumo F2 luce, solo trioraria (luce_consumo_f2).
+// LuceConsumoF2 salva il consumo F2 luce, solo trioraria.
 func (h *Handlers) LuceConsumoF2(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -520,18 +512,17 @@ func (h *Handlers) LuceConsumoF2(b *gotgbot.Bot, ctx *ext.Context) error {
 	h.UserData.Set(ctx.EffectiveUser.Id, keyLuceConsumoF2, value)
 
 	// Chiedi F3
-	if err := replyText(b, msg,
+	if err := tg.Reply(b, msg,
 		"Infine, inserisci il tuo consumo annuo in fascia F3 in kWh.\n\n"+
 			"(F3 = notte, domeniche e festivi)\n\n"+
-			"💬 Esempio: 900",
+			esempioConsumoFascia,
 		"", nil); err != nil {
 		return err
 	}
 	return next(StateLuceConsumoF3)
 }
 
-// LuceConsumoF3 salva il consumo F3 luce (solo trioraria) e passa a HA_GAS
-// (luce_consumo_f3).
+// LuceConsumoF3 salva il consumo F3 luce (solo trioraria) e passa a HA_GAS.
 func (h *Handlers) LuceConsumoF3(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -547,23 +538,23 @@ func (h *Handlers) LuceConsumoF3(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// Consumi luce completati, vai a chiedere se ha gas
 	replyMarkup := haGasKeyboard()
-	if err := replyText(b, msg, MsgHasGas, "", &replyMarkup); err != nil {
+	if err := tg.Reply(b, msg, MsgHasGas, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateHaGas)
 }
 
-// HaGas gestisce la risposta alla domanda sulla fornitura gas (ha_gas).
+// HaGas gestisce la risposta alla domanda sulla fornitura gas.
 func (h *Handlers) HaGas(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
 	if query.Data == "gas_si" {
 		// Chiedi che tipo di tariffa gas ha (può essere diversa dalla luce)
 		replyMarkup := keyboard([2]string{"📊 Fissa", "gas_tipo_fissa"}, [2]string{"📈 Variabile", "gas_tipo_variabile"})
-		if err := editMessageText(b, query,
+		if err := tg.EditText(b, query,
 			"🔥 <b>Fornitura Gas</b>\n\nChe tipo di tariffa <b>gas</b> hai?",
 			parseModeHTML, &replyMarkup); err != nil {
 			return err
@@ -573,11 +564,10 @@ func (h *Handlers) HaGas(b *gotgbot.Bot, ctx *ext.Context) error {
 	return h.SalvaEConferma(b, ctx, query, true)
 }
 
-// GasTipoTariffa gestisce la scelta del tipo tariffa gas, Fissa/Variabile
-// (gas_tipo_tariffa).
+// GasTipoTariffa gestisce la scelta del tipo tariffa gas, Fissa/Variabile.
 func (h *Handlers) GasTipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 	uid := ctx.EffectiveUser.Id
@@ -590,7 +580,7 @@ func (h *Handlers) GasTipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 		msg = "🔥 <b>Gas fisso</b>\n\n" +
 			"Perfetto! Inserisci il costo materia energia gas (€/Smc).\n\n" +
 			"ℹ️ Inserisci il prezzo <b>IVA e imposte escluse</b> " +
-			"(come riportato sul sito Octopus Energy/ARERA)\n\n" +
+			fonteOctopus +
 			"💬 Esempio: 0,456"
 	} else { // gas_tipo_variabile
 		h.UserData.Set(uid, keyGasTipo, "variabile")
@@ -599,17 +589,17 @@ func (h *Handlers) GasTipoTariffa(b *gotgbot.Bot, ctx *ext.Context) error {
 		msg = "🔥 <b>Gas variabile</b>\n\n" +
 			"Ora inserisci lo spread della tua tariffa rispetto al PSV.\n\n" +
 			"ℹ️ Inserisci il valore <b>IVA e imposte escluse</b> " +
-			"(come riportato sul sito Octopus Energy/ARERA)\n\n" +
+			fonteOctopus +
 			"💬 Esempio: se la tua tariffa è <b>PSV + 0,08</b> €/Smc, scrivi <code>0,08</code>"
 	}
 
-	if err := editMessageText(b, query, msg, parseModeHTML, nil); err != nil {
+	if err := tg.EditText(b, query, msg, parseModeHTML, nil); err != nil {
 		return err
 	}
 	return next(StateGasEnergia)
 }
 
-// GasEnergia salva il costo energia gas, spread o prezzo fisso (gas_energia).
+// GasEnergia salva il costo energia gas, spread o prezzo fisso.
 func (h *Handlers) GasEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -627,7 +617,7 @@ func (h *Handlers) GasEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	h.UserData.Set(uid, keyGasEnergia, value)
-	if err := replyText(b, msg,
+	if err := tg.Reply(b, msg,
 		"Perfetto! Ora indica il costo di commercializzazione gas, in euro/anno.\n\n"+
 			"💬 Esempio: 84 (se paghi 7 €/mese)",
 		"", nil); err != nil {
@@ -636,7 +626,7 @@ func (h *Handlers) GasEnergia(b *gotgbot.Bot, ctx *ext.Context) error {
 	return next(StateGasComm)
 }
 
-// GasComm salva la commercializzazione gas (gas_comm).
+// GasComm salva la commercializzazione gas.
 //
 // Se la tariffa gas è fissa chiede la data di attivazione (per il reminder
 // di scadenza), altrimenti passa direttamente alla domanda sui consumi.
@@ -657,51 +647,49 @@ func (h *Handlers) GasComm(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Solo per tariffe fisse chiediamo la data di attivazione (reminder scadenza)
 	if v, _ := h.UserData.Get(uid, keyGasTipo); v == "fissa" {
 		text, replyMarkup := attivazionePrompt("gas", SkipScadenzaGas)
-		if err := replyText(b, msg, text, parseModeHTML, &replyMarkup); err != nil {
+		if err := tg.Reply(b, msg, text, parseModeHTML, &replyMarkup); err != nil {
 			return err
 		}
 		return next(StateGasAttivazione)
 	}
 
 	text, replyMarkup := consumiGasPrompt()
-	if err := replyText(b, msg, text, "", &replyMarkup); err != nil {
+	if err := tg.Reply(b, msg, text, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateVuoiConsumiGas)
 }
 
 // GasAttivazione salva la data di scadenza (attivazione + 12 mesi) per
-// l'offerta fissa gas (gas_attivazione).
+// l'offerta fissa gas.
 func (h *Handlers) GasAttivazione(b *gotgbot.Bot, ctx *ext.Context) error {
 	return h.attivazioneStep(b, ctx, "gas", keyGasScadenza, StateGasAttivazione, consumiGasPrompt, StateVuoiConsumiGas)
 }
 
-// SkipGasAttivazione salta l'inserimento della data di attivazione gas
-// (skip_gas_attivazione).
+// SkipGasAttivazione salta l'inserimento della data di attivazione gas.
 func (h *Handlers) SkipGasAttivazione(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
 	text, replyMarkup := consumiGasPrompt()
-	if err := editMessageText(b, query, text, "", &replyMarkup); err != nil {
+	if err := tg.EditText(b, query, text, "", &replyMarkup); err != nil {
 		return err
 	}
 	return next(StateVuoiConsumiGas)
 }
 
-// VuoiConsumiGas gestisce la risposta alla domanda sui consumi gas
-// (vuoi_consumi_gas).
+// VuoiConsumiGas gestisce la risposta alla domanda sui consumi gas.
 func (h *Handlers) VuoiConsumiGas(b *gotgbot.Bot, ctx *ext.Context) error {
 	query := ctx.CallbackQuery
-	if err := safeAnswerCallback(b, query); err != nil {
+	if err := tg.SafeAnswerCallback(b, query); err != nil {
 		return err
 	}
 
 	if query.Data == "consumi_gas_si" {
 		// Chiedi consumo gas
-		if err := editMessageText(b, query, MsgGasConsumo, "", nil); err != nil {
+		if err := tg.EditText(b, query, MsgGasConsumo, "", nil); err != nil {
 			return err
 		}
 		return next(StateGasConsumo)
@@ -710,7 +698,7 @@ func (h *Handlers) VuoiConsumiGas(b *gotgbot.Bot, ctx *ext.Context) error {
 	return h.SalvaEConferma(b, ctx, query, false)
 }
 
-// GasConsumo salva il consumo gas e passa alla conferma (gas_consumo).
+// GasConsumo salva il consumo gas e passa alla conferma.
 func (h *Handlers) GasConsumo(b *gotgbot.Bot, ctx *ext.Context) error {
 	msg := ctx.Message
 	if msg == nil {
@@ -728,38 +716,11 @@ func (h *Handlers) GasConsumo(b *gotgbot.Bot, ctx *ext.Context) error {
 	return h.SalvaEConferma(b, ctx, nil, false)
 }
 
-// getDefault replica context.user_data.get(key, def) per i valori stringa.
+// getDefault restituisce user_data[key], def se la chiave è assente.
 func (h *Handlers) getDefault(userID int64, key, def string) any {
 	v, ok := h.UserData.Get(userID, key)
 	if !ok {
 		return def
 	}
 	return v
-}
-
-// pyTruthy replica la truthiness Python dei valori salvati in user_data.
-func pyTruthy(v any) bool {
-	switch x := v.(type) {
-	case nil:
-		return false
-	case bool:
-		return x
-	case string:
-		return x != ""
-	case float64:
-		return x != 0
-	case int:
-		return x != 0
-	case int64:
-		return x != 0
-	default:
-		return true
-	}
-}
-
-// attributeError replica l'AttributeError di Python quando un attributo
-// dell'update è None (es. update.message.reply_text su un messaggio
-// modificato): in Python l'eccezione arriva all'error handler.
-func attributeError(attr string) error {
-	return fmt.Errorf("AttributeError: 'NoneType' object has no attribute '%s'", attr)
 }

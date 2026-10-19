@@ -49,11 +49,9 @@ func BuildRateUpdateKeyboard() gotgbot.InlineKeyboardMarkup {
 	}
 }
 
-// NewBot crea il client Telegram per il token indicato, come Bot(token=...)
-// di PTB: nessuna chiamata di rete e nessuna validazione del formato del
-// token (un token errato emerge al primo invio come errore Telegram). Le
-// richieste usano il timeout di default di gotgbot (5 s), equivalente ai
-// timeout di default di HTTPXRequest (connect/read/write 5 s).
+// NewBot crea il client Telegram per il token indicato, senza chiamate di
+// rete né validazione del token (un token errato emerge al primo invio come
+// errore Telegram). Le richieste usano il timeout di default di gotgbot (5 s).
 func NewBot(token string) *gotgbot.Bot {
 	return &gotgbot.Bot{
 		Token:     token,
@@ -61,35 +59,28 @@ func NewBot(token string) *gotgbot.Bot {
 	}
 }
 
-// sendErrorKind è la classe di eccezione PTB corrispondente a un errore di
-// invio, nell'ordine in cui send_notification le gestisce.
+// sendErrorKind è il tipo di errore di invio, nell'ordine in cui
+// SendNotification li gestisce.
 type sendErrorKind int
 
 const (
-	kindRetryAfter sendErrorKind = iota // telegram.error.RetryAfter
-	kindTimedOut                        // telegram.error.TimedOut (sottoclasse di NetworkError)
-	kindNetwork                         // telegram.error.NetworkError, incluso BadRequest
-	kindTelegram                        // ogni altro telegram.error.TelegramError
+	kindRetryAfter sendErrorKind = iota // rate limit con retry_after
+	kindTimedOut                        // timeout di trasporto
+	kindNetwork                         // errore di rete, risposta non JSON, 400 o 5xx
+	kindTelegram                        // altri errori Telegram: 401, 403, 404, 409, chat migrata
 )
 
-// classifySendError mappa un errore gotgbot sulla classe di eccezione che
-// python-telegram-bot (v22) solleverebbe per la stessa risposta:
+// classifySendError classifica un errore di invio come la versione Python:
 //
-//   - parametri migrate_to_chat_id → ChatMigrated (TelegramError);
-//   - parametri retry_after → RetryAfter;
-//   - 403 → Forbidden, 401/404 → InvalidToken, 409 → Conflict (TelegramError);
-//   - 400 → BadRequest, che in PTB è una sottoclasse di NetworkError: per
-//     questo un "Bad Request: chat not found" reale viene loggato come
-//     errore di rete e l'utente NON viene rimosso (bug Python replicato);
-//   - ogni altro codice (5xx, 429 senza retry_after, ...) → NetworkError;
-//   - timeout di trasporto (deadline del context o timeout net.Error) →
-//     TimedOut; altri errori di trasporto → NetworkError.
-//
-// Una risposta non JSON diventa per gotgbot un errore di decodifica senza
-// codice HTTP: è trattata come NetworkError, che è ciò che PTB solleva per
-// le risposte non-2xx (caso tipico: pagina HTML di un proxy). Solo per una
-// risposta 2xx non JSON PTB solleverebbe TelegramError("Invalid server
-// response"); in entrambi i casi l'invio fallisce senza rimuovere l'utente.
+//   - retry_after → kindRetryAfter; migrate_to_chat_id → kindTelegram;
+//   - 401, 403, 404 e 409 → kindTelegram (unici candidati alla rimozione
+//     dell'utente);
+//   - 400 → kindNetwork: un "Bad Request: chat not found" reale viene
+//     loggato come errore di rete e l'utente NON viene rimosso (bug Python
+//     replicato di proposito);
+//   - ogni altro codice (5xx, 429 senza retry_after, ...) → kindNetwork;
+//   - deadline del context o timeout net.Error → kindTimedOut; altri errori
+//     di trasporto e risposte non JSON → kindNetwork.
 func classifySendError(err error) sendErrorKind {
 	var tgErr *gotgbot.TelegramError
 	if errors.As(err, &tgErr) {
@@ -124,10 +115,9 @@ func retryAfterSeconds(err error) int64 {
 	return 0
 }
 
-// sendMessage invia il messaggio HTML come bot.send_message(chat_id=user_id,
-// text=..., parse_mode="HTML", reply_markup=...). Un user_id non numerico
-// viene inviato come stringa (PTB accetta chat_id str), così Telegram
-// risponde con lo stesso errore che riceverebbe la versione Python.
+// sendMessage invia il messaggio HTML (sendMessage con parse_mode HTML e
+// reply_markup opzionale). Un user_id non numerico viene inviato come
+// stringa, come faceva la versione Python: Telegram risponde con un errore.
 func sendMessage(ctx context.Context, b *gotgbot.Bot, userID, text string, replyMarkup gotgbot.ReplyMarkup) error {
 	if chatID, err := strconv.ParseInt(userID, 10, 64); err == nil {
 		_, err = b.SendMessageWithContext(ctx, chatID, text, &gotgbot.SendMessageOpts{
@@ -148,11 +138,11 @@ func sendMessage(ctx context.Context, b *gotgbot.Bot, userID, text string, reply
 // opzionale (send_notification). replyMarkup nil equivale a None.
 //
 // Restituisce true se il messaggio è stato inviato. Gli errori non vengono
-// propagati ma loggati, con la stessa semantica di Python:
+// propagati ma loggati (vedi classifySendError):
 //
-//   - RetryAfter: warning, nessun nuovo tentativo;
-//   - TimedOut / NetworkError (incluso BadRequest): errore loggato;
-//   - altri TelegramError: se il messaggio (in minuscolo) contiene uno dei
+//   - rate limit: warning, nessun nuovo tentativo;
+//   - timeout ed errori di rete (incluso il 400): errore loggato;
+//   - altri errori Telegram: se il messaggio (in minuscolo) contiene uno dei
 //     TelegramErrorsToDelete l'utente viene rimosso dal database, altrimenti
 //     l'errore viene loggato.
 func SendNotification(ctx context.Context, b *gotgbot.Bot, store UserRemover, userID, message string, replyMarkup gotgbot.ReplyMarkup) bool {
@@ -165,8 +155,6 @@ func SendNotification(ctx context.Context, b *gotgbot.Bot, store UserRemover, us
 	case kindRetryAfter:
 		logger.Warn(fmt.Sprintf("⏱️  Rate limit per utente %s: riprova tra %ds", userID, retryAfterSeconds(err)))
 	case kindTimedOut:
-		// logger.exception: il messaggio Python non contiene l'errore, che
-		// finisce nel traceback; qui è aggiunto come attributo.
 		logger.Error(fmt.Sprintf("⏱️  Timeout invio messaggio a %s", userID), "error", tg.ErrorString(err))
 	case kindNetwork:
 		logger.Error(fmt.Sprintf("🌐 Errore di rete invio messaggio a %s: %s", userID, tg.ErrorString(err)))
@@ -206,10 +194,9 @@ func validateCheckerData(users []*database.User, currentRates database.CurrentRa
 
 // ParallelSend esegue send(i) per i in [0, n) con al massimo
 // MaxConcurrentSends invii simultanei e restituisce quanti hanno restituito
-// true. È il port di asyncio.Semaphore(10) + asyncio.gather(...,
-// return_exceptions=True): gli invii partono nell'ordine dato, un panic in un
-// invio conta come fallimento senza interrompere gli altri. Se ctx viene
-// cancellato non vengono avviati nuovi invii.
+// true. Gli invii partono nell'ordine dato e un panic in un invio conta come
+// fallimento senza interrompere gli altri. Se ctx viene cancellato non
+// vengono avviati nuovi invii.
 func ParallelSend(ctx context.Context, n int, send func(i int) bool) int {
 	sem := make(chan struct{}, MaxConcurrentSends)
 	var wg sync.WaitGroup
@@ -240,14 +227,9 @@ func ParallelSend(ctx context.Context, n int, send func(i int) bool) int {
 	return int(sent.Load())
 }
 
-// callRecovering chiama send(i) trattando un panic come risultato non True
-// (gather con return_exceptions=True).
+// callRecovering chiama send(i) trattando un panic come fallimento.
 func callRecovering(send func(int) bool, i int) (ok bool) {
-	defer func() {
-		if r := recover(); r != nil {
-			ok = false
-		}
-	}()
+	defer func() { _ = recover() }()
 	return send(i)
 }
 
@@ -292,58 +274,21 @@ func sendNotificationsParallel(ctx context.Context, b *gotgbot.Bot, store Store,
 	return ParallelSend(ctx, len(notificationsToSend), sendWithLimit)
 }
 
-// pyException è un'eccezione Python ricostruita dal valore di un panic nella
-// forma "NomeErrore: messaggio" (es. "OverflowError: cannot convert float
-// infinity to integer", usata da formatters.FormatNumber).
-type pyException struct {
-	name string // es. "OverflowError"
-	msg  string // str(e)
-}
-
-// Error restituisce str(e), cioè il solo messaggio senza il nome della classe,
-// come lo interpola f"{e}" in run_checker/run_reminder.
-func (e *pyException) Error() string { return e.msg }
-
-// PanicError converte il valore di un panic nell'errore equivalente
-// all'eccezione Python che sarebbe risalita fino a run_checker/run_reminder:
-//
-//   - un error (es. KeyError) viene restituito così com'è;
-//   - una stringa "NomeError: messaggio" diventa un errore il cui Error() è
-//     "messaggio", cioè str(e) di Python;
-//   - qualunque altro valore diventa fmt.Errorf("%v", r).
+// PanicError converte il valore di un panic della FASE 1 (KeyError per una
+// tariffa senza commercializzazione, panic di formatters.FormatNumber per
+// un valore non finito) nell'errore restituito al chiamante.
 func PanicError(r any) error {
-	switch v := r.(type) {
-	case error:
-		return v
-	case string:
-		if name, msg, ok := strings.Cut(v, ": "); ok && isPyExceptionName(name) {
-			return &pyException{name: name, msg: msg}
-		}
-		return errors.New(v)
-	default:
-		return fmt.Errorf("%v", r)
+	if err, ok := r.(error); ok {
+		return err
 	}
-}
-
-// isPyExceptionName indica se s è il nome di una classe d'eccezione Python
-// (identificatore ASCII che termina con "Error").
-func isPyExceptionName(s string) bool {
-	if !strings.HasSuffix(s, "Error") {
-		return false
-	}
-	for _, c := range s {
-		if !(c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_') {
-			return false
-		}
-	}
-	return true
+	return fmt.Errorf("%v", r)
 }
 
 // prepareNotifications è la FASE 1 di check_and_notify_users: prepara le
-// notifiche per tutti gli utenti. Un panic (eccezione Python, es. KeyError)
-// interrompe la preparazione e viene restituito come errore: nessuna
-// notifica viene inviata, come in Python dove l'eccezione esce da
-// check_and_notify_users prima della FASE 2.
+// notifiche per tutti gli utenti. Un panic (es. KeyError) interrompe la
+// preparazione e viene restituito come errore: nessuna notifica viene
+// inviata, come in Python dove l'eccezione esce da check_and_notify_users
+// prima della FASE 2 (bug Python replicato di proposito).
 func prepareNotifications(users []*database.User, currentRates database.CurrentRates) (notifications []queuedNotification, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -362,16 +307,14 @@ func prepareNotifications(users []*database.User, currentRates database.CurrentR
 // CheckAndNotifyUsers controlla le tariffe e invia le notifiche in parallelo
 // (check_and_notify_users, chiamata dallo scheduler del bot).
 //
-// Python crea qui un Bot(token=...) nuovo con i timeout di default di PTB
-// (5 s): per lo stesso comportamento il chiamante può passare NewBot(token).
+// Il chiamante può passare NewBot(token).
 //
 // Restituisce un errore solo dove Python solleverebbe un'eccezione verso
-// run_checker (es. KeyError 'commercializzazione' per una tariffa corrente
-// senza commercializzazione, oppure OverflowError da FormatNumber per una
-// tariffa utente infinita): in quel caso nessuna notifica viene inviata.
-// Error() è str(e) di Python, così il chiamante può loggare
-// "❌ Errore inatteso checker: <err>" come run_checker.
-// Gli errori di invio sono gestiti per utente da SendNotification.
+// run_checker (KeyError 'commercializzazione' per una tariffa corrente senza
+// commercializzazione, oppure una tariffa utente infinita che FormatNumber
+// non sa formattare): in quel caso nessuna notifica viene inviata e il
+// chiamante logga "❌ Errore inatteso checker: <err>". Gli errori di invio
+// sono gestiti per utente da SendNotification.
 func CheckAndNotifyUsers(ctx context.Context, b *gotgbot.Bot, store Store) error {
 	startTime := now()
 	logger.Info("🔍 Inizio controllo tariffe...")
@@ -399,8 +342,8 @@ func CheckAndNotifyUsers(ctx context.Context, b *gotgbot.Bot, store Store) error
 	return nil
 }
 
-// Main è il port di main() per l'esecuzione standalone (python checker.py):
-// token è il valore di TELEGRAM_BOT_TOKEN. Restituisce ErrMissingToken se il
+// Main esegue il checker standalone (sottocomando check): token è il valore
+// di TELEGRAM_BOT_TOKEN. Restituisce ErrMissingToken se il
 // token è vuoto. Caricamento di .env, configurazione del logging e apertura
 // del database sono a carico del chiamante.
 func Main(ctx context.Context, token string, store Store) error {

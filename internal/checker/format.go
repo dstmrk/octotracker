@@ -3,7 +3,6 @@ package checker
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/formatters"
@@ -35,15 +34,6 @@ func formatRateValue(formattedValue, unit string, hasSaving, isWorse bool) strin
 	return fmt.Sprintf("%s %s", formattedValue, unit)
 }
 
-// pyCapitalize replica str.capitalize() per i nomi delle utility ("luce",
-// "gas"): prima lettera maiuscola, resto minuscolo.
-func pyCapitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
-}
-
 // formatUtilitySection formatta la sezione utility (luce o gas) della
 // notifica (_format_utility_section).
 //
@@ -72,7 +62,7 @@ func formatUtilitySection(utilityName string, savings Savings, user *database.Us
 	label := formatters.GetUtilityLabel(tipo, utilityName)
 
 	// Header sezione
-	utilityDisplay := pyCapitalize(utilityName)
+	utilityDisplay := formatters.Capitalize(utilityName)
 	section := fmt.Sprintf("%s <b>%s (%s):</b>\n", emoji, utilityDisplay, tipoDisplay)
 
 	// Formatta tariffe utente
@@ -140,16 +130,6 @@ func getMixedUtilities(showLuce, showGas, luceIsMixed, gasIsMixed bool, luceEsti
 		mixedUtilities = append(mixedUtilities, mixedUtility{"gas", gasEstimatedSavings})
 	}
 	return mixedUtilities
-}
-
-// formatSavingsEstimates formatta le stime di risparmio per utility con
-// consumi (_format_savings_estimates).
-//
-// NOTA: le stime di risparmio sono ora mostrate inline nelle sezioni
-// utility, quindi questa funzione restituisce una stringa vuota (in Python
-// non è più chiamata; è mantenuta per corrispondenza 1:1).
-func formatSavingsEstimates() string {
-	return ""
 }
 
 // formatMixedConsumptionMessage formatta il messaggio consumi per le utility

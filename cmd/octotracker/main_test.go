@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"log/slog"
-	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 )
 
 // cleanEnv isola il test: directory di lavoro temporanea (senza .env) e
@@ -92,9 +91,8 @@ func TestRunVersionHelpAndUsageErrors(t *testing.T) {
 	}
 }
 
-// TestParseBackfill confronta il parser con argparse di
-// backfill_rate_history.py (messaggi generati con Python 3.13).
-func TestParseBackfill(t *testing.T) {
+// TestParseBackfillArgs: opzioni, default ed errori di backfill.
+func TestParseBackfillArgs(t *testing.T) {
 	ok := []struct {
 		args []string
 		want backfillArgs
@@ -102,112 +100,58 @@ func TestParseBackfill(t *testing.T) {
 		{nil, backfillArgs{days: 365, delay: 0.5, logLevel: "INFO"}},
 		{[]string{"--days", "5"}, backfillArgs{days: 5, delay: 0.5, logLevel: "INFO"}},
 		{[]string{"--days=5"}, backfillArgs{days: 5, delay: 0.5, logLevel: "INFO"}},
-		{[]string{"--da", "7"}, backfillArgs{days: 7, delay: 0.5, logLevel: "INFO"}},
+		{[]string{"-days", "7"}, backfillArgs{days: 7, delay: 0.5, logLevel: "INFO"}},
 		{[]string{"--days", "-5"}, backfillArgs{days: -5, delay: 0.5, logLevel: "INFO"}},
-		{[]string{"--days", "1_0"}, backfillArgs{days: 10, delay: 0.5, logLevel: "INFO"}},
-		{[]string{"--days", "٣"}, backfillArgs{days: 3, delay: 0.5, logLevel: "INFO"}},
-		{[]string{"--days", " 4 "}, backfillArgs{days: 4, delay: 0.5, logLevel: "INFO"}},
 		{[]string{"--dry-run", "--delay", "1.5", "--log-level=ERROR"}, backfillArgs{days: 365, dryRun: true, delay: 1.5, logLevel: "ERROR"}},
-		{[]string{"--dr", "--de=0", "--l", "DEBUG"}, backfillArgs{days: 365, dryRun: true, delay: 0, logLevel: "DEBUG"}},
-		{[]string{"--delay", "-.5"}, backfillArgs{days: 365, delay: -0.5, logLevel: "INFO"}},
+		{[]string{"--delay", "-.5", "--log-level", "DEBUG"}, backfillArgs{days: 365, delay: -0.5, logLevel: "DEBUG"}},
 		{[]string{"--days", "1", "--days", "2"}, backfillArgs{days: 2, delay: 0.5, logLevel: "INFO"}},
 	}
 	for _, tc := range ok {
-		got, help, err := parseBackfill(tc.args)
-		if err != nil || help || got != tc.want {
-			t.Errorf("parseBackfill(%v) = %+v %v %v", tc.args, got, help, err)
+		got, err := parseBackfillArgs(tc.args, io.Discard)
+		if err != nil || got != tc.want {
+			t.Errorf("parseBackfillArgs(%v) = %+v %v", tc.args, got, err)
 		}
 	}
 
-	if got, _, err := parseBackfill([]string{"--delay", "nan"}); err != nil || !math.IsNaN(got.delay) {
-		t.Errorf("--delay nan = %v %v", got.delay, err)
+	errs := [][]string{
+		{"--days", "x"},
+		{"--days"},
+		{"--delay", "x"},
+		{"--log-level", "debug"},
+		{"extra", "--days", "1"},
+		{"--days", "5", "extra"},
+		{"--bogus"},
 	}
-	if got, _, _ := parseBackfill([]string{"--days", "99999999999999999999999"}); got.days != math.MaxInt {
-		t.Errorf("--days enorme = %d", got.days)
-	}
-	if got, _, _ := parseBackfill([]string{"--days", "-99999999999999999999999"}); got.days != math.MinInt {
-		t.Errorf("--days enorme negativo = %d", got.days)
-	}
-
-	errs := []struct {
-		args []string
-		msg  string
-	}{
-		{[]string{"--d", "3"}, "ambiguous option: --d could match --days, --dry-run, --delay"},
-		{[]string{"--days", "x"}, "argument --days: invalid int value: 'x'"},
-		{[]string{"--days"}, "argument --days: expected one argument"},
-		{[]string{"--days", "--dry-run"}, "argument --days: expected one argument"},
-		{[]string{"--dry-run=1"}, "argument --dry-run: ignored explicit argument '1'"},
-		{[]string{"--delay", "x"}, "argument --delay: invalid float value: 'x'"},
-		{[]string{"--log-level", "debug"}, "argument --log-level: invalid choice: 'debug' (choose from 'DEBUG', 'INFO', 'WARNING', 'ERROR')"},
-		{[]string{"extra", "--bogus"}, "unrecognized arguments: extra --bogus"},
-		{[]string{"--days", "5", "extra"}, "unrecognized arguments: extra"},
-		{[]string{"-x"}, "unrecognized arguments: -x"},
-		{[]string{"--", "--days", "1"}, "unrecognized arguments: -- --days 1"},
-		{[]string{"extra", "--days", "x"}, "argument --days: invalid int value: 'x'"},
-	}
-	for _, tc := range errs {
-		_, _, err := parseBackfill(tc.args)
-		if err == nil || err.Error() != tc.msg {
-			t.Errorf("parseBackfill(%v) errore = %v, atteso %q", tc.args, err, tc.msg)
+	for _, args := range errs {
+		var stderr bytes.Buffer
+		if _, err := parseBackfillArgs(args, &stderr); err == nil || errors.Is(err, flag.ErrHelp) {
+			t.Errorf("parseBackfillArgs(%v): errore = %v", args, err)
+		}
+		if !strings.Contains(stderr.String(), "-days") {
+			t.Errorf("parseBackfillArgs(%v): uso non stampato: %q", args, stderr.String())
 		}
 	}
-
-	for _, args := range [][]string{{"-h"}, {"--help"}, {"--he"}, {"--days", "x", "-h"}} {
-		_, help, err := parseBackfill(args)
-		if args[0] == "--days" {
-			if err == nil {
-				t.Errorf("%v: atteso errore prima di -h", args)
-			}
-			continue
+	for _, args := range [][]string{{"-h"}, {"--help"}} {
+		if _, err := parseBackfillArgs(args, io.Discard); !errors.Is(err, flag.ErrHelp) {
+			t.Errorf("%v: errore = %v", args, err)
 		}
-		if !help || err != nil {
-			t.Errorf("%v: help=%v err=%v", args, help, err)
-		}
-	}
-}
-
-// TestParseBackfillArgsOutput verifica testi e codici di uscita di argparse.
-func TestParseBackfillArgsOutput(t *testing.T) {
-	var out, errOut bytes.Buffer
-	if _, code, done := parseBackfillArgs([]string{"-h"}, &out, &errOut); !done || code != exitOK || out.String() != backfillHelp {
-		t.Errorf("-h: %v %d %q", done, code, out.String())
-	}
-	out.Reset()
-	_, code, done := parseBackfillArgs([]string{"--days", "x"}, &out, &errOut)
-	want := "usage: octotracker backfill [-h] [--days DAYS] [--dry-run] [--delay DELAY]\n" +
-		"                            [--log-level {DEBUG,INFO,WARNING,ERROR}]\n" +
-		"octotracker backfill: error: argument --days: invalid int value: 'x'\n"
-	if !done || code != exitUsage || errOut.String() != want {
-		t.Errorf("--days x: %v %d %q", done, code, errOut.String())
-	}
-	if _, _, done := parseBackfillArgs(nil, &out, &errOut); done {
-		t.Error("argomenti validi: done=true")
 	}
 }
 
 // TestConfigError estrae l'errore di config.Load per una variabile.
 func TestConfigError(t *testing.T) {
-	t.Setenv("SCRAPER_HOUR", "x")
-	t.Setenv("CHECKER_HOUR", "٣_")
-	t.Setenv("WEBHOOK_PORT", "99999999999999999999")
 	joined := errors.Join(
 		errors.New(`WEBHOOK_PORT non valido: "99999999999999999999"`),
 		errors.New(`SCRAPER_HOUR non valido: "x"`),
-		errors.New(`CHECKER_HOUR non valido: "٣_"`),
-		errors.New(`BROADCAST_BATCH_SIZE non valido: "y"`),
+		errors.New(`CHECKER_HOUR non valido: "y"`),
+		errors.New(`BROADCAST_BATCH_SIZE non valido: "z"`),
 	)
-	// Il messaggio è quello di int() di Python
-	if err := configError(joined, "SCRAPER_HOUR", "WEBHOOK_PORT"); err == nil || err.Error() != "invalid literal for int() with base 10: 'x'" {
+	// Vale l'ordine delle variabili richieste, non quello di config
+	if err := configError(joined, "SCRAPER_HOUR", "WEBHOOK_PORT"); err == nil || err.Error() != `SCRAPER_HOUR non valido: "x"` {
 		t.Errorf("configError = %v", err)
 	}
-	// Vale l'ordine di conversione di Python, non quello di config
-	if err := configError(joined, botIntVars...); err == nil || err.Error() != "invalid literal for int() with base 10: '٣_'" {
+	if err := configError(joined, botIntVars...); err == nil || err.Error() != `CHECKER_HOUR non valido: "y"` {
 		t.Errorf("configError(botIntVars) = %v", err)
-	}
-	// Valore accettato da int() ma rifiutato da config: messaggio di config
-	if err := configError(joined, "WEBHOOK_PORT"); err == nil || !strings.HasPrefix(err.Error(), "WEBHOOK_PORT non valido") {
-		t.Errorf("configError(WEBHOOK_PORT) = %v", err)
 	}
 	if err := configError(joined, "HEALTH_PORT"); err != nil {
 		t.Errorf("configError = %v", err)
@@ -220,11 +164,11 @@ func TestConfigError(t *testing.T) {
 	}
 }
 
-// TestRunServeConfigErrors: serve termina con il ValueError di bot.py.
+// TestRunServeConfigErrors: serve termina con l'errore di configurazione.
 func TestRunServeConfigErrors(t *testing.T) {
 	cleanEnv(t)
 	code, _, errOut := runCmd(context.Background())
-	if code != exitError || !strings.HasPrefix(errOut, "ValueError: WEBHOOK_SECRET è obbligatorio") {
+	if code != exitError || !strings.HasPrefix(errOut, "WEBHOOK_SECRET è obbligatorio") {
 		t.Errorf("serve senza secret: %d %q", code, errOut)
 	}
 	if _, err := os.Stat("data/octotracker.log"); err != nil {
@@ -233,16 +177,16 @@ func TestRunServeConfigErrors(t *testing.T) {
 
 	t.Setenv("SCRAPER_HOUR", "nove")
 	code, _, errOut = runCmd(context.Background(), "serve")
-	if code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'nove'\n" {
+	if code != exitError || errOut != "SCRAPER_HOUR non valido: \"nove\"\n" {
 		t.Errorf("serve con SCRAPER_HOUR non valido: %d %q", code, errOut)
 	}
 
-	// BROADCAST_BATCH_SIZE non è letto da bot.py
+	// BROADCAST_BATCH_SIZE non è usato da serve
 	t.Setenv("SCRAPER_HOUR", "")
 	t.Setenv("BROADCAST_BATCH_SIZE", "x")
 	t.Setenv("WEBHOOK_SECRET", "s")
 	code, _, errOut = runCmd(context.Background(), "serve")
-	if code != exitError || errOut != "ValueError: TELEGRAM_BOT_TOKEN non impostato\n" {
+	if code != exitError || errOut != "TELEGRAM_BOT_TOKEN non impostato\n" {
 		t.Errorf("serve senza token: %d %q", code, errOut)
 	}
 
@@ -252,13 +196,13 @@ func TestRunServeConfigErrors(t *testing.T) {
 	}
 }
 
-// TestRunScripts: check e remind senza token sollevano il ValueError di
-// main(); con il token e il database vuoto terminano con successo.
+// TestRunScripts: check e remind senza token terminano con errore; con il
+// token e il database vuoto terminano con successo.
 func TestRunScripts(t *testing.T) {
 	cleanEnv(t)
 	for _, cmd := range []string{"check", "remind"} {
 		code, _, errOut := runCmd(context.Background(), cmd)
-		if code != exitError || errOut != "ValueError: TELEGRAM_BOT_TOKEN non impostato in .env\n" {
+		if code != exitError || errOut != "TELEGRAM_BOT_TOKEN non impostato in .env\n" {
 			t.Errorf("%s senza token: %d %q", cmd, code, errOut)
 		}
 	}
@@ -272,7 +216,7 @@ func TestRunScripts(t *testing.T) {
 		if code != exitOK {
 			t.Errorf("%s: %d %q", cmd, code, errOut)
 		}
-		if !strings.Contains(errOut, " - INFO - ✅ Database inizializzato") {
+		if !strings.Contains(errOut, "database - INFO - ✅ Database inizializzato") {
 			t.Errorf("%s: log = %q", cmd, errOut)
 		}
 	}
@@ -280,7 +224,7 @@ func TestRunScripts(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	code, _, errOut := runCmd(ctx, "check")
-	if code != exitInterrupted || !strings.HasSuffix(errOut, "KeyboardInterrupt\n") {
+	if code != exitInterrupted || !strings.HasSuffix(errOut, "interrotto\n") {
 		t.Errorf("check interrotto: %d %q", code, errOut)
 	}
 
@@ -291,23 +235,23 @@ func TestRunScripts(t *testing.T) {
 }
 
 // TestRunScrapeAndBackfillInterrupted: scrape e backfill interrotti escono
-// con KeyboardInterrupt.
+// con il codice di interruzione.
 func TestRunScrapeAndBackfillInterrupted(t *testing.T) {
 	cleanEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for _, args := range [][]string{{"scrape"}, {"backfill", "--days", "2", "--delay", "0"}} {
 		code, _, errOut := runCmd(ctx, args...)
-		if code != exitInterrupted || !strings.HasSuffix(errOut, "KeyboardInterrupt\n") {
+		if code != exitInterrupted || !strings.HasSuffix(errOut, "interrotto\n") {
 			t.Errorf("%v: %d %q", args, code, errOut)
 		}
 	}
-	code, out, _ := runCmd(context.Background(), "backfill", "--help")
-	if code != exitOK || out != backfillHelp {
-		t.Errorf("backfill --help: %d", code)
+	code, _, errOut := runCmd(context.Background(), "backfill", "--help")
+	if code != exitOK || !strings.Contains(errOut, "-dry-run") {
+		t.Errorf("backfill --help: %d %q", code, errOut)
 	}
-	code, _, errOut := runCmd(context.Background(), "backfill", "--bogus")
-	if code != exitUsage || !strings.HasSuffix(errOut, "error: unrecognized arguments: --bogus\n") {
+	code, _, errOut = runCmd(context.Background(), "backfill", "--bogus")
+	if code != exitUsage || !strings.Contains(errOut, "bogus") {
 		t.Errorf("backfill --bogus: %d %q", code, errOut)
 	}
 	// Nessun giorno da scaricare: solo il riepilogo
@@ -325,7 +269,7 @@ func TestRunScrapeAndBackfillInterrupted(t *testing.T) {
 }
 
 // TestRunBroadcast: senza token esce con 1; un BROADCAST_BATCH_SIZE non
-// valido è un ValueError.
+// valido è un errore.
 func TestRunBroadcast(t *testing.T) {
 	cleanEnv(t)
 	code, _, errOut := runCmd(context.Background(), "broadcast")
@@ -335,7 +279,7 @@ func TestRunBroadcast(t *testing.T) {
 	t.Setenv("TELEGRAM_BOT_TOKEN", "123:abc")
 	t.Setenv("BROADCAST_BATCH_SIZE", "dieci")
 	code, _, errOut = runCmd(context.Background(), "broadcast")
-	if code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'dieci'\n" {
+	if code != exitError || errOut != "BROADCAST_BATCH_SIZE non valido: \"dieci\"\n" {
 		t.Errorf("broadcast con batch non valido: %d %q", code, errOut)
 	}
 	t.Setenv("BROADCAST_BATCH_SIZE", "")
@@ -376,7 +320,7 @@ func TestRunHealthcheck(t *testing.T) {
 		t.Errorf("server spento: %d", code)
 	}
 	t.Setenv("HEALTH_PORT", "porta")
-	if code, _, errOut := runCmd(context.Background(), "healthcheck"); code != exitError || errOut != "ValueError: invalid literal for int() with base 10: 'porta'\n" {
+	if code, _, errOut := runCmd(context.Background(), "healthcheck"); code != exitError || errOut != "HEALTH_PORT non valido: \"porta\"\n" {
 		t.Errorf("HEALTH_PORT non valido: %d %q", code, errOut)
 	}
 	t.Setenv("HEALTH_PORT", strconv.Itoa(-1))
@@ -396,16 +340,16 @@ func TestRunDotEnvError(t *testing.T) {
 	}
 }
 
-// TestFail verifica la stampa delle eccezioni fatali.
+// TestFail verifica la stampa degli errori fatali.
 func TestFail(t *testing.T) {
 	var stderr bytes.Buffer
 	s := streams{stderr: &stderr}
-	if code := fail(pycompat.NewError("OverflowError", "date value out of range"), s); code != exitError ||
-		stderr.String() != "OverflowError: date value out of range\n" {
+	if code := fail(errors.New("date value out of range"), s); code != exitError ||
+		stderr.String() != "date value out of range\n" {
 		t.Errorf("fail = %d %q", code, stderr.String())
 	}
 	stderr.Reset()
-	if code := fail(fmt.Errorf("x: %w", context.Canceled), s); code != exitInterrupted || stderr.String() != "KeyboardInterrupt\n" {
+	if code := fail(fmt.Errorf("x: %w", context.Canceled), s); code != exitInterrupted || stderr.String() != "interrotto\n" {
 		t.Errorf("fail(cancel) = %d %q", code, stderr.String())
 	}
 }

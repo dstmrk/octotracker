@@ -3,7 +3,8 @@ package registration
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -13,69 +14,30 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/dateutil"
 	"github.com/dstmrk/octotracker/internal/formatters"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// Chiavi obbligatorie di user_data per luce e gas (required_luce_keys /
-// required_gas_keys di _build_user_data).
+// Chiavi obbligatorie di user_data per luce e gas.
 var (
 	requiredLuceKeys = []string{keyLuceTipo, keyLuceFascia, keyLuceEnergia, keyLuceComm}
 	requiredGasKeys  = []string{keyGasTipo, keyGasFascia, keyGasEnergia, keyGasComm}
 )
 
-// userDataKeyOrder è l'ordine in cui la conversazione inserisce le chiavi in
-// user_data. Serve a riprodurre l'ordine di inserimento del dict Python nel
-// log "Disponibili" (tg.UserData è una mappa senza ordine).
-var userDataKeyOrder = []string{
-	keyIsVariabile, keyLuceTipo, keyLuceFascia, keyLuceEnergia, keyLuceComm, keyLuceScadenza,
-	keyLuceConsumoF1, keyLuceConsumoF2, keyLuceConsumoF3,
-	keyGasTipo, keyGasFascia, keyGasEnergia, keyGasComm, keyGasScadenza, keyGasConsumoAnnuo,
-}
-
-// keyError replica KeyError(msg) di Python: str(e) è la repr del messaggio
-// (tra apici), che è ciò che finisce nei log.
-type keyError struct{ msg string }
-
-func (e *keyError) Error() string { return pyStrRepr(e.msg) }
-
-// availableKeys replica list(context.user_data.keys()): prima le chiavi non
-// gestite da questa conversazione (inserite da altre conversazioni, in
-// ordine alfabetico), poi quelle della registrazione nell'ordine del flusso.
-func (h *Handlers) availableKeys(userID int64) []string {
-	snap := h.UserData.Snapshot(userID)
-	rank := make(map[string]int, len(userDataKeyOrder))
-	for i, k := range userDataKeyOrder {
-		rank[k] = i
-	}
-	var unknown, known []string
-	for k := range snap {
-		if _, ok := rank[k]; ok {
-			known = append(known, k)
-		} else {
-			unknown = append(unknown, k)
-		}
-	}
-	sort.Strings(unknown)
-	sort.Slice(known, func(i, j int) bool { return rank[known[i]] < rank[known[j]] })
-	return append(unknown, known...)
-}
-
-// missingKeys restituisce le chiavi richieste assenti da user_data, in ordine.
+// missingKeys restituisce le chiavi richieste assenti da user_data, in
+// ordine; se ne manca qualcuna logga il dettaglio delle chiavi presenti.
 func (h *Handlers) missingKeys(userID int64, required []string) []string {
+	snap := h.UserData.Snapshot(userID)
 	var missing []string
 	for _, k := range required {
-		if _, ok := h.UserData.Get(userID, k); !ok {
+		if _, ok := snap[k]; !ok {
 			missing = append(missing, k)
 		}
 	}
+	if len(missing) > 0 {
+		logger.Error(fmt.Sprintf("Dati mancanti in context.user_data. Richiesti: %v, Mancanti: %v, Disponibili: %v",
+			required, missing, slices.Sorted(maps.Keys(snap))))
+	}
 	return missing
-}
-
-// logMissing replica il logger.error dettagliato di _build_user_data.
-func (h *Handlers) logMissing(userID int64, required, missing []string) {
-	logger.Error(fmt.Sprintf(
-		"Dati mancanti in context.user_data. Richiesti: %s, Mancanti: %s, Disponibili: %s",
-		pyListRepr(required), pyListRepr(missing), pyListRepr(h.availableKeys(userID)),
-	))
 }
 
 // floatValue legge un numero da user_data (i valori numerici sono float64).
@@ -102,17 +64,15 @@ func (h *Handlers) stringValue(userID int64, key string) string {
 	return s
 }
 
-// buildUserData costruisce la struttura utente da salvare nel database
-// (_build_user_data). soloLuce è true se l'utente ha solo la luce.
+// buildUserData costruisce la struttura utente da salvare nel database.
+// soloLuce è true se l'utente ha solo la luce.
 //
-// Restituisce un *keyError (KeyError in Python) se mancano dati necessari in
-// user_data, dopo aver loggato il dettaglio delle chiavi.
+// Restituisce un errore se mancano dati necessari in user_data, dopo aver
+// loggato il dettaglio delle chiavi.
 func (h *Handlers) buildUserData(userID int64, soloLuce bool) (database.User, error) {
 	// Verifica che tutti i dati necessari per luce esistano
 	if missing := h.missingKeys(userID, requiredLuceKeys); len(missing) > 0 {
-		// Log dettagliato per debug
-		h.logMissing(userID, requiredLuceKeys, missing)
-		return database.User{}, &keyError{"Dati mancanti per luce: " + strings.Join(missing, ", ")}
+		return database.User{}, errors.New("dati mancanti per luce: " + strings.Join(missing, ", "))
 	}
 
 	u := database.User{
@@ -137,8 +97,7 @@ func (h *Handlers) buildUserData(userID int64, soloLuce bool) (database.User, er
 
 	// Verifica che tutti i dati necessari per gas esistano
 	if missing := h.missingKeys(userID, requiredGasKeys); len(missing) > 0 {
-		h.logMissing(userID, requiredGasKeys, missing)
-		return database.User{}, &keyError{"Dati mancanti per gas: " + strings.Join(missing, ", ")}
+		return database.User{}, errors.New("dati mancanti per gas: " + strings.Join(missing, ", "))
 	}
 
 	u.Gas = &database.Utility{
@@ -155,11 +114,10 @@ func (h *Handlers) buildUserData(userID int64, soloLuce bool) (database.User, er
 }
 
 // formatConfirmationMessage formatta il messaggio di conferma (HTML) con i
-// dati inseriti dall'utente (_format_confirmation_message).
+// dati inseriti dall'utente.
 //
-// Come la versione Python va in panic (ValueError/OverflowError/TypeError)
-// con valori NaN o infiniti o consumi trioraria incompleti; vedi
-// confirmationMessage per la variante che restituisce un errore.
+// Va in panic con valori NaN o infiniti o consumi trioraria incompleti;
+// vedi confirmationMessage per la variante che restituisce un errore.
 func formatConfirmationMessage(u database.User) string {
 	// Formatta numeri luce
 	luceEnergiaFmt := formatters.FormatNumber(u.Luce.Energia, formatters.MaxDecimalsEnergy)
@@ -215,9 +173,9 @@ func formatConfirmationMessage(u database.User) string {
 	return sb.String()
 }
 
-// confirmationMessage è formatConfirmationMessage con le eccezioni Python
-// (i panic dei formatter) convertite in errore, così che arrivino all'error
-// handler dell'applicazione come in python-telegram-bot.
+// confirmationMessage è formatConfirmationMessage con i panic dei
+// formatter convertiti in errore, così che arrivino all'error handler
+// dell'applicazione.
 func confirmationMessage(u database.User) (msg string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -231,32 +189,22 @@ func confirmationMessage(u database.User) (msg string, err error) {
 const msgSaveError = "❌ Si è verificato un errore durante il salvataggio dei dati.\n\n" +
 	"Per favore riprova usando il comando /start per ricominciare la registrazione."
 
-// SalvaEConferma salva i dati utente e mostra la conferma (salva_e_conferma),
-// terminando la conversazione.
+// SalvaEConferma salva i dati utente e mostra la conferma, terminando la
+// conversazione.
 //
-// In Python riceve un Update oppure una CallbackQuery: con query nil si usa
-// l'update (utente effettivo e risposta con reply_text al messaggio), con
-// query non nil l'utente della query e la modifica del messaggio del
-// pulsante (edit_message_text).
+// Con query nil risponde al messaggio dell'update, altrimenti modifica il
+// messaggio del pulsante premuto.
 func (h *Handlers) SalvaEConferma(b *gotgbot.Bot, ctx *ext.Context, query *gotgbot.CallbackQuery, soloLuce bool) error {
-	// Distingui tra Update (con message) e CallbackQuery
-	var userID int64
-	var sendMessage func(text string) error
-	if query == nil {
-		// È un Update
-		if ctx.EffectiveUser == nil {
-			return attributeError("id")
-		}
-		userID = ctx.EffectiveUser.Id
-		sendMessage = func(text string) error { return replyText(b, ctx.Message, text, parseModeHTML, nil) }
-	} else {
-		// È un CallbackQuery
-		userID = query.From.Id
-		sendMessage = func(text string) error { return editMessageText(b, query, text, parseModeHTML, nil) }
+	if ctx.EffectiveUser == nil {
+		return tg.ErrNoUser
 	}
-	uid := userIDString(userID)
+	sendMessage := func(text string) error { return tg.Reply(b, ctx.Message, text, parseModeHTML, nil) }
+	if query != nil {
+		sendMessage = func(text string) error { return tg.EditText(b, query, text, parseModeHTML, nil) }
+	}
+	uid := userIDString(ctx.EffectiveUser.Id)
 
-	// Costruisci struttura dati utente (context.user_data è quello dell'utente dell'update)
+	// Costruisci struttura dati utente
 	u, err := h.buildUserData(ctx.EffectiveUser.Id, soloLuce)
 	if err != nil {
 		// Dati mancanti - chiedi all'utente di riprovare

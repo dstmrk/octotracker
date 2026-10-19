@@ -17,6 +17,7 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/formatters"
 	"github.com/dstmrk/octotracker/internal/testutil"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
 // test_complete_match_no_savings
@@ -680,14 +681,14 @@ func sendWithError(t *testing.T, err error) (bool, *fakeStore) {
 }
 
 // timeoutError replica l'errore restituito da gotgbot quando scade il
-// timeout della richiesta (PTB TimedOut).
+// timeout della richiesta.
 func timeoutError() error {
 	return &wrappedErr{msg: "failed to execute POST request to sendMessage", err: &url.Error{
 		Op: "Post", URL: "https://api.telegram.org/bot<TOKEN>/sendMessage", Err: context.DeadlineExceeded,
 	}}
 }
 
-// networkError replica un errore di trasporto di gotgbot (PTB NetworkError).
+// networkError replica un errore di trasporto di gotgbot.
 func networkError(msg string) error {
 	return &wrappedErr{msg: "failed to execute POST request to sendMessage", err: &url.Error{
 		Op: "Post", URL: "https://api.telegram.org/bot<TOKEN>/sendMessage", Err: errors.New(msg),
@@ -749,7 +750,7 @@ func TestSendNotificationNetworkError(t *testing.T) {
 func TestSendNotificationTelegramError(t *testing.T) {
 	logs := captureLogs(t)
 
-	// TelegramError generico (non NetworkError): in PTB es. Conflict (409).
+	// Errore Telegram generico non di rete (es. Conflict, 409).
 	result, store := sendWithError(t, testutil.TelegramError("sendMessage", 409, "Generic error"))
 
 	if result {
@@ -806,21 +807,21 @@ func TestSendNotificationBotKickedRemovesUser(t *testing.T) {
 // test_send_notification_chat_not_found_removes_user
 //
 // Il test Python solleva un TelegramError generico con messaggio
-// "Bad Request: chat not found" (str(e) = "Chat not found"): qui lo stesso
-// messaggio arriva con un codice che PTB mappa su un TelegramError non
-// NetworkError (403). Un vero HTTP 400 diventa BadRequest, sottoclasse di
-// NetworkError, e NON rimuove l'utente (vedi
+// "Bad Request: chat not found": qui lo stesso messaggio arriva con un
+// codice candidato alla rimozione (403). Un vero HTTP 400 è un errore di
+// rete e NON rimuove l'utente (vedi
 // TestSendNotificationRealBadRequestChatNotFoundIsNetworkError).
 func TestSendNotificationChatNotFoundRemovesUser(t *testing.T) {
 	logs := captureLogs(t)
 
-	result, store := sendWithError(t, testutil.TelegramError("sendMessage", 403, "Bad Request: chat not found"))
+	err := testutil.TelegramError("sendMessage", 403, "Bad Request: chat not found")
+	result, store := sendWithError(t, err)
 
 	if result {
 		t.Error("atteso False")
 	}
 	assertRemoved(t, store)
-	assertContains(t, logs.String(), "('Chat not found')")
+	assertContains(t, logs.String(), "('"+tg.ErrorString(err)+"')")
 }
 
 // test_send_notification_case_insensitive_matching

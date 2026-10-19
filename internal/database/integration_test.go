@@ -151,8 +151,8 @@ func TestValidationInvalidTipo(t *testing.T) {
 		t.Fatal("utente non deve essere salvato")
 	}
 	assertLogContains(t, logs,
-		"- database - ERROR - ❌ Validazione fallita per 999: luce.tipo non valido: 'invalido'. Valori ammessi: {'fissa', 'variabile'}",
-		"- database - DEBUG -    user_data ricevuto: {'luce': {'tipo': 'invalido', 'fascia': 'monoraria', 'energia': 0.14, 'commercializzazione': 70.0}}")
+		"- database - ERROR - ❌ Validazione fallita per 999: luce.tipo non valido: 'invalido'. Valori ammessi: fissa, variabile",
+		`- database - DEBUG -    user_data ricevuto: {"luce":{"tipo":"invalido","fascia":"monoraria","energia":0.14,"commercializzazione":70}}`)
 }
 
 func TestValidationInvalidFasciaLuce(t *testing.T) {
@@ -164,7 +164,7 @@ func TestValidationInvalidFasciaLuce(t *testing.T) {
 	if s.UserExists("888") {
 		t.Fatal("utente non deve essere salvato")
 	}
-	assertLogContains(t, logs, "luce.fascia non valida: 'quadrioraria'. Valori ammessi: {'bioraria', 'monoraria', 'trioraria'}")
+	assertLogContains(t, logs, "luce.fascia non valida: 'quadrioraria'. Valori ammessi: bioraria, monoraria, trioraria")
 }
 
 func TestValidationInvalidFasciaGas(t *testing.T) {
@@ -178,19 +178,19 @@ func TestValidationInvalidFasciaGas(t *testing.T) {
 	if s.UserExists("777") {
 		t.Fatal("utente non deve essere salvato")
 	}
-	assertLogContains(t, logs, "gas.fascia non valida: 'bioraria'. Valori ammessi: {'monoraria'}")
+	assertLogContains(t, logs, "gas.fascia non valida: 'bioraria'. Valori ammessi: monoraria")
 
 	u.Gas = &Utility{Tipo: "boh", Fascia: "monoraria"}
 	if s.SaveUser("777", u) {
 		t.Fatal("save_user dovrebbe fallire con tipo gas invalido")
 	}
-	assertLogContains(t, logs, "gas.tipo non valido: 'boh'. Valori ammessi: {'fissa', 'variabile'}")
+	assertLogContains(t, logs, "gas.tipo non valido: 'boh'. Valori ammessi: fissa, variabile")
 }
 
 // TestValidationMissingField: in Python manca 'energia' (KeyError → False).
 // Con il modello tipizzato un campo numerico non può mancare; il campo
 // obbligatorio mancante rappresentabile è una stringa vuota (tipo), che
-// fallisce la validazione. Il caso "chiave mancante" reale in Go è il blob
+// fallisce la validazione. Il caso "chiave mancante" reale è il blob
 // pending_rates, verificato con ApplyPendingRates.
 func TestValidationMissingField(t *testing.T) {
 	s := newTestStore(t)
@@ -210,7 +210,7 @@ func TestValidationMissingField(t *testing.T) {
 	if ok, reason := s.ApplyPendingRates("666"); ok || reason != ApplyValidationError {
 		t.Fatalf("atteso validation_error, got %v %s", ok, reason)
 	}
-	assertLogContains(t, logs, "❌ Validazione fallita per 666: 'energia'")
+	assertLogContains(t, logs, "❌ Validazione fallita per 666: luce: energia o commercializzazione mancante")
 	if u := s.LoadUser("666"); u.Luce.Energia != 0.140 {
 		t.Fatal("utente modificato nonostante la validazione fallita")
 	}
@@ -239,10 +239,9 @@ func TestLastNotifiedRatesPersistence(t *testing.T) {
 	if !loaded.LastNotifiedRates.Equal(u.LastNotifiedRates) {
 		t.Fatal("Equal dopo round-trip")
 	}
-	// Stesso testo che produrrebbe json.dumps di Python (chiavi non note in ordine alfabetico)
-	if raw := rawColumn(t, s, userID, "last_notified_rates"); raw != `{"luce_comm": 72.0, "luce_energia": 0.12, "timestamp": "2024-01-15T10:00:00"}` {
-		t.Fatalf("blob = %v", raw)
-	}
+	// Stesso contenuto che produrrebbe json.dumps di Python
+	assertSameBlob(t, "blob", rawColumn(t, s, userID, "last_notified_rates"),
+		`{"luce_comm": 72.0, "luce_energia": 0.12, "timestamp": "2024-01-15T10:00:00"}`)
 }
 
 // TestDatabaseIsolation: il database temporaneo è isolato da quello di produzione.

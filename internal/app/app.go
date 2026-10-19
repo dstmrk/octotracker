@@ -15,7 +15,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/config"
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/health"
@@ -29,7 +28,7 @@ type ServeOptions struct {
 	Bot *gotgbot.Bot
 	// Listen apre i socket del webhook e del server HTTP (nil = net.Listen).
 	Listen func(network, address string) (net.Listener, error)
-	// Sleep è l'attesa tra i tentativi di bootstrap (nil = attesa reale).
+	// Sleep è l'attesa tra i tentativi di avvio (nil = attesa reale).
 	Sleep func(ctx context.Context, d time.Duration) error
 	// ConfigureScheduler può modificare lo scheduler prima dell'avvio.
 	ConfigureScheduler func(*Scheduler)
@@ -39,20 +38,20 @@ type ServeOptions struct {
 	Ready func(webhookAddr net.Addr)
 }
 
-// Serve è il port di main() di bot.py: avvia il bot in modalità webhook con
-// scheduler integrato e resta in esecuzione finché ctx non viene
-// cancellato (SIGINT/SIGTERM), poi si ferma in ordine.
+// Serve avvia il bot in modalità webhook con lo scheduler integrato e resta
+// in esecuzione finché ctx non viene cancellato (SIGINT/SIGTERM), poi si
+// ferma in ordine.
 //
-// Gli errori di configurazione sono i ValueError di bot.py, nello stesso
-// ordine: WEBHOOK_SECRET (controllato all'import), TELEGRAM_BOT_TOKEN e,
-// dopo la configurazione del bot, WEBHOOK_URL.
+// Gli errori di configurazione vengono controllati in quest'ordine:
+// WEBHOOK_SECRET, TELEGRAM_BOT_TOKEN e, dopo la configurazione del bot,
+// WEBHOOK_URL.
 func Serve(ctx context.Context, cfg config.Config, opts ServeOptions) error {
 	// Validazione WEBHOOK_SECRET obbligatorio (protezione da webhook spoofing)
 	if cfg.WebhookSecret == "" {
-		return valueError(config.ErrMissingWebhookSecret.Error())
+		return config.ErrMissingWebhookSecret
 	}
 	if cfg.BotToken == "" {
-		return valueError("TELEGRAM_BOT_TOKEN non impostato")
+		return errors.New("TELEGRAM_BOT_TOKEN non impostato")
 	}
 
 	// Inizializza database
@@ -82,22 +81,19 @@ func Serve(ctx context.Context, cfg config.Config, opts ServeOptions) error {
 
 	// Verifica webhook URL
 	if cfg.WebhookURL == "" {
-		return valueError("WEBHOOK_URL richiesto")
+		return errors.New("WEBHOOK_URL richiesto")
 	}
 
 	logger.Info(fmt.Sprintf("🚀 Avvio webhook su %s...", cfg.WebhookURL))
 	return runWebhook(ctx, cfg, store, b, dispatcher, opts)
 }
 
-// runWebhook replica app.run_webhook(listen="0.0.0.0", port=WEBHOOK_PORT,
-// url_path=token, webhook_url=f"{WEBHOOK_URL}/{token}",
-// secret_token=WEBHOOK_SECRET, allowed_updates=Update.ALL_TYPES,
-// drop_pending_updates=True, bootstrap_retries=3) con la sequenza di
-// Application.__run:
+// runWebhook esegue il bot in modalità webhook:
 //
-//  1. initialize (getMe) con retry;
-//  2. post_init: task in background (scheduler e server HTTP);
-//  3. deleteWebhook + setWebhook con retry, poi ascolto sulla porta del webhook;
+//  1. getMe con i tentativi di avvio;
+//  2. task in background (scheduler e server HTTP);
+//  3. deleteWebhook + setWebhook con i tentativi di avvio, poi ascolto
+//     sulla porta del webhook (path = token, secret token obbligatorio);
 //  4. elaborazione degli update fino alla cancellazione di ctx;
 //  5. stop: chiusura del webhook server, elaborazione degli update ancora
 //     in coda, cancellazione dei task in background.
@@ -111,16 +107,22 @@ func runWebhook(ctx context.Context, cfg config.Config, store *database.Store, b
 		listen = net.Listen
 	}
 
-	// 1. Bootstrap initialize (Bot.initialize → getMe)
-	err := networkRetryLoop(ctx, "Bootstrap Initialize Application", BootstrapInterval, BootstrapRetries, sleep,
+	// 1. getMe
+	err := networkRetryLoop(ctx, "getMe", BootstrapInterval, BootstrapRetries, sleep,
 		func(ctx context.Context) error { return initializeBot(ctx, b) })
 	if err != nil {
 		return stopOrError(ctx, err)
 	}
 
-	// 2. post_init: scheduler e server HTTP in background
-	tasksCtx, cancelTasks := context.WithCancel(context.Background())
+	// 2. scheduler e server HTTP in background. I task restano attivi
+	// finché gli update in coda non sono stati elaborati: vengono
+	// cancellati per ultimi (i defer sono eseguiti in ordine inverso).
 	reg := health.NewRegistry()
+	tasks := newBackgroundTasks(reg)
+	defer tasks.wait()
+	tasksCtx, cancelTasks := context.WithCancel(context.WithoutCancel(ctx))
+	defer cancelTasks()
+
 	sched := NewScheduler(cfg.ScraperHour, cfg.CheckerHour, cfg.ReminderHour, cfg.ScraperTimeoutSeconds, cfg.BotToken, store)
 	if opts.ConfigureScheduler != nil {
 		opts.ConfigureScheduler(sched)
@@ -131,18 +133,14 @@ func runWebhook(ctx context.Context, cfg config.Config, store *database.Store, b
 	}
 	hs := &healthServer{
 		port:    cfg.HealthPort,
-		handler: NewHTTPHandler(store, reg, cfg.BotToken, webFS, time.Now()),
+		handler: NewHTTPHandler(store, reg, cfg.BotToken, webFS),
 		listen:  listen,
 	}
-	tasks := startBackgroundTasks(tasksCtx, sched, hs, reg)
-	defer func() {
-		cancelTasks()
-		tasks.wait()
-	}()
+	startBackgroundTasks(tasksCtx, tasks, sched, hs)
 
-	// 3. updater.start_webhook: coda degli update, bootstrap del webhook, ascolto
+	// 3. coda degli update, registrazione del webhook, ascolto
 	updater := ext.NewUpdater(NewSequentialDispatcher(dispatcher), &ext.UpdaterOpts{
-		Logger:           ptbLogger("telegram.ext.Updater"),
+		Logger:           libLogger,
 		UnhandledErrFunc: logUnhandledError,
 	})
 	if err := updater.AddWebhook(b, cfg.BotToken, &ext.AddWebhookOpts{SecretToken: cfg.WebhookSecret}); err != nil {
@@ -158,7 +156,7 @@ func runWebhook(ctx context.Context, cfg config.Config, store *database.Store, b
 
 	ln, err := listen("tcp4", net.JoinHostPort("0.0.0.0", strconv.Itoa(cfg.WebhookPort)))
 	if err != nil {
-		return pycompat.OSError(err)
+		return err
 	}
 	srv := &http.Server{
 		Handler:           NewWebhookHandler(cfg.BotToken, cfg.WebhookSecret, updater.GetHandlerFunc("/")),
@@ -170,28 +168,26 @@ func runWebhook(ctx context.Context, cfg config.Config, store *database.Store, b
 		opts.Ready(ln.Addr())
 	}
 
-	// 4. run_forever fino al segnale di stop
+	// 4. elaborazione degli update fino al segnale di stop
 	var runErr error
 	select {
 	case <-ctx.Done():
 	case err := <-serveErr:
 		if !errors.Is(err, http.ErrServerClosed) {
-			runErr = pycompat.OSError(err)
+			runErr = err
 		}
 	}
 
-	// 5. updater.stop(): chiude il webhook server; app.stop(): elabora gli
-	// update in coda
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), HTTPShutdownTimeout)
+	// 5. chiusura del webhook server ed elaborazione degli update in coda
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), HTTPShutdownTimeout)
+	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
-	cancel()
 	stopUpdater()
 	return runErr
 }
 
 // stopOrError restituisce nil se l'avvio è stato interrotto da un segnale
-// di stop (in PTB il SystemExit durante il bootstrap porta a uno
-// spegnimento ordinato, non a un errore), altrimenti err.
+// di stop (spegnimento ordinato), altrimenti err.
 func stopOrError(ctx context.Context, err error) error {
 	if ctx.Err() != nil {
 		return nil

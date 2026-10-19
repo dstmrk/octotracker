@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -139,12 +140,6 @@ func (c *logCapture) handlersRecords() [][]string {
 	return out
 }
 
-func (c *logCapture) reset() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.records = nil
-}
-
 // ---------------------------------------------------------------- golden helpers
 
 func loadGolden(t *testing.T, name string, v any) {
@@ -209,68 +204,19 @@ func sameFloat(a, b float64) bool {
 // valore Go e restituisce le differenze.
 func diffNorm(t testing.TB, path string, want, got any) []string {
 	if wf, ok := pyFloatRepr(t, want); ok {
-		gf, ok := got.(float64)
-		if !ok || !sameFloat(wf, gf) {
+		if gf, ok := got.(float64); !ok || !sameFloat(wf, gf) {
 			return []string{fmt.Sprintf("%s: want float %v, got %#v", path, wf, got)}
 		}
 		return nil
 	}
 	switch w := want.(type) {
 	case map[string]any:
-		g, ok := got.(map[string]any)
-		if !ok {
-			return []string{fmt.Sprintf("%s: want object, got %#v", path, got)}
-		}
-		var diffs []string
-		keys := map[string]bool{}
-		for k := range w {
-			keys[k] = true
-		}
-		for k := range g {
-			keys[k] = true
-		}
-		sorted := make([]string, 0, len(keys))
-		for k := range keys {
-			sorted = append(sorted, k)
-		}
-		sort.Strings(sorted)
-		for _, k := range sorted {
-			wv, wok := w[k]
-			gv, gok := g[k]
-			switch {
-			case !wok:
-				diffs = append(diffs, fmt.Sprintf("%s.%s: unexpected %#v", path, k, gv))
-			case !gok:
-				diffs = append(diffs, fmt.Sprintf("%s.%s: missing (want %#v)", path, k, wv))
-			default:
-				diffs = append(diffs, diffNorm(t, path+"."+k, wv, gv)...)
-			}
-		}
-		return diffs
+		return diffMap(t, path, w, got)
 	case []any:
-		g, ok := got.([]any)
-		if !ok || len(g) != len(w) {
-			return []string{fmt.Sprintf("%s: want %#v, got %#v", path, want, got)}
-		}
-		var diffs []string
-		for i := range w {
-			diffs = append(diffs, diffNorm(t, fmt.Sprintf("%s[%d]", path, i), w[i], g[i])...)
-		}
-		return diffs
+		return diffSlice(t, path, w, got)
 	case float64:
-		var gf float64
-		switch g := got.(type) {
-		case float64:
-			gf = g
-		case int64:
-			gf = float64(g)
-		case int:
-			gf = float64(g)
-		default:
+		if gf, ok := toFloat(got); !ok || gf != w {
 			return []string{fmt.Sprintf("%s: want %v, got %#v", path, w, got)}
-		}
-		if gf != w {
-			return []string{fmt.Sprintf("%s: want %v, got %v", path, w, gf)}
 		}
 		return nil
 	default:
@@ -279,6 +225,60 @@ func diffNorm(t testing.TB, path string, want, got any) []string {
 		}
 		return nil
 	}
+}
+
+// diffMap confronta un oggetto atteso con il valore Go, chiave per chiave.
+func diffMap(t testing.TB, path string, w map[string]any, got any) []string {
+	g, ok := got.(map[string]any)
+	if !ok {
+		return []string{fmt.Sprintf("%s: want object, got %#v", path, got)}
+	}
+	keys := slices.Sorted(maps.Keys(w))
+	for k := range g {
+		if _, ok := w[k]; !ok {
+			keys = append(keys, k)
+		}
+	}
+	var diffs []string
+	for _, k := range keys {
+		wv, wok := w[k]
+		gv, gok := g[k]
+		switch {
+		case !wok:
+			diffs = append(diffs, fmt.Sprintf("%s.%s: unexpected %#v", path, k, gv))
+		case !gok:
+			diffs = append(diffs, fmt.Sprintf("%s.%s: missing (want %#v)", path, k, wv))
+		default:
+			diffs = append(diffs, diffNorm(t, path+"."+k, wv, gv)...)
+		}
+	}
+	return diffs
+}
+
+// diffSlice confronta una lista attesa con il valore Go, elemento per elemento.
+func diffSlice(t testing.TB, path string, w []any, got any) []string {
+	g, ok := got.([]any)
+	if !ok || len(g) != len(w) {
+		return []string{fmt.Sprintf("%s: want %#v, got %#v", path, w, got)}
+	}
+	var diffs []string
+	for i := range w {
+		diffs = append(diffs, diffNorm(t, fmt.Sprintf("%s[%d]", path, i), w[i], g[i])...)
+	}
+	return diffs
+}
+
+// toFloat converte i numeri Go (float64 o interi) in float64.
+func toFloat(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case int64:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	}
+	return 0, false
 }
 
 // utilityMap converte una fornitura nel dict di database._row_to_dict.
@@ -384,17 +384,19 @@ type goldenError struct {
 	Telegram bool   `json:"telegram"`
 }
 
-// matches verifica che err corrisponda all'eccezione Python: per gli errori
-// Telegram confronta str(e) di PTB, per gli altri "Tipo: messaggio".
+// matches verifica che l'handler abbia restituito un errore come
+// l'eccezione Python: un errore dell'API Telegram se lo era in Python,
+// altrimenti un errore qualsiasi (il testo non conta).
 func (g *goldenError) matches(err error) bool {
-	if err == nil {
-		return false
+	var tgErr *gotgbot.TelegramError
+	return err != nil && (!g.Telegram || errors.As(err, &tgErr))
+}
+
+func compareLogs(t *testing.T, name string, want, got [][]string) {
+	t.Helper()
+	if fmt.Sprint(want) != fmt.Sprint(got) {
+		t.Errorf("%s logs:\nwant %q\n got %q", name, want, got)
 	}
-	if g.Telegram {
-		var tgErr *gotgbot.TelegramError
-		return errors.As(err, &tgErr) && tg.ErrorString(err) == g.Message
-	}
-	return err.Error() == g.Type+": "+g.Message
 }
 
 // handlerFuncs mappa i nomi delle funzioni Python sui metodi Go.

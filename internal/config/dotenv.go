@@ -257,21 +257,7 @@ func resolveDotenvVariables(bindings []dotenvBinding) ([]string, map[string]*str
 	for _, b := range bindings {
 		var result *string
 		if b.value != nil {
-			value := *b.value
-			var sb strings.Builder
-			cursor := 0
-			for _, m := range rePosixVariable.FindAllStringSubmatchIndex(value, -1) {
-				sb.WriteString(value[cursor:m[0]])
-				name := value[m[2]:m[3]]
-				def := ""
-				if m[4] >= 0 {
-					def = value[m[4]:m[5]]
-				}
-				sb.WriteString(lookup(name, def))
-				cursor = m[1]
-			}
-			sb.WriteString(value[cursor:])
-			res := sb.String()
+			res := interpolateDotenv(*b.value, lookup)
 			result = &res
 		}
 		if _, seen := newValues[*b.key]; !seen {
@@ -280,6 +266,24 @@ func resolveDotenvVariables(bindings []dotenvBinding) ([]string, map[string]*str
 		newValues[*b.key] = result
 	}
 	return order, newValues
+}
+
+// interpolateDotenv sostituisce in value ogni ${VAR} o ${VAR:-default} con
+// lookup(VAR, default).
+func interpolateDotenv(value string, lookup func(name, def string) string) string {
+	var sb strings.Builder
+	cursor := 0
+	for _, m := range rePosixVariable.FindAllStringSubmatchIndex(value, -1) {
+		sb.WriteString(value[cursor:m[0]])
+		def := ""
+		if m[4] >= 0 {
+			def = value[m[4]:m[5]]
+		}
+		sb.WriteString(lookup(value[m[2]:m[3]], def))
+		cursor = m[1]
+	}
+	sb.WriteString(value[cursor:])
+	return sb.String()
 }
 
 // LoadDotEnv carica un file .env (se esiste) senza sovrascrivere le variabili

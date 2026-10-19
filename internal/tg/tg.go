@@ -1,8 +1,6 @@
-// Package tg contiene helper Telegram condivisi tra gli handler:
-// filtri equivalenti a quelli di python-telegram-bot, risposta sicura
-// alle callback query (port di handlers/__init__.py), conversione degli
-// errori API nel messaggio che python-telegram-bot mostrerebbe e lo store
-// per-utente equivalente a context.user_data.
+// Package tg contiene gli helper Telegram condivisi dagli handler: i filtri
+// e l'handler dei comandi, l'invio e la modifica dei messaggi, la risposta
+// alle callback query e lo store per-utente user_data.
 package tg
 
 import (
@@ -10,23 +8,36 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters"
 
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
-// logger replica logging.getLogger(__name__) di handlers/__init__.py.
 var logger = logging.Logger("handlers")
 
-// IsCommand replica filters.COMMAND di PTB: la prima entità del messaggio
-// è un bot_command con offset 0.
-func IsCommand(msg *gotgbot.Message) bool {
+// Errori restituiti quando l'update non contiene ciò che serve all'handler
+// (es. un messaggio modificato al posto di un messaggio nuovo).
+var (
+	// ErrNoMessage indica un update senza il messaggio da usare.
+	ErrNoMessage = errors.New("update senza messaggio")
+	// ErrNoCallback indica un update che non è una callback query.
+	ErrNoCallback = errors.New("update senza callback query")
+	// ErrNoUser indica un update senza utente.
+	ErrNoUser = errors.New("update senza utente")
+)
+
+// ========== Filtri e comandi ==========
+
+// AnyCommand accetta i messaggi la cui prima entità è un bot_command in
+// testa al testo.
+func AnyCommand(msg *gotgbot.Message) bool {
 	if msg == nil || len(msg.Entities) == 0 {
 		return false
 	}
@@ -34,46 +45,147 @@ func IsCommand(msg *gotgbot.Message) bool {
 	return e.Type == gotgbot.MessageEntityTypeBotCommand && e.Offset == 0
 }
 
-// TextNotCommand replica filters.TEXT & ~filters.COMMAND di PTB.
+// TextNotCommand accetta i messaggi di testo che non sono comandi.
 func TextNotCommand(msg *gotgbot.Message) bool {
-	return msg != nil && msg.Text != "" && !IsCommand(msg)
+	return msg != nil && msg.Text != "" && !AnyCommand(msg)
 }
 
-// AnyCommand replica filters.COMMAND di PTB come filtro gotgbot.
-func AnyCommand(msg *gotgbot.Message) bool {
-	return IsCommand(msg)
-}
-
-// CallbackPattern replica CallbackQueryHandler(pattern=...) di PTB, che usa
-// re.match (ancorato all'inizio della stringa, non alla fine).
-//
-// Come PTB (v22), una callback senza data corrisponde solo se non ha nemmeno
-// game_short_name (caso che Telegram non produce mai).
+// CallbackPattern accetta le callback query il cui callback_data
+// corrisponde all'espressione regolare pattern (ancorata dal chiamante).
 func CallbackPattern(pattern string) filters.CallbackQuery {
-	if !strings.HasPrefix(pattern, "^") {
-		pattern = "^(?:" + pattern + ")"
-	}
 	re := regexp.MustCompile(pattern)
 	return func(cq *gotgbot.CallbackQuery) bool {
-		if cq.Data == "" {
-			return cq.GameShortName == ""
-		}
 		return re.MatchString(cq.Data)
 	}
+}
+
+// Command è l'handler di un comando: risponde ai messaggi, anche
+// modificati, il cui testo inizia con l'entità bot_command "/nome" oppure
+// "/nome@bot", senza distinzione tra maiuscole e minuscole. Le caption
+// non contano.
+type Command struct {
+	name     string
+	response handlers.Response
+}
+
+var _ ext.Handler = Command{}
+
+// NewCommand crea l'handler del comando /name.
+func NewCommand(name string, r handlers.Response) Command {
+	return Command{name: name, response: r}
+}
+
+// CheckUpdate implementa ext.Handler.
+func (c Command) CheckUpdate(b *gotgbot.Bot, ctx *ext.Context) bool {
+	msg := ctx.Message
+	if msg == nil {
+		msg = ctx.EditedMessage
+	}
+	if !AnyCommand(msg) {
+		return false
+	}
+	// I comandi sono ASCII: la lunghezza UTF-16 dell'entità è in byte.
+	end := int(msg.Entities[0].Length)
+	if end < 0 || end > len(msg.Text) {
+		end = len(msg.Text)
+	}
+	command, ok := strings.CutPrefix(msg.Text[:end], "/")
+	name, bot, hasBot := strings.Cut(command, "@")
+	return ok && strings.EqualFold(name, c.name) && (!hasBot || strings.EqualFold(bot, b.Username))
+}
+
+// HandleUpdate implementa ext.Handler.
+func (c Command) HandleUpdate(b *gotgbot.Bot, ctx *ext.Context) error {
+	return c.response(b, ctx)
+}
+
+// Name implementa ext.Handler.
+func (c Command) Name() string {
+	return "command_" + c.name
+}
+
+// ========== Messaggi e callback ==========
+
+// UserID restituisce l'id dell'utente dell'update come stringa, la chiave
+// usata nel database.
+func UserID(ctx *ext.Context) (string, error) {
+	if ctx.EffectiveUser == nil {
+		return "", ErrNoUser
+	}
+	return strconv.FormatInt(ctx.EffectiveUser.Id, 10), nil
+}
+
+// Reply invia text nella chat di msg senza citarlo, nello stesso topic e
+// con la stessa business connection. parseMode vuoto e markup nil
+// omettono i rispettivi parametri.
+func Reply(b *gotgbot.Bot, msg *gotgbot.Message, text, parseMode string, markup *gotgbot.InlineKeyboardMarkup) error {
+	if msg == nil {
+		return ErrNoMessage
+	}
+	opts := &gotgbot.SendMessageOpts{ParseMode: parseMode, BusinessConnectionId: msg.BusinessConnectionId}
+	if msg.IsTopicMessage {
+		opts.MessageThreadId = msg.MessageThreadId
+	}
+	if msg.DirectMessagesTopic != nil {
+		opts.DirectMessagesTopicId = msg.DirectMessagesTopic.TopicId
+	}
+	if markup != nil {
+		opts.ReplyMarkup = *markup
+	}
+	_, err := b.SendMessage(msg.Chat.Id, text, opts)
+	return err
+}
+
+// CallbackMessage restituisce il messaggio del pulsante premuto: un
+// messaggio inaccessibile diventa un Message senza testo, nil se la
+// callback non ha messaggio (pulsante di un messaggio inline).
+func CallbackMessage(cq *gotgbot.CallbackQuery) *gotgbot.Message {
+	if cq == nil {
+		return nil
+	}
+	switch m := cq.Message.(type) {
+	case gotgbot.Message:
+		return &m
+	case *gotgbot.Message:
+		return m
+	case gotgbot.InaccessibleMessage:
+		return m.ToMessage()
+	}
+	return nil
+}
+
+// EditText modifica il messaggio del pulsante premuto (o il messaggio
+// inline). gotgbot invia sempre reply_markup: senza markup il messaggio
+// resta senza tastiera.
+func EditText(b *gotgbot.Bot, cq *gotgbot.CallbackQuery, text, parseMode string, markup *gotgbot.InlineKeyboardMarkup) error {
+	if cq == nil {
+		return ErrNoCallback
+	}
+	opts := &gotgbot.EditMessageTextOpts{Text: text, ParseMode: parseMode}
+	if markup != nil {
+		opts.ReplyMarkup = *markup
+	}
+	if cq.InlineMessageId != "" {
+		opts.InlineMessageId = cq.InlineMessageId
+	} else if msg := CallbackMessage(cq); msg != nil {
+		opts.ChatId, opts.MessageId, opts.BusinessConnectionId = msg.Chat.Id, msg.MessageId, msg.BusinessConnectionId
+	} else {
+		return ErrNoMessage
+	}
+	_, _, err := b.EditMessageText(opts)
+	return err
 }
 
 // SafeAnswerCallback risponde a una callback query ignorando l'errore se la
 // query è scaduta.
 //
 // Telegram impone un timeout di ~30 secondi per rispondere alle callback
-// query: se il bot risponde dopo il timeout, l'API restituisce "Query is too
-// old and response timeout expired". L'errore è innocuo e non deve bloccare
-// il flusso della conversazione. Come in Python vengono ignorati solo i
-// BadRequest (HTTP 400) che contengono "too old" o "query id is invalid";
-// ogni altro errore viene restituito. Port di handlers.safe_answer_callback.
+// query: dopo il timeout l'API restituisce "query is too old and response
+// timeout expired or query id is invalid". L'errore è innocuo e non deve
+// bloccare la conversazione; ogni altro errore viene restituito.
 func SafeAnswerCallback(b *gotgbot.Bot, cq *gotgbot.CallbackQuery) error {
 	if cq == nil {
-		return nil
+		return ErrNoCallback
 	}
 	_, err := cq.Answer(b, nil)
 	if err == nil {
@@ -89,8 +201,10 @@ func SafeAnswerCallback(b *gotgbot.Bot, cq *gotgbot.CallbackQuery) error {
 	return err
 }
 
-// IsBadRequest indica se l'errore corrisponde a telegram.error.BadRequest di
-// PTB: risposta HTTP 400 che non è un ChatMigrated o un RetryAfter.
+// ========== Errori ==========
+
+// IsBadRequest indica una risposta HTTP 400 dell'API che non è una
+// migrazione del gruppo né un rate limit.
 func IsBadRequest(err error) bool {
 	var tgErr *gotgbot.TelegramError
 	if !errors.As(err, &tgErr) || tgErr.Code != http.StatusBadRequest {
@@ -100,69 +214,24 @@ func IsBadRequest(err error) bool {
 	return p == nil || (p.MigrateToChatId == 0 && p.RetryAfter == 0)
 }
 
-// ErrorString restituisce il messaggio dell'errore come lo mostrerebbe
-// str(e) per le eccezioni di python-telegram-bot (v22), così i log restano
-// identici alla versione Python. Per esempio la descrizione
-// "Bad Request: chat not found" diventa "Chat not found", mentre un 429 con
-// retry_after diventa "Flood control exceeded. Retry in 5 seconds".
-// Gli errori che non provengono dall'API Telegram restituiscono err.Error().
+// ErrorString restituisce il testo di un errore per i log: la descrizione
+// di Telegram per gli errori dell'API (es. "Forbidden: bot was blocked by
+// the user"), err.Error() per gli altri e "" per nil.
 func ErrorString(err error) string {
 	if err == nil {
 		return ""
 	}
 	var tgErr *gotgbot.TelegramError
-	if !errors.As(err, &tgErr) {
-		return err.Error()
+	if errors.As(err, &tgErr) && tgErr.Description != "" {
+		return tgErr.Description
 	}
-	if p := tgErr.ResponseParams; p != nil {
-		if p.MigrateToChatId != 0 {
-			return fmt.Sprintf("Group migrated to supergroup. New chat id: %d", p.MigrateToChatId)
-		}
-		if p.RetryAfter != 0 {
-			return fmt.Sprintf("Flood control exceeded. Retry in %d seconds", p.RetryAfter)
-		}
-	}
-	message := tgErr.Description
-	if message == "" {
-		if phrase := http.StatusText(tgErr.Code); phrase != "" {
-			message = fmt.Sprintf("%s (%d)", phrase, tgErr.Code)
-		} else {
-			message = fmt.Sprintf("Unknown HTTPError (%d)", tgErr.Code)
-		}
-	}
-	return ptbErrorMessage(message)
+	return err.Error()
 }
 
-// ptbErrorMessage replica TelegramError.__init__ di PTB: rimuove i prefissi
-// "Error: ", "[Error]: " e "Bad Request: " e, se ne ha rimosso almeno uno,
-// applica str.capitalize() al resto.
-func ptbErrorMessage(message string) string {
-	msg := strings.TrimPrefix(message, "Error: ")
-	msg = strings.TrimPrefix(msg, "[Error]: ")
-	msg = strings.TrimPrefix(msg, "Bad Request: ")
-	if msg != message {
-		msg = pyCapitalize(msg)
-	}
-	return msg
-}
+// ========== user_data ==========
 
-// pyCapitalize replica str.capitalize() di Python (mappature Unicode semplici).
-func pyCapitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	r, size := utf8.DecodeRuneInString(s)
-	var b strings.Builder
-	b.Grow(len(s))
-	b.WriteRune(unicode.ToTitle(r))
-	for _, c := range s[size:] {
-		b.WriteRune(unicode.ToLower(c))
-	}
-	return b.String()
-}
-
-// UserData è l'equivalente di context.user_data di PTB: un dizionario
-// in memoria per utente, condiviso tra tutte le conversazioni.
+// UserData è l'equivalente di context.user_data: un dizionario in memoria
+// per utente, condiviso tra tutte le conversazioni.
 type UserData struct {
 	mu    sync.Mutex
 	users map[int64]map[string]any
@@ -193,21 +262,21 @@ func (u *UserData) Set(userID int64, key string, value any) {
 	m[key] = value
 }
 
-// Delete rimuove (userID, key); equivale a user_data.pop(key, None).
+// Delete rimuove (userID, key), se presente.
 func (u *UserData) Delete(userID int64, key string) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	delete(u.users[userID], key)
 }
 
-// Clear svuota i dati dell'utente; equivale a user_data.clear().
+// Clear svuota i dati dell'utente.
 func (u *UserData) Clear(userID int64) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	delete(u.users, userID)
 }
 
-// Snapshot restituisce una copia dei dati dell'utente (per test e debug).
+// Snapshot restituisce una copia dei dati dell'utente.
 func (u *UserData) Snapshot(userID int64) map[string]any {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -216,24 +285,4 @@ func (u *UserData) Snapshot(userID int64) map[string]any {
 		out[k] = v
 	}
 	return out
-}
-
-// Float restituisce il valore come float64 (false se assente o di altro tipo).
-func (u *UserData) Float(userID int64, key string) (float64, bool) {
-	v, ok := u.Get(userID, key)
-	if !ok {
-		return 0, false
-	}
-	f, ok := v.(float64)
-	return f, ok
-}
-
-// String restituisce il valore come stringa (false se assente o di altro tipo).
-func (u *UserData) String(userID int64, key string) (string, bool) {
-	v, ok := u.Get(userID, key)
-	if !ok {
-		return "", false
-	}
-	s, ok := v.(string)
-	return s, ok
 }

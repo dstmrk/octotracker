@@ -1,7 +1,5 @@
 package database
 
-import "encoding/json"
-
 // Valori validi per la validazione (VALID_TYPES, VALID_FASCE_LUCE, VALID_FASCE_GAS).
 var (
 	ValidTypes     = map[string]bool{"fissa": true, "variabile": true}
@@ -21,9 +19,7 @@ const (
 // Utility è la fornitura luce o gas di un utente (il dict "luce"/"gas" di Python).
 //
 // I campi puntatore nil e Scadenza vuota corrispondono a chiavi assenti nel
-// dict Python (vedi _row_to_dict). L'ordine dei campi riproduce l'ordine
-// delle chiavi del dict, quindi json.Marshal produce le stesse chiavi
-// nello stesso ordine della versione Python (usato dalla API Mini App).
+// dict Python (vedi _row_to_dict) e sono omessi da json.Marshal.
 type Utility struct {
 	Tipo                string   `json:"tipo"`
 	Fascia              string   `json:"fascia"`
@@ -47,18 +43,14 @@ type User struct {
 	LastNotifiedRates LastNotifiedRates `json:"last_notified_rates,omitempty"`
 }
 
-// LastNotifiedRates è il contenuto JSON della colonna last_notified_rates:
-// un oggetto JSON generico decodificato con la semantica di json.loads
-// (oggetti → map[string]any, array → []any, interi → int64, decimali →
-// float64, stringhe, bool, nil).
-//
-// Il formato scritto dal checker è
+// LastNotifiedRates è il contenuto JSON della colonna last_notified_rates,
+// decodificato con encoding/json (oggetti → map[string]any, numeri →
+// float64). Il formato scritto dal checker è
 //
 //	{"luce": {"energia": x, "commercializzazione": y}, "gas": {...}}
 //
-// (vedi NotifiedRate). Il confronto va fatto con Equal, che replica
-// l'uguaglianza tra dict Python (72 == 72.0, chiave mancante ≠ None, ...).
-// Una mappa nil equivale a {} (user_rates.get("last_notified_rates", {})).
+// (vedi NotifiedRate). Il confronto va fatto con Equal; una mappa nil
+// equivale a {}.
 type LastNotifiedRates map[string]any
 
 // NotifiedRate costruisce la voce per servizio di LastNotifiedRates:
@@ -67,39 +59,48 @@ func NotifiedRate(energia, commercializzazione float64) map[string]any {
 	return map[string]any{"energia": energia, "commercializzazione": commercializzazione}
 }
 
-// Equal replica `last_notified == other` tra dict Python. Nil e mappa vuota
-// sono equivalenti ({}).
+// Equal confronta due LastNotifiedRates per valore, come l'uguaglianza tra
+// dict della versione Python: i numeri sono confrontati come float64 (72 e
+// 72.0 sono uguali), una chiave mancante è diversa da una chiave null e nil
+// equivale a {}.
 func (l LastNotifiedRates) Equal(other LastNotifiedRates) bool {
-	return pyEqual(map[string]any(l), map[string]any(other))
+	return jsonEqual(map[string]any(l), map[string]any(other))
 }
 
-// MarshalJSON serializza come json.dumps di Python (stesso ordine delle chiavi
-// usato dal checker: luce, gas, energia, commercializzazione).
-func (l LastNotifiedRates) MarshalJSON() ([]byte, error) {
-	s, err := pyDumps(map[string]any(l))
-	return []byte(s), err
-}
-
-// UnmarshalJSON decodifica con la semantica di json.loads.
-func (l *LastNotifiedRates) UnmarshalJSON(b []byte) error {
-	v, err := pyLoads(string(b))
-	if err != nil {
-		return err
+// jsonEqual confronta due valori JSON generici (map[string]any, []any,
+// float64, string, bool, nil). Le mappe nil e vuote sono equivalenti.
+func jsonEqual(a, b any) bool {
+	switch x := a.(type) {
+	case map[string]any:
+		y, ok := b.(map[string]any)
+		if !ok || len(x) != len(y) {
+			return false
+		}
+		for k, v := range x {
+			if w, ok := y[k]; !ok || !jsonEqual(v, w) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		y, ok := b.([]any)
+		if !ok || len(x) != len(y) {
+			return false
+		}
+		for i := range x {
+			if !jsonEqual(x[i], y[i]) {
+				return false
+			}
+		}
+		return true
+	case float64, string, bool, nil:
+		return a == b
 	}
-	if v == nil {
-		*l = nil
-		return nil
-	}
-	m, ok := v.(map[string]any)
-	if !ok {
-		return errNotObject
-	}
-	*l = m
-	return nil
+	return false
 }
 
 // PendingRates sono le tariffe in attesa di conferma (colonna pending_rates),
-// nel formato prodotto da checker._build_pending_rates:
+// nel formato prodotto dal checker:
 //
 //	{"luce": {...}, "gas": {...}, "updated_services": ["luce"]}
 //
@@ -107,31 +108,9 @@ func (l *LastNotifiedRates) UnmarshalJSON(b []byte) error {
 // assente (righe salvate prima dell'introduzione di updated_services);
 // una slice vuota non-nil viene scritta come [].
 type PendingRates struct {
-	Luce            Utility
-	Gas             *Utility
-	UpdatedServices []string
-}
-
-// MarshalJSON serializza come json.dumps di Python, con lo stesso ordine di
-// chiavi di _build_pending_rates.
-func (p PendingRates) MarshalJSON() ([]byte, error) {
-	s, err := pyDumps(p.toODict())
-	return []byte(s), err
-}
-
-// UnmarshalJSON decodifica in modo permissivo (come load_pending_rates, che
-// restituisce il dict così com'è): chiavi mancanti → valori zero.
-func (p *PendingRates) UnmarshalJSON(b []byte) error {
-	v, err := pyLoads(string(b))
-	if err != nil {
-		return err
-	}
-	pr, err := pendingFromValue(v)
-	if err != nil {
-		return err
-	}
-	*p = *pr
-	return nil
+	Luce            Utility  `json:"luce"`
+	Gas             *Utility `json:"gas,omitempty"`
+	UpdatedServices []string `json:"updated_services,omitzero"`
 }
 
 // Rate è una tariffa corrente (foglia di get_current_rates).
@@ -231,11 +210,3 @@ func (r ScadenzaReminded) Get(servizio string) *string {
 	}
 	return nil
 }
-
-// compile-time check: i tipi con serializzazione Python implementano le interfacce JSON.
-var (
-	_ json.Marshaler   = LastNotifiedRates(nil)
-	_ json.Unmarshaler = (*LastNotifiedRates)(nil)
-	_ json.Marshaler   = PendingRates{}
-	_ json.Unmarshaler = (*PendingRates)(nil)
-)

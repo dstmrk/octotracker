@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 	"time"
-	"unicode"
 )
 
 func date(y int, m time.Month, d int) time.Time { return NewDate(y, m, d) }
@@ -201,58 +200,6 @@ func TestFormatISODate(t *testing.T) {
 	assertString(t, FormatISODate(date(5, 1, 1)), "0005-01-01")
 }
 
-func TestAddMonthsPanicsOutOfRange(t *testing.T) {
-	msg := panicMessage(func() { AddMonths(date(9999, 12, 31), 1) })
-	if msg != "ValueError: year 10000 is out of range" {
-		t.Fatalf("panic = %q", msg)
-	}
-}
-
-func TestFloorDivMod(t *testing.T) {
-	tests := []struct{ a, b, div, mod int }{
-		{7, 12, 0, 7}, {-1, 12, -1, 11}, {-12, 12, -1, 0}, {-13, 12, -2, 11}, {24, 12, 2, 0},
-		{7, -2, -4, -1},
-	}
-	for _, tt := range tests {
-		if d, m := floorDiv(tt.a, tt.b), floorMod(tt.a, tt.b); d != tt.div || m != tt.mod {
-			t.Errorf("floorDiv/Mod(%d, %d) = %d, %d; want %d, %d", tt.a, tt.b, d, m, tt.div, tt.mod)
-		}
-	}
-}
-
-// Le cifre Unicode (Nd) sono assegnate in blocchi contigui multipli di 10:
-// è il presupposto di digitValue.
-func TestDigitBlocksAligned(t *testing.T) {
-	run := 0
-	for r := rune(0); r <= unicode.MaxRune+1; r++ {
-		if r <= unicode.MaxRune && unicode.IsDigit(r) {
-			run++
-			if got := digitValue(r); got != (run-1)%10 {
-				t.Fatalf("digitValue(%U) = %d, want %d", r, got, (run-1)%10)
-			}
-			continue
-		}
-		if run%10 != 0 {
-			t.Fatalf("blocco di cifre che termina in %U lungo %d", r-1, run)
-		}
-		run = 0
-	}
-	for r, want := range map[rune]int{'٥': 5, '२': 2, '０': 0, '９': 9, '7': 7} {
-		if got := digitValue(r); got != want {
-			t.Errorf("digitValue(%q) = %d, want %d", r, got, want)
-		}
-	}
-}
-
-func TestPyInt(t *testing.T) {
-	if got := pyInt(" 5"); got != 5 {
-		t.Errorf("pyInt(\" 5\") = %d", got)
-	}
-	if got := pyInt("٢٠٢٥"); got != 2025 {
-		t.Errorf("pyInt(arabo) = %d", got)
-	}
-}
-
 // ========== Golden test (output generati dalla versione Python) ==========
 
 func loadGolden(t *testing.T, name string, v any) {
@@ -277,32 +224,18 @@ func parseISO(t *testing.T, s string) time.Time {
 
 func TestParseActivationDateGolden(t *testing.T) {
 	var g struct {
-		Todays        [][]string  `json:"todays"`
-		Cases         [][]*string `json:"cases"`
-		PythonIsSpace [][]int     `json:"python_isspace"`
+		Todays [][]string  `json:"todays"`
+		Cases  [][]*string `json:"cases"`
 	}
 	loadGolden(t, "parse_activation_date_golden.json", &g)
-	todays := g.Todays[0]
 	if len(g.Cases) < 500 {
 		t.Fatalf("golden troppo piccolo: %d", len(g.Cases))
 	}
 
 	accepted := 0
 	for _, row := range g.Cases {
-		input := *row[0]
-		for i, ts := range todays {
-			today := parseISO(t, ts)
-			got, ok := ParseActivationDateAt(input, today)
-			want := row[i+1]
-			switch {
-			case want == nil && ok:
-				t.Errorf("ParseActivationDateAt(%q, %s) = %s, want None", input, ts, FormatISODate(got))
-			case want != nil && !ok:
-				t.Errorf("ParseActivationDateAt(%q, %s) = None, want %s", input, ts, *want)
-			case want != nil && FormatISODate(got) != *want:
-				t.Errorf("ParseActivationDateAt(%q, %s) = %s, want %s", input, ts, FormatISODate(got), *want)
-			}
-			if ok {
+		for i, ts := range g.Todays[0] {
+			if checkActivationDate(t, *row[0], ts, row[i+1]) {
 				accepted++
 			}
 		}
@@ -310,49 +243,59 @@ func TestParseActivationDateGolden(t *testing.T) {
 	if accepted < 100 {
 		t.Errorf("troppi pochi casi validi nel golden: %d", accepted)
 	}
-
-	// str.isspace() di Python su tutto lo spazio Unicode
-	pySpaces := map[rune]bool{}
-	for _, c := range g.PythonIsSpace[0] {
-		pySpaces[rune(c)] = true
-	}
-	for r := rune(0); r <= unicode.MaxRune; r++ {
-		if pyIsSpace(r) != pySpaces[r] {
-			t.Errorf("pyIsSpace(%U) = %v, Python %v", r, pyIsSpace(r), pySpaces[r])
-		}
-	}
 }
 
-func TestDatesGolden(t *testing.T) {
-	var g struct {
-		AddMonths             [][3]any    `json:"add_months"`
-		ComputeExpiryDate     [][2]string `json:"compute_expiry_date"`
-		FormatDateDisplay     [][2]string `json:"format_date_display"`
-		FormatDateDisplayNone []string    `json:"format_date_display_none"`
-		FormatDateDisplayDate [][4]any    `json:"format_date_display_date"`
-		DaysUntil             [][3]any    `json:"days_until"`
+// checkActivationDate confronta ParseActivationDateAt con il risultato
+// Python (want nil = None) e restituisce se la data è stata accettata.
+func checkActivationDate(t *testing.T, input, today string, want *string) bool {
+	t.Helper()
+	parsed, ok := ParseActivationDateAt(input, parseISO(t, today))
+	got, exp := "None", "None"
+	if ok {
+		got = FormatISODate(parsed)
 	}
+	if want != nil {
+		exp = *want
+	}
+	if got != exp {
+		t.Errorf("ParseActivationDateAt(%q, %s) = %s, want %s", input, today, got, exp)
+	}
+	return ok
+}
+
+type datesGolden struct {
+	AddMonths             [][3]any    `json:"add_months"`
+	ComputeExpiryDate     [][2]string `json:"compute_expiry_date"`
+	FormatDateDisplay     [][2]string `json:"format_date_display"`
+	FormatDateDisplayNone []string    `json:"format_date_display_none"`
+	FormatDateDisplayDate [][4]any    `json:"format_date_display_date"`
+	DaysUntil             [][3]any    `json:"days_until"`
+}
+
+func loadDatesGolden(t *testing.T) datesGolden {
+	t.Helper()
+	var g datesGolden
 	loadGolden(t, "dates_golden.json", &g)
+	return g
+}
 
+func TestAddMonthsGolden(t *testing.T) {
+	g := loadDatesGolden(t)
 	for _, row := range g.AddMonths {
-		start := parseISO(t, row[0].(string))
 		months := int(row[1].(float64))
-		want := row[2].(string)
-		var got string
-		if msg := panicMessage(func() { got = FormatISODate(AddMonths(start, months)) }); msg != "" {
-			got = msg
-		}
-		if got != want {
-			t.Errorf("AddMonths(%s, %d) = %q, want %q", row[0], months, got, want)
+		if got := FormatISODate(AddMonths(parseISO(t, row[0].(string)), months)); got != row[2] {
+			t.Errorf("AddMonths(%s, %d) = %q, want %q", row[0], months, got, row[2])
 		}
 	}
-
 	for _, row := range g.ComputeExpiryDate {
 		if got := FormatISODate(ComputeExpiryDate(parseISO(t, row[0]))); got != row[1] {
 			t.Errorf("ComputeExpiryDate(%s) = %s, want %s", row[0], got, row[1])
 		}
 	}
+}
 
+func TestFormatDateDisplayGolden(t *testing.T) {
+	g := loadDatesGolden(t)
 	valid := 0
 	for _, row := range g.FormatDateDisplay {
 		got := FormatDateDisplay(row[0])
@@ -369,26 +312,22 @@ func TestDatesGolden(t *testing.T) {
 	if got := FormatDateDisplay(nil); got != g.FormatDateDisplayNone[0] {
 		t.Errorf("FormatDateDisplay(nil) = %q, want %q", got, g.FormatDateDisplayNone[0])
 	}
-
 	for _, row := range g.FormatDateDisplayDate {
 		d := date(int(row[0].(float64)), time.Month(int(row[1].(float64))), int(row[2].(float64)))
 		if got := FormatDateDisplay(d); got != row[3].(string) {
 			t.Errorf("FormatDateDisplay(%v) = %q, want %q", row[:3], got, row[3])
 		}
 	}
+}
 
-	for _, row := range g.DaysUntil {
+func TestDaysUntilGolden(t *testing.T) {
+	for _, row := range loadDatesGolden(t).DaysUntil {
 		iso := row[0].(string)
 		today := parseISO(t, row[1].(string))
 		got, ok := DaysUntil(iso, &today)
-		if row[2] == nil {
-			if ok {
-				t.Errorf("DaysUntil(%q, %s) = %d, want None", iso, row[1], got)
-			}
-			continue
-		}
-		if want := int(row[2].(float64)); !ok || got != want {
-			t.Errorf("DaysUntil(%q, %s) = (%d, %v), want %d", iso, row[1], got, ok, want)
+		want, wantOK := row[2].(float64)
+		if ok != wantOK || (ok && got != int(want)) {
+			t.Errorf("DaysUntil(%q, %s) = (%d, %v), want %v", iso, row[1], got, ok, row[2])
 		}
 	}
 }
@@ -415,14 +354,4 @@ func assertDays(t *testing.T, iso string, today time.Time, want int) {
 	if !ok || got != want {
 		t.Fatalf("DaysUntil(%q, %v) = (%d, %v), want %d", iso, today, got, ok, want)
 	}
-}
-
-func panicMessage(fn func()) (msg string) {
-	defer func() {
-		if r := recover(); r != nil {
-			msg = fmt.Sprint(r)
-		}
-	}()
-	fn()
-	return ""
 }

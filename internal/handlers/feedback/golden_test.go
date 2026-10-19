@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 
+	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/testutil"
 	"github.com/dstmrk/octotracker/internal/tg"
 )
 
 // Test differenziali contro i file in testdata/, generati eseguendo il
 // codice Python reale:
-//   - fromisoformat_golden.json: datetime.fromisoformat di CPython 3.13 su
-//     un corpus di stringhe valide, quasi valide e casuali;
 //   - cooldown_golden.json: _can_give_feedback con datetime.now() fissato e
-//     get_last_feedback_time sostituito (esito, messaggio e log);
+//     get_last_feedback_time sostituito (esito e messaggio), sui timestamp
+//     nel formato di SQLite;
 //   - handlers_golden.json: gli handler di handlers/feedback.py con update
 //     finti e database reale (chiamate API, stato, user_data, feedback salvati).
 
@@ -34,45 +35,6 @@ func readJSON(t *testing.T, name string, v any) {
 	}
 }
 
-func TestGoldenFromISOFormat(t *testing.T) {
-	var cases []struct {
-		S     string `json:"s"`
-		R     []int  `json:"r"`
-		Aware bool   `json:"aware"`
-		E     string `json:"e"`
-	}
-	readJSON(t, "fromisoformat_golden.json", &cases)
-	if len(cases) < 5000 {
-		t.Fatalf("corpus troppo piccolo: %d", len(cases))
-	}
-	ok := 0
-	for _, c := range cases {
-		dt, err := fromISOFormat(c.S)
-		if c.E != "" {
-			if err == nil {
-				t.Errorf("%q: atteso ValueError %q, got %+v", c.S, c.E, dt)
-			} else if err.Error() != c.E {
-				t.Errorf("%q: errore\n got: %s\nwant: %s", c.S, err, c.E)
-			} else if pe, isPy := err.(*pyError); !isPy || pe.typ != "ValueError" {
-				t.Errorf("%q: tipo errore %T", c.S, err)
-			}
-			continue
-		}
-		ok++
-		if err != nil {
-			t.Errorf("%q: errore inatteso %v (want %v)", c.S, err, c.R)
-			continue
-		}
-		got := []int{dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond}
-		if fmt.Sprint(got) != fmt.Sprint(c.R) || dt.aware != c.Aware {
-			t.Errorf("%q: got %v aware=%v, want %v aware=%v", c.S, got, dt.aware, c.R, c.Aware)
-		}
-	}
-	if ok < 1000 {
-		t.Errorf("pochi casi validi nel corpus: %d", ok)
-	}
-}
-
 type goldenNow []int
 
 func (n goldenNow) time() time.Time {
@@ -83,17 +45,14 @@ func TestGoldenCooldown(t *testing.T) {
 	var g struct {
 		Now   goldenNow `json:"now"`
 		Cases []struct {
-			Last *string  `json:"last"`
-			Can  bool     `json:"can"`
-			Msg  *string  `json:"msg"`
-			Logs []string `json:"logs"`
+			Last *string `json:"last"`
+			Can  bool    `json:"can"`
+			Msg  *string `json:"msg"`
 		} `json:"cases"`
 	}
 	readJSON(t, "cooldown_golden.json", &g)
 	setNow(t, g.Now.time())
-	logs := captureLogs(t)
 	for _, c := range g.Cases {
-		logs.Reset()
 		h := &Handlers{Store: &fakeStore{last: c.Last}, UserData: tg.NewUserData()}
 		can, msg := h.canGiveFeedback(testUserID)
 		wantMsg := ""
@@ -102,19 +61,6 @@ func TestGoldenCooldown(t *testing.T) {
 		}
 		if can != c.Can || msg != wantMsg {
 			t.Errorf("last=%v: got (%v, %q), want (%v, %q)", deref(c.Last), can, msg, c.Can, wantMsg)
-		}
-		got := logs.String()
-		if len(c.Logs) == 0 && got != "" {
-			t.Errorf("last=%v: log inattesi %q", deref(c.Last), got)
-		}
-		for _, l := range c.Logs {
-			// "WARNING handlers.feedback <msg>" → "- handlers.feedback - WARNING - <msg>"
-			level, rest, _ := strings.Cut(l, " ")
-			name, msg, _ := strings.Cut(rest, " ")
-			want := " - " + name + " - " + level + " - " + msg + "\n"
-			if !strings.Contains(got, want) {
-				t.Errorf("last=%v: log mancante %q in %q", deref(c.Last), want, got)
-			}
 		}
 	}
 }
@@ -165,6 +111,27 @@ func TestGoldenHandlers(t *testing.T) {
 	}
 }
 
+// goldenContext restituisce handler e update del caso.
+func goldenContext(h *Handlers, b *gotgbot.Bot, c goldenHandlerCase) (handlers.Response, *ext.Context) {
+	switch c.Handler {
+	case "command":
+		return h.FeedbackCommand, testutil.MessageContext(b, testutil.DefaultUserID, "/feedback")
+	case "rating":
+		return h.FeedbackRating, callbackContext(b, c.Data)
+	case "comment":
+		return h.FeedbackComment, testutil.MessageContext(b, testutil.DefaultUserID, c.Text)
+	case "skip":
+		return h.FeedbackSkipComment, callbackContext(b, "skip_comment")
+	case "cancel_message":
+		return h.FeedbackCancel, testutil.MessageContext(b, testutil.DefaultUserID, "/cancel")
+	case "cancel_callback":
+		return h.FeedbackCancel, callbackContext(b, "x")
+	case "cancel_none":
+		return h.FeedbackCancel, editedMessageContext(b, "/cancel")
+	}
+	return nil, nil
+}
+
 func runGoldenHandler(t *testing.T, c goldenHandlerCase) {
 	s := newTestStore(t)
 	if c.WithUser == nil || *c.WithUser {
@@ -176,82 +143,20 @@ func runGoldenHandler(t *testing.T, c goldenHandlerCase) {
 	h := &Handlers{Store: s, UserData: tg.NewUserData()}
 	for k, v := range c.UserData {
 		if f, isNum := v.(float64); isNum && k == keyRating {
-			h.UserData.Set(testutil.DefaultUserID, k, int(f)) // i voti sono int in Python
-			continue
+			v = int(f) // i voti sono int
 		}
 		h.UserData.Set(testutil.DefaultUserID, k, v)
 	}
 	b, fc := testutil.NewBot(t)
-
-	var handler handlers.Response
-	ctx := testutil.MessageContext(b, testutil.DefaultUserID, c.Text)
-	switch c.Handler {
-	case "command":
-		handler, ctx = h.FeedbackCommand, testutil.MessageContext(b, testutil.DefaultUserID, "/feedback")
-	case "rating":
-		handler, ctx = h.FeedbackRating, callbackContext(b, c.Data)
-	case "comment":
-		handler = h.FeedbackComment
-	case "skip":
-		handler, ctx = h.FeedbackSkipComment, callbackContext(b, "skip_comment")
-	case "cancel_message":
-		handler, ctx = h.FeedbackCancel, testutil.MessageContext(b, testutil.DefaultUserID, "/cancel")
-	case "cancel_callback":
-		handler, ctx = h.FeedbackCancel, callbackContext(b, "x")
-	case "cancel_none":
-		handler, ctx = h.FeedbackCancel, editedMessageContext(b, "/cancel")
-	default:
+	handler, ctx := goldenContext(h, b, c)
+	if handler == nil {
 		t.Fatalf("handler sconosciuto %q", c.Handler)
 	}
 	res := call(t, fc, h.UserData, handler, b, ctx)
 
-	if c.Out.Exception != "" {
-		if res.err == nil || pyErrString(res.err) != c.Out.Exception {
-			t.Errorf("eccezione: got %v, want %q", res.err, c.Out.Exception)
-		}
-	} else {
-		if res.err != nil {
-			t.Fatalf("errore inatteso: %v", res.err)
-		}
-		want := ""
-		if c.Out.Result != nil {
-			want = *c.Out.Result
-		}
-		if res.state != want {
-			t.Errorf("stato: got %q, want %q", res.state, want)
-		}
-	}
+	checkGoldenOutcome(t, c, res)
+	checkGoldenCalls(t, c.Out.Calls, res.calls)
 
-	if len(res.calls) != len(c.Out.Calls) {
-		t.Fatalf("chiamate: got %+v, want %+v", res.calls, c.Out.Calls)
-	}
-	for i, want := range c.Out.Calls {
-		got := res.calls[i]
-		if pyMethod[got.Method] != want.Method {
-			t.Errorf("chiamata %d: %s, want %s", i, got.Method, want.Method)
-			continue
-		}
-		if want.Method == "answer" {
-			continue
-		}
-		if got.Text() != want.Text {
-			t.Errorf("testo %d:\n got: %q\nwant: %q", i, got.Text(), want.Text)
-		}
-		wantPM := ""
-		if want.ParseMode != nil {
-			wantPM = want.ParseMode.(string)
-		}
-		if got.ParseMode() != wantPM {
-			t.Errorf("parse_mode %d: got %q, want %q", i, got.ParseMode(), wantPM)
-		}
-		gotMarkup := generic(t, got.JSON("reply_markup"))
-		if m, isMap := gotMarkup.(map[string]any); isMap && len(m) == 0 && want.Method == "edit_message_text" {
-			gotMarkup = nil // gotgbot invia sempre reply_markup: {} equivale all'assenza
-		}
-		assertDeepEqual(t, "reply_markup", gotMarkup, want.ReplyMarkup)
-	}
-
-	wantUD := c.Out.UserDataAfter
 	gotUD := map[string]any{}
 	for k, v := range res.userAfter {
 		if r, isInt := v.(int); isInt {
@@ -259,26 +164,72 @@ func runGoldenHandler(t *testing.T, c goldenHandlerCase) {
 		}
 		gotUD[k] = v
 	}
-	assertDeepEqual(t, "user_data", gotUD, wantUD)
+	assertDeepEqual(t, "user_data", gotUD, c.Out.UserDataAfter)
+	checkGoldenFeedbacks(t, s, c)
+}
 
+// checkGoldenOutcome confronta lo stato restituito; un'eccezione Python
+// corrisponde a un errore qualsiasi (il testo non conta).
+func checkGoldenOutcome(t *testing.T, c goldenHandlerCase, res result) {
+	t.Helper()
+	if c.Out.Exception != "" {
+		if res.err == nil {
+			t.Errorf("atteso un errore (%s), got stato %q", c.Out.Exception, res.state)
+		}
+		return
+	}
+	if res.err != nil {
+		t.Fatalf("errore inatteso: %v", res.err)
+	}
+	want := ""
+	if c.Out.Result != nil {
+		want = *c.Out.Result
+	}
+	if res.state != want {
+		t.Errorf("stato: got %q, want %q", res.state, want)
+	}
+}
+
+// checkGoldenCalls confronta metodo, testo, parse_mode e tastiera delle
+// chiamate API.
+func checkGoldenCalls(t *testing.T, want []goldenCall, got []testutil.Call) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("chiamate: got %+v, want %+v", got, want)
+	}
+	for i, w := range want {
+		g := got[i]
+		if pyMethod[g.Method] != w.Method {
+			t.Errorf("chiamata %d: %s, want %s", i, g.Method, w.Method)
+			continue
+		}
+		if w.Method == "answer" {
+			continue
+		}
+		wantPM, _ := w.ParseMode.(string)
+		if g.Text() != w.Text || g.ParseMode() != wantPM {
+			t.Errorf("chiamata %d:\n got: %q %q\nwant: %q %q", i, g.ParseMode(), g.Text(), wantPM, w.Text)
+		}
+		gotMarkup := generic(t, g.JSON("reply_markup"))
+		if m, isMap := gotMarkup.(map[string]any); isMap && len(m) == 0 && w.Method == "edit_message_text" {
+			gotMarkup = nil // gotgbot invia sempre reply_markup: {} equivale all'assenza
+		}
+		assertDeepEqual(t, "reply_markup", gotMarkup, w.ReplyMarkup)
+	}
+}
+
+// checkGoldenFeedbacks confronta i feedback salvati nel database.
+func checkGoldenFeedbacks(t *testing.T, s *database.Store, c goldenHandlerCase) {
+	t.Helper()
 	saved := s.GetRecentFeedbacks(100)
 	if len(saved) != len(c.Out.Feedbacks) {
 		t.Fatalf("feedback salvati: got %d, want %d", len(saved), len(c.Out.Feedbacks))
 	}
 	for i, want := range c.Out.Feedbacks {
 		got := saved[len(saved)-1-i]
-		if fmt.Sprint(deref(got.Rating)) != fmt.Sprint(deref(want.Rating)) ||
-			fmt.Sprint(deref(got.Comment)) != fmt.Sprint(deref(want.Comment)) || got.FeedbackType != want.FeedbackType {
-			t.Errorf("feedback %d: got %v/%v/%s, want %v/%v/%s", i, deref(got.Rating), deref(got.Comment), got.FeedbackType,
-				deref(want.Rating), deref(want.Comment), want.FeedbackType)
+		g := fmt.Sprintf("%v|%q|%s", deref(got.Rating), deref(got.Comment), got.FeedbackType)
+		if w := fmt.Sprintf("%v|%q|%s", deref(want.Rating), deref(want.Comment), want.FeedbackType); g != w {
+			t.Errorf("feedback %d: got %s, want %s", i, g, w)
 		}
 	}
-}
-
-// pyErrString restituisce "Tipo: messaggio" come f"{type(e).__name__}: {e}".
-func pyErrString(err error) string {
-	if pe, ok := err.(*pyError); ok {
-		return pe.typ + ": " + pe.msg
-	}
-	return err.Error()
 }

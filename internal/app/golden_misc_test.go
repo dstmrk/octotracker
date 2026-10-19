@@ -1,13 +1,13 @@
 package app
 
-// Test differenziali con i golden generati eseguendo il codice Python:
+// Test con i golden generati eseguendo la versione Python:
 //
-//   - parsedate_golden.json: email.utils.parsedate_to_datetime (CPython 3.13)
-//   - error_handler_golden.json: bot.error_handler con le eccezioni reali di
-//     python-telegram-bot 22.6, ricavate dalle stesse risposte HTTP
-//     dell'API Telegram che qui riceve gotgbot
-//   - scheduler_golden.json: calculate_seconds_until_next_run e i log dei
-//     task giornalieri con datetime.now() fissato
+//   - error_handler_golden.json: per ogni errore (ricavato dalle stesse
+//     risposte HTTP dell'API Telegram che qui riceve gotgbot) se l'error
+//     handler invia l'alert all'admin e quanto attende;
+//   - scheduler_golden.json: secondi fino alla prossima esecuzione
+//     (calculate_seconds_until_next_run) con l'orologio fissato; i casi
+//     senza "seconds" sono ore non valide.
 
 import (
 	"context"
@@ -20,46 +20,20 @@ import (
 	"time"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
-
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
-	"github.com/dstmrk/octotracker/internal/checker"
 )
-
-// TestGoldenParsedate: parsedateToDatetime contro parsedate_to_datetime.
-func TestGoldenParsedate(t *testing.T) {
-	var cases []struct {
-		Input string `json:"input"`
-		OK    bool   `json:"ok"`
-		Unix  int64  `json:"unix"`
-	}
-	loadHTTPGolden(t, "parsedate_golden.json", &cases)
-	for _, c := range cases {
-		got, ok := parsedateToDatetime(c.Input)
-		if ok != c.OK {
-			t.Errorf("%q: ok = %v, atteso %v (%v)", c.Input, ok, c.OK, got)
-			continue
-		}
-		if ok && got.Unix() != c.Unix {
-			t.Errorf("%q: %v (%d), atteso %d", c.Input, got, got.Unix(), c.Unix)
-		}
-	}
-}
 
 // goldenGoError descrive come ottenere in Go l'errore di un caso.
 type goldenGoError struct {
-	Kind    string `json:"kind"` // http, timeout, text, keyerror, pyerror
+	Kind    string `json:"kind"` // http, timeout, altrimenti testo
 	Code    int    `json:"code"`
 	Payload string `json:"payload"`
 	Text    string `json:"text"`
-	Class   string `json:"class"`
 }
 
 // goldenHandlerRun è l'esito di error_handler in Python.
 type goldenHandlerRun struct {
-	Logs []goldenLog `json:"logs"`
 	Sent []struct {
 		ChatID    string `json:"chat_id"`
-		Text      string `json:"text"`
 		ParseMode string `json:"parse_mode"`
 	} `json:"sent"`
 	Sleeps []int64 `json:"sleeps"`
@@ -80,32 +54,40 @@ type telegramStub struct {
 func newTelegramStub(t *testing.T, code int, payload string, hang bool) *telegramStub {
 	t.Helper()
 	s := &telegramStub{code: code, payload: payload, hang: hang, stop: make(chan struct{})}
-	s.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseMultipartForm(1 << 20); err == nil {
-			fields := map[string]string{}
-			for k, v := range r.MultipartForm.Value {
-				fields[k] = v[0]
-			}
-			s.mu.Lock()
-			s.sent = append(s.sent, fields)
-			s.mu.Unlock()
-		}
-		if s.hang {
-			// Il client rinuncia dopo il suo timeout; stop sblocca comunque
-			// l'handler prima di srv.Close, che attende le richieste in corso
-			select {
-			case <-r.Context().Done():
-			case <-s.stop:
-			}
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(s.code)
-		_, _ = w.Write([]byte(s.payload))
-	}))
+	s.srv = httptest.NewServer(http.HandlerFunc(s.serve))
 	t.Cleanup(s.srv.Close)
 	t.Cleanup(func() { close(s.stop) }) // eseguita prima di srv.Close
 	return s
+}
+
+func (s *telegramStub) serve(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(1 << 20); err == nil {
+		fields := map[string]string{}
+		for k, v := range r.MultipartForm.Value {
+			fields[k] = v[0]
+		}
+		s.mu.Lock()
+		s.sent = append(s.sent, fields)
+		s.mu.Unlock()
+	}
+	if s.hang {
+		// Il client rinuncia dopo il suo timeout; stop sblocca comunque
+		// l'handler prima di srv.Close, che attende le richieste in corso
+		select {
+		case <-r.Context().Done():
+		case <-s.stop:
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(s.code)
+	_, _ = w.Write([]byte(s.payload))
+}
+
+func (s *telegramStub) sentMessages() []map[string]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Clone(s.sent)
 }
 
 // bot restituisce un bot gotgbot reale che parla con lo stub.
@@ -115,47 +97,42 @@ func (s *telegramStub) bot() *gotgbot.Bot {
 		opts.Timeout = 50 * time.Millisecond
 	}
 	return &gotgbot.Bot{
-		Token:     "123456:TEST-TOKEN",
+		Token:     testToken,
 		BotClient: &gotgbot.BaseBotClient{Client: http.Client{}, DefaultRequestOpts: opts},
 	}
+}
+
+// stubFor crea lo stub che risponde come indicato da g.
+func stubFor(t *testing.T, g goldenGoError) *telegramStub {
+	if g.Kind == "timeout" {
+		return newTelegramStub(t, 0, "", true)
+	}
+	return newTelegramStub(t, g.Code, g.Payload, false)
 }
 
 // goError costruisce l'errore Go del caso: per "http" e "timeout" è
 // l'errore reale restituito da gotgbot per quella risposta.
 func goError(t *testing.T, g goldenGoError) error {
 	t.Helper()
-	switch g.Kind {
-	case "http":
-		_, err := newTelegramStub(t, g.Code, g.Payload, false).bot().SendMessage(1, "x", nil)
-		return err
-	case "timeout":
-		_, err := newTelegramStub(t, 0, "", true).bot().SendMessage(1, "x", nil)
-		return err
-	case "text":
+	if g.Kind != "http" && g.Kind != "timeout" {
 		return errors.New(g.Text)
-	case "keyerror":
-		return checker.KeyError(g.Text)
-	case "pyerror":
-		return pycompat.NewError(g.Class, g.Text)
 	}
-	t.Fatalf("tipo di errore sconosciuto %q", g.Kind)
-	return nil
+	_, err := stubFor(t, g).bot().SendMessage(1, "x", nil)
+	return err
 }
 
-// TestGoldenErrorHandler: log, alert all'admin e attese di ErrorHandler
-// contro error_handler di bot.py.
+// TestGoldenErrorHandler: alert all'admin e attese di ErrorHandler contro
+// error_handler della versione Python.
 func TestGoldenErrorHandler(t *testing.T) {
 	var cases []struct {
 		Name        string            `json:"name"`
 		Go          goldenGoError     `json:"go"`
 		GoSendError *goldenGoError    `json:"go_send_error"`
-		PyClass     string            `json:"py_class"`
-		PyStr       string            `json:"py_str"`
 		Admin       goldenHandlerRun  `json:"admin"`
 		NoAdmin     *goldenHandlerRun `json:"no_admin"`
 	}
-	loadHTTPGolden(t, "error_handler_golden.json", &cases)
-	logs := captureRecords(t)
+	loadGolden(t, "error_handler_golden.json", &cases)
+	captureLogs(t)
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
@@ -163,80 +140,57 @@ func TestGoldenErrorHandler(t *testing.T) {
 			if err == nil {
 				t.Fatal("nessun errore")
 			}
-			if e := describe(err); e.class != c.PyClass || e.msg != c.PyStr {
-				t.Errorf("describe = %s %q, atteso %s %q", e.class, e.msg, c.PyClass, c.PyStr)
-			}
-
-			run := func(admin string, want goldenHandlerRun) {
-				t.Helper()
-				alert := newTelegramStub(t, http.StatusOK, `{"ok":true,"result":{"message_id":1,"date":0,"chat":{"id":999,"type":"private"}}}`, false)
-				if c.GoSendError != nil {
-					switch c.GoSendError.Kind {
-					case "timeout":
-						alert = newTelegramStub(t, 0, "", true)
-					default:
-						alert = newTelegramStub(t, c.GoSendError.Code, c.GoSendError.Payload, false)
-					}
-				}
-				var sleeps []time.Duration
-				h := &ErrorHandler{AdminUserID: admin, Sleep: func(d time.Duration) { sleeps = append(sleeps, d) }}
-				_ = logs.take()
-				h.HandleError(alert.bot(), nil, err)
-
-				if got := logs.take("__main__"); !slices.Equal(got, withName(want.Logs, "__main__")) {
-					t.Errorf("log = %q\natteso %q", got, want.Logs)
-				}
-				var wantSleeps []time.Duration
-				for _, s := range want.Sleeps {
-					wantSleeps = append(wantSleeps, time.Duration(s)*time.Second)
-				}
-				if !slices.Equal(sleeps, wantSleeps) {
-					t.Errorf("attese = %v, attese %v", sleeps, wantSleeps)
-				}
-				alert.mu.Lock()
-				defer alert.mu.Unlock()
-				if len(alert.sent) != len(want.Sent) {
-					t.Fatalf("alert inviati = %v, attesi %v", alert.sent, want.Sent)
-				}
-				for i, s := range want.Sent {
-					got := alert.sent[i]
-					if got["chat_id"] != s.ChatID || got["text"] != s.Text || got["parse_mode"] != s.ParseMode {
-						t.Errorf("alert = %q, atteso %+v", got, s)
-					}
-				}
-			}
-			run("999", c.Admin)
+			checkErrorHandlerRun(t, err, "999", c.GoSendError, c.Admin)
 			if c.NoAdmin != nil {
-				run("", *c.NoAdmin)
+				checkErrorHandlerRun(t, err, "", nil, *c.NoAdmin)
 			}
 		})
 	}
 }
 
-// withName assegna il nome del logger ai record attesi (in Python il
-// modulo importato nei test si chiama "bot", in produzione "__main__").
-func withName(logs []goldenLog, name string) []goldenLog {
-	out := make([]goldenLog, len(logs))
-	for i, l := range logs {
-		l.Name = name
-		out[i] = l
+// checkErrorHandlerRun gestisce err con ADMIN_USER_ID admin e confronta
+// alert e attese con want; sendError è la risposta all'invio dell'alert
+// (nil = successo).
+func checkErrorHandlerRun(t *testing.T, err error, admin string, sendError *goldenGoError, want goldenHandlerRun) {
+	t.Helper()
+	ok := goldenGoError{Kind: "http", Code: http.StatusOK,
+		Payload: `{"ok":true,"result":{"message_id":1,"date":0,"chat":{"id":999,"type":"private"}}}`}
+	if sendError != nil {
+		ok = *sendError
 	}
-	return out
+	alert := stubFor(t, ok)
+	var sleeps []time.Duration
+	h := &ErrorHandler{AdminUserID: admin, Sleep: func(d time.Duration) { sleeps = append(sleeps, d) }}
+	h.HandleError(alert.bot(), nil, err)
+
+	var wantSleeps []time.Duration
+	for _, s := range want.Sleeps {
+		wantSleeps = append(wantSleeps, time.Duration(s)*time.Second)
+	}
+	if !slices.Equal(sleeps, wantSleeps) {
+		t.Errorf("admin %q: attese = %v, attese %v", admin, sleeps, wantSleeps)
+	}
+	sent := alert.sentMessages()
+	if len(sent) != len(want.Sent) {
+		t.Fatalf("admin %q: alert inviati = %v, attesi %v", admin, sent, want.Sent)
+	}
+	for i, s := range want.Sent {
+		if sent[i]["chat_id"] != s.ChatID || sent[i]["parse_mode"] != s.ParseMode {
+			t.Errorf("alert = %q, atteso %+v", sent[i], s)
+		}
+	}
 }
 
-// TestGoldenScheduler: secondi fino alla prossima esecuzione e testi dei log
-// dei task giornalieri, con datetime.now() fissato.
+// TestGoldenScheduler: secondi fino alla prossima esecuzione e attesa del
+// loop giornaliero, con l'orologio fissato.
 func TestGoldenScheduler(t *testing.T) {
 	var cases []struct {
-		Now        string  `json:"now"`
-		Hour       int     `json:"hour"`
-		Seconds    float64 `json:"seconds"`
-		ScraperLog string  `json:"scraper_log"`
-		NextLog    string  `json:"next_log"`
-		Error      string  `json:"error"`
+		Now     string   `json:"now"`
+		Hour    int      `json:"hour"`
+		Seconds *float64 `json:"seconds"`
 	}
-	loadHTTPGolden(t, "scheduler_golden.json", &cases)
-	logs := captureRecords(t)
+	loadGolden(t, "scheduler_golden.json", &cases)
+	captureLogs(t)
 
 	for _, c := range cases {
 		now, err := time.Parse("2006-01-02T15:04:05.999999", c.Now)
@@ -244,45 +198,37 @@ func TestGoldenScheduler(t *testing.T) {
 			t.Fatal(err)
 		}
 		secs, err := CalculateSecondsUntilNextRun(now, c.Hour)
-		if c.Error != "" {
-			if ExceptionLine(err) != c.Error {
-				t.Errorf("%s ora %d: errore %v, atteso %q", c.Now, c.Hour, err, c.Error)
+		if c.Seconds == nil {
+			if err == nil {
+				t.Errorf("%s ora %d: atteso errore, ottenuto %v", c.Now, c.Hour, secs)
 			}
 			continue
 		}
-		if err != nil || secs != c.Seconds {
-			t.Errorf("%s ora %d: %v %v, atteso %v", c.Now, c.Hour, secs, err, c.Seconds)
+		if err != nil || secs != *c.Seconds {
+			t.Errorf("%s ora %d: %v %v, atteso %v", c.Now, c.Hour, secs, err, *c.Seconds)
 		}
+		checkLoopWait(t, now, c.Hour, *c.Seconds)
+	}
+}
 
-		// Log iniziale di scraper_daily_task
-		s := &Scheduler{ScraperHour: c.Hour, CheckerHour: c.Hour, Now: func() time.Time { return now }}
-		_ = logs.take()
-		if err := s.start(s.scraperSpec()); err != nil {
-			t.Fatal(err)
+// checkLoopWait verifica che il loop giornaliero, dopo un'esecuzione,
+// attenda esattamente seconds.
+func checkLoopWait(t *testing.T, now time.Time, hour int, seconds float64) {
+	t.Helper()
+	var waits []time.Duration
+	s := &Scheduler{CheckerHour: hour, Now: func() time.Time { return now }}
+	s.Sleep = func(_ context.Context, d time.Duration) error {
+		waits = append(waits, d)
+		if len(waits) == 2 {
+			return context.Canceled
 		}
-		if got := logs.take("__main__"); len(got) != 1 || got[0].Msg != c.ScraperLog || got[0].Level != "INFO" {
-			t.Errorf("log iniziale = %q, atteso %q", got, c.ScraperLog)
-		}
-
-		// Log "⏰ Prossimo checker" del loop, e attesa corrispondente
-		var waits []time.Duration
-		s.Sleep = func(_ context.Context, d time.Duration) error {
-			waits = append(waits, d)
-			if len(waits) == 2 {
-				return context.Canceled
-			}
-			return nil
-		}
-		s.runCheckerFn = func(context.Context) {}
-		spec := s.checkerSpec()
-		if err := s.loop(context.Background(), spec); !errors.Is(err, context.Canceled) {
-			t.Fatalf("loop = %v", err)
-		}
-		if got := logs.take("__main__"); len(got) != 1 || got[0].Msg != c.NextLog {
-			t.Errorf("log del loop = %q, atteso %q", got, c.NextLog)
-		}
-		if waits[1] != secondsDuration(c.Seconds) {
-			t.Errorf("attesa = %v, attesa %v", waits[1], secondsDuration(c.Seconds))
-		}
+		return nil
+	}
+	s.runCheckerFn = func(context.Context) {}
+	if err := s.loop(context.Background(), s.checkerSpec()); !errors.Is(err, context.Canceled) {
+		t.Fatalf("loop = %v", err)
+	}
+	if waits[1] != secondsDuration(seconds) {
+		t.Errorf("%v ora %d: attesa = %v, attesa %v", now, hour, waits[1], secondsDuration(seconds))
 	}
 }

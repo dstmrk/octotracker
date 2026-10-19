@@ -123,8 +123,8 @@ func TestGetLastFeedbackTimeAfterFeedback(t *testing.T) {
 	if last == nil {
 		t.Fatal("last_feedback_at nil")
 	}
-	// datetime.fromisoformat solleva eccezione se non valido
-	if _, err := fromISOFormat(*last); err != nil {
+	// Il timestamp è nel formato di CURRENT_TIMESTAMP letto dal cooldown
+	if _, err := time.Parse(sqliteTimestamp, *last); err != nil {
 		t.Errorf("timestamp non valido %q: %v", *last, err)
 	}
 }
@@ -549,7 +549,7 @@ func TestForeignKeysEnabled(t *testing.T) {
 	saveSampleUser(t, s, testUserID)
 	s.SaveFeedback(testUserID, "command", ip(1), nil)
 	s.RemoveUser(testUserID)
-	if n := s.GetFeedbackCount(); n != 0 {
+	if s.GetFeedbackCount() != 0 {
 		t.Error("ON DELETE CASCADE non applicato")
 	}
 	// Anche una connessione aperta con le stesse opzioni dello Store ha

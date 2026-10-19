@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"slices"
+	"strconv"
 )
 
 // ========== FUNZIONI STORICO TARIFFE ==========
@@ -71,7 +74,7 @@ func (s *Store) SaveRatesBatch(dataFonte string, rates []RateRecord) int {
 	}()
 	if err != nil {
 		logger.Error(fmt.Sprintf("❌ Errore salvataggio batch tariffe: %v", err))
-		if rbErr := tx.Rollback(); rbErr == nil {
+		if tx.Rollback() == nil {
 			logger.Debug("Rollback transazione completato")
 		}
 		return -1
@@ -267,8 +270,35 @@ func (s *Store) GetRateHistory(servizio, tipo, fascia string, days int, includeC
 // computeStats calcola {"min", "max", "avg"} come get_rate_history:
 // round(min(data), 6), round(max(data), 6), round(sum(data) / len(data), 6).
 func computeStats(data []float64) *Stats {
-	minV := pyRound(pyMin(data), 6)
-	maxV := pyRound(pyMax(data), 6)
-	avg := pyRound(pySum(data)/float64(len(data)), 6)
+	minV := round6(slices.Min(data))
+	maxV := round6(slices.Max(data))
+	avg := round6(compensatedSum(data) / float64(len(data)))
 	return &Stats{Min: &minV, Max: &maxV, Avg: &avg}
+}
+
+// round6 arrotonda a 6 decimali come round(x, 6) di Python: FormatFloat
+// arrotonda correttamente il valore binario esatto (half-even sui pareggi).
+func round6(x float64) float64 {
+	r, _ := strconv.ParseFloat(strconv.FormatFloat(x, 'f', 6, 64), 64)
+	return r
+}
+
+// compensatedSum somma con la compensazione di Neumaier, come sum() di
+// Python 3.12+ sui float: la media resta identica a quella della versione
+// Python anche nell'ultimo bit.
+func compensatedSum(xs []float64) float64 {
+	sum, c := 0.0, 0.0
+	for _, x := range xs {
+		t := sum + x
+		if math.Abs(sum) >= math.Abs(x) {
+			c += (sum - t) + x
+		} else {
+			c += (x - t) + sum
+		}
+		sum = t
+	}
+	if c != 0 && !math.IsInf(c, 0) && !math.IsNaN(c) {
+		sum += c
+	}
+	return sum
 }

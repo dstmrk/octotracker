@@ -3,13 +3,14 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
-	"strconv"
+	"slices"
 	"strings"
-	"time"
 
 	"github.com/dstmrk/octotracker/internal/logging"
 
@@ -82,11 +83,11 @@ CREATE INDEX IF NOT EXISTS idx_rate_history_servizio ON rate_history(servizio, t
 // tabella users (_USERS_MIGRATIONS), nell'ordine in cui vengono applicate.
 // Ogni voce porta la sua istruzione DDL costante: niente SQL formattato a
 // runtime.
-var usersMigrations = []struct{ column, columnType, ddl string }{
-	{"luce_scadenza", "TEXT", "ALTER TABLE users ADD COLUMN luce_scadenza TEXT"},
-	{"gas_scadenza", "TEXT", "ALTER TABLE users ADD COLUMN gas_scadenza TEXT"},
-	{"luce_scadenza_reminded", "TEXT", "ALTER TABLE users ADD COLUMN luce_scadenza_reminded TEXT"},
-	{"gas_scadenza_reminded", "TEXT", "ALTER TABLE users ADD COLUMN gas_scadenza_reminded TEXT"},
+var usersMigrations = []struct{ column, ddl string }{
+	{"luce_scadenza", "ALTER TABLE users ADD COLUMN luce_scadenza TEXT"},
+	{"gas_scadenza", "ALTER TABLE users ADD COLUMN gas_scadenza TEXT"},
+	{"luce_scadenza_reminded", "ALTER TABLE users ADD COLUMN luce_scadenza_reminded TEXT"},
+	{"gas_scadenza_reminded", "ALTER TABLE users ADD COLUMN gas_scadenza_reminded TEXT"},
 }
 
 // Store è il database SQLite di OctoTracker. Sostituisce le funzioni di
@@ -94,13 +95,6 @@ var usersMigrations = []struct{ column, columnType, ddl string }{
 type Store struct {
 	db   *sql.DB
 	path string
-}
-
-// querier è l'insieme di metodi comune a *sql.DB, *sql.Conn e *sql.Tx.
-type querier interface {
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
 // Open apre (creandolo se serve) il database in path e lo inizializza con
@@ -166,13 +160,9 @@ func (s *Store) InitDB() error {
 // (_migrate_users_schema). SQLite non supporta ADD COLUMN IF NOT EXISTS,
 // quindi controlliamo prima le colonne esistenti tramite PRAGMA table_info.
 func (s *Store) migrateUsersSchema(ctx context.Context) error {
-	maps, err := queryMaps(ctx, s.db, "PRAGMA table_info(users)")
+	existing, err := s.userColumns(ctx)
 	if err != nil {
 		return err
-	}
-	existing := make(map[string]bool, len(maps))
-	for _, m := range maps {
-		existing[m.str("name")] = true
 	}
 	for _, mig := range usersMigrations {
 		if existing[mig.column] {
@@ -186,123 +176,22 @@ func (s *Store) migrateUsersSchema(ctx context.Context) error {
 	return nil
 }
 
-// ========== Righe come dict (sqlite3.Row) ==========
-
-// rowMap è una riga letta per nome di colonna, come sqlite3.Row.
-type rowMap map[string]any
-
-// queryMaps esegue una query e restituisce tutte le righe come rowMap.
-func queryMaps(ctx context.Context, q querier, query string, args ...any) ([]rowMap, error) {
-	rows, err := q.QueryContext(ctx, query, args...)
+// userColumns restituisce i nomi delle colonne della tabella users.
+func (s *Store) userColumns(ctx context.Context) (map[string]bool, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT name FROM pragma_table_info('users')")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	cols, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-	var out []rowMap
+	cols := map[string]bool{}
 	for rows.Next() {
-		vals := make([]any, len(cols))
-		ptrs := make([]any, len(cols))
-		for i := range vals {
-			ptrs[i] = &vals[i]
-		}
-		if err := rows.Scan(ptrs...); err != nil {
+		var name string
+		if err := rows.Scan(&name); err != nil {
 			return nil, err
 		}
-		m := make(rowMap, len(cols))
-		for i, c := range cols {
-			m[c] = vals[i]
-		}
-		out = append(out, m)
+		cols[name] = true
 	}
-	return out, rows.Err()
-}
-
-// has replica _row_has_column.
-func (m rowMap) has(col string) bool {
-	_, ok := m[col]
-	return ok
-}
-
-// truthy replica la truthiness Python del valore di colonna.
-func (m rowMap) truthy(col string) bool {
-	return pyTruthy(m[col])
-}
-
-func pyTruthy(v any) bool {
-	switch x := v.(type) {
-	case nil:
-		return false
-	case string:
-		return x != ""
-	case []byte:
-		return len(x) > 0
-	case int64:
-		return x != 0
-	case float64:
-		return x != 0
-	case bool:
-		return x
-	}
-	return true
-}
-
-func (m rowMap) str(col string) string {
-	return valueString(m[col])
-}
-
-func valueString(v any) string {
-	switch x := v.(type) {
-	case nil:
-		return ""
-	case string:
-		return x
-	case []byte:
-		return string(x)
-	case int64:
-		return strconv.FormatInt(x, 10)
-	case float64:
-		return pyFloatRepr(x)
-	case time.Time:
-		return x.Format("2006-01-02 15:04:05")
-	}
-	return fmt.Sprint(v)
-}
-
-func (m rowMap) float(col string) float64 {
-	f, _ := valueFloat(m[col])
-	return f
-}
-
-func (m rowMap) floatPtr(col string) *float64 {
-	if m[col] == nil {
-		return nil
-	}
-	f, _ := valueFloat(m[col])
-	return &f
-}
-
-func valueFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case int64:
-		return float64(x), true
-	case bool:
-		if x {
-			return 1, true
-		}
-		return 0, true
-	case string:
-		f, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
-		return f, err == nil
-	case []byte:
-		return valueFloat(string(x))
-	}
-	return 0, false
+	return cols, rows.Err()
 }
 
 func nullableFloat(p *float64) any {
@@ -319,73 +208,84 @@ func nullableString(s string) any {
 	return s
 }
 
+func floatPtr(v sql.NullFloat64) *float64 {
+	if !v.Valid {
+		return nil
+	}
+	return &v.Float64
+}
+
 // ========== Utenti ==========
 
-// rowToUser converte una riga users nel modello User (_row_to_dict).
-func rowToUser(m rowMap) (*User, error) {
-	u := &User{
-		ID: m.str("user_id"),
-		Luce: Utility{
-			Tipo:                m.str("luce_tipo"),
-			Fascia:              m.str("luce_fascia"),
-			Energia:             m.float("luce_energia"),
-			Commercializzazione: m.float("luce_commercializzazione"),
-			ConsumoF1:           m.floatPtr("luce_consumo_f1"),
-			ConsumoF2:           m.floatPtr("luce_consumo_f2"),
-			ConsumoF3:           m.floatPtr("luce_consumo_f3"),
-		},
-	}
-	if m.has("luce_scadenza") && m.truthy("luce_scadenza") {
-		u.Luce.Scadenza = m.str("luce_scadenza")
-	}
+// selectUserSQL legge le colonne di users usate da rowToUser.
+const selectUserSQL = `SELECT user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
+	luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, luce_scadenza,
+	gas_tipo, gas_fascia, gas_energia, gas_commercializzazione, gas_consumo_annuo, gas_scadenza,
+	last_notified_rates FROM users`
 
-	if m.truthy("gas_tipo") {
-		gas := Utility{
-			Tipo:                m.str("gas_tipo"),
-			Fascia:              m.str("gas_fascia"),
-			Energia:             m.float("gas_energia"),
-			Commercializzazione: m.float("gas_commercializzazione"),
-			ConsumoAnnuo:        m.floatPtr("gas_consumo_annuo"),
-		}
-		if m.has("gas_scadenza") && m.truthy("gas_scadenza") {
-			gas.Scadenza = m.str("gas_scadenza")
-		}
-		u.Gas = &gas
+// rowToUser converte una riga di selectUserSQL nel modello User
+// (_row_to_dict): il gas è presente solo se gas_tipo non è vuoto.
+func rowToUser(rows *sql.Rows) (*User, error) {
+	var (
+		u                                             User
+		luceF1, luceF2, luceF3, gasEnergia, gasComm   sql.NullFloat64
+		gasConsumo                                    sql.NullFloat64
+		luceScadenza, gasTipo, gasFascia, gasScadenza sql.NullString
+		lastNotified                                  sql.NullString
+	)
+	err := rows.Scan(&u.ID, &u.Luce.Tipo, &u.Luce.Fascia, &u.Luce.Energia, &u.Luce.Commercializzazione,
+		&luceF1, &luceF2, &luceF3, &luceScadenza,
+		&gasTipo, &gasFascia, &gasEnergia, &gasComm, &gasConsumo, &gasScadenza, &lastNotified)
+	if err != nil {
+		return nil, err
 	}
+	u.Luce.ConsumoF1, u.Luce.ConsumoF2, u.Luce.ConsumoF3 = floatPtr(luceF1), floatPtr(luceF2), floatPtr(luceF3)
+	u.Luce.Scadenza = luceScadenza.String
+	if gasTipo.String != "" {
+		u.Gas = &Utility{
+			Tipo:                gasTipo.String,
+			Fascia:              gasFascia.String,
+			Energia:             gasEnergia.Float64,
+			Commercializzazione: gasComm.Float64,
+			ConsumoAnnuo:        floatPtr(gasConsumo),
+			Scadenza:            gasScadenza.String,
+		}
+	}
+	if lastNotified.String != "" {
+		if err := json.Unmarshal([]byte(lastNotified.String), &u.LastNotifiedRates); err != nil {
+			return nil, err
+		}
+	}
+	return &u, nil
+}
 
-	if m.truthy("last_notified_rates") {
-		v, err := pyLoads(m.str("last_notified_rates"))
+// queryUsers esegue selectUserSQL (con il filtro where) e converte le righe.
+func (s *Store) queryUsers(where string, args ...any) ([]*User, error) {
+	rows, err := s.db.QueryContext(context.Background(), selectUserSQL+where, args...)
+	if err != nil {
+		logDBError(err)
+		return nil, err
+	}
+	defer rows.Close()
+	users := []*User{}
+	for rows.Next() {
+		u, err := rowToUser(rows)
 		if err != nil {
 			return nil, err
 		}
-		obj, ok := v.(map[string]any)
-		if !ok {
-			return nil, errNotObject
-		}
-		u.LastNotifiedRates = obj
+		users = append(users, u)
 	}
-	return u, nil
+	return users, rows.Err()
 }
 
 // LoadUsers carica tutti gli utenti dal database (load_users), nell'ordine
 // delle righe (rowid) come il dict Python. Su errore restituisce una slice
 // vuota.
 func (s *Store) LoadUsers() []*User {
-	ctx := context.Background()
-	maps, err := queryMaps(ctx, s.db, "SELECT * FROM users")
+	users, err := s.queryUsers("")
 	if err != nil {
-		logDBError(err)
 		logger.Error(fmt.Sprintf("❌ Errore caricamento utenti: %v", err))
 		return []*User{}
-	}
-	users := make([]*User, 0, len(maps))
-	for _, m := range maps {
-		u, err := rowToUser(m)
-		if err != nil {
-			logger.Error(fmt.Sprintf("❌ Errore caricamento utenti: %v", err))
-			return []*User{}
-		}
-		users = append(users, u)
 	}
 	logger.Debug(fmt.Sprintf("Caricati %d utenti dal database", len(users)))
 	return users
@@ -394,87 +294,36 @@ func (s *Store) LoadUsers() []*User {
 // LoadUser carica un singolo utente (load_user). Restituisce nil se
 // l'utente non esiste o in caso di errore.
 func (s *Store) LoadUser(userID string) *User {
-	ctx := context.Background()
-	maps, err := queryMaps(ctx, s.db, "SELECT * FROM users WHERE user_id = ?", userID)
-	if err != nil {
-		logDBError(err)
-		logger.Error(fmt.Sprintf("❌ Errore caricamento utente %s: %v", userID, err))
-		return nil
-	}
-	if len(maps) == 0 {
-		return nil
-	}
-	u, err := rowToUser(maps[0])
+	users, err := s.queryUsers(" WHERE user_id = ?", userID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("❌ Errore caricamento utente %s: %v", userID, err))
 		return nil
 	}
-	return u
+	if len(users) == 0 {
+		return nil
+	}
+	return users[0]
 }
 
-// validateLuceData valida i dati della fornitura luce (_validate_luce_data).
-func validateLuceData(tipo, fascia any) error {
-	if !inStringSet(tipo, ValidTypes) {
-		return fmt.Errorf("luce.tipo non valido: '%s'. Valori ammessi: %s", pyStr(tipo), pySetRepr(ValidTypes))
+// validateUtility verifica tipo e fascia di una fornitura
+// (_validate_luce_data / _validate_gas_data); servizio è "luce" o "gas".
+func validateUtility(servizio, tipo, fascia string) error {
+	fasce := ValidFasceLuce
+	if servizio == "gas" {
+		fasce = ValidFasceGas
 	}
-	if !inStringSet(fascia, ValidFasceLuce) {
-		return fmt.Errorf("luce.fascia non valida: '%s'. Valori ammessi: %s", pyStr(fascia), pySetRepr(ValidFasceLuce))
+	if !ValidTypes[tipo] {
+		return fmt.Errorf("%s.tipo non valido: '%s'. Valori ammessi: %s", servizio, tipo, setString(ValidTypes))
+	}
+	if !fasce[fascia] {
+		return fmt.Errorf("%s.fascia non valida: '%s'. Valori ammessi: %s", servizio, fascia, setString(fasce))
 	}
 	return nil
 }
 
-// validateGasData valida i dati della fornitura gas (_validate_gas_data).
-func validateGasData(tipo, fascia any) error {
-	if !inStringSet(tipo, ValidTypes) {
-		return fmt.Errorf("gas.tipo non valido: '%s'. Valori ammessi: %s", pyStr(tipo), pySetRepr(ValidTypes))
-	}
-	if !inStringSet(fascia, ValidFasceGas) {
-		return fmt.Errorf("gas.fascia non valida: '%s'. Valori ammessi: %s", pyStr(fascia), pySetRepr(ValidFasceGas))
-	}
-	return nil
-}
-
-func inStringSet(v any, set map[string]bool) bool {
-	s, ok := v.(string)
-	return ok && set[s]
-}
-
-// extractGasFields estrae i campi gas se presenti, nil altrimenti
-// (_extract_gas_fields): tipo, fascia, energia, commercializzazione, consumo_annuo.
-func extractGasFields(gas *Utility) [5]any {
-	if gas == nil {
-		return [5]any{}
-	}
-	return [5]any{gas.Tipo, gas.Fascia, gas.Energia, gas.Commercializzazione, nullableFloat(gas.ConsumoAnnuo)}
-}
-
-// userODict rappresenta l'utente come il dict Python (per i log di debug).
-func userODict(u User) odict {
-	d := odict{{"luce", utilityODict(u.Luce)}}
-	if u.Gas != nil {
-		d = append(d, okv{"gas", utilityODict(*u.Gas)})
-	}
-	if len(u.LastNotifiedRates) > 0 {
-		d = append(d, okv{"last_notified_rates", map[string]any(u.LastNotifiedRates)})
-	}
-	return d
-}
-
-// utilityODict: chiavi nell'ordine di _row_to_dict.
-func utilityODict(u Utility) odict {
-	d := odict{{"tipo", u.Tipo}, {"fascia", u.Fascia}, {"energia", u.Energia}, {"commercializzazione", u.Commercializzazione}}
-	for _, c := range []struct {
-		k string
-		v *float64
-	}{{"consumo_f1", u.ConsumoF1}, {"consumo_f2", u.ConsumoF2}, {"consumo_f3", u.ConsumoF3}, {"consumo_annuo", u.ConsumoAnnuo}} {
-		if c.v != nil {
-			d = append(d, okv{c.k, *c.v})
-		}
-	}
-	if u.Scadenza != "" {
-		d = append(d, okv{"scadenza", u.Scadenza})
-	}
-	return d
+// setString elenca in ordine alfabetico i valori di un insieme.
+func setString(set map[string]bool) string {
+	return strings.Join(slices.Sorted(maps.Keys(set)), ", ")
 }
 
 const saveUserSQL = `
@@ -516,51 +365,46 @@ func (s *Store) SaveUser(userID string, u User) bool {
 }
 
 func (s *Store) saveUser(userID string, u User) error {
-	validationFailed := func(err error) error {
+	// Valida i dati luce (obbligatori) e gas (opzionali), poi serializza
+	// last_notified_rates se presente.
+	err := validateUtility("luce", u.Luce.Tipo, u.Luce.Fascia)
+	if err == nil && u.Gas != nil {
+		err = validateUtility("gas", u.Gas.Tipo, u.Gas.Fascia)
+	}
+	var lastNotified any
+	if err == nil && len(u.LastNotifiedRates) > 0 {
+		var js []byte
+		js, err = json.Marshal(u.LastNotifiedRates)
+		lastNotified = string(js)
+	}
+	if err != nil {
 		logger.Error(fmt.Sprintf("❌ Validazione fallita per %s: %v", userID, err))
-		logger.Debug(fmt.Sprintf("   user_data ricevuto: %s", pyRepr(userODict(u))))
+		if js, jerr := json.Marshal(u); jerr == nil {
+			logger.Debug(fmt.Sprintf("   user_data ricevuto: %s", js))
+		}
 		return err
 	}
 
-	// Estrai e valida dati luce (obbligatori)
-	if err := validateLuceData(u.Luce.Tipo, u.Luce.Fascia); err != nil {
-		return validationFailed(err)
+	gas := u.Gas
+	if gas == nil {
+		gas = &Utility{}
 	}
-	// Estrai e valida dati gas (opzionali)
-	if u.Gas != nil {
-		if err := validateGasData(u.Gas.Tipo, u.Gas.Fascia); err != nil {
-			return validationFailed(err)
-		}
-	}
-	gas := extractGasFields(u.Gas)
-	var gasScadenza any
-	if u.Gas != nil {
-		gasScadenza = nullableString(u.Gas.Scadenza)
-	}
-
-	// Serializza last_notified_rates se presente
-	var lastNotified any
-	if len(u.LastNotifiedRates) > 0 {
-		js, err := pyDumps(map[string]any(u.LastNotifiedRates))
-		if err != nil {
-			return validationFailed(err)
-		}
-		lastNotified = js
-	}
-
-	_, err := s.db.ExecContext(context.Background(), saveUserSQL,
+	_, err = s.db.ExecContext(context.Background(), saveUserSQL,
 		userID,
 		u.Luce.Tipo,
 		u.Luce.Fascia,
 		u.Luce.Energia,
 		u.Luce.Commercializzazione,
-		gas[0], gas[1], gas[2], gas[3],
+		nullableString(gas.Tipo),
+		nullableString(gas.Fascia),
+		gasFloat(u.Gas, gas.Energia),
+		gasFloat(u.Gas, gas.Commercializzazione),
 		nullableFloat(u.Luce.ConsumoF1),
 		nullableFloat(u.Luce.ConsumoF2),
 		nullableFloat(u.Luce.ConsumoF3),
-		gas[4],
+		nullableFloat(gas.ConsumoAnnuo),
 		nullableString(u.Luce.Scadenza),
-		gasScadenza,
+		nullableString(gas.Scadenza),
 		lastNotified,
 	)
 	if err != nil {
@@ -569,6 +413,14 @@ func (s *Store) saveUser(userID string, u User) error {
 		return err
 	}
 	return nil
+}
+
+// gasFloat restituisce v, oppure NULL se l'utente non ha il gas.
+func gasFloat(gas *Utility, v float64) any {
+	if gas == nil {
+		return nil
+	}
+	return v
 }
 
 // RemoveUser rimuove un utente (remove_user). Restituisce true solo se una

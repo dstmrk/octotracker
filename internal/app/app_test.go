@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/config"
 	"github.com/dstmrk/octotracker/internal/scraper"
 	"github.com/dstmrk/octotracker/internal/testutil"
@@ -43,20 +42,20 @@ func fakeOperations(s *Scheduler) {
 	s.SendReminders = func(context.Context) error { return nil }
 }
 
-// TestServeConfigErrors: i ValueError di bot.py nello stesso ordine.
+// TestServeConfigErrors: errori di configurazione nell'ordine dei controlli.
 func TestServeConfigErrors(t *testing.T) {
 	logs := captureLogs(t)
 
 	cfg := serveConfig(t)
 	cfg.WebhookSecret = ""
 	err := Serve(context.Background(), cfg, ServeOptions{})
-	if !pycompat.IsInstance(err, "ValueError") || err.Error() != config.ErrMissingWebhookSecret.Error() {
+	if !errors.Is(err, config.ErrMissingWebhookSecret) {
 		t.Errorf("senza WEBHOOK_SECRET: %v", err)
 	}
 
 	cfg = serveConfig(t)
 	cfg.BotToken = ""
-	if err := Serve(context.Background(), cfg, ServeOptions{}); ExceptionLine(err) != "ValueError: TELEGRAM_BOT_TOKEN non impostato" {
+	if err := Serve(context.Background(), cfg, ServeOptions{}); err == nil || err.Error() != "TELEGRAM_BOT_TOKEN non impostato" {
 		t.Errorf("senza token: %v", err)
 	}
 	if _, err := os.Stat(cfg.DataDir); !os.IsNotExist(err) {
@@ -66,7 +65,7 @@ func TestServeConfigErrors(t *testing.T) {
 	b, fc := testutil.NewBot(t)
 	cfg = serveConfig(t)
 	cfg.WebhookURL = ""
-	if err := Serve(context.Background(), cfg, ServeOptions{Bot: b}); ExceptionLine(err) != "ValueError: WEBHOOK_URL richiesto" {
+	if err := Serve(context.Background(), cfg, ServeOptions{Bot: b}); err == nil || err.Error() != "WEBHOOK_URL richiesto" {
 		t.Errorf("senza WEBHOOK_URL: %v", err)
 	}
 	if len(fc.Calls()) != 0 {
@@ -198,7 +197,7 @@ func TestServeLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "text/html" {
+	if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
 		t.Errorf("/app/: %d %v", resp.StatusCode, resp.Header)
 	}
 
@@ -235,7 +234,7 @@ func TestServeLifecycle(t *testing.T) {
 }
 
 // TestServeBootstrapFailures: getMe con token rifiutato e setWebhook che
-// fallisce sempre fermano l'avvio con l'errore di PTB.
+// fallisce sempre fermano l'avvio con l'errore di Telegram.
 func TestServeBootstrapFailures(t *testing.T) {
 	logs := captureLogs(t)
 	noSleep := func(ctx context.Context, _ time.Duration) error { return ctx.Err() }
@@ -245,7 +244,7 @@ func TestServeBootstrapFailures(t *testing.T) {
 	fc.FailMethod("getMe", testutil.TelegramError("getMe", 401, "Unauthorized"))
 	cfg := serveConfig(t)
 	err := Serve(context.Background(), cfg, ServeOptions{Bot: b, Sleep: noSleep, Listen: (&localListen{}).listen})
-	if ExceptionLine(err) != "InvalidToken: The token was rejected by the server." {
+	if !isInvalidToken(err) {
 		t.Errorf("errore = %v", err)
 	}
 	assertLogNotContains(t, logs, "Scraper schedulato per le")
@@ -256,18 +255,18 @@ func TestServeBootstrapFailures(t *testing.T) {
 	fc.FailMethod("setWebhook", testutil.TelegramError("setWebhook", 400, "Bad Request: bad webhook: HTTPS url must be provided for webhook"))
 	cfg = serveConfig(t)
 	err = Serve(context.Background(), cfg, ServeOptions{Bot: b, Sleep: noSleep, Listen: (&localListen{}).listen, ConfigureScheduler: fakeOperations})
-	if describe(err).class != "BadRequest" {
+	if tgErr := apiError(err); tgErr == nil || tgErr.Code != 400 {
 		t.Errorf("errore = %v", err)
 	}
 	if n := len(fc.CallsTo("setWebhook")); n != 4 {
 		t.Errorf("tentativi setWebhook = %d", n)
 	}
-	assertLogContains(t, logs, "Network Retry Loop (Bootstrap Set Webhook): Failed run number 3 of 3. Aborting.")
+	assertLogContains(t, logs, "❌ setWebhook: fallito dopo 4 tentativi")
 	assertLogContains(t, logs, "Task scraper_daily cancellato")
 }
 
 // TestServeWebhookPortInUse: un errore di bind sulla porta del webhook
-// termina Serve con l'OSError.
+// termina Serve con l'errore.
 func TestServeWebhookPortInUse(t *testing.T) {
 	captureLogs(t)
 	b, _ := testutil.NewBot(t)
@@ -281,7 +280,7 @@ func TestServeWebhookPortInUse(t *testing.T) {
 		return ll.listen(network, address)
 	}
 	err := Serve(context.Background(), cfg, ServeOptions{Bot: b, Listen: listen, ConfigureScheduler: fakeOperations})
-	if ExceptionLine(err) != "OSError: [Errno 98] Address already in use" {
+	if !errors.Is(err, syscall.EADDRINUSE) {
 		t.Errorf("errore = %v", err)
 	}
 }
@@ -311,7 +310,7 @@ func TestServeWebhookServerError(t *testing.T) {
 }
 
 // TestServeStopDuringBootstrap: un segnale di stop durante i tentativi di
-// avvio termina Serve senza errore (spegnimento ordinato di PTB).
+// avvio termina Serve senza errore (spegnimento ordinato).
 func TestServeStopDuringBootstrap(t *testing.T) {
 	logs := captureLogs(t)
 	b, fc := testutil.NewBot(t)

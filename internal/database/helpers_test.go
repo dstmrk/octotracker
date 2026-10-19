@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -121,13 +122,32 @@ func rawColumn(t *testing.T, s *Store, userID, column string) any {
 
 func userColumns(t *testing.T, s *Store) map[string]bool {
 	t.Helper()
-	maps, err := queryMaps(t.Context(), s.db, "PRAGMA table_info(users)")
+	cols, err := s.userColumns(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	cols := map[string]bool{}
-	for _, m := range maps {
-		cols[m.str("name")] = true
-	}
 	return cols
+}
+
+// assertSameBlob confronta un blob JSON letto dal DB con quello atteso per
+// valore (stesse chiavi e valori, formattazione libera). want nil indica
+// una colonna NULL.
+func assertSameBlob(t *testing.T, what string, got, want any) {
+	t.Helper()
+	if got == nil || want == nil {
+		if got != want {
+			t.Errorf("%s: got %v, want %v", what, got, want)
+		}
+		return
+	}
+	var g, w any
+	if err := json.Unmarshal([]byte(got.(string)), &g); err != nil {
+		t.Fatalf("%s: blob non valido %v: %v", what, got, err)
+	}
+	if err := json.Unmarshal([]byte(want.(string)), &w); err != nil {
+		t.Fatalf("%s: blob atteso non valido %v: %v", what, want, err)
+	}
+	if !reflect.DeepEqual(g, w) {
+		t.Errorf("%s:\n got  %v\n want %v", what, got, want)
+	}
 }

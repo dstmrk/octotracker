@@ -772,7 +772,7 @@ func TestBuildPendingRatesNoUpdatedWhenRateMissing(t *testing.T) {
 
 // test_updated_fissa_services_none
 func TestUpdatedFissaServicesNone(t *testing.T) {
-	if got := updatedFissaServices(nil); got == nil || len(got) != 0 {
+	if got := updatedFissaServices(nil); len(got) != 0 {
 		t.Errorf("got %#v", got)
 	}
 }

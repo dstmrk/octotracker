@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/dstmrk/octotracker/internal/database"
@@ -17,9 +18,9 @@ import (
 // centinaia di combinazioni di utenti e tariffe (fissa/variabile,
 // mono/bi/trioraria, con/senza gas, con/senza consumi, miglioramenti,
 // peggioramenti, casi mixed, valori uguali, commercializzazione mancante,
-// codici offerta, varianti di last_notified_rates). Ogni output Go deve
-// coincidere esattamente (stringhe byte per byte, float bit per bit, blob
-// JSON identici a json.dumps).
+// codici offerta, varianti di last_notified_rates). I messaggi devono
+// coincidere byte per byte, i float bit per bit e i blob JSON per valore
+// (stesse chiavi e valori di json.dumps).
 
 type goldenError struct {
 	Type string `json:"type"`
@@ -125,20 +126,30 @@ func catch(f func()) (recovered any) {
 	return nil
 }
 
-// expectKeyError verifica che il panic corrisponda all'eccezione Python attesa.
+// expectKeyError verifica che il panic corrisponda al KeyError Python atteso.
 func expectKeyError(t *testing.T, what string, want *goldenError, got any) {
 	t.Helper()
 	if want.Type != "KeyError" {
 		t.Fatalf("%s: eccezione Python inattesa nel corpus: %+v", what, want)
 	}
-	ke, ok := got.(KeyError)
-	if !ok {
+	if ke, ok := got.(KeyError); !ok || string(ke) != want.Key {
 		t.Errorf("%s: atteso panic KeyError(%q), ottenuto %#v", what, want.Key, got)
-		return
 	}
-	if string(ke) != want.Key || ke.Error() != want.Str {
-		t.Errorf("%s: KeyError = %q (%s), atteso %q (%s)", what, string(ke), ke.Error(), want.Key, want.Str)
+}
+
+// expectNoPanic restituisce true se f non è andata in panic e il caso
+// golden non prevede un'eccezione; altrimenti verifica il KeyError atteso.
+func expectNoPanic(t *testing.T, what string, want *goldenError, recovered any) bool {
+	t.Helper()
+	if want != nil {
+		expectKeyError(t, what, want, recovered)
+		return false
 	}
+	if recovered != nil {
+		t.Errorf("%s: panic inatteso: %v", what, recovered)
+		return false
+	}
+	return true
 }
 
 func sameFloat(a, b float64) bool { return math.Float64bits(a) == math.Float64bits(b) }
@@ -171,28 +182,22 @@ func checkUtilitySavings(t *testing.T, what string, want goldenUtilitySavings, g
 		t.Errorf("%s: worse/mixed = %v/%v/%v, attesi %v/%v/%v", what,
 			got.EnergiaWorse, got.CommWorse, got.IsMixed, want.EnergiaWorse, want.CommWorse, want.IsMixed)
 	}
-	wantTipo, wantFascia := "", ""
-	if want.Tipo != nil {
-		wantTipo = *want.Tipo
+	if got.Tipo != deref(want.Tipo) || got.Fascia != deref(want.Fascia) {
+		t.Errorf("%s: tipo/fascia = %q/%q, attesi %q/%q", what, got.Tipo, got.Fascia, deref(want.Tipo), deref(want.Fascia))
 	}
-	if want.Fascia != nil {
-		wantFascia = *want.Fascia
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
 	}
-	if got.Tipo != wantTipo || got.Fascia != wantFascia {
-		t.Errorf("%s: tipo/fascia = %q/%q, attesi %q/%q", what, got.Tipo, got.Fascia, wantTipo, wantFascia)
-	}
+	return *s
 }
 
 func checkMessage(t *testing.T, what string, messages []string, want goldenMsgResult, f func() string) {
 	t.Helper()
 	var got string
-	r := catch(func() { got = f() })
-	if want.Error != nil {
-		expectKeyError(t, what, want.Error, r)
-		return
-	}
-	if r != nil {
-		t.Errorf("%s: panic inatteso: %v", what, r)
+	if !expectNoPanic(t, what, want.Error, catch(func() { got = f() })) {
 		return
 	}
 	if want.Msg == nil {
@@ -215,27 +220,43 @@ func assertSameText(t *testing.T, what, got, want string) {
 	t.Errorf("%s: testo diverso dal byte %d\n got: %q\nwant: %q", what, i, got, want)
 }
 
-func checkJSONResult(t *testing.T, what string, want goldenJSONResult, f func() ([]byte, error)) {
+// assertSameJSON confronta per valore la serializzazione di got con il
+// blob JSON scritto da Python.
+func assertSameJSON(t *testing.T, what string, got any, want string) {
 	t.Helper()
-	var got []byte
-	var err error
-	r := catch(func() { got, err = f() })
-	if want.Error != nil {
-		expectKeyError(t, what, want.Error, r)
-		return
-	}
-	if r != nil {
-		t.Errorf("%s: panic inatteso: %v", what, r)
-		return
-	}
+	b, err := json.Marshal(got)
 	if err != nil {
 		t.Errorf("%s: errore di serializzazione: %v", what, err)
+		return
+	}
+	var g, w any
+	if err := json.Unmarshal(b, &g); err != nil {
+		t.Fatalf("%s: %v", what, err)
+	}
+	if err := json.Unmarshal([]byte(want), &w); err != nil {
+		t.Fatalf("%s: JSON golden non valido: %v", what, err)
+	}
+	if !reflect.DeepEqual(g, w) {
+		t.Errorf("%s:\n got  %s\n want %s", what, b, want)
+	}
+}
+
+func checkJSONResult(t *testing.T, what string, want goldenJSONResult, f func() any) {
+	t.Helper()
+	var got any
+	if !expectNoPanic(t, what, want.Error, catch(func() { got = f() })) {
 		return
 	}
 	if want.JSON == nil {
 		t.Fatalf("%s: caso golden senza JSON", what)
 	}
-	assertSameText(t, what, string(got), *want.JSON)
+	assertSameJSON(t, what, got, *want.JSON)
+}
+
+// shown è l'esito di shouldShowUtility per una fornitura.
+type shown struct {
+	show bool
+	est  *float64
 }
 
 func TestGoldenChecker(t *testing.T) {
@@ -244,11 +265,10 @@ func TestGoldenChecker(t *testing.T) {
 	for _, c := range g.Cases {
 		user := c.User
 		user.ID = "u1"
-		rates := c.Rates
 
 		t.Run(c.Tag, func(t *testing.T) {
 			// check_better_rates
-			savings := CheckBetterRates(&user, rates)
+			savings := CheckBetterRates(&user, c.Rates)
 			if savings.HasSavings != c.Savings.HasSavings || savings.IsMixed != c.Savings.IsMixed {
 				t.Errorf("has_savings/is_mixed = %v/%v, attesi %v/%v",
 					savings.HasSavings, savings.IsMixed, c.Savings.HasSavings, c.Savings.IsMixed)
@@ -256,97 +276,93 @@ func TestGoldenChecker(t *testing.T) {
 			checkUtilitySavings(t, "luce", c.Savings.Luce, savings.Luce)
 			checkUtilitySavings(t, "gas", c.Savings.Gas, savings.Gas)
 
-			// _build_current_octopus_rates + _should_notify_user
-			var cur database.LastNotifiedRates
-			checkJSONResult(t, "current_octopus", c.CurrentOctopus, func() ([]byte, error) {
-				cur = buildCurrentOctopusRates(&user, rates)
-				return cur.MarshalJSON()
-			})
-			if c.ShouldNotify != nil {
-				if got := shouldNotifyUser(&user, cur); got != *c.ShouldNotify {
-					t.Errorf("should_notify = %v, atteso %v", got, *c.ShouldNotify)
-				}
-			}
-
-			// _should_show_utility
-			type shown struct {
-				show bool
-				est  *float64
-			}
-			shows := map[string]shown{}
-			for _, u := range []string{"luce", "gas"} {
-				want := c.Show[u]
-				var s shown
-				r := catch(func() { s.show, s.est = shouldShowUtility(u, savings, &user, rates) })
-				if want.Error != nil {
-					expectKeyError(t, "show "+u, want.Error, r)
-					continue
-				}
-				if r != nil {
-					t.Errorf("show %s: panic inatteso: %v", u, r)
-					continue
-				}
-				if s.show != *want.Show || !sameOptFloat(s.est, want.Estimated) {
-					t.Errorf("show %s = (%v, %v), atteso (%v, %v)", u, s.show, fptr(s.est), *want.Show, fptr(want.Estimated))
-				}
-				shows[u] = s
-			}
-
-			// format_notification con i default (True, True, None, None)
-			checkMessage(t, "message_default", g.Messages, c.MessageDefault, func() string {
-				return FormatNotification(savings, &user, rates, true, true, nil, nil)
-			})
-
-			// format_notification e _build_pending_rates con i flag calcolati
-			if c.MessageShown != nil {
-				l, gs := shows["luce"], shows["gas"]
-				checkMessage(t, "message_shown", g.Messages, *c.MessageShown, func() string {
-					return FormatNotification(savings, &user, rates, l.show, gs.show, l.est, gs.est)
-				})
-				checkJSONResult(t, "pending_shown", *c.PendingShown, func() ([]byte, error) {
-					return buildPendingRates(&user, rates, l.show, gs.show).MarshalJSON()
-				})
-			}
-
-			// Variante casuale di flag e stime
-			v := c.MessageVariant
-			checkMessage(t, "message_variant", g.Messages, v.goldenMsgResult, func() string {
-				return FormatNotification(savings, &user, rates, v.ShowLuce, v.ShowGas, v.LuceEstimated, v.GasEstimated)
-			})
-			pv := c.PendingVariant
-			checkJSONResult(t, "pending_variant", pv.goldenJSONResult, func() ([]byte, error) {
-				return buildPendingRates(&user, rates, pv.ShowLuce, pv.ShowGas).MarshalJSON()
-			})
-
-			// _prepare_user_notification (pipeline completa)
-			var prep *preparedNotification
-			r := catch(func() { prep = prepareUserNotification("u1", &user, rates) })
-			switch {
-			case c.Prepare.Error != nil:
-				expectKeyError(t, "prepare", c.Prepare.Error, r)
-			case r != nil:
-				t.Errorf("prepare: panic inatteso: %v", r)
-			case c.Prepare.Value == nil:
-				if prep != nil {
-					t.Errorf("prepare: atteso None, ottenuta notifica %q", prep.message)
-				}
-			case prep == nil:
-				t.Errorf("prepare: attesa notifica, ottenuto nil")
-			default:
-				want := c.Prepare.Value
-				assertSameText(t, "prepare.message", prep.message, g.Messages[want.Message])
-				co, err := prep.currentOctopus.MarshalJSON()
-				if err != nil {
-					t.Fatalf("prepare.current_octopus: %v", err)
-				}
-				assertSameText(t, "prepare.current_octopus", string(co), want.CurrentOctopus)
-				pend, err := prep.pendingRates.MarshalJSON()
-				if err != nil {
-					t.Fatalf("prepare.pending: %v", err)
-				}
-				assertSameText(t, "prepare.pending", string(pend), want.Pending)
-			}
+			checkGoldenCurrentOctopus(t, c, &user)
+			shows := checkGoldenShow(t, c, savings, &user)
+			checkGoldenMessages(t, g.Messages, c, savings, &user, shows)
+			checkGoldenPrepare(t, g.Messages, c, &user)
 		})
+	}
+}
+
+// checkGoldenCurrentOctopus verifica _build_current_octopus_rates e
+// _should_notify_user.
+func checkGoldenCurrentOctopus(t *testing.T, c goldenCheckerCase, user *database.User) {
+	t.Helper()
+	var cur database.LastNotifiedRates
+	checkJSONResult(t, "current_octopus", c.CurrentOctopus, func() any {
+		cur = buildCurrentOctopusRates(user, c.Rates)
+		return cur
+	})
+	if c.ShouldNotify != nil {
+		if got := shouldNotifyUser(user, cur); got != *c.ShouldNotify {
+			t.Errorf("should_notify = %v, atteso %v", got, *c.ShouldNotify)
+		}
+	}
+}
+
+// checkGoldenShow verifica _should_show_utility per luce e gas.
+func checkGoldenShow(t *testing.T, c goldenCheckerCase, savings Savings, user *database.User) map[string]shown {
+	t.Helper()
+	shows := map[string]shown{}
+	for _, u := range []string{"luce", "gas"} {
+		want := c.Show[u]
+		var s shown
+		if !expectNoPanic(t, "show "+u, want.Error, catch(func() { s.show, s.est = shouldShowUtility(u, savings, user, c.Rates) })) {
+			continue
+		}
+		if s.show != *want.Show || !sameOptFloat(s.est, want.Estimated) {
+			t.Errorf("show %s = (%v, %v), atteso (%v, %v)", u, s.show, fptr(s.est), *want.Show, fptr(want.Estimated))
+		}
+		shows[u] = s
+	}
+	return shows
+}
+
+// checkGoldenMessages verifica format_notification e _build_pending_rates con
+// i flag di default, con quelli calcolati e con una variante casuale.
+func checkGoldenMessages(t *testing.T, messages []string, c goldenCheckerCase, savings Savings, user *database.User, shows map[string]shown) {
+	t.Helper()
+	checkMessage(t, "message_default", messages, c.MessageDefault, func() string {
+		return FormatNotification(savings, user, c.Rates, true, true, nil, nil)
+	})
+
+	if c.MessageShown != nil {
+		l, gs := shows["luce"], shows["gas"]
+		checkMessage(t, "message_shown", messages, *c.MessageShown, func() string {
+			return FormatNotification(savings, user, c.Rates, l.show, gs.show, l.est, gs.est)
+		})
+		checkJSONResult(t, "pending_shown", *c.PendingShown, func() any {
+			return buildPendingRates(user, c.Rates, l.show, gs.show)
+		})
+	}
+
+	v := c.MessageVariant
+	checkMessage(t, "message_variant", messages, v.goldenMsgResult, func() string {
+		return FormatNotification(savings, user, c.Rates, v.ShowLuce, v.ShowGas, v.LuceEstimated, v.GasEstimated)
+	})
+	pv := c.PendingVariant
+	checkJSONResult(t, "pending_variant", pv.goldenJSONResult, func() any {
+		return buildPendingRates(user, c.Rates, pv.ShowLuce, pv.ShowGas)
+	})
+}
+
+// checkGoldenPrepare verifica _prepare_user_notification (pipeline completa).
+func checkGoldenPrepare(t *testing.T, messages []string, c goldenCheckerCase, user *database.User) {
+	t.Helper()
+	var prep *preparedNotification
+	if !expectNoPanic(t, "prepare", c.Prepare.Error, catch(func() { prep = prepareUserNotification("u1", user, c.Rates) })) {
+		return
+	}
+	want := c.Prepare.Value
+	switch {
+	case want == nil && prep != nil:
+		t.Errorf("prepare: atteso None, ottenuta notifica %q", prep.message)
+	case want != nil && prep == nil:
+		t.Errorf("prepare: attesa notifica, ottenuto nil")
+	case want != nil:
+		assertSameText(t, "prepare.message", prep.message, messages[want.Message])
+		assertSameJSON(t, "prepare.current_octopus", prep.currentOctopus, want.CurrentOctopus)
+		assertSameJSON(t, "prepare.pending", prep.pendingRates, want.Pending)
 	}
 }
 

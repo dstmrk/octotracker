@@ -2,576 +2,413 @@
  {
   "now": "2026-10-18T08:59:59.999999",
   "hour": 0,
-  "seconds": 54000.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.0 ore (alle 0:00)"
+  "seconds": 54000.000001
  },
  {
   "now": "2026-10-18T08:59:59.999999",
   "hour": 9,
-  "seconds": 1e-06,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 0.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.0 ore (alle 9:00)"
+  "seconds": 1e-06
  },
  {
   "now": "2026-10-18T08:59:59.999999",
   "hour": 10,
-  "seconds": 3600.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 10:00)"
+  "seconds": 3600.000001
  },
  {
   "now": "2026-10-18T08:59:59.999999",
   "hour": 11,
-  "seconds": 7200.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 11:00)"
+  "seconds": 7200.000001
  },
  {
   "now": "2026-10-18T08:59:59.999999",
   "hour": 23,
-  "seconds": 50400.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.0 ore (alle 23:00)"
+  "seconds": 50400.000001
  },
  {
   "now": "2026-10-18T09:00:00",
   "hour": 0,
-  "seconds": 54000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.0 ore (alle 0:00)"
+  "seconds": 54000.0
  },
  {
   "now": "2026-10-18T09:00:00",
   "hour": 9,
-  "seconds": 86400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 24.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 24.0 ore (alle 9:00)"
+  "seconds": 86400.0
  },
  {
   "now": "2026-10-18T09:00:00",
   "hour": 10,
-  "seconds": 3600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 10:00)"
+  "seconds": 3600.0
  },
  {
   "now": "2026-10-18T09:00:00",
   "hour": 11,
-  "seconds": 7200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 11:00)"
+  "seconds": 7200.0
  },
  {
   "now": "2026-10-18T09:00:00",
   "hour": 23,
-  "seconds": 50400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.0 ore (alle 23:00)"
+  "seconds": 50400.0
  },
  {
   "now": "2026-10-18T09:00:00.000001",
   "hour": 0,
-  "seconds": 53999.999999,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.0 ore (alle 0:00)"
+  "seconds": 53999.999999
  },
  {
   "now": "2026-10-18T09:00:00.000001",
   "hour": 9,
-  "seconds": 86399.999999,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 24.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 24.0 ore (alle 9:00)"
+  "seconds": 86399.999999
  },
  {
   "now": "2026-10-18T09:00:00.000001",
   "hour": 10,
-  "seconds": 3599.999999,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 10:00)"
+  "seconds": 3599.999999
  },
  {
   "now": "2026-10-18T09:00:00.000001",
   "hour": 11,
-  "seconds": 7199.999999,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 11:00)"
+  "seconds": 7199.999999
  },
  {
   "now": "2026-10-18T09:00:00.000001",
   "hour": 23,
-  "seconds": 50399.999999,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.0 ore (alle 23:00)"
+  "seconds": 50399.999999
  },
  {
   "now": "2026-10-18T00:00:00",
   "hour": 0,
-  "seconds": 86400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 24.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 24.0 ore (alle 0:00)"
+  "seconds": 86400.0
  },
  {
   "now": "2026-10-18T00:00:00",
   "hour": 9,
-  "seconds": 32400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 9.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 9.0 ore (alle 9:00)"
+  "seconds": 32400.0
  },
  {
   "now": "2026-10-18T00:00:00",
   "hour": 10,
-  "seconds": 36000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 10.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 10.0 ore (alle 10:00)"
+  "seconds": 36000.0
  },
  {
   "now": "2026-10-18T00:00:00",
   "hour": 11,
-  "seconds": 39600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 11.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 11.0 ore (alle 11:00)"
+  "seconds": 39600.0
  },
  {
   "now": "2026-10-18T00:00:00",
   "hour": 23,
-  "seconds": 82800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 23.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 23.0 ore (alle 23:00)"
+  "seconds": 82800.0
  },
  {
   "now": "2026-10-18T23:59:59.999999",
   "hour": 0,
-  "seconds": 1e-06,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 0.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.0 ore (alle 0:00)"
+  "seconds": 1e-06
  },
  {
   "now": "2026-10-18T23:59:59.999999",
   "hour": 9,
-  "seconds": 32400.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 9.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 9.0 ore (alle 9:00)"
+  "seconds": 32400.000001
  },
  {
   "now": "2026-10-18T23:59:59.999999",
   "hour": 10,
-  "seconds": 36000.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 10.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 10.0 ore (alle 10:00)"
+  "seconds": 36000.000001
  },
  {
   "now": "2026-10-18T23:59:59.999999",
   "hour": 11,
-  "seconds": 39600.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 11.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 11.0 ore (alle 11:00)"
+  "seconds": 39600.000001
  },
  {
   "now": "2026-10-18T23:59:59.999999",
   "hour": 23,
-  "seconds": 82800.000001,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 23.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 23.0 ore (alle 23:00)"
+  "seconds": 82800.000001
  },
  {
   "now": "2026-10-18T12:34:56.789012",
   "hour": 0,
-  "seconds": 41103.210988,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 11.4 ore)",
-  "next_log": "⏰ Prossimo checker tra 11.4 ore (alle 0:00)"
+  "seconds": 41103.210988
  },
  {
   "now": "2026-10-18T12:34:56.789012",
   "hour": 9,
-  "seconds": 73503.210988,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 20.4 ore)",
-  "next_log": "⏰ Prossimo checker tra 20.4 ore (alle 9:00)"
+  "seconds": 73503.210988
  },
  {
   "now": "2026-10-18T12:34:56.789012",
   "hour": 10,
-  "seconds": 77103.210988,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 21.4 ore)",
-  "next_log": "⏰ Prossimo checker tra 21.4 ore (alle 10:00)"
+  "seconds": 77103.210988
  },
  {
   "now": "2026-10-18T12:34:56.789012",
   "hour": 11,
-  "seconds": 80703.210988,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 22.4 ore)",
-  "next_log": "⏰ Prossimo checker tra 22.4 ore (alle 11:00)"
+  "seconds": 80703.210988
  },
  {
   "now": "2026-10-18T12:34:56.789012",
   "hour": 23,
-  "seconds": 37503.210988,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 10.4 ore)",
-  "next_log": "⏰ Prossimo checker tra 10.4 ore (alle 23:00)"
+  "seconds": 37503.210988
  },
  {
   "now": "2026-03-29T01:30:00",
   "hour": 0,
-  "seconds": 81000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 22.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 22.5 ore (alle 0:00)"
+  "seconds": 81000.0
  },
  {
   "now": "2026-03-29T01:30:00",
   "hour": 9,
-  "seconds": 27000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 7.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 7.5 ore (alle 9:00)"
+  "seconds": 27000.0
  },
  {
   "now": "2026-03-29T01:30:00",
   "hour": 10,
-  "seconds": 30600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 8.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 8.5 ore (alle 10:00)"
+  "seconds": 30600.0
  },
  {
   "now": "2026-03-29T01:30:00",
   "hour": 11,
-  "seconds": 34200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 9.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 9.5 ore (alle 11:00)"
+  "seconds": 34200.0
  },
  {
   "now": "2026-03-29T01:30:00",
   "hour": 23,
-  "seconds": 77400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 21.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 21.5 ore (alle 23:00)"
+  "seconds": 77400.0
  },
  {
   "now": "2026-03-29T03:30:00",
   "hour": 0,
-  "seconds": 73800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 20.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 20.5 ore (alle 0:00)"
+  "seconds": 73800.0
  },
  {
   "now": "2026-03-29T03:30:00",
   "hour": 9,
-  "seconds": 19800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 5.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 5.5 ore (alle 9:00)"
+  "seconds": 19800.0
  },
  {
   "now": "2026-03-29T03:30:00",
   "hour": 10,
-  "seconds": 23400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 6.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 6.5 ore (alle 10:00)"
+  "seconds": 23400.0
  },
  {
   "now": "2026-03-29T03:30:00",
   "hour": 11,
-  "seconds": 27000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 7.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 7.5 ore (alle 11:00)"
+  "seconds": 27000.0
  },
  {
   "now": "2026-03-29T03:30:00",
   "hour": 23,
-  "seconds": 70200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 19.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 19.5 ore (alle 23:00)"
+  "seconds": 70200.0
  },
  {
   "now": "2026-10-25T02:30:00",
   "hour": 0,
-  "seconds": 77400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 21.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 21.5 ore (alle 0:00)"
+  "seconds": 77400.0
  },
  {
   "now": "2026-10-25T02:30:00",
   "hour": 9,
-  "seconds": 23400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 6.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 6.5 ore (alle 9:00)"
+  "seconds": 23400.0
  },
  {
   "now": "2026-10-25T02:30:00",
   "hour": 10,
-  "seconds": 27000.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 7.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 7.5 ore (alle 10:00)"
+  "seconds": 27000.0
  },
  {
   "now": "2026-10-25T02:30:00",
   "hour": 11,
-  "seconds": 30600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 8.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 8.5 ore (alle 11:00)"
+  "seconds": 30600.0
  },
  {
   "now": "2026-10-25T02:30:00",
   "hour": 23,
-  "seconds": 73800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 20.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 20.5 ore (alle 23:00)"
+  "seconds": 73800.0
  },
  {
   "now": "2026-12-31T23:30:00",
   "hour": 0,
-  "seconds": 1800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 0.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.5 ore (alle 0:00)"
+  "seconds": 1800.0
  },
  {
   "now": "2026-12-31T23:30:00",
   "hour": 9,
-  "seconds": 34200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 9.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 9.5 ore (alle 9:00)"
+  "seconds": 34200.0
  },
  {
   "now": "2026-12-31T23:30:00",
   "hour": 10,
-  "seconds": 37800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 10.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 10.5 ore (alle 10:00)"
+  "seconds": 37800.0
  },
  {
   "now": "2026-12-31T23:30:00",
   "hour": 11,
-  "seconds": 41400.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 11.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 11.5 ore (alle 11:00)"
+  "seconds": 41400.0
  },
  {
   "now": "2026-12-31T23:30:00",
   "hour": 23,
-  "seconds": 84600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 23.5 ore)",
-  "next_log": "⏰ Prossimo checker tra 23.5 ore (alle 23:00)"
+  "seconds": 84600.0
  },
  {
   "now": "2028-02-28T22:00:00",
   "hour": 0,
-  "seconds": 7200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 0:00)"
+  "seconds": 7200.0
  },
  {
   "now": "2028-02-28T22:00:00",
   "hour": 9,
-  "seconds": 39600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 11.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 11.0 ore (alle 9:00)"
+  "seconds": 39600.0
  },
  {
   "now": "2028-02-28T22:00:00",
   "hour": 10,
-  "seconds": 43200.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 12.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 12.0 ore (alle 10:00)"
+  "seconds": 43200.0
  },
  {
   "now": "2028-02-28T22:00:00",
   "hour": 11,
-  "seconds": 46800.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 13.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 13.0 ore (alle 11:00)"
+  "seconds": 46800.0
  },
  {
   "now": "2028-02-28T22:00:00",
   "hour": 23,
-  "seconds": 3600.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 23:00)"
+  "seconds": 3600.0
  },
  {
   "now": "2026-10-18T10:00:00.5",
   "hour": 0,
-  "seconds": 50399.5,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 14.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.0 ore (alle 0:00)"
+  "seconds": 50399.5
  },
  {
   "now": "2026-10-18T10:00:00.5",
   "hour": 9,
-  "seconds": 82799.5,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 23.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 23.0 ore (alle 9:00)"
+  "seconds": 82799.5
  },
  {
   "now": "2026-10-18T10:00:00.5",
   "hour": 10,
-  "seconds": 86399.5,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 24.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 24.0 ore (alle 10:00)"
+  "seconds": 86399.5
  },
  {
   "now": "2026-10-18T10:00:00.5",
   "hour": 11,
-  "seconds": 3599.5,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 11:00)"
+  "seconds": 3599.5
  },
  {
   "now": "2026-10-18T10:00:00.5",
   "hour": 23,
-  "seconds": 46799.5,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 13.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 13.0 ore (alle 23:00)"
+  "seconds": 46799.5
  },
  {
   "now": "2026-10-18T08:57:00",
   "hour": 0,
-  "seconds": 54180.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.1 ore (alle 0:00)"
+  "seconds": 54180.0
  },
  {
   "now": "2026-10-18T08:57:00",
   "hour": 9,
-  "seconds": 180.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 0.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.1 ore (alle 9:00)"
+  "seconds": 180.0
  },
  {
   "now": "2026-10-18T08:57:00",
   "hour": 10,
-  "seconds": 3780.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.1 ore (alle 10:00)"
+  "seconds": 3780.0
  },
  {
   "now": "2026-10-18T08:57:00",
   "hour": 11,
-  "seconds": 7380.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 11:00)"
+  "seconds": 7380.0
  },
  {
   "now": "2026-10-18T08:57:00",
   "hour": 23,
-  "seconds": 50580.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.1 ore (alle 23:00)"
+  "seconds": 50580.0
  },
  {
   "now": "2026-10-18T08:56:59",
   "hour": 0,
-  "seconds": 54181.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.1 ore (alle 0:00)"
+  "seconds": 54181.0
  },
  {
   "now": "2026-10-18T08:56:59",
   "hour": 9,
-  "seconds": 181.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 0.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.1 ore (alle 9:00)"
+  "seconds": 181.0
  },
  {
   "now": "2026-10-18T08:56:59",
   "hour": 10,
-  "seconds": 3781.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.1 ore (alle 10:00)"
+  "seconds": 3781.0
  },
  {
   "now": "2026-10-18T08:56:59",
   "hour": 11,
-  "seconds": 7381.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.1 ore (alle 11:00)"
+  "seconds": 7381.0
  },
  {
   "now": "2026-10-18T08:56:59",
   "hour": 23,
-  "seconds": 50581.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.1 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.1 ore (alle 23:00)"
+  "seconds": 50581.0
  },
  {
   "now": "2026-10-18T09:03:00",
   "hour": 0,
-  "seconds": 53820.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 14.9 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.9 ore (alle 0:00)"
+  "seconds": 53820.0
  },
  {
   "now": "2026-10-18T09:03:00",
   "hour": 9,
-  "seconds": 86220.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 23.9 ore)",
-  "next_log": "⏰ Prossimo checker tra 23.9 ore (alle 9:00)"
+  "seconds": 86220.0
  },
  {
   "now": "2026-10-18T09:03:00",
   "hour": 10,
-  "seconds": 3420.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 0.9 ore)",
-  "next_log": "⏰ Prossimo checker tra 0.9 ore (alle 10:00)"
+  "seconds": 3420.0
  },
  {
   "now": "2026-10-18T09:03:00",
   "hour": 11,
-  "seconds": 7020.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 1.9 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.9 ore (alle 11:00)"
+  "seconds": 7020.0
  },
  {
   "now": "2026-10-18T09:03:00",
   "hour": 23,
-  "seconds": 50220.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 13.9 ore)",
-  "next_log": "⏰ Prossimo checker tra 13.9 ore (alle 23:00)"
+  "seconds": 50220.0
  },
  {
   "now": "2026-10-18T09:02:59",
   "hour": 0,
-  "seconds": 53821.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 0:00 (tra 15.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 15.0 ore (alle 0:00)"
+  "seconds": 53821.0
  },
  {
   "now": "2026-10-18T09:02:59",
   "hour": 9,
-  "seconds": 86221.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 9:00 (tra 24.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 24.0 ore (alle 9:00)"
+  "seconds": 86221.0
  },
  {
   "now": "2026-10-18T09:02:59",
   "hour": 10,
-  "seconds": 3421.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 10:00 (tra 1.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 1.0 ore (alle 10:00)"
+  "seconds": 3421.0
  },
  {
   "now": "2026-10-18T09:02:59",
   "hour": 11,
-  "seconds": 7021.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 11:00 (tra 2.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 2.0 ore (alle 11:00)"
+  "seconds": 7021.0
  },
  {
   "now": "2026-10-18T09:02:59",
   "hour": 23,
-  "seconds": 50221.0,
-  "scraper_log": "🕷️  Scraper schedulato per le 23:00 (tra 14.0 ore)",
-  "next_log": "⏰ Prossimo checker tra 14.0 ore (alle 23:00)"
+  "seconds": 50221.0
  },
  {
   "now": "2026-10-18T08:59:59.999999",
-  "hour": -1,
-  "error": "ValueError: hour must be in 0..23"
+  "hour": -1
  },
  {
   "now": "2026-10-18T08:59:59.999999",
-  "hour": 24,
-  "error": "ValueError: hour must be in 0..23"
+  "hour": 24
  },
  {
   "now": "2026-10-18T08:59:59.999999",
-  "hour": 100,
-  "error": "ValueError: hour must be in 0..23"
+  "hour": 100
  }
 ]

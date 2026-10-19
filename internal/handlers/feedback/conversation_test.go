@@ -95,24 +95,18 @@ func TestConversationFullFlow(t *testing.T) {
 	c.mustIgnore(c.text("altro testo"))
 }
 
-func TestConversationPatternsLikePythonRe(t *testing.T) {
+func TestConversationPatterns(t *testing.T) {
 	e := newEnv(t)
-	for _, data := range []string{"rating_٣", "rating_5\n", "rating_0"} {
-		c := newConvo(t, e.h)
-		c.mustHandle(c.text("/feedback"))
-		c.mustHandle(c.button(data)) // \d Unicode e $ prima di "\n" finale
-	}
-	for _, data := range []string{"rating_5\n\n", "xrating_5", "rating_a", "rating_"} {
+	for _, data := range []string{"rating_5\n", "xrating_5", "rating_a", "rating_", "rating_10"} {
 		c := newConvo(t, e.h)
 		c.mustHandle(c.text("/feedback"))
 		c.mustIgnore(c.button(data))
 	}
-	// skip_comment\n è accettato come in re.match(r"^skip_comment$")
 	c := newConvo(t, e.h)
 	c.mustHandle(c.text("/feedback"))
 	c.mustHandle(c.button("rating_2"))
 	c.mustIgnore(c.button("skip_commentx"))
-	c.mustHandle(c.button("skip_comment\n"))
+	c.mustHandle(c.button("skip_comment"))
 	c.mustIgnore(c.text("dopo la fine"))
 }
 
@@ -143,8 +137,8 @@ func TestConversationCancelAndSkip(t *testing.T) {
 	}
 }
 
-// Un messaggio modificato nello stato COMMENT arriva a feedback_comment ma
-// update.message è None: eccezione e stato invariato (come PTB).
+// Un messaggio modificato nello stato COMMENT arriva a FeedbackComment
+// senza messaggio: errore e stato invariato.
 func TestConversationEditedMessageKeepsState(t *testing.T) {
 	e := newEnv(t)
 	saveSampleUser(t, e.s, testUserID)
@@ -155,10 +149,10 @@ func TestConversationEditedMessageKeepsState(t *testing.T) {
 	edited := testutil.MessageUpdate(testutil.DefaultUserID, "modificato")
 	edited.EditedMessage, edited.Message = edited.Message, nil
 	handled, err := c.feed(edited)
-	if !handled || err == nil || err.Error() != "AttributeError: 'NoneType' object has no attribute 'text'" {
+	if !handled || !errors.Is(err, tg.ErrNoMessage) {
 		t.Fatalf("edited: handled=%v err=%v", handled, err)
 	}
-	if n := e.s.GetFeedbackCount(); n != 0 {
+	if e.s.GetFeedbackCount() != 0 {
 		t.Fatal("nessun feedback atteso")
 	}
 	// Lo stato resta COMMENT: il commento successivo viene salvato
@@ -180,7 +174,7 @@ func TestConversationCooldownDoesNotStart(t *testing.T) {
 }
 
 // Le callback da messaggi inline (senza message) sono ignorate dalla
-// conversazione, come in PTB con per_chat=True.
+// conversazione, che è per utente e chat.
 func TestConversationIgnoresInlineCallbacks(t *testing.T) {
 	e := newEnv(t)
 	c := newConvo(t, e.h)
@@ -191,14 +185,14 @@ func TestConversationIgnoresInlineCallbacks(t *testing.T) {
 	c.mustIgnore(c.feed(u))
 }
 
-// /feedback modificato (edited_message): CommandHandler lo accetta, ma
-// update.message è None → AttributeError dopo il controllo del cooldown.
+// /feedback modificato (edited_message): il comando lo accetta, ma non c'è
+// un messaggio a cui rispondere → errore dopo il controllo del cooldown.
 func TestFeedbackCommandEditedMessage(t *testing.T) {
 	e := newEnv(t)
 	b, fc := testutil.NewBot(t)
 	e.h.UserData.Set(testutil.DefaultUserID, "k", "v")
 	res := call(t, fc, e.h.UserData, e.h.FeedbackCommand, b, editedMessageContext(b, "/feedback"))
-	if res.err == nil || !strings.Contains(res.err.Error(), "'reply_text'") || len(res.userAfter) != 0 {
+	if !errors.Is(res.err, tg.ErrNoMessage) || len(res.userAfter) != 0 {
 		t.Fatalf("got err=%v ud=%v", res.err, res.userAfter)
 	}
 	// In cooldown la risposta fallisce senza pulire user_data
@@ -216,26 +210,28 @@ func TestHandlersWithoutEffectiveUser(t *testing.T) {
 	u := testutil.MessageUpdate(testutil.DefaultUserID, "x")
 	u.Message.From = nil
 	for name, h := range map[string]handlers.Response{"command": e.h.FeedbackCommand, "comment": e.h.FeedbackComment} {
-		res := call(t, fc, e.h.UserData, h, b, ext.NewContext(b, u, nil))
-		if res.err == nil || !strings.Contains(res.err.Error(), "'id'") {
+		if res := call(t, fc, e.h.UserData, h, b, ext.NewContext(b, u, nil)); !errors.Is(res.err, tg.ErrNoUser) {
 			t.Errorf("%s: err=%v", name, res.err)
 		}
 	}
 }
 
-func TestCallbackErrors(t *testing.T) {
+func TestCallbackHandlersWithoutCallback(t *testing.T) {
 	e := newEnv(t)
 	b, fc := testutil.NewBot(t)
-
-	// update.callback_query None → AttributeError su answer
 	msgCtx := testutil.MessageContext(b, testutil.DefaultUserID, "x")
 	for _, h := range []handlers.Response{e.h.FeedbackRating, e.h.FeedbackSkipComment} {
-		if res := call(t, fc, e.h.UserData, h, b, msgCtx); res.err == nil || !strings.Contains(res.err.Error(), "'answer'") {
+		if res := call(t, fc, e.h.UserData, h, b, msgCtx); !errors.Is(res.err, tg.ErrNoCallback) {
 			t.Errorf("err=%v", res.err)
 		}
 	}
+}
 
-	// Query scaduta: safe_answer_callback ignora l'errore e il flusso continua
+func TestAnswerCallbackErrors(t *testing.T) {
+	e := newEnv(t)
+	b, fc := testutil.NewBot(t)
+
+	// Query scaduta: l'errore è ignorato e il flusso continua
 	fc.FailMethod("answerCallbackQuery", testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: query is too old and response timeout expired or query ID is invalid"))
 	if res := call(t, fc, e.h.UserData, e.h.FeedbackRating, b, callbackContext(b, "rating_2")); res.state != StateComment {
 		t.Errorf("query scaduta: state=%q err=%v", res.state, res.err)
@@ -251,9 +247,12 @@ func TestCallbackErrors(t *testing.T) {
 	if res := call(t, fc, e.h.UserData, e.h.FeedbackSkipComment, b, callbackContext(b, "skip_comment")); !errors.Is(res.err, other) {
 		t.Errorf("skip: err=%v", res.err)
 	}
-	fc.FailMethod("answerCallbackQuery", nil)
+}
 
-	// Errore di modifica del messaggio: propagato, stato invariato
+// Errore di modifica del messaggio: propagato, stato invariato.
+func TestEditErrorsPropagate(t *testing.T) {
+	e := newEnv(t)
+	b, fc := testutil.NewBot(t)
 	editErr := testutil.TelegramError("editMessageText", 400, "Bad Request: message is not modified")
 	fc.FailMethod("editMessageText", editErr)
 	for _, h := range []handlers.Response{e.h.FeedbackRating, e.h.FeedbackSkipComment, e.h.FeedbackCancel} {
@@ -261,9 +260,12 @@ func TestCallbackErrors(t *testing.T) {
 			t.Errorf("edit: err=%v state=%q", res.err, res.state)
 		}
 	}
-	fc.FailMethod("editMessageText", nil)
+}
 
-	// Errore di invio: propagato
+// Errore di invio: propagato.
+func TestSendErrorsPropagate(t *testing.T) {
+	e := newEnv(t)
+	b, fc := testutil.NewBot(t)
 	sendErr := testutil.TelegramError("sendMessage", 403, "Forbidden: bot was blocked by the user")
 	fc.FailMethod("sendMessage", sendErr)
 	for text, h := range map[string]handlers.Response{"/feedback": e.h.FeedbackCommand, "commento": e.h.FeedbackComment, "/cancel": e.h.FeedbackCancel,
@@ -279,123 +281,49 @@ func TestCallbackErrors(t *testing.T) {
 	}
 }
 
-func TestEditMessageTextTargets(t *testing.T) {
+// Il voto si legge da callback_data come in Python: "rating_5_x" vale 5,
+// spazi ammessi; senza numero l'handler restituisce un errore.
+func TestFeedbackRatingParsing(t *testing.T) {
+	e := newEnv(t)
 	b, fc := testutil.NewBot(t)
-	cases := []struct {
-		name string
-		cq   *gotgbot.CallbackQuery
-		want map[string]string
-		err  string
-	}{
-		{"inline", &gotgbot.CallbackQuery{InlineMessageId: "im-1"}, map[string]string{"inline_message_id": "im-1"}, ""},
-		{"valore", &gotgbot.CallbackQuery{Message: gotgbot.Message{MessageId: 7, Chat: gotgbot.Chat{Id: 9}, BusinessConnectionId: "bc"}},
-			map[string]string{"chat_id": "9", "message_id": "7", "business_connection_id": "bc"}, ""},
-		{"puntatore", &gotgbot.CallbackQuery{Message: &gotgbot.Message{MessageId: 8, Chat: gotgbot.Chat{Id: 10}}},
-			map[string]string{"chat_id": "10", "message_id": "8"}, ""},
-		{"inaccessibile", &gotgbot.CallbackQuery{Message: gotgbot.InaccessibleMessage{MessageId: 5, Chat: gotgbot.Chat{Id: 11}}},
-			map[string]string{"chat_id": "11", "message_id": "5"}, ""},
-		{"senza messaggio", &gotgbot.CallbackQuery{}, nil, "TypeError: Cannot edit an inaccessible message"},
-		{"query nil", nil, nil, "AttributeError: 'NoneType' object has no attribute 'edit_message_text'"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			fc.Reset()
-			err := editMessageText(b, c.cq, "testo", "", nil)
-			if c.err != "" {
-				if err == nil || err.Error() != c.err {
-					t.Fatalf("err = %v, want %q", err, c.err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			call := fc.LastCall(t, "editMessageText")
-			for k, v := range c.want {
-				if call.String(k) != v {
-					t.Errorf("%s = %q, want %q", k, call.String(k), v)
-				}
-			}
-			if _, ok := call.Params["parse_mode"]; ok {
-				t.Error("parse_mode non richiesto")
-			}
-		})
-	}
-}
-
-func TestReplyTextTopic(t *testing.T) {
-	b, fc := testutil.NewBot(t)
-	msg := &gotgbot.Message{Chat: gotgbot.Chat{Id: 4}, IsTopicMessage: true, MessageThreadId: 12,
-		BusinessConnectionId: "bc", DirectMessagesTopic: &gotgbot.DirectMessagesTopic{TopicId: 3}}
-	if err := replyText(b, msg, "x", "", nil); err != nil {
-		t.Fatal(err)
-	}
-	c := fc.LastCall(t, "sendMessage")
-	if c.String("message_thread_id") != "12" || c.String("business_connection_id") != "bc" || c.String("direct_messages_topic_id") != "3" {
-		t.Errorf("parametri: %+v", c.Params)
-	}
-	if _, ok := c.Params["reply_parameters"]; ok {
-		t.Error("reply_text non cita il messaggio")
-	}
-}
-
-func TestPyInt(t *testing.T) {
-	ok := map[string]int{"1_0": 10, "+5": 5, " -5 ": -5, "٣": 3, "𝟗": 9, "𝟎𝟏": 1, "5\n": 5, " 5": 5, "1٣": 13}
-	for s, want := range ok {
-		if got, err := pyInt(s); err != nil || got != want {
-			t.Errorf("pyInt(%q) = %d, %v; want %d", s, got, err, want)
+	for data, want := range map[string]int{"rating_5_x": 5, "rating_ 4 ": 4, "rating_-1": -1, "rating_0": 0} {
+		res := call(t, fc, e.h.UserData, e.h.FeedbackRating, b, callbackContext(b, data))
+		if res.state != StateComment || res.userAfter[keyRating] != want {
+			t.Errorf("%q: state=%q err=%v ud=%v", data, res.state, res.err, res.userAfter)
 		}
 	}
-	for _, s := range []string{"_1", "1__0", "1_", "", "+", "-", "12a"} {
-		_, err := pyInt(s)
-		want := "invalid literal for int() with base 10: " + pyStrRepr(s)
-		if err == nil || err.Error() != want {
-			t.Errorf("pyInt(%q): err=%v, want %q", s, err, want)
-		}
-	}
-	if _, err := pyInt(strings.Repeat("9", 30)); err == nil || pyErrString(err) != "MemoryError: " {
-		t.Errorf("numero enorme: %v", err)
-	}
-}
-
-func TestPyStrRepr(t *testing.T) {
-	cases := map[string]string{
-		"invalid":    "'invalid'",
-		"l'uno":      `"l'uno"`,
-		`a'b"c`:      `'a\'b"c'`,
-		"\t\n\r\\":   `'\t\n\r\\'`,
-		"\x00\x7f":   `'\x00\x7f'`,
-		"\u00a0é":    "'\\xa0é'",
-		"\u200b":     "'\\u200b'",
-		"😀":          "'😀'",
-		"\U000e0001": `'\U000e0001'`,
-	}
-	for in, want := range cases {
-		if got := pyStrRepr(in); got != want {
-			t.Errorf("pyStrRepr(%q) = %s, want %s", in, got, want)
+	for _, data := range []string{"rating", "rating_x", "rating_٣"} {
+		if res := call(t, fc, e.h.UserData, e.h.FeedbackRating, b, callbackContext(b, data)); res.err == nil {
+			t.Errorf("%q: errore atteso, state=%q", data, res.state)
 		}
 	}
 }
 
-// Il cooldown usa l'ora "da muro" dell'orologio, come datetime.now()
-// (naive), qualunque sia il fuso del time.Time restituito.
-func TestCooldownUsesWallClock(t *testing.T) {
-	setNow(t, time.Date(2026, 3, 29, 3, 30, 0, 0, time.FixedZone("CEST", 2*3600)))
-	h := &Handlers{Store: &fakeStore{last: sp("2026-03-28 04:30:00")}, UserData: tg.NewUserData()}
+// Il timestamp di SQLite è letto come ora locale (bug Python mantenuto):
+// conta solo la differenza con l'orologio, anche con un fuso diverso.
+func TestCooldownReadsTimestampAsLocalTime(t *testing.T) {
+	setNow(t, time.Date(2026, 1, 29, 3, 30, 0, 0, time.Local))
+	h := &Handlers{Store: &fakeStore{last: sp("2026-01-28 04:30:00")}, UserData: tg.NewUserData()}
 	can, msg := h.canGiveFeedback(testUserID)
 	if can || !strings.HasSuffix(msg, "Riprova tra circa 1h.") {
 		t.Errorf("got %v %q", can, msg)
 	}
-	h.Store = &fakeStore{last: sp("2026-03-28 03:30:00")}
+	h.Store = &fakeStore{last: sp("2026-01-28 03:30:00")}
 	if can, _ := h.canGiveFeedback(testUserID); !can {
 		t.Error("24h esatte: il cooldown è scaduto")
 	}
 }
 
-func TestNowMicrosTruncatesToMicroseconds(t *testing.T) {
-	setNow(t, time.Date(2026, 1, 2, 3, 4, 5, 999_999_999, time.UTC))
-	want := naiveMicros(2026, 1, 2, 3, 4, 5, 999_999)
-	if got := nowMicros(); got != want {
-		t.Errorf("nowMicros = %d, want %d", got, want)
+// Un timestamp che non è nel formato di SQLite non blocca l'utente e
+// produce un warning.
+func TestCooldownMalformedTimestamp(t *testing.T) {
+	logs := captureLogs(t)
+	for _, last := range []string{"invalid", "", "2026-10-18T12:00:00", "2026-10-18 24:00:00", " 2026-10-18 10:00:00"} {
+		logs.Reset()
+		h := &Handlers{Store: &fakeStore{last: sp(last)}, UserData: tg.NewUserData()}
+		if can, msg := h.canGiveFeedback(testUserID); !can || msg != "" {
+			t.Errorf("%q: got %v %q", last, can, msg)
+		}
+		assertContains(t, logs.String(), "- handlers.feedback - WARNING - Errore parsing timestamp feedback per 123456789: ")
 	}
 }

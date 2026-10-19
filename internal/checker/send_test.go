@@ -1,8 +1,8 @@
 package checker
 
-// Test aggiuntivi (non presenti in tests/test_checker.py) per i dettagli del
-// port Go: mappatura degli errori gotgbot sulle eccezioni PTB, tastiera,
-// parallelismo, errori della FASE 1 e integrazione con il database reale.
+// Test aggiuntivi (non presenti in tests/test_checker.py): classificazione
+// degli errori di invio, tastiera, parallelismo, errori della FASE 1 e
+// integrazione con il database reale.
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/testutil"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
 // fixedClock rende deterministici i tempi nei log ("completato in 0.00s").
@@ -79,7 +80,8 @@ func TestClassifySendError(t *testing.T) {
 func TestSendNotificationRealBadRequestChatNotFoundIsNetworkError(t *testing.T) {
 	logs := captureLogs(t)
 
-	result, store := sendWithError(t, testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"))
+	err := testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found")
+	result, store := sendWithError(t, err)
 
 	if result {
 		t.Error("atteso False")
@@ -87,7 +89,7 @@ func TestSendNotificationRealBadRequestChatNotFoundIsNetworkError(t *testing.T) 
 	if got := store.removedIDs(); len(got) != 0 {
 		t.Errorf("l'utente non deve essere rimosso: %v", got)
 	}
-	assertContains(t, logs.String(), "ERROR - 🌐 Errore di rete invio messaggio a 123456: Chat not found\n")
+	assertContains(t, logs.String(), "ERROR - 🌐 Errore di rete invio messaggio a 123456: "+tg.ErrorString(err)+"\n")
 }
 
 func TestSendNotificationChatMigratedLogsTelegramError(t *testing.T) {
@@ -100,8 +102,7 @@ func TestSendNotificationChatMigratedLogsTelegramError(t *testing.T) {
 	if result || len(store.removedIDs()) != 0 {
 		t.Errorf("result=%v removed=%v", result, store.removedIDs())
 	}
-	assertContains(t, logs.String(),
-		"ERROR - ❌ Errore Telegram invio messaggio a 123456: Group migrated to supergroup. New chat id: -100123\n")
+	assertContains(t, logs.String(), "ERROR - ❌ Errore Telegram invio messaggio a 123456: "+tg.ErrorString(err)+"\n")
 }
 
 func TestSendNotificationInvalidTokenMatchesPatterns(t *testing.T) {
@@ -118,7 +119,6 @@ func TestSendNotificationTimeoutLogsError(t *testing.T) {
 
 	sendWithError(t, timeoutError())
 
-	// logger.exception: messaggio Python identico, errore in coda (traceback).
 	assertContains(t, logs.String(), "ERROR - ⏱️  Timeout invio messaggio a 123456 error=failed to execute POST request to sendMessage")
 }
 
@@ -261,24 +261,11 @@ func TestPanicError(t *testing.T) {
 	if err := PanicError(ke); !errors.Is(err, ke) || err.Error() != "'commercializzazione'" {
 		t.Errorf("KeyError: %v", err)
 	}
-	if err := PanicError("OverflowError: cannot convert float infinity to integer"); err.Error() != "cannot convert float infinity to integer" {
-		t.Errorf("OverflowError: %q", err.Error())
-	}
-	if err := PanicError("ValueError: cannot convert float NaN to integer"); err.Error() != "cannot convert float NaN to integer" {
-		t.Errorf("ValueError: %q", err.Error())
-	}
-	if err := PanicError("not python: x"); err.Error() != "not python: x" {
-		t.Errorf("stringa generica: %q", err.Error())
-	}
-	if err := PanicError("Bad Name Error: x"); err.Error() != "Bad Name Error: x" {
-		t.Errorf("nome non valido: %q", err.Error())
+	if err := PanicError("OverflowError: cannot convert float infinity to integer"); err.Error() != "OverflowError: cannot convert float infinity to integer" {
+		t.Errorf("stringa: %q", err.Error())
 	}
 	if err := PanicError(42); err.Error() != "42" {
 		t.Errorf("valore generico: %q", err.Error())
-	}
-	var pe *pyException
-	if err := PanicError("TypeError: boom"); !errors.As(err, &pe) || pe.name != "TypeError" {
-		t.Errorf("pyException attesa: %#v", err)
 	}
 }
 
@@ -326,7 +313,7 @@ func TestCheckAndNotifyUsersKeyErrorAbortsRun(t *testing.T) {
 }
 
 // Una tariffa utente infinita (registrazione che accetta "inf", bug Python)
-// fa sollevare OverflowError a format_number: tutta l'esecuzione si ferma.
+// fa andare in panic FormatNumber: tutta l'esecuzione si ferma.
 func TestCheckAndNotifyUsersInfiniteRateAbortsRun(t *testing.T) {
 	b, fc := testutil.NewBot(t)
 	store := &fakeStore{
@@ -336,8 +323,8 @@ func TestCheckAndNotifyUsersInfiniteRateAbortsRun(t *testing.T) {
 
 	err := CheckAndNotifyUsers(context.Background(), b, store)
 
-	if err == nil || err.Error() != "cannot convert float infinity to integer" {
-		t.Fatalf("atteso OverflowError, ottenuto %v", err)
+	if err == nil || !strings.Contains(err.Error(), "infinity") {
+		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
 	}
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {
 		t.Errorf("nessun invio atteso, ottenuti %d", n)
@@ -432,12 +419,6 @@ func TestShouldShowUtilityUnknownType(t *testing.T) {
 	}
 }
 
-func TestFormatSavingsEstimatesIsEmpty(t *testing.T) {
-	if got := formatSavingsEstimates(); got != "" {
-		t.Errorf("atteso \"\", ottenuto %q", got)
-	}
-}
-
 func TestFormatMixedConsumptionMessagePartial(t *testing.T) {
 	got := formatMixedConsumptionMessage([]mixedUtility{{"luce", fp(10)}, {"gas", nil}})
 	if got != "📊 Per una stima ancora più precisa, puoi indicare tutti i tuoi consumi con /update.\n\n" {
@@ -479,7 +460,8 @@ func TestNewBot(t *testing.T) {
 }
 
 // Integrazione con il database reale: notifica inviata, last_notified_rates
-// e pending_rates salvati nel formato Python, nessuna seconda notifica.
+// e pending_rates salvati con le chiavi e i valori della versione Python,
+// nessuna seconda notifica.
 func TestCheckAndNotifyUsersIntegrationWithDatabase(t *testing.T) {
 	fixedClock(t)
 	logs := captureLogs(t)
@@ -530,13 +512,8 @@ func TestCheckAndNotifyUsersIntegrationWithDatabase(t *testing.T) {
 	}
 
 	u := db.LoadUser("123")
-	raw, err := u.LastNotifiedRates.MarshalJSON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := string(raw); got != `{"luce": {"energia": 0.13, "commercializzazione": 85.0}, "gas": {"energia": 0.11, "commercializzazione": 80.0}}` {
-		t.Errorf("last_notified_rates = %s", got)
-	}
+	assertSameJSON(t, "last_notified_rates", u.LastNotifiedRates,
+		`{"luce": {"energia": 0.13, "commercializzazione": 85.0}, "gas": {"energia": 0.11, "commercializzazione": 80.0}}`)
 	if u.Luce.Scadenza != "2026-03-01" || u.Luce.ConsumoF1 == nil || *u.Luce.ConsumoF1 != 2700.0 {
 		t.Errorf("dati utente alterati: %+v", u.Luce)
 	}
@@ -544,13 +521,10 @@ func TestCheckAndNotifyUsersIntegrationWithDatabase(t *testing.T) {
 	if p == nil {
 		t.Fatal("pending_rates attese")
 	}
-	praw, _ := p.MarshalJSON()
-	wantPending := `{"luce": {"tipo": "fissa", "fascia": "monoraria", "consumo_f1": 2700.0, "energia": 0.13, "commercializzazione": 85.0}, ` +
-		`"gas": {"tipo": "variabile", "fascia": "monoraria", "consumo_annuo": 1200.0, "energia": 0.1, "commercializzazione": 84.0}, ` +
-		`"updated_services": ["luce"]}`
-	if string(praw) != wantPending {
-		t.Errorf("pending_rates = %s\natteso         %s", praw, wantPending)
-	}
+	assertSameJSON(t, "pending_rates", p,
+		`{"luce": {"tipo": "fissa", "fascia": "monoraria", "consumo_f1": 2700.0, "energia": 0.13, "commercializzazione": 85.0}, `+
+			`"gas": {"tipo": "variabile", "fascia": "monoraria", "consumo_annuo": 1200.0, "energia": 0.1, "commercializzazione": 84.0}, `+
+			`"updated_services": ["luce"]}`)
 	if db.LoadPendingRates("456") != nil {
 		t.Error("nessuna pending per l'utente 456")
 	}

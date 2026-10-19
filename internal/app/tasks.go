@@ -10,12 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/health"
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
-// Nomi dei task in background (task.get_name() in Python).
+// Nomi dei task in background, usati nei log.
 const (
 	TaskScraperDaily  = "scraper_daily"
 	TaskCheckerDaily  = "checker_daily"
@@ -23,8 +22,8 @@ const (
 	TaskHealthServer  = "health_server"
 )
 
-// Chiavi dei task in bot_data (health.ScraperTask e health.CheckerTask
-// sono quelle controllate da /health).
+// Chiavi dei task nel registro di /health (health.ScraperTask e
+// health.CheckerTask sono quelle controllate da /health).
 const (
 	KeyScraperTask  = health.ScraperTask
 	KeyCheckerTask  = health.CheckerTask
@@ -37,49 +36,43 @@ const (
 const HTTPShutdownTimeout = 5 * time.Second
 
 // ReadHeaderTimeout limita la lettura degli header delle richieste HTTP in
-// arrivo (protezione da client lenti; Tornado non ha un limite equivalente
-// così stretto, ma nessun client legittimo ci si avvicina).
+// arrivo (protezione da client lenti).
 const ReadHeaderTimeout = 60 * time.Second
 
-// taskDoneCallback è il port di _task_done_callback: logga se un task in
-// background termina per cancellazione o con un errore. err è nil per un
-// task terminato normalmente.
+// taskDoneCallback logga se un task in background termina per
+// cancellazione o con un errore. err è nil per un task terminato
+// normalmente.
 func taskDoneCallback(name string, err error) {
 	if errors.Is(err, context.Canceled) {
 		logger.Info(fmt.Sprintf("Task %s cancellato", name))
 		return
 	}
 	if err != nil {
-		logging.Critical(logger, fmt.Sprintf("💀 Background task %s terminato con errore: %s", name, describe(err).msg))
+		logging.Critical(logger, fmt.Sprintf("💀 Background task %s terminato con errore: %v", name, err))
 	}
 }
 
-// backgroundTasks raccoglie i task avviati da post_init (asyncio.create_task
-// + add_done_callback) e ne espone lo stato a /health tramite il registro.
+// backgroundTasks raccoglie i task in background e ne espone lo stato a
+// /health tramite il registro.
 type backgroundTasks struct {
 	reg *health.Registry
 	wg  sync.WaitGroup
 }
 
 func newBackgroundTasks(reg *health.Registry) *backgroundTasks {
-	if reg == nil {
-		reg = health.NewRegistry()
-	}
 	return &backgroundTasks{reg: reg}
 }
 
-// goTask registra il task con la chiave di bot_data key ed esegue fn in una
-// goroutine. Alla fine (anche per panic) il task risulta terminato e
+// goTask registra il task con la chiave key ed esegue fn in una goroutine.
+// Alla fine (anche per panic) il task risulta terminato e
 // taskDoneCallback ne logga l'esito.
 func (bt *backgroundTasks) goTask(key, name string, fn func() error) {
 	t := bt.reg.Register(key)
-	bt.wg.Add(1)
-	go func() {
-		defer bt.wg.Done()
+	bt.wg.Go(func() {
 		err := runRecovering(fn)
 		t.MarkDone()
 		taskDoneCallback(name, err)
-	}()
+	})
 }
 
 // wait attende la fine di tutti i task.
@@ -95,15 +88,14 @@ func runRecovering(fn func() error) (err error) {
 	return fn()
 }
 
-// healthServer è il server HTTP su HEALTH_PORT (run_health_server).
+// healthServer è il server HTTP su HEALTH_PORT (/health, API e Mini App).
 type healthServer struct {
 	port    int
 	handler http.Handler
 	listen  func(network, address string) (net.Listener, error)
 }
 
-// open apre il socket come server.listen(HEALTH_PORT, address="0.0.0.0")
-// (solo IPv4) e logga gli endpoint attivi. Un errore è l'OSError di bind.
+// open apre il socket su 0.0.0.0 (solo IPv4) e logga gli endpoint attivi.
 func (h *healthServer) open() (net.Listener, error) {
 	listen := h.listen
 	if listen == nil {
@@ -111,7 +103,7 @@ func (h *healthServer) open() (net.Listener, error) {
 	}
 	ln, err := listen("tcp4", net.JoinHostPort("0.0.0.0", strconv.Itoa(h.port)))
 	if err != nil {
-		return nil, pycompat.OSError(err)
+		return nil, err
 	}
 	logger.Info(fmt.Sprintf("🏥 Health check endpoint attivo su porta %d", h.port))
 	logger.Info(fmt.Sprintf("📊 API Mini App attiva su porta %d/api/", h.port))
@@ -126,13 +118,13 @@ func (h *healthServer) serve(ctx context.Context, ln net.Listener) error {
 
 // serveUntilDone esegue srv.Serve(ln) e lo chiude quando ctx viene
 // cancellato, restituendo ctx.Err(); un errore di Serve viene restituito
-// come OSError.
+// così com'è.
 func serveUntilDone(ctx context.Context, srv *http.Server, ln net.Listener) error {
 	stopped := make(chan struct{})
 	go func() {
 		select {
 		case <-ctx.Done():
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), HTTPShutdownTimeout)
+			shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), HTTPShutdownTimeout)
 			defer cancel()
 			_ = srv.Shutdown(shutdownCtx)
 		case <-stopped:
@@ -143,21 +135,18 @@ func serveUntilDone(ctx context.Context, srv *http.Server, ln net.Listener) erro
 	if errors.Is(err, http.ErrServerClosed) {
 		return ctx.Err()
 	}
-	return pycompat.OSError(err)
+	return err
 }
 
-// startBackgroundTasks è il port di post_init: avvia i task giornalieri di
-// scraper, checker e reminder e il server HTTP di health check, API e Mini
-// App, registrandoli come application.bot_data["*_task"].
+// startBackgroundTasks avvia in bt i task giornalieri di scraper, checker
+// e reminder e il server HTTP di health check, API e Mini App.
 //
-// Come in Python ogni task esegue subito la parte iniziale (log dell'orario
-// schedulato, apertura del socket del server HTTP) nell'ordine di
-// creazione; il resto prosegue in background fino alla cancellazione di
-// ctx. Un errore iniziale (ora non valida, porta occupata) termina solo quel
-// task, con il log CRITICAL di _task_done_callback.
-func startBackgroundTasks(ctx context.Context, sched *Scheduler, hs *healthServer, reg *health.Registry) *backgroundTasks {
-	bt := newBackgroundTasks(reg)
-
+// Ogni task esegue subito la parte iniziale (log dell'orario schedulato,
+// apertura del socket del server HTTP) nell'ordine di creazione; il resto
+// prosegue in background fino alla cancellazione di ctx. Un errore iniziale
+// (ora non valida, porta occupata) termina solo quel task, con il log
+// CRITICAL di taskDoneCallback.
+func startBackgroundTasks(ctx context.Context, bt *backgroundTasks, sched *Scheduler, hs *healthServer) {
 	for _, t := range []struct {
 		key, name string
 		spec      *dailyTaskSpec
@@ -183,5 +172,4 @@ func startBackgroundTasks(ctx context.Context, sched *Scheduler, hs *healthServe
 		}
 		return hs.serve(ctx, ln)
 	})
-	return bt
 }

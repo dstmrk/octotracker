@@ -25,7 +25,6 @@ import (
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
-// logger replica logging.getLogger(__name__) di reminder.py.
 var logger = logging.Logger("reminder")
 
 // now è l'orologio usato per misurare la durata (time.time()); sostituibile nei test.
@@ -122,14 +121,6 @@ func formatDaysLeft(daysLeft int) string {
 	return fmt.Sprintf("tra %d giorni", daysLeft)
 }
 
-// pyCapitalize replica str.capitalize() per i nomi dei servizi ("luce", "gas").
-func pyCapitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
-}
-
 // formatServiceSection costruisce la sezione del messaggio per un singolo
 // servizio in scadenza (_format_service_section).
 func formatServiceSection(servizio, scadenza string, daysLeft int, user *database.User, currentRates database.CurrentRates) string {
@@ -139,7 +130,7 @@ func formatServiceSection(servizio, scadenza string, daysLeft int, user *databas
 	unit := formatters.GetUtilityUnit(servizio)
 	label := formatters.GetUtilityLabel("fissa", servizio)
 
-	section := fmt.Sprintf("%s <b>%s</b>\n", emoji, pyCapitalize(servizio)) +
+	section := fmt.Sprintf("%s <b>%s</b>\n", emoji, formatters.Capitalize(servizio)) +
 		fmt.Sprintf("La tua offerta a prezzo fisso scade il <b>%s</b> ", dateutil.FormatDateDisplay(scadenza)) +
 		fmt.Sprintf("(%s).\n", formatDaysLeft(daysLeft))
 
@@ -241,9 +232,9 @@ func sendRemindersParallel(ctx context.Context, b *gotgbot.Bot, store Store, rem
 	return checker.ParallelSend(ctx, len(remindersToSend), sendWithLimit)
 }
 
-// prepareReminders è la FASE 1 di check_and_send_reminders. Un panic
-// (eccezione Python) interrompe la preparazione e viene restituito come
-// errore.
+// prepareReminders è la FASE 1 di check_and_send_reminders. Un panic (es.
+// una tariffa utente infinita che FormatNumber non sa formattare)
+// interrompe la preparazione e viene restituito come errore.
 func prepareReminders(users []*database.User, remindedMap map[string]database.ScadenzaReminded, currentRates database.CurrentRates, today time.Time) (reminders []queuedReminder, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -262,15 +253,13 @@ func prepareReminders(users []*database.User, remindedMap map[string]database.Sc
 // CheckAndSendReminders controlla le offerte fisse in scadenza e invia i
 // reminder (check_and_send_reminders, chiamata dallo scheduler del bot).
 //
-// today è la data odierna (solo anno/mese/giorno); nil equivale a None,
-// cioè date.today() in ora locale (il default Python; una data esplicita è
-// utile per i test). Python crea qui un Bot(token=...) nuovo: per lo stesso
-// comportamento il chiamante può passare checker.NewBot(token).
+// today è la data odierna (solo anno/mese/giorno); nil equivale alla data
+// odierna in ora locale (una data esplicita è utile per i test). Il
+// chiamante può passare checker.NewBot(token).
 //
 // Restituisce un errore solo dove Python solleverebbe un'eccezione verso
-// run_reminder (Error() è str(e), da loggare come "❌ Errore inatteso
-// reminder: <err>"); gli errori di invio sono gestiti per utente da
-// checker.SendNotification.
+// run_reminder (da loggare come "❌ Errore inatteso reminder: <err>"); gli
+// errori di invio sono gestiti per utente da checker.SendNotification.
 func CheckAndSendReminders(ctx context.Context, b *gotgbot.Bot, store Store, today *time.Time) error {
 	startTime := now()
 	var referenceDay time.Time
@@ -304,8 +293,8 @@ func CheckAndSendReminders(ctx context.Context, b *gotgbot.Bot, store Store, tod
 	return nil
 }
 
-// Main è il port di main() per l'esecuzione standalone (python reminder.py):
-// token è il valore di TELEGRAM_BOT_TOKEN. Restituisce checker.ErrMissingToken
+// Main esegue il reminder standalone (sottocomando remind): token è il
+// valore di TELEGRAM_BOT_TOKEN. Restituisce checker.ErrMissingToken
 // se il token è vuoto. Caricamento di .env, configurazione del logging e
 // apertura del database sono a carico del chiamante.
 func Main(ctx context.Context, token string, store Store) error {

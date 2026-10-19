@@ -29,7 +29,7 @@ func TestSaveFeedbackAndLastFeedbackTime(t *testing.T) {
 	if err != nil || time.Since(parsed).Abs() > time.Minute {
 		t.Fatalf("timestamp non UTC/attuale: %s (%v)", *ts, err)
 	}
-	if got := s.GetLastFeedbackTime("nonexistent"); got != nil {
+	if s.GetLastFeedbackTime("nonexistent") != nil {
 		t.Fatal("utente inesistente: atteso nil")
 	}
 	if n := s.GetFeedbackCount(); n != 1 {

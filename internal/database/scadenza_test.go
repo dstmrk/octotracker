@@ -303,9 +303,8 @@ func TestApplyPreservesScadenzaWhenNoUpdatedServices(t *testing.T) {
 	s := newTestStore(t)
 	s.SaveUser("1", baseUser("2026-03-15", "", false))
 	s.SavePendingRates("1", PendingRates{Luce: pendingLuce(0.130, 65.0)})
-	if raw := rawColumn(t, s, "1", "pending_rates"); raw != `{"luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.13, "commercializzazione": 65.0}}` {
-		t.Fatalf("pending_rates senza updated_services: %v", raw)
-	}
+	assertSameBlob(t, "pending_rates senza updated_services", rawColumn(t, s, "1", "pending_rates"),
+		`{"luce": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.13, "commercializzazione": 65.0}}`)
 	s.ApplyPendingRates("1")
 	if got := s.LoadUser("1").Luce.Scadenza; got != "2026-03-15" {
 		t.Fatalf("scadenza non preservata: %q", got)

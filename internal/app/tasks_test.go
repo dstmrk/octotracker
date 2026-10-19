@@ -1,7 +1,6 @@
 package app
 
-// Port di tests/test_bot_health_server.py (post_init e _task_done_callback)
-// più i casi di errore dei task in background.
+// Test dei task in background (avvio, esito e server HTTP).
 
 import (
 	"context"
@@ -9,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -56,10 +56,10 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 	}
 }
 
-// TestPostInitCreatesHealthTask: post_init crea i 4 task (scraper, checker,
-// reminder, health_server), li salva in bot_data e registra il done
-// callback su ognuno.
-func TestPostInitCreatesHealthTask(t *testing.T) {
+// TestStartBackgroundTasks: vengono creati i 4 task (scraper, checker,
+// reminder, health_server), registrati per /health e con il log dell'esito
+// alla fine.
+func TestStartBackgroundTasks(t *testing.T) {
 	logs := captureLogs(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -70,9 +70,10 @@ func TestPostInitCreatesHealthTask(t *testing.T) {
 	hs := &healthServer{port: 8444, handler: http.NotFoundHandler(), listen: ll.listen}
 	reg := health.NewRegistry()
 
-	bt := startBackgroundTasks(ctx, sched, hs, reg)
+	bt := newBackgroundTasks(reg)
+	startBackgroundTasks(ctx, bt, sched, hs)
 
-	// Verifica che tutti i task siano stati creati e salvati in bot_data
+	// Verifica che tutti i task siano stati creati e registrati
 	for _, key := range []string{KeyScraperTask, KeyCheckerTask, KeyReminderTask, KeyHealthTask} {
 		exists, done := reg.TaskDone(key)
 		if !exists || done {
@@ -96,7 +97,7 @@ func TestPostInitCreatesHealthTask(t *testing.T) {
 		t.Errorf("status = %d", resp.StatusCode)
 	}
 
-	// Il done callback è registrato su ogni task: alla cancellazione logga
+	// Alla cancellazione ogni task logga il proprio esito
 	cancel()
 	bt.wait()
 	for _, name := range []string{TaskScraperDaily, TaskCheckerDaily, TaskReminderDaily, TaskHealthServer} {
@@ -110,14 +111,14 @@ func TestPostInitCreatesHealthTask(t *testing.T) {
 	assertLogNotContains(t, logs, "CRITICAL")
 }
 
-// TestTaskDoneCallbackLogsException: _task_done_callback logga errori dei task crashati.
+// TestTaskDoneCallbackLogsException: gli errori dei task vengono loggati.
 func TestTaskDoneCallbackLogsException(t *testing.T) {
 	logs := captureLogs(t)
-	taskDoneCallback("test_task", errors.New("RuntimeError: task crashed"))
+	taskDoneCallback("test_task", errors.New("task crashed"))
 	assertLogContains(t, logs, "CRITICAL - 💀 Background task test_task terminato con errore: task crashed")
 }
 
-// TestTaskDoneCallbackHandlesCancellation: _task_done_callback gestisce task cancellati.
+// TestTaskDoneCallbackHandlesCancellation: un task cancellato non è un errore.
 func TestTaskDoneCallbackHandlesCancellation(t *testing.T) {
 	logs := captureLogs(t)
 	taskDoneCallback("cancelled_task", context.Canceled)
@@ -125,8 +126,8 @@ func TestTaskDoneCallbackHandlesCancellation(t *testing.T) {
 	assertLogNotContains(t, logs, "CRITICAL")
 }
 
-// TestTaskDoneCallbackNoException: _task_done_callback non logga errori se
-// il task termina normalmente.
+// TestTaskDoneCallbackNoException: nessun log se il task termina
+// normalmente.
 func TestTaskDoneCallbackNoException(t *testing.T) {
 	logs := captureLogs(t)
 	taskDoneCallback("normal_task", nil)
@@ -136,8 +137,7 @@ func TestTaskDoneCallbackNoException(t *testing.T) {
 }
 
 // TestHealthServerPortInUse: se la porta è occupata il task health_server
-// termina con l'OSError di bind (log CRITICAL) e /health lo vede come
-// task non controllato; gli altri task continuano.
+// termina con l'errore di bind (log CRITICAL); gli altri task continuano.
 func TestHealthServerPortInUse(t *testing.T) {
 	logs := captureLogs(t)
 	busy, err := net.Listen("tcp4", "127.0.0.1:0")
@@ -156,11 +156,13 @@ func TestHealthServerPortInUse(t *testing.T) {
 			return net.Listen(network, busy.Addr().String())
 		}}
 	reg := health.NewRegistry()
-	bt := startBackgroundTasks(ctx, sched, hs, reg)
+	bt := newBackgroundTasks(reg)
+	startBackgroundTasks(ctx, bt, sched, hs)
 
 	waitFor(t, "health_task terminato", func() bool { _, done := reg.TaskDone(KeyHealthTask); return done })
 	waitFor(t, "log critical", func() bool {
-		return strings.Contains(logs.String(), "💀 Background task health_server terminato con errore: [Errno 98] Address already in use")
+		return strings.Contains(logs.String(), "💀 Background task health_server terminato con errore: ") &&
+			strings.Contains(logs.String(), "address already in use")
 	})
 	if _, done := reg.TaskDone(KeyScraperTask); done {
 		t.Error("scraper_task terminato")
@@ -171,7 +173,7 @@ func TestHealthServerPortInUse(t *testing.T) {
 }
 
 // TestBackgroundTaskInvalidHour: un'ora non valida termina subito il solo
-// task interessato con ValueError ("stopped" per /health).
+// task interessato (che per /health non è più attivo).
 func TestBackgroundTaskInvalidHour(t *testing.T) {
 	logs := captureLogs(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -182,14 +184,17 @@ func TestBackgroundTaskInvalidHour(t *testing.T) {
 	ll := &localListen{}
 	hs := &healthServer{port: 1, handler: http.NotFoundHandler(), listen: ll.listen}
 	reg := health.NewRegistry()
-	bt := startBackgroundTasks(ctx, sched, hs, reg)
+	bt := newBackgroundTasks(reg)
+	startBackgroundTasks(ctx, bt, sched, hs)
 
 	waitFor(t, "checker_task terminato", func() bool { _, done := reg.TaskDone(KeyCheckerTask); return done })
 	waitFor(t, "log critical", func() bool {
-		return strings.Contains(logs.String(), "CRITICAL - 💀 Background task checker_daily terminato con errore: hour must be in 0..23")
+		return strings.Contains(logs.String(), "CRITICAL - 💀 Background task checker_daily terminato con errore: ora non valida: 24")
 	})
-	if h := health.CheckSystemHealth(newTestStore(t), reg); h[0].Value != "unhealthy" {
-		t.Errorf("health = %v", h)
+	w := httptest.NewRecorder()
+	health.NewHandler(newTestStore(t), reg).ServeHTTP(w, httptest.NewRequest(http.MethodGet, health.Path, nil))
+	if w.Code != http.StatusServiceUnavailable || !strings.Contains(w.Body.String(), "unhealthy") {
+		t.Errorf("health = %d %s", w.Code, w.Body.String())
 	}
 	cancel()
 	bt.wait()
@@ -199,17 +204,17 @@ func TestBackgroundTaskInvalidHour(t *testing.T) {
 // dal done callback.
 func TestGoTaskRecoversPanic(t *testing.T) {
 	logs := captureLogs(t)
-	bt := newBackgroundTasks(nil)
-	bt.goTask("x_task", "x", func() error { panic("KeyError: 'x'") })
+	bt := newBackgroundTasks(health.NewRegistry())
+	bt.goTask("x_task", "x", func() error { panic("boom") })
 	bt.wait()
-	assertLogContains(t, logs, "CRITICAL - 💀 Background task x terminato con errore: 'x'")
+	assertLogContains(t, logs, "CRITICAL - 💀 Background task x terminato con errore: boom")
 	if _, done := bt.reg.TaskDone("x_task"); !done {
 		t.Error("task non terminato")
 	}
 }
 
 // TestServeUntilDone: Serve termina con ctx.Err() alla cancellazione e con
-// un OSError se il listener fallisce.
+// l'errore se il listener fallisce.
 func TestServeUntilDone(t *testing.T) {
 	ln, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {

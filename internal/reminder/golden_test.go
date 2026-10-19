@@ -102,35 +102,7 @@ func TestGoldenReminder(t *testing.T) {
 	g := loadReminderGolden(t)
 
 	for i, c := range g.Cases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			today, ok := dateutil.ParseISODate(c.Today)
-			if !ok {
-				t.Fatalf("today non valido: %q", c.Today)
-			}
-			user := c.User
-			user.ID = "u1"
-			reminded := database.ScadenzaReminded{Luce: c.Reminded["luce"], Gas: c.Reminded["gas"]}
-
-			expiring := getExpiringServices(&user, reminded, today)
-			if !sameExpiring(expiring, c.Expiring) {
-				t.Fatalf("expiring = %+v, atteso %+v", expiring, c.Expiring)
-			}
-			if c.Message != nil {
-				assertSameText(t, "message", FormatReminderMessage(expiring, &user, c.Rates), *c.Message)
-			}
-
-			remindedMap := map[string]database.ScadenzaReminded{"u1": reminded}
-			msg, exp, ok := prepareReminder("u1", &user, remindedMap, c.Rates, today)
-			if (c.Prepare != nil) != ok {
-				t.Fatalf("prepare ok = %v, atteso %v", ok, c.Prepare != nil)
-			}
-			if ok {
-				assertSameText(t, "prepare.message", msg, c.Prepare.Message)
-				if !sameExpiring(exp, c.Prepare.Expiring) {
-					t.Errorf("prepare.expiring = %+v, atteso %+v", exp, c.Prepare.Expiring)
-				}
-			}
-		})
+		t.Run(strconv.Itoa(i), func(t *testing.T) { checkReminderCase(t, c) })
 	}
 
 	for i, c := range g.FormatCases {
@@ -147,6 +119,39 @@ func TestGoldenReminder(t *testing.T) {
 		}
 		if got := formatDaysLeft(d); got != want {
 			t.Errorf("formatDaysLeft(%d) = %q, atteso %q", d, got, want)
+		}
+	}
+}
+
+// checkReminderCase verifica _get_expiring_services, format_reminder_message
+// e _prepare_reminder su un caso golden.
+func checkReminderCase(t *testing.T, c goldenReminderCase) {
+	t.Helper()
+	today, ok := dateutil.ParseISODate(c.Today)
+	if !ok {
+		t.Fatalf("today non valido: %q", c.Today)
+	}
+	user := c.User
+	user.ID = "u1"
+	reminded := database.ScadenzaReminded{Luce: c.Reminded["luce"], Gas: c.Reminded["gas"]}
+
+	expiring := getExpiringServices(&user, reminded, today)
+	if !sameExpiring(expiring, c.Expiring) {
+		t.Fatalf("expiring = %+v, atteso %+v", expiring, c.Expiring)
+	}
+	if c.Message != nil {
+		assertSameText(t, "message", FormatReminderMessage(expiring, &user, c.Rates), *c.Message)
+	}
+
+	remindedMap := map[string]database.ScadenzaReminded{"u1": reminded}
+	msg, exp, ok := prepareReminder("u1", &user, remindedMap, c.Rates, today)
+	if (c.Prepare != nil) != ok {
+		t.Fatalf("prepare ok = %v, atteso %v", ok, c.Prepare != nil)
+	}
+	if ok {
+		assertSameText(t, "prepare.message", msg, c.Prepare.Message)
+		if !sameExpiring(exp, c.Prepare.Expiring) {
+			t.Errorf("prepare.expiring = %+v, atteso %+v", exp, c.Prepare.Expiring)
 		}
 	}
 }

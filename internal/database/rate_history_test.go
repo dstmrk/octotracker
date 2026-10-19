@@ -228,7 +228,7 @@ func TestGetCurrentRates_WithoutOptionalFields(t *testing.T) {
 
 func TestGetCurrentRates_DbError(t *testing.T) {
 	logs := captureLogs(t)
-	if r := brokenStore(t).GetCurrentRates(); r != nil {
+	if brokenStore(t).GetCurrentRates() != nil {
 		t.Fatal("atteso nil")
 	}
 	assertLogContains(t, logs, "❌ Errore lettura tariffe correnti:")
@@ -253,7 +253,7 @@ func TestGetLatestRateDate_EmptyDb(t *testing.T) {
 
 func TestGetLatestRateDate_DbError(t *testing.T) {
 	logs := captureLogs(t)
-	if d := brokenStore(t).GetLatestRateDate(); d != nil {
+	if brokenStore(t).GetLatestRateDate() != nil {
 		t.Fatal("atteso nil")
 	}
 	assertLogContains(t, logs, "❌ Errore lettura data tariffe:")

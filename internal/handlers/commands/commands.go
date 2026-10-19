@@ -1,25 +1,19 @@
-// Package commands è il port di handlers/commands.py: i comandi utility di
-// OctoTracker (/status, /history, /remove, /help, /cancel e la risposta ai
-// comandi non riconosciuti).
+// Package commands contiene i comandi utility di OctoTracker (/status,
+// /history, /remove, /help, /cancel e la risposta ai comandi non
+// riconosciuti).
 //
-// Ogni metodo di Handlers è un handler gotgbot che replica l'omonima
-// funzione Python. Dove Python restituisce ConversationHandler.END il metodo
-// restituisce handlers.EndConversation(), così CancelConversation e
-// HelpCommand si possono usare come fallback delle conversazioni (come in
-// bot.py); gli altri errori corrispondono alle eccezioni che in Python
-// arrivano all'error handler dell'applicazione. Registrati come handler
-// autonomi (fuori da una conversazione) vanno avvolti con Standalone, che
-// scarta il cambio di stato come fa PTB per gli handler non di
-// conversazione.
+// Ogni metodo di Handlers è un handler gotgbot. I comandi restituiscono
+// handlers.EndConversation(), così CancelConversation e HelpCommand si
+// possono usare come fallback delle conversazioni; registrati fuori da una
+// conversazione vanno avvolti con Standalone, che scarta il cambio di
+// stato. Gli altri errori arrivano all'error handler dell'applicazione.
 //
-// Il package esporta anche CommandHandler, la replica di
-// telegram.ext.CommandHandler usata per il cablaggio dei comandi.
-//
-// La configurazione che in Python era letta dalle variabili d'ambiente
-// (CHECKER_HOUR, WEBAPP_URL, TELEGRAM_CHANNEL) arriva dai campi di Handlers.
+// La configurazione (CHECKER_HOUR, WEBAPP_URL, TELEGRAM_CHANNEL) arriva dai
+// campi di Handlers.
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -35,13 +29,11 @@ import (
 	"github.com/dstmrk/octotracker/internal/tg"
 )
 
-// logger replica logging.getLogger(__name__) di handlers/commands.py.
 var logger = logging.Logger("handlers.commands")
 
-// parseModeHTML corrisponde a ParseMode.HTML di python-telegram-bot.
 const parseModeHTML = "HTML"
 
-// Testi dei comandi (identici a handlers/commands.py).
+// Testi dei comandi.
 const (
 	// msgNotRegistered è la risposta di /status e /remove a un utente senza tariffe.
 	msgNotRegistered = "ℹ️ Non hai ancora registrato le tue tariffe.\n\n" +
@@ -88,8 +80,7 @@ const (
 		"Dai un'occhiata a /help per vedere cosa puoi fare con OctoTracker."
 )
 
-// Store è il sottoinsieme di *database.Store usato dai comandi
-// (load_user, user_exists, remove_user).
+// Store è il sottoinsieme di *database.Store usato dai comandi.
 type Store interface {
 	LoadUser(userID string) *database.User
 	UserExists(userID string) bool
@@ -102,7 +93,7 @@ var _ Store = (*database.Store)(nil)
 type Handlers struct {
 	// Store è il database degli utenti.
 	Store Store
-	// UserData è l'equivalente di context.user_data, condiviso con le
+	// UserData sono i dati di conversazione, condivisi con le
 	// conversazioni del bot.
 	UserData *tg.UserData
 	// CheckerHour è CHECKER_HOUR, l'ora del controllo giornaliero mostrata
@@ -111,32 +102,48 @@ type Handlers struct {
 	// WebAppURL è WEBAPP_URL, l'URL della Mini App dei grafici; vuoto se la
 	// Mini App non è configurata.
 	WebAppURL string
-	// TelegramChannel è TELEGRAM_CHANNEL già ripulito con strip()
+	// TelegramChannel è TELEGRAM_CHANNEL senza spazi
 	// (config.Config.TelegramChannel); vuoto se il canale non è configurato.
 	TelegramChannel string
 }
 
-// effectiveUserID replica str(update.effective_user.id); con
-// effective_user None replica l'AttributeError di Python.
-func effectiveUserID(ctx *ext.Context) (string, error) {
-	if ctx.EffectiveUser == nil {
-		return "", attributeError("id")
-	}
-	return strconv.FormatInt(ctx.EffectiveUser.Id, 10), nil
+// CommandHandler è l'handler di un comando (vedi tg.Command).
+type CommandHandler = tg.Command
+
+// NewCommandHandler crea l'handler del comando /command (senza distinzione
+// tra maiuscole e minuscole).
+func NewCommandHandler(command string, r handlers.Response) CommandHandler {
+	return tg.NewCommand(command, r)
 }
 
-// clearUserData replica context.user_data.clear(); senza utente
-// context.user_data è None e Python solleva AttributeError.
+// Standalone adatta un handler per l'uso fuori da una conversazione: il
+// cambio di stato (handlers.EndConversation()) viene scartato invece di
+// arrivare all'error handler del dispatcher. Gli altri errori passano
+// invariati.
+//
+//	dispatcher.AddHandler(commands.NewCommandHandler("status", commands.Standalone(h.Status)))
+func Standalone(r handlers.Response) handlers.Response {
+	return func(b *gotgbot.Bot, ctx *ext.Context) error {
+		err := r(b, ctx)
+		var stateChange *handlers.ConversationStateChange
+		if errors.As(err, &stateChange) {
+			return nil
+		}
+		return err
+	}
+}
+
+// clearUserData pulisce i dati di conversazione dell'utente dell'update.
 func (h *Handlers) clearUserData(ctx *ext.Context) error {
 	if ctx.EffectiveUser == nil {
-		return attributeError("clear")
+		return tg.ErrNoUser
 	}
 	h.UserData.Clear(ctx.EffectiveUser.Id)
 	return nil
 }
 
-// end replica "reply_text(...); return ConversationHandler.END": se l'invio
-// fallisce l'errore (eccezione Python) prevale sul cambio di stato.
+// end termina la conversazione dopo una risposta: se l'invio fallisce
+// prevale l'errore.
 func end(err error) error {
 	if err != nil {
 		return err
@@ -146,10 +153,9 @@ func end(err error) error {
 
 // ========== BOT COMMANDS ==========
 
-// HistoryCommand apre la Mini App con i grafici dello storico tariffe
-// (history_command). Restituisce sempre handlers.EndConversation().
+// HistoryCommand apre la Mini App con i grafici dello storico tariffe.
 func (h *Handlers) HistoryCommand(b *gotgbot.Bot, ctx *ext.Context) error {
-	userID, err := effectiveUserID(ctx)
+	userID, err := tg.UserID(ctx)
 	if err != nil {
 		return err
 	}
@@ -160,11 +166,11 @@ func (h *Handlers) HistoryCommand(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	// Verifica che l'utente abbia tariffe registrate
 	if h.Store.LoadUser(userID) == nil {
-		return end(replyText(b, ctx.Message, msgHistoryNotRegistered, "", nil))
+		return end(tg.Reply(b, ctx.Message, msgHistoryNotRegistered, "", nil))
 	}
 
 	if h.WebAppURL == "" {
-		return end(replyText(b, ctx.Message, msgWebAppNotConfigured, "", nil))
+		return end(tg.Reply(b, ctx.Message, msgWebAppNotConfigured, "", nil))
 	}
 
 	// Crea bottone che apre la Mini App
@@ -174,13 +180,12 @@ func (h *Handlers) HistoryCommand(b *gotgbot.Bot, ctx *ext.Context) error {
 		}},
 	}
 
-	return end(replyText(b, ctx.Message, msgHistory, parseModeHTML, &keyboard))
+	return end(tg.Reply(b, ctx.Message, msgHistory, parseModeHTML, &keyboard))
 }
 
-// Status mostra i dati salvati (status). Restituisce sempre
-// handlers.EndConversation().
+// Status mostra i dati salvati.
 func (h *Handlers) Status(b *gotgbot.Bot, ctx *ext.Context) error {
-	userID, err := effectiveUserID(ctx)
+	userID, err := tg.UserID(ctx)
 	if err != nil {
 		return err
 	}
@@ -190,16 +195,16 @@ func (h *Handlers) Status(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	data := h.Store.LoadUser(userID)
 	if data == nil {
-		return end(replyText(b, ctx.Message, msgNotRegistered, "", nil))
+		return end(tg.Reply(b, ctx.Message, msgNotRegistered, "", nil))
 	}
 
 	messaggio := formatStatusMessage(data)
-	return end(replyText(b, ctx.Message, messaggio, parseModeHTML, nil))
+	return end(tg.Reply(b, ctx.Message, messaggio, parseModeHTML, nil))
 }
 
 // formatStatusMessage costruisce il messaggio di /status per un utente
-// registrato (corpo di status). Come in Python va in panic (eccezione) se
-// un valore non è formattabile (es. tariffa infinita).
+// registrato. Va in panic se un valore non è formattabile (es. tariffa
+// infinita).
 func formatStatusMessage(data *database.User) string {
 	// Formatta numeri rimuovendo zeri trailing
 	luceEnergiaFmt := formatters.FormatNumber(data.Luce.Energia, 4)
@@ -249,10 +254,9 @@ func formatStatusMessage(data *database.User) string {
 	return sb.String()
 }
 
-// RemoveData cancella i dati dell'utente (remove_data). Restituisce sempre
-// handlers.EndConversation().
+// RemoveData cancella i dati dell'utente.
 func (h *Handlers) RemoveData(b *gotgbot.Bot, ctx *ext.Context) error {
-	userID, err := effectiveUserID(ctx)
+	userID, err := tg.UserID(ctx)
 	if err != nil {
 		return err
 	}
@@ -262,20 +266,19 @@ func (h *Handlers) RemoveData(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	if h.Store.UserExists(userID) {
 		h.Store.RemoveUser(userID)
-		return end(replyText(b, ctx.Message, msgRemoved, parseModeHTML, nil))
+		return end(tg.Reply(b, ctx.Message, msgRemoved, parseModeHTML, nil))
 	}
-	return end(replyText(b, ctx.Message, msgNotRegistered, "", nil))
+	return end(tg.Reply(b, ctx.Message, msgNotRegistered, "", nil))
 }
 
-// HelpCommand mostra il messaggio di aiuto (help_command). È anche un
-// fallback della conversazione di registrazione: pulisce user_data e
-// restituisce sempre handlers.EndConversation().
+// HelpCommand mostra il messaggio di aiuto. È anche un fallback della
+// conversazione di registrazione: pulisce i dati di conversazione.
 func (h *Handlers) HelpCommand(b *gotgbot.Bot, ctx *ext.Context) error {
 	// Pulisci eventuali dati di conversazione in corso
 	if err := h.clearUserData(ctx); err != nil {
 		return err
 	}
-	return end(replyText(b, ctx.Message, h.helpText(), parseModeHTML, nil))
+	return end(tg.Reply(b, ctx.Message, h.helpText(), parseModeHTML, nil))
 }
 
 // helpText costruisce il testo di /help con l'ora del checker e il link al
@@ -309,12 +312,11 @@ func (h *Handlers) helpText() string {
 		channelInfo
 }
 
-// CancelConversation annulla la conversazione in corso e resetta lo stato
-// (cancel_conversation). È il fallback /cancel delle conversazioni di
-// registrazione e di aggiornamento tariffe: risponde, poi pulisce user_data
-// e restituisce sempre handlers.EndConversation().
+// CancelConversation annulla la conversazione in corso: è il fallback
+// /cancel delle conversazioni di registrazione e di aggiornamento tariffe.
+// Risponde, poi pulisce i dati di conversazione.
 func (h *Handlers) CancelConversation(b *gotgbot.Bot, ctx *ext.Context) error {
-	if err := replyText(b, ctx.Message, msgCancelled, parseModeHTML, nil); err != nil {
+	if err := tg.Reply(b, ctx.Message, msgCancelled, parseModeHTML, nil); err != nil {
 		return err
 	}
 	// Pulisci i dati della conversazione
@@ -324,8 +326,7 @@ func (h *Handlers) CancelConversation(b *gotgbot.Bot, ctx *ext.Context) error {
 	return handlers.EndConversation()
 }
 
-// UnknownCommand gestisce i comandi non riconosciuti (unknown_command). Come
-// in Python non restituisce alcuno stato (None).
+// UnknownCommand risponde ai comandi non riconosciuti.
 func (h *Handlers) UnknownCommand(b *gotgbot.Bot, ctx *ext.Context) error {
-	return replyText(b, ctx.Message, msgUnknownCommand, "", nil)
+	return tg.Reply(b, ctx.Message, msgUnknownCommand, "", nil)
 }

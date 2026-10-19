@@ -2,42 +2,27 @@ package app
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
-	"github.com/dstmrk/octotracker/internal/logging"
 )
-
-// updaterLogger replica il logger "telegram.ext.Updater" del webhook server
-// di PTB (telegram/ext/_utils/webhookhandler.py).
-var updaterLogger = logging.Logger("telegram.ext.Updater")
 
 // SecretTokenHeader è l'header con cui Telegram invia il secret_token del
 // webhook.
 const SecretTokenHeader = "X-Telegram-Bot-Api-Secret-Token"
 
-// MaxWebhookBodySize è il limite del corpo di una richiesta al webhook
-// (max_body_size di default di Tornado, 100 MB).
+// MaxWebhookBodySize è il limite del corpo di una richiesta al webhook.
 const MaxWebhookBodySize = 100 * 1024 * 1024
 
-// webhookContentType è l'header impostato da TelegramHandler.set_default_headers.
-const webhookContentType = `application/json; charset="utf-8"`
-
-// tornadoHTMLContentType è il Content-Type di default di Tornado (clear()).
-const tornadoHTMLContentType = "text/html; charset=UTF-8"
-
-// AllowedUpdates è Update.ALL_TYPES di python-telegram-bot 22.6, passato a
-// setWebhook come allowed_updates.
+// AllowedUpdates sono tutti i tipi di update, passati a setWebhook come
+// allowed_updates.
 var AllowedUpdates = []string{
 	"message", "edited_message", "channel_post", "edited_channel_post",
 	"inline_query", "chosen_inline_result", "callback_query", "shipping_query",
@@ -47,22 +32,13 @@ var AllowedUpdates = []string{
 	"edited_business_message", "deleted_business_messages", "purchased_paid_media",
 }
 
-// WebhookHandler è il webhook server di PTB (WebhookAppClass +
-// TelegramHandler) davanti all'handler del gotgbot Updater. Replica:
+// WebhookHandler riceve gli update di Telegram su "/<url_path>" (anche con
+// "/" finale) e li passa all'handler del gotgbot Updater:
 //
-//   - route "/<url_path>/?" (con o senza "/" finale); altri percorsi →
-//     pagina 404 di Tornado (405 per i metodi sconosciuti);
-//   - solo POST (altri metodi → 405);
-//   - Content-Type esattamente "application/json", altrimenti 403;
-//   - secret token assente o vuoto → 403 "Request did not include the secret
-//     token"; diverso → 403 "Request had the wrong secret token";
-//   - corpo non UTF-8 o JSON non valido → 500; JSON che non è un update
-//     (Update.de_json fallisce) → log CRITICAL e 400 "Update could not be
-//     processed";
-//   - altrimenti l'update viene accodato e la risposta è subito 200 (corpo
-//     vuoto, Content-Type application/json; charset="utf-8").
-//
-// Come in PTB non viene scritto alcun log di accesso.
+//   - altri percorsi → 404; metodi diversi da POST → 405;
+//   - secret token assente o diverso da quello atteso → 403;
+//   - corpo che non è un update JSON → 400;
+//   - altrimenti l'update viene accodato e la risposta è subito 200.
 type WebhookHandler struct {
 	path   string
 	secret string
@@ -81,132 +57,44 @@ func NewWebhookHandler(urlPath, secretToken string, next http.Handler) *WebhookH
 
 // ServeHTTP implementa http.Handler.
 func (h *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	reqPath := rawRequestPath(r)
-	if reqPath != h.path && reqPath != h.path+"/" {
-		// Nessuna route: ErrorHandler di Tornado (404, o 405 per un metodo
-		// che Tornado non supporta)
-		code := http.StatusNotFound
-		if !isTornadoMethod(r.Method) {
-			code = http.StatusMethodNotAllowed
-		}
-		writeTornadoError(w, code, "", tornadoHTMLContentType)
+	if r.URL.Path != h.path && r.URL.Path != h.path+"/" {
+		http.NotFound(w, r)
 		return
 	}
-
 	if r.Method != http.MethodPost {
-		// TelegramHandler.SUPPORTED_METHODS = ("POST",)
-		writeTornadoError(w, http.StatusMethodNotAllowed, "", webhookContentType)
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-
-	// _validate_post: solo richieste con content type JSON
-	if strings.Join(r.Header.Values("Content-Type"), ",") != "application/json" {
-		writeTornadoError(w, http.StatusForbidden, "", webhookContentType)
-		return
-	}
-	// verifica del secret token
-	token := strings.Join(r.Header.Values(SecretTokenHeader), ",")
-	if token == "" {
-		writeTornadoError(w, http.StatusForbidden, "Request did not include the secret token", webhookContentType)
-		return
-	}
-	if token != h.secret {
-		writeTornadoError(w, http.StatusForbidden, "Request had the wrong secret token", webhookContentType)
+	token := r.Header.Get(SecretTokenHeader)
+	if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(h.secret)) != 1 {
+		http.Error(w, "secret token mancante o errato", http.StatusForbidden)
 		return
 	}
 
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, MaxWebhookBodySize))
 	if err != nil {
-		writeTornadoError(w, http.StatusBadRequest, "", webhookContentType)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	var update gotgbot.Update
+	if err := json.Unmarshal(body, &update); err != nil {
+		logger.Error(fmt.Sprintf("❌ Update non valido ricevuto dal webhook: %v", err))
+		http.Error(w, "Update could not be processed", http.StatusBadRequest)
 		return
 	}
 
-	// json_string = self.request.body.decode(); data = json.loads(json_string)
-	jsonString, err := pycompat.DecodeUTF8(body)
-	if err != nil {
-		writeTornadoError(w, http.StatusInternalServerError, "", webhookContentType)
-		return
-	}
-	data, err := pycompat.Loads(jsonString)
-	if err != nil {
-		writeTornadoError(w, http.StatusInternalServerError, "", webhookContentType)
-		return
-	}
-
-	// update = Update.de_json(data, self.bot)
-	if !isUpdateData(data, body) {
-		logging.Critical(updaterLogger, fmt.Sprintf(
-			"Something went wrong processing the data received from Telegram. "+
-				"Received data was *not* processed! Received data was: %s", pycompat.Repr(data)))
-		writeTornadoError(w, http.StatusBadRequest, "Update could not be processed", webhookContentType)
-		return
-	}
-
-	// await self.update_queue.put(update)
 	fwd := r.Clone(r.Context())
 	fwd.URL.Path = h.path
 	fwd.URL.RawPath = ""
 	fwd.Body = io.NopCloser(bytes.NewReader(body))
-	w.Header().Set("Content-Type", webhookContentType)
 	h.next.ServeHTTP(w, fwd)
 }
 
-// isUpdateData indica se Update.de_json accetterebbe i dati: deve essere un
-// oggetto JSON con la chiave update_id, decodificabile come gotgbot.Update.
-func isUpdateData(data any, body []byte) bool {
-	obj, ok := data.(pycompat.Object)
-	if !ok {
-		return false
-	}
-	if _, ok := obj.Get("update_id"); !ok {
-		return false
-	}
-	var upd gotgbot.Update
-	return json.Unmarshal(body, &upd) == nil
-}
-
-// rawRequestPath restituisce request.path di Tornado: la parte dell'URI
-// della richiesta prima di "?", senza decodifica.
-func rawRequestPath(r *http.Request) string {
-	uri := r.RequestURI
-	if uri == "" {
-		uri = r.URL.RequestURI()
-	}
-	p, _, _ := strings.Cut(uri, "?")
-	return p
-}
-
-// isTornadoMethod indica se il metodo è in RequestHandler.SUPPORTED_METHODS.
-func isTornadoMethod(method string) bool {
-	switch method {
-	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodDelete,
-		http.MethodPatch, http.MethodPut, http.MethodOptions:
-		return true
-	}
-	return false
-}
-
-// writeTornadoError scrive la pagina d'errore di RequestHandler.write_error
-// ("<html><title>403: Forbidden</title>..."), con il reason indicato (vuoto
-// = frase standard dello status) e il Content-Type degli header di default
-// dell'handler.
-func writeTornadoError(w http.ResponseWriter, code int, reason, contentType string) {
-	if reason == "" {
-		reason = http.StatusText(code)
-	}
-	reason = html.EscapeString(reason)
-	body := fmt.Sprintf("<html><title>%d: %s</title><body>%d: %s</body></html>", code, reason, code, reason)
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
-	w.WriteHeader(code)
-	_, _ = io.WriteString(w, body)
-}
-
-// SequentialDispatcher è l'UpdateDispatcher passato al gotgbot Updater: come
-// la update_queue di PTB riceve gli update senza bloccare il webhook (coda
-// illimitata) e li fa elaborare uno alla volta, nell'ordine di arrivo, dal
-// Dispatcher (creato con MaxRoutines 1). Allo stop elabora gli update
-// ancora in coda, come Application.stop().
+// SequentialDispatcher è l'UpdateDispatcher passato al gotgbot Updater:
+// riceve gli update senza bloccare il webhook (coda illimitata) e li fa
+// elaborare uno alla volta, nell'ordine di arrivo, dal Dispatcher (creato
+// con MaxRoutines 1). Allo stop elabora gli update ancora in coda.
 type SequentialDispatcher struct {
 	inner *ext.Dispatcher
 

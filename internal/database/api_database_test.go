@@ -62,7 +62,7 @@ func TestGetHistoryBasic(t *testing.T) {
 func TestGetHistoryReturnsSortedByDate(t *testing.T) {
 	r := populatedStore(t).GetRateHistory("luce", "fissa", "monoraria", 30, false, false)
 	for i := 0; i < len(r.Labels)-1; i++ {
-		if !(r.Labels[i] < r.Labels[i+1]) {
+		if r.Labels[i] >= r.Labels[i+1] {
 			t.Fatalf("date non crescenti: %s >= %s", r.Labels[i], r.Labels[i+1])
 		}
 	}

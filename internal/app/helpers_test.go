@@ -2,7 +2,9 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -31,8 +33,8 @@ func (b *syncBuffer) String() string {
 	return b.buf.String()
 }
 
-// captureLogs installa un logger di default che scrive in un buffer (come
-// caplog di pytest) e lo ripristina alla fine del test.
+// captureLogs installa un logger di default che scrive in un buffer e lo
+// ripristina alla fine del test.
 func captureLogs(t *testing.T) *syncBuffer {
 	t.Helper()
 	buf := &syncBuffer{}
@@ -55,6 +57,18 @@ func assertLogNotContains(t *testing.T, logs *syncBuffer, unwanted string) {
 	t.Helper()
 	if strings.Contains(logs.String(), unwanted) {
 		t.Errorf("log con %q inatteso:\n%s", unwanted, logs.String())
+	}
+}
+
+// loadGolden decodifica testdata/name in v.
+func loadGolden(t *testing.T, name string, v any) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("testdata", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, v); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -70,7 +70,7 @@ func ParseLevel(s string) slog.Level {
 // Setup installa il logger di default: stdout più, se dataDir non è vuoto,
 // file con rotazione giornaliera in dataDir/octotracker.log.
 // Restituisce una funzione da chiamare in chiusura per rilasciare il file.
-func Setup(level string, dataDir string) (func() error, error) {
+func Setup(level, dataDir string) (func() error, error) {
 	writers := []io.Writer{os.Stdout}
 	closeFn := func() error { return nil }
 
@@ -257,6 +257,10 @@ func (h lazyHandler) WithGroup(name string) slog.Handler {
 
 // ========== File con rotazione giornaliera ==========
 
+// dayLayout è il formato del giorno usato per la rotazione e per il
+// suffisso dei file ruotati.
+const dayLayout = "2006-01-02"
+
 // DailyRotatingWriter scrive su un file e lo ruota al cambio di giorno,
 // rinominandolo in <file>.YYYY-MM-DD (come TimedRotatingFileHandler di Python)
 // e mantenendo al massimo backupCount file ruotati.
@@ -277,7 +281,7 @@ func NewDailyRotatingWriter(path string, backupCount int, now func() time.Time) 
 	}
 	// Se il file esistente è di un giorno precedente, va ruotato subito.
 	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
-		w.day = info.ModTime().Format("2006-01-02")
+		w.day = info.ModTime().Format(dayLayout)
 	}
 	return w, nil
 }
@@ -288,7 +292,7 @@ func (w *DailyRotatingWriter) open() error {
 		return fmt.Errorf("apertura file di log: %w", err)
 	}
 	w.file = f
-	w.day = w.now().Format("2006-01-02")
+	w.day = w.now().Format(dayLayout)
 	return nil
 }
 
@@ -296,7 +300,7 @@ func (w *DailyRotatingWriter) open() error {
 func (w *DailyRotatingWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if today := w.now().Format("2006-01-02"); today != w.day {
+	if w.now().Format(dayLayout) != w.day {
 		// Un errore di rotazione non blocca la scrittura se il nuovo file
 		// è stato comunque aperto.
 		if err := w.rotate(); err != nil && w.file == nil {

@@ -2,8 +2,8 @@ package app
 
 // Test end-to-end del dispatcher: il dispatcher reale di NewDispatcher con
 // il client Telegram finto di testutil e un database temporaneo. Ogni update
-// passa da Dispatcher.ProcessUpdate, così si verifica l'instradamento come
-// in python-telegram-bot (ordine degli handler, conversazioni, fallback).
+// passa da Dispatcher.ProcessUpdate, così si verifica l'instradamento
+// (ordine degli handler, conversazioni, fallback).
 
 import (
 	"context"
@@ -176,7 +176,7 @@ func TestE2EStatusDuringRegistration(t *testing.T) {
 	}
 }
 
-// TestE2EStartDuringRegistrationIsUnknownCommand: senza allow_reentry,
+// TestE2EStartDuringRegistrationIsUnknownCommand: senza rientro,
 // /start durante una registrazione attiva non riavvia la conversazione e
 // arriva a unknown_command; lo stato resta invariato.
 func TestE2EStartDuringRegistrationIsUnknownCommand(t *testing.T) {
@@ -372,9 +372,9 @@ func TestE2EUnknownCommandsAndIgnoredUpdates(t *testing.T) {
 	}
 }
 
-// TestE2EEditedCommandAlertsAdmin: come MessageHandler(filters.COMMAND) di
-// PTB, un comando modificato arriva a unknown_command, che solleva
-// AttributeError (update.message è None): l'error handler avvisa l'admin.
+// TestE2EEditedCommandAlertsAdmin: un comando modificato arriva a
+// unknown_command, che non ha un messaggio a cui rispondere e restituisce
+// un errore: l'error handler avvisa l'admin.
 func TestE2EEditedCommandAlertsAdmin(t *testing.T) {
 	logs := captureLogs(t)
 	h := newHarness(t, config.Config{AdminUserID: "999"})
@@ -385,24 +385,24 @@ func TestE2EEditedCommandAlertsAdmin(t *testing.T) {
 	if len(calls) != 1 || calls[0].Params["chat_id"] != "999" {
 		t.Fatalf("chiamate = %v", calls)
 	}
-	if !strings.Contains(calls[0].Text(), "<b>Tipo:</b> AttributeError\n<b>Messaggio:</b> 'NoneType' object has no attribute 'reply_text'") {
+	if !strings.HasPrefix(calls[0].Text(), "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ") || calls[0].ParseMode() != "HTML" {
 		t.Errorf("alert = %q", calls[0].Text())
 	}
-	assertLogContains(t, logs, "⚠️  Errore non gestito: AttributeError")
+	assertLogContains(t, logs, "⚠️  Errore non gestito: ")
 }
 
 // TestE2ETelegramErrorReachesErrorHandler: un errore dell'API in un handler
-// arriva all'error handler (qui Forbidden, anche per l'alert all'admin).
+// arriva all'error handler (qui 403, anche per l'alert all'admin).
 func TestE2ETelegramErrorReachesErrorHandler(t *testing.T) {
 	logs := captureLogs(t)
 	h := newHarness(t, config.Config{AdminUserID: "999"})
 	h.fc.FailMethod("sendMessage", testutil.TelegramError("sendMessage", 403, "Forbidden: bot was blocked by the user"))
 	h.text("/status")
 	assertLogContains(t, logs, "ERROR - ❌ Errore: Forbidden: bot was blocked by the user")
-	assertLogContains(t, logs, "⚠️  Errore non gestito: Forbidden")
+	assertLogContains(t, logs, "⚠️  Errore non gestito: TelegramError 403")
 	assertLogContains(t, logs, "❌ Errore invio alert admin: Forbidden: bot was blocked by the user")
 
-	// Un BadRequest è un NetworkError: solo warning
+	// Un 400 è un errore transitorio: solo warning
 	h.fc.FailMethod("sendMessage", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"))
 	h.text("/help")
 	assertLogContains(t, logs, "⏱️  Timeout/errore di rete")
@@ -413,7 +413,7 @@ func TestE2ETelegramErrorReachesErrorHandler(t *testing.T) {
 func TestRegisterHandlersSharesUserData(t *testing.T) {
 	store := newTestStore(t)
 	d := ext.NewDispatcher(nil)
-	if ud := RegisterHandlers(d, DispatcherConfig{Store: store}); ud == nil {
+	if RegisterHandlers(d, DispatcherConfig{Store: store}) == nil {
 		t.Fatal("user_data nil")
 	}
 }
@@ -421,12 +421,12 @@ func TestRegisterHandlersSharesUserData(t *testing.T) {
 // TestMinLevelHandler: i log della libreria sotto WARNING vengono scartati.
 func TestMinLevelHandler(t *testing.T) {
 	logs := captureLogs(t)
-	l := ptbLogger("telegram.ext.Application").With("k", "v").WithGroup("g")
+	l := libLogger.With("k", "v").WithGroup("g")
 	l.Debug("debug nascosto")
 	l.Info("info nascosto")
 	l.Warn("warning visibile")
 	assertLogNotContains(t, logs, "nascosto")
-	assertLogContains(t, logs, "telegram.ext.Application - WARNING - warning visibile")
+	assertLogContains(t, logs, "gotgbot - WARNING - warning visibile")
 	logUnhandledError(context.Canceled)
 	assertLogContains(t, logs, "CRITICAL - Errore non gestito nell'elaborazione dell'update: context canceled")
 }
@@ -482,8 +482,8 @@ func TestE2ECancelEndsFeedbackAndRateUpdate(t *testing.T) {
 	}
 }
 
-// TestE2ETwoActiveConversations: come in PTB due conversazioni possono
-// essere attive insieme (/feedback durante la registrazione non è gestito
+// TestE2ETwoActiveConversations: due conversazioni possono essere attive
+// insieme (/feedback durante la registrazione non è gestito
 // dalla registrazione e avvia il feedback); /cancel va al primo handler che
 // lo accetta, cioè la registrazione, mentre il feedback resta attivo.
 func TestE2ETwoActiveConversations(t *testing.T) {

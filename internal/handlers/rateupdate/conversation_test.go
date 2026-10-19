@@ -3,7 +3,6 @@ package rateupdate
 import (
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -13,6 +12,7 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 	"github.com/dstmrk/octotracker/internal/handlers/commands"
 	"github.com/dstmrk/octotracker/internal/testutil"
+	"github.com/dstmrk/octotracker/internal/tg"
 )
 
 // Test della conversazione completa (ConversationHandler di bot.py, con il
@@ -135,29 +135,26 @@ func TestConversationNotStartedForVariabile(t *testing.T) {
 	c.mustIgnore(c.button(CallbackScadenzaYes))
 }
 
-// Pattern con la semantica di re.match: "$" accetta un "\n" finale; il
-// confronto con CALLBACK_SCADENZA_NO in scadenza_update_choice è invece
-// esatto (quindi "scadenza_update_no\n" vale come Sì, come in Python).
+// I pattern accettano solo le callback_data esatte dei pulsanti.
 func TestConversationPatterns(t *testing.T) {
 	e := newEnv(t)
 	setupFissaLuceGas(t, e)
 	c := newConvo(t, e.h)
 	c.mustIgnore(c.button(CallbackYes + "x"))
-	c.mustHandle(c.button(CallbackYes + "\n"))
+	c.mustIgnore(c.button(CallbackYes + "\n"))
+	c.mustHandle(c.button(CallbackYes))
 	c.mustIgnore(c.button("scadenza_update_maybe"))
-	c.mustHandle(c.button(CallbackScadenzaNo + "\n"))
-	if got := c.fc.LastCall(t, "editMessageText").Text(); !strings.Contains(got, "data di attivazione") {
-		t.Errorf("scadenza_update_no\\n deve valere come Sì: %q", got)
-	}
-	c.mustIgnore(c.button(CallbackScadenzaSkip + "\n\n"))
-	c.mustHandle(c.button(CallbackScadenzaSkip + "\n"))
+	c.mustIgnore(c.button(CallbackScadenzaNo + "\n"))
+	c.mustHandle(c.button(CallbackScadenzaYes))
+	c.mustIgnore(c.button(CallbackScadenzaSkip + "\n"))
+	c.mustHandle(c.button(CallbackScadenzaSkip))
 }
 
 func TestRateUpdateNoHandler(t *testing.T) {
 	e := newEnv(t)
 	b, _ := testutil.NewBot(t)
 	h := e.h.RateUpdateNoHandler()
-	for data, want := range map[string]bool{CallbackNo: true, CallbackNo + "\n": true, CallbackNo + "x": false, CallbackYes: false} {
+	for data, want := range map[string]bool{CallbackNo: true, CallbackNo + "\n": false, CallbackNo + "x": false, CallbackYes: false} {
 		if got := h.CheckUpdate(b, ext.NewContext(b, callbackUpdate(data, notifica()), nil)); got != want {
 			t.Errorf("CheckUpdate(%q) = %v, want %v", data, got, want)
 		}
@@ -172,8 +169,8 @@ func TestRateUpdateNoHandler(t *testing.T) {
 	}
 }
 
-// Un messaggio modificato in UPDATE_DATE arriva all'handler ma
-// update.message è None: resta in UPDATE_DATE senza rispondere.
+// Un messaggio modificato in UPDATE_DATE arriva all'handler senza
+// messaggio: resta in UPDATE_DATE senza rispondere.
 func TestConversationEditedMessageStays(t *testing.T) {
 	e := newEnv(t)
 	setupFissaLuceGas(t, e)
@@ -190,7 +187,7 @@ func TestConversationEditedMessageStays(t *testing.T) {
 }
 
 // Le callback da messaggi inline (senza message) sono ignorate dalla
-// conversazione (per_chat di PTB).
+// conversazione, che è per utente e chat.
 func TestConversationIgnoresInlineCallbacks(t *testing.T) {
 	e := newEnv(t)
 	c := newConvo(t, e.h)
@@ -200,8 +197,8 @@ func TestConversationIgnoresInlineCallbacks(t *testing.T) {
 	c.mustIgnore(c.feed(u))
 }
 
-// "No grazie" da un messaggio inline: Python risponde, rimuove le pending e
-// solleva AttributeError su query.message.text_html.
+// "No grazie" da un messaggio inline: risponde, rimuove le pending e
+// restituisce un errore perché non c'è il testo della notifica.
 func TestRateUpdateNoInlineMessage(t *testing.T) {
 	e := newEnv(t)
 	e.save(sampleUserData())
@@ -211,7 +208,7 @@ func TestRateUpdateNoInlineMessage(t *testing.T) {
 	u.CallbackQuery.Message = nil
 	u.CallbackQuery.InlineMessageId = "inline-1"
 	res := call(t, fc, e.h.UserData, e.h.RateUpdateNo, b, ext.NewContext(b, u, nil))
-	if res.err == nil || res.err.Error() != "AttributeError: 'NoneType' object has no attribute 'text_html'" {
+	if !errors.Is(res.err, errNoText) {
 		t.Fatalf("err = %v", res.err)
 	}
 	onlyCall(t, res, "answerCallbackQuery")
@@ -220,9 +217,8 @@ func TestRateUpdateNoInlineMessage(t *testing.T) {
 	}
 }
 
-// Messaggio inaccessibile (date 0, senza testo): PTB lo decodifica come
-// Message con text None; dopo l'applicazione delle tariffe text_html è None
-// e .replace solleva AttributeError.
+// Messaggio inaccessibile (date 0, senza testo): dopo l'applicazione delle
+// tariffe manca il testo da modificare e l'handler restituisce un errore.
 func TestRateUpdateYesInaccessibleMessage(t *testing.T) {
 	e := newEnv(t)
 	e.save(sampleUserData())
@@ -231,7 +227,7 @@ func TestRateUpdateYesInaccessibleMessage(t *testing.T) {
 	u := testutil.CallbackUpdate(testutil.DefaultUserID, CallbackYes)
 	u.CallbackQuery.Message = gotgbot.InaccessibleMessage{Chat: gotgbot.Chat{Id: testutil.DefaultUserID, Type: "private"}, MessageId: 42}
 	res := call(t, fc, e.h.UserData, e.h.RateUpdateYes, b, ext.NewContext(b, u, nil))
-	if res.err == nil || res.err.Error() != "AttributeError: 'NoneType' object has no attribute 'replace'" {
+	if !errors.Is(res.err, errNoText) {
 		t.Fatalf("err = %v", res.err)
 	}
 	if u := e.s.LoadUser(testUserID); u.Luce.Energia != 0.130 {
@@ -239,116 +235,118 @@ func TestRateUpdateYesInaccessibleMessage(t *testing.T) {
 	}
 }
 
-func TestErrorsPropagate(t *testing.T) {
-	answerErr := testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: query is too old and response timeout expired or query ID is invalid")
+var answerErr = testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: query is too old and response timeout expired or query ID is invalid")
 
-	t.Run("answer senza protezione in rate_update_yes/no", func(t *testing.T) {
-		e := newEnv(t)
-		e.save(sampleUserData())
-		e.s.SavePendingRates(testUserID, samplePendingRates())
-		for _, h := range []func(*Handlers) handlers.Response{rateUpdateYes, rateUpdateNo} {
-			b, fc := testutil.NewBot(t)
-			fc.FailMethod("answerCallbackQuery", answerErr)
-			res := call(t, fc, e.h.UserData, h(e.h), b, ext.NewContext(b, callbackUpdate(CallbackYes, notifica()), nil))
-			if !errors.Is(res.err, answerErr) || len(res.calls) != 1 {
-				t.Errorf("err=%v calls=%d", res.err, len(res.calls))
-			}
-		}
-		if e.s.LoadPendingRates(testUserID) == nil {
-			t.Error("le pending non devono essere toccate se answer fallisce")
-		}
-	})
-
-	t.Run("query scaduta ignorata dove Python usa safe_answer_callback", func(t *testing.T) {
-		e := newEnv(t)
-		e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
+// "Aggiorna tariffe" e "No grazie" non proteggono answer: anche la query
+// scaduta interrompe l'handler prima di toccare le pending.
+func TestAnswerErrorsPropagate(t *testing.T) {
+	e := newEnv(t)
+	e.save(sampleUserData())
+	e.s.SavePendingRates(testUserID, samplePendingRates())
+	for _, h := range []func(*Handlers) handlers.Response{rateUpdateYes, rateUpdateNo} {
 		b, fc := testutil.NewBot(t)
 		fc.FailMethod("answerCallbackQuery", answerErr)
-		res := call(t, fc, e.h.UserData, e.h.ScadenzaUpdateChoice, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaYes, notifica()), nil))
-		if res.err != nil || res.state != StateUpdateDate {
-			t.Errorf("choice: %v %q", res.err, res.state)
+		res := call(t, fc, e.h.UserData, h(e.h), b, ext.NewContext(b, callbackUpdate(CallbackYes, notifica()), nil))
+		if !errors.Is(res.err, answerErr) || len(res.calls) != 1 {
+			t.Errorf("err=%v calls=%d", res.err, len(res.calls))
 		}
-		res = call(t, fc, e.h.UserData, e.h.SkipScadenzaDate, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaSkip, notifica()), nil))
-		if res.err != nil || res.state != "END" {
-			t.Errorf("skip: %v %q", res.err, res.state)
-		}
-		other := testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: altro")
-		fc.FailMethod("answerCallbackQuery", other)
-		for _, h := range []handlers.Response{e.h.ScadenzaUpdateChoice, e.h.SkipScadenzaDate} {
-			if res := call(t, fc, e.h.UserData, h, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaYes, notifica()), nil)); !errors.Is(res.err, other) {
-				t.Errorf("altro errore: %v", res.err)
-			}
-		}
-	})
+	}
+	if e.s.LoadPendingRates(testUserID) == nil {
+		t.Error("le pending non devono essere toccate se answer fallisce")
+	}
+}
 
-	t.Run("edit e reply", func(t *testing.T) {
-		editErr := testutil.TelegramError("editMessageText", 400, "Bad Request: message is not modified")
-		sendErr := testutil.TelegramError("sendMessage", 403, "Forbidden: bot was blocked by the user")
-		cases := []struct {
-			name    string
-			method  string
-			err     error
-			handler func(*Handlers) handlers.Response
-			data    string
-			setup   func(e *env)
-		}{
-			{"yes edit", "editMessageText", editErr, rateUpdateYes, CallbackYes, func(e *env) { setupFissaLuceGas(t, e) }},
-			{"yes reply", "sendMessage", sendErr, rateUpdateYes, CallbackYes, func(e *env) { setupFissaLuceGas(t, e) }},
-			{"no edit", "editMessageText", editErr, rateUpdateNo, CallbackNo, func(*env) {}},
-			{"choice no", "editMessageText", editErr, scadenzaUpdateChoice, CallbackScadenzaNo, func(*env) {}},
-			{"choice yes", "editMessageText", editErr, scadenzaUpdateChoice, CallbackScadenzaYes, func(e *env) {
-				e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
-			}},
-			{"skip edit", "editMessageText", editErr, skipScadenzaDate, CallbackScadenzaSkip, func(*env) {}},
-			{"skip next", "sendMessage", sendErr, skipScadenzaDate, CallbackScadenzaSkip, func(e *env) {
-				e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce", "gas"})
-			}},
+// Nella conversazione la query scaduta è ignorata, gli altri errori no.
+func TestExpiredQueryIgnoredInConversation(t *testing.T) {
+	e := newEnv(t)
+	e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
+	b, fc := testutil.NewBot(t)
+	fc.FailMethod("answerCallbackQuery", answerErr)
+	res := call(t, fc, e.h.UserData, e.h.ScadenzaUpdateChoice, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaYes, notifica()), nil))
+	if res.err != nil || res.state != StateUpdateDate {
+		t.Errorf("choice: %v %q", res.err, res.state)
+	}
+	res = call(t, fc, e.h.UserData, e.h.SkipScadenzaDate, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaSkip, notifica()), nil))
+	if res.err != nil || res.state != "END" {
+		t.Errorf("skip: %v %q", res.err, res.state)
+	}
+	other := testutil.TelegramError("answerCallbackQuery", 400, "Bad Request: altro")
+	fc.FailMethod("answerCallbackQuery", other)
+	for _, h := range []handlers.Response{e.h.ScadenzaUpdateChoice, e.h.SkipScadenzaDate} {
+		if res := call(t, fc, e.h.UserData, h, b, ext.NewContext(b, callbackUpdate(CallbackScadenzaYes, notifica()), nil)); !errors.Is(res.err, other) {
+			t.Errorf("altro errore: %v", res.err)
 		}
-		for _, c := range cases {
-			t.Run(c.name, func(t *testing.T) {
-				e := newEnv(t)
-				c.setup(e)
-				b, fc := testutil.NewBot(t)
-				fc.FailMethod(c.method, c.err)
-				res := call(t, fc, e.h.UserData, c.handler(e.h), b, ext.NewContext(b, callbackUpdate(c.data, notifica()), nil))
-				if !errors.Is(res.err, c.err) || res.state != "" {
-					t.Errorf("err=%v state=%q", res.err, res.state)
-				}
-			})
-		}
-		// Messaggi di testo
-		for _, c := range []struct {
-			name     string
-			text     string
-			services []string
-		}{
-			{"data non valida", "boh", []string{"luce"}},
-			{"conferma data", "15/03/2025", []string{"luce"}},
-		} {
+	}
+}
+
+var (
+	editErr = testutil.TelegramError("editMessageText", 400, "Bad Request: message is not modified")
+	sendErr = testutil.TelegramError("sendMessage", 403, "Forbidden: bot was blocked by the user")
+)
+
+// Un errore di modifica o di invio interrompe gli handler delle callback
+// senza cambiare stato.
+func TestCallbackSendErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name    string
+		method  string
+		err     error
+		handler func(*Handlers) handlers.Response
+		data    string
+		setup   func(e *env)
+	}{
+		{"yes edit", "editMessageText", editErr, rateUpdateYes, CallbackYes, func(e *env) { setupFissaLuceGas(t, e) }},
+		{"yes reply", "sendMessage", sendErr, rateUpdateYes, CallbackYes, func(e *env) { setupFissaLuceGas(t, e) }},
+		{"no edit", "editMessageText", editErr, rateUpdateNo, CallbackNo, func(*env) {}},
+		{"choice no", "editMessageText", editErr, scadenzaUpdateChoice, CallbackScadenzaNo, func(*env) {}},
+		{"choice yes", "editMessageText", editErr, scadenzaUpdateChoice, CallbackScadenzaYes, func(e *env) {
+			e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
+		}},
+		{"skip edit", "editMessageText", editErr, skipScadenzaDate, CallbackScadenzaSkip, func(*env) {}},
+		{"skip next", "sendMessage", sendErr, skipScadenzaDate, CallbackScadenzaSkip, func(e *env) {
+			e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce", "gas"})
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
 			e := newEnv(t)
-			e.save(sampleUserData())
-			e.h.UserData.Set(testutil.DefaultUserID, servicesKey, c.services)
+			c.setup(e)
 			b, fc := testutil.NewBot(t)
-			fc.FailMethod("sendMessage", sendErr)
-			if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, testutil.MessageContext(b, testutil.DefaultUserID, c.text)); !errors.Is(res.err, sendErr) {
-				t.Errorf("%s: err=%v", c.name, res.err)
+			fc.FailMethod(c.method, c.err)
+			res := call(t, fc, e.h.UserData, c.handler(e.h), b, ext.NewContext(b, callbackUpdate(c.data, notifica()), nil))
+			if !errors.Is(res.err, c.err) || res.state != "" {
+				t.Errorf("err=%v state=%q", res.err, res.state)
 			}
-		}
-		// Errore sul messaggio finale (SCADENZA_DONE_TEXT) dopo la conferma
+		})
+	}
+}
+
+// Un errore di invio interrompe UpdateScadenzaDate in ogni ramo, anche sul
+// messaggio finale (ScadenzaDoneText) dopo la conferma.
+func TestDateSendErrorsPropagate(t *testing.T) {
+	for name, text := range map[string]string{"data non valida": "boh", "conferma data": "15/03/2025"} {
 		e := newEnv(t)
 		e.save(sampleUserData())
 		e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
 		b, fc := testutil.NewBot(t)
-		fc.SetResponder(func(method string, params map[string]any) (json.RawMessage, error) {
-			if method == "sendMessage" && params["text"] == ScadenzaDoneText {
-				return nil, sendErr
-			}
-			return nil, nil
-		})
-		if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, testutil.MessageContext(b, testutil.DefaultUserID, "15/03/2025")); !errors.Is(res.err, sendErr) {
-			t.Errorf("done: err=%v", res.err)
+		fc.FailMethod("sendMessage", sendErr)
+		if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, testutil.MessageContext(b, testutil.DefaultUserID, text)); !errors.Is(res.err, sendErr) {
+			t.Errorf("%s: err=%v", name, res.err)
 		}
+	}
+	e := newEnv(t)
+	e.save(sampleUserData())
+	e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce"})
+	b, fc := testutil.NewBot(t)
+	fc.SetResponder(func(method string, params map[string]any) (json.RawMessage, error) {
+		if method == "sendMessage" && params["text"] == ScadenzaDoneText {
+			return nil, sendErr
+		}
+		return nil, nil
 	})
+	if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, testutil.MessageContext(b, testutil.DefaultUserID, "15/03/2025")); !errors.Is(res.err, sendErr) {
+		t.Errorf("done: err=%v", res.err)
+	}
 }
 
 func TestMissingUpdateFields(t *testing.T) {
@@ -358,132 +356,23 @@ func TestMissingUpdateFields(t *testing.T) {
 	for name, h := range map[string]handlers.Response{
 		"yes": e.h.RateUpdateYes, "no": e.h.RateUpdateNo, "choice": e.h.ScadenzaUpdateChoice, "skip": e.h.SkipScadenzaDate,
 	} {
-		if res := call(t, fc, e.h.UserData, h, b, msgCtx); res.err == nil || !strings.Contains(res.err.Error(), "'answer'") {
+		if res := call(t, fc, e.h.UserData, h, b, msgCtx); !errors.Is(res.err, tg.ErrNoCallback) {
 			t.Errorf("%s senza callback: %v", name, res.err)
 		}
 	}
 
-	// Senza effective_user: str(update.effective_user.id) / context.user_data None
-	noUser := func(data string) *ext.Context {
-		u := callbackUpdate(data, notifica())
-		ctx := ext.NewContext(b, u, nil)
-		ctx.EffectiveUser = nil
-		return ctx
-	}
-	for name, c := range map[string]struct {
-		h    handlers.Response
-		data string
-		attr string
-	}{
-		"yes":        {e.h.RateUpdateYes, CallbackYes, "'id'"},
-		"no":         {e.h.RateUpdateNo, CallbackNo, "'id'"},
-		"choice no":  {e.h.ScadenzaUpdateChoice, CallbackScadenzaNo, "'pop'"},
-		"choice yes": {e.h.ScadenzaUpdateChoice, CallbackScadenzaYes, "'get'"},
-		"skip":       {e.h.SkipScadenzaDate, CallbackScadenzaSkip, "'get'"},
-	} {
-		if res := call(t, fc, e.h.UserData, c.h, b, noUser(c.data)); res.err == nil || !strings.Contains(res.err.Error(), c.attr) {
-			t.Errorf("%s senza utente: %v", name, res.err)
-		}
-	}
 	u := testutil.MessageUpdate(testutil.DefaultUserID, "15/03/2025")
 	u.Message.From = nil
-	if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, ext.NewContext(b, u, nil)); res.err == nil || !strings.Contains(res.err.Error(), "'get'") {
+	if res := call(t, fc, e.h.UserData, e.h.UpdateScadenzaDate, b, ext.NewContext(b, u, nil)); !errors.Is(res.err, tg.ErrNoUser) {
 		t.Errorf("date senza utente: %v", res.err)
 	}
-}
 
-func TestEditAndReplyTargets(t *testing.T) {
-	b, fc := testutil.NewBot(t)
-	cases := []struct {
-		name string
-		cq   *gotgbot.CallbackQuery
-		want map[string]string
-		err  string
-	}{
-		{"inline", &gotgbot.CallbackQuery{InlineMessageId: "im-1"}, map[string]string{"inline_message_id": "im-1"}, ""},
-		{"valore", &gotgbot.CallbackQuery{Message: gotgbot.Message{MessageId: 7, Chat: gotgbot.Chat{Id: 9}, BusinessConnectionId: "bc"}},
-			map[string]string{"chat_id": "9", "message_id": "7", "business_connection_id": "bc"}, ""},
-		{"puntatore", &gotgbot.CallbackQuery{Message: &gotgbot.Message{MessageId: 8, Chat: gotgbot.Chat{Id: 10}}},
-			map[string]string{"chat_id": "10", "message_id": "8"}, ""},
-		{"inaccessibile", &gotgbot.CallbackQuery{Message: gotgbot.InaccessibleMessage{MessageId: 5, Chat: gotgbot.Chat{Id: 11}}},
-			map[string]string{"chat_id": "11", "message_id": "5"}, ""},
-		{"inaccessibile puntatore", &gotgbot.CallbackQuery{Message: &gotgbot.InaccessibleMessage{MessageId: 6, Chat: gotgbot.Chat{Id: 12}}},
-			map[string]string{"chat_id": "12", "message_id": "6"}, ""},
-		{"senza messaggio", &gotgbot.CallbackQuery{}, nil, "TypeError: Cannot edit an inaccessible message"},
-		{"query nil", nil, nil, "AttributeError: 'NoneType' object has no attribute 'edit_message_text'"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			fc.Reset()
-			err := editMessageText(b, c.cq, "testo", "", nil)
-			if c.err != "" {
-				if err == nil || err.Error() != c.err {
-					t.Fatalf("err = %v, want %q", err, c.err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			got := fc.LastCall(t, "editMessageText")
-			for k, v := range c.want {
-				if got.String(k) != v {
-					t.Errorf("%s = %q, want %q", k, got.String(k), v)
-				}
-			}
-		})
-	}
-
-	// reply_text: topic, business e messaggi diretti; nessuna citazione
-	msg := &gotgbot.Message{Chat: gotgbot.Chat{Id: 4}, IsTopicMessage: true, MessageThreadId: 12,
-		BusinessConnectionId: "bc", DirectMessagesTopic: &gotgbot.DirectMessagesTopic{TopicId: 3}}
-	fc.Reset()
-	if err := replyText(b, msg, "x", "", nil); err != nil {
-		t.Fatal(err)
-	}
-	c := fc.LastCall(t, "sendMessage")
-	if c.String("message_thread_id") != "12" || c.String("business_connection_id") != "bc" || c.String("direct_messages_topic_id") != "3" {
-		t.Errorf("parametri: %+v", c.Params)
-	}
-	if _, quoted := c.Params["reply_parameters"]; quoted {
-		t.Error("reply_text non cita il messaggio")
-	}
-	if err := replyText(b, nil, "x", "", nil); err == nil || !strings.Contains(err.Error(), "'reply_text'") {
-		t.Errorf("msg nil: %v", err)
-	}
-}
-
-func TestEffectiveMessage(t *testing.T) {
-	b, _ := testutil.NewBot(t)
-	m := testutil.MessageUpdate(testutil.DefaultUserID, "x")
-	if got := effectiveMessage(ext.NewContext(b, m, nil)); got != m.Message {
-		t.Error("message")
-	}
-	edited := testutil.MessageUpdate(testutil.DefaultUserID, "x")
-	edited.EditedMessage, edited.Message = edited.Message, nil
-	if got := effectiveMessage(ext.NewContext(b, edited, nil)); got != edited.EditedMessage {
-		t.Error("edited_message")
-	}
-	cb := callbackUpdate("x", notifica())
-	if got := effectiveMessage(ext.NewContext(b, cb, nil)); got == nil || got.MessageId != 42 {
-		t.Error("callback")
-	}
-	channel := testutil.MessageUpdate(testutil.DefaultUserID, "x")
-	channel.ChannelPost, channel.Message = channel.Message, nil
-	if got := effectiveMessage(ext.NewContext(b, channel, nil)); got != channel.ChannelPost {
-		t.Error("channel_post")
-	}
-	if callbackMessage(nil) != nil || callbackMessage(&gotgbot.CallbackQuery{}) != nil {
-		t.Error("callback senza messaggio")
-	}
-	// _prompt_next_service senza messaggio effettivo: AttributeError
-	e := newEnv(t)
+	// Servizio successivo da una callback inline: nessun messaggio a cui rispondere
 	e.h.UserData.Set(testutil.DefaultUserID, servicesKey, []string{"luce", "gas"})
-	u := testutil.CallbackUpdate(testutil.DefaultUserID, CallbackScadenzaSkip)
-	u.CallbackQuery.Message = nil
-	u.CallbackQuery.InlineMessageId = "inline"
-	_, fc := testutil.NewBot(t)
-	if res := call(t, fc, e.h.UserData, e.h.SkipScadenzaDate, b, ext.NewContext(b, u, nil)); res.err == nil || !strings.Contains(res.err.Error(), "'reply_text'") {
+	inline := testutil.CallbackUpdate(testutil.DefaultUserID, CallbackScadenzaSkip)
+	inline.CallbackQuery.Message = nil
+	inline.CallbackQuery.InlineMessageId = "inline"
+	if res := call(t, fc, e.h.UserData, e.h.SkipScadenzaDate, b, ext.NewContext(b, inline, nil)); !errors.Is(res.err, tg.ErrNoMessage) {
 		t.Errorf("skip inline: %v", res.err)
 	}
 }
@@ -520,40 +409,37 @@ func TestMalformedPendingJSON(t *testing.T) {
 }
 
 func TestTextHTMLHelpers(t *testing.T) {
-	if lo, hi := pySliceBounds(10, -4, -2); lo != 6 || hi != 8 {
-		t.Errorf("negativi: %d %d", lo, hi)
+	u := []uint16{1, 2, 3, 4}
+	for _, c := range []struct {
+		start, stop int64
+		want        int
+	}{{1, 3, 2}, {-2, 2, 2}, {3, 1, 0}, {2, 40, 2}, {40, 50, 0}} {
+		if got := sliceUTF16(u, c.start, c.stop); len(got) != c.want {
+			t.Errorf("sliceUTF16(%d, %d) = %v", c.start, c.stop, got)
+		}
 	}
-	if lo, hi := pySliceBounds(10, -40, 40); lo != 0 || hi != 10 {
-		t.Errorf("fuori range: %d %d", lo, hi)
-	}
-	if lo, hi := pySliceBounds(10, 8, 2); lo != 8 || hi != 8 {
-		t.Errorf("start > stop: %d %d", lo, hi)
-	}
-	if _, err := textHTML(nil); err == nil || !strings.Contains(err.Error(), "'text_html'") {
+	if _, err := textHTML(nil); !errors.Is(err, errNoText) {
 		t.Errorf("nil: %v", err)
 	}
-	// Annidamento con surrogato spezzato dentro un'entità padre
-	msg := notification("😀a", gotgbot.MessageEntity{Type: "bold", Offset: 0, Length: 3}, gotgbot.MessageEntity{Type: "italic", Offset: 1, Length: 2})
-	if _, err := textHTML(&msg); err == nil || !strings.HasPrefix(err.Error(), "UnicodeDecodeError: ") {
-		t.Errorf("surrogato spezzato: %v", err)
+	msg := notification("<a> & 'b'", gotgbot.MessageEntity{Type: "text_mention", Offset: 0, Length: 3},
+		gotgbot.MessageEntity{Type: "pre", Offset: 6, Length: 3})
+	if got, _ := textHTML(&msg); got != "&lt;a&gt; &amp; <pre>&#x27;b&#x27;</pre>" {
+		t.Errorf("escape e text_mention senza utente: %q", got)
 	}
 }
 
 func TestUserDataServicesCopy(t *testing.T) {
 	// La coda in user_data non condivide memoria con la slice del chiamante
 	e := newEnv(t)
-	b, _ := testutil.NewBot(t)
-	ctx := ext.NewContext(b, callbackUpdate("x", notifica()), nil)
 	services := []string{"luce", "gas"}
-	e.h.setServices(ctx, services)
+	e.h.setServices(testutil.DefaultUserID, services)
 	services[0] = "modificato"
-	got, _ := e.h.services(ctx)
-	if got[0] != "luce" {
+	if got := e.h.services(testutil.DefaultUserID); got[0] != "luce" {
 		t.Errorf("coda condivisa: %v", got)
 	}
 	// Un valore di tipo inatteso equivale a coda vuota
 	e.h.UserData.Set(testutil.DefaultUserID, servicesKey, "luce")
-	if got, _ := e.h.services(ctx); len(got) != 0 {
+	if got := e.h.services(testutil.DefaultUserID); len(got) != 0 {
 		t.Errorf("tipo inatteso: %v", got)
 	}
 }

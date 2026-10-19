@@ -3,7 +3,9 @@ package database
 // Test differenziale di ApplyPendingRates su blob pending_rates anomali:
 // testdata/apply_edge_golden.json contiene, per ogni blob, l'esito di
 // apply_pending_rates in Python (o l'eccezione non gestita sollevata) e la
-// riga users risultante.
+// riga users risultante. Sono esclusi i blob che il bot non scrive mai e
+// che la versione Go decodifica in modo tipizzato (updated_services non
+// lista di stringhe, tariffe null, booleane, oggetti o array).
 
 import (
 	"encoding/json"
@@ -39,14 +41,10 @@ func setupApplyEdgeUser(t *testing.T, s *Store) {
 	}
 }
 
-// goResultForPythonException: dove Python solleva un'eccezione non gestita
-// (che in Go non può propagarsi), Go restituisce un codice di errore e
-// lascia la riga invariata (rollback), come la chiusura della connessione
-// Python senza commit.
-var goResultForPythonException = map[string]string{
-	"TypeError":     ApplyValidationError,
-	"OverflowError": ApplyDBError,
-}
+// Dove Python solleva un TypeError non gestito (blob che non è un oggetto,
+// tipo non stringa, ...) Go restituisce validation_error e lascia la riga
+// invariata (rollback), come la chiusura della connessione Python senza
+// commit.
 
 func TestApplyPendingRatesEdgeCasesGolden(t *testing.T) {
 	b, err := os.ReadFile("testdata/apply_edge_golden.json")
@@ -66,7 +64,7 @@ func TestApplyPendingRatesEdgeCasesGolden(t *testing.T) {
 			}
 			ok, reason := s.ApplyPendingRates("u")
 
-			wantOK, wantReason := false, goResultForPythonException[c.Exception]
+			wantOK, wantReason := false, ApplyValidationError
 			if c.Exception == "" {
 				wantOK, wantReason = c.Result[0].(bool), c.Result[1].(string)
 			}
@@ -74,18 +72,16 @@ func TestApplyPendingRatesEdgeCasesGolden(t *testing.T) {
 				t.Fatalf("pending %q: got (%v, %s), want (%v, %s) [python: %v %s]", c.Raw, ok, reason, wantOK, wantReason, c.Result, c.Exception)
 			}
 
-			maps, err := queryMaps(t.Context(), s.db, applyEdgeRowSQL)
-			if err != nil || len(maps) != 1 {
+			row := make([]any, 18)
+			ptrs := make([]any, len(row))
+			for i := range row {
+				ptrs[i] = &row[i]
+			}
+			if err := s.db.QueryRow(applyEdgeRowSQL).Scan(ptrs...); err != nil {
 				t.Fatalf("lettura riga: %v", err)
 			}
-			cols := []string{"luce_tipo", "luce_fascia", "luce_energia", "luce_commercializzazione", "gas_tipo", "gas_fascia",
-				"gas_energia", "gas_commercializzazione", "luce_consumo_f1", "luce_consumo_f2", "luce_consumo_f3",
-				"gas_consumo_annuo", "luce_scadenza", "gas_scadenza", "luce_scadenza_reminded", "gas_scadenza_reminded",
-				"last_notified_rates", "pending_rates"}
-			row := make([]any, len(cols))
-			for i, col := range cols {
-				row[i] = maps[0][col]
-			}
+			assertSameBlob(t, "last_notified_rates dopo apply di "+c.Raw, row[16], c.Row[16])
+			row[16] = c.Row[16]
 			assertSameJSON(t, "riga dopo apply di "+c.Raw, row, c.Row)
 
 			var types []any
@@ -107,15 +103,15 @@ func TestApplyPendingRatesLogs(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.ApplyPendingRates("u")
-	assertLogContains(t, logs, "- database - ERROR - ❌ Validazione fallita per u: luce.tipo non valido: 'mista'. Valori ammessi: {'fissa', 'variabile'}")
+	assertLogContains(t, logs, "- database - ERROR - ❌ Validazione fallita per u: luce.tipo non valido: 'mista'. Valori ammessi: fissa, variabile")
 
 	if _, err := s.db.Exec(`UPDATE users SET pending_rates = '{"luce": {"tipo": "fissa", "fascia": "monoraria", "energia": null, "commercializzazione": 1}}' WHERE user_id = 'u'`); err != nil {
 		t.Fatal(err)
 	}
-	if ok, reason := s.ApplyPendingRates("u"); ok || reason != ApplyDBError {
-		t.Fatalf("atteso db_error, got %v %s", ok, reason)
+	if ok, reason := s.ApplyPendingRates("u"); ok || reason != ApplyValidationError {
+		t.Fatalf("atteso validation_error, got %v %s", ok, reason)
 	}
-	assertLogContains(t, logs, "- database - ERROR - ❌ Errore database apply_pending_rates per u:", "NOT NULL")
+	assertLogContains(t, logs, "- database - ERROR - ❌ Validazione fallita per u: luce: energia o commercializzazione mancante")
 }
 
 func TestApplyPendingRatesNoPendingAndErrors(t *testing.T) {

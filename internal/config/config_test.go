@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -327,47 +328,56 @@ func TestLoadDotEnvGolden(t *testing.T) {
 		t.Fatalf("golden troppo piccolo: %d casi", len(cases))
 	}
 	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-			unsetEnv(t, "PYTHON_DOTENV_DISABLED")
-			for k, v := range c.Preset {
-				t.Setenv(k, v)
-			}
-			before := environMap()
-			logs := captureLogs(t)
-			path := writeEnvFile(t, c.Content)
-
-			err := LoadDotEnv(path)
-
-			after := environMap()
-			got := map[string]string{}
-			for k, v := range after {
-				if _, ok := before[k]; !ok {
-					got[k] = v
-					_ = os.Unsetenv(k)
-				}
-			}
-			if err != nil {
-				t.Fatalf("LoadDotEnv: %v", err)
-			}
-			if len(got) != len(c.Expected) {
-				t.Errorf("variabili impostate = %q, want %q", got, c.Expected)
-			}
-			for k, want := range c.Expected {
-				if g, ok := got[k]; !ok || g != want {
-					t.Errorf("%q = %q (presente=%v), want %q", k, g, ok, want)
-				}
-			}
-			var warnings []string
-			for _, line := range strings.Split(strings.TrimSpace(logs.String()), "\n") {
-				if _, msg, ok := strings.Cut(line, " - dotenv.main - WARNING - "); ok {
-					warnings = append(warnings, msg)
-				}
-			}
-			if strings.Join(warnings, "|") != strings.Join(c.Warnings, "|") {
-				t.Errorf("warning = %q, want %q", warnings, c.Warnings)
-			}
-		})
+		t.Run(c.Name, func(t *testing.T) { checkDotenvCase(t, c) })
 	}
+}
+
+func checkDotenvCase(t *testing.T, c dotenvCase) {
+	t.Helper()
+	unsetEnv(t, "PYTHON_DOTENV_DISABLED")
+	for k, v := range c.Preset {
+		t.Setenv(k, v)
+	}
+	before := environMap()
+	logs := captureLogs(t)
+	path := writeEnvFile(t, c.Content)
+
+	err := LoadDotEnv(path)
+
+	got := takeNewEnv(before)
+	if err != nil {
+		t.Fatalf("LoadDotEnv: %v", err)
+	}
+	if !maps.Equal(got, c.Expected) {
+		t.Errorf("variabili impostate = %q, want %q", got, c.Expected)
+	}
+	if warnings := dotenvWarnings(logs.String()); strings.Join(warnings, "|") != strings.Join(c.Warnings, "|") {
+		t.Errorf("warning = %q, want %q", warnings, c.Warnings)
+	}
+}
+
+// takeNewEnv restituisce le variabili d'ambiente assenti in before e le
+// rimuove dall'ambiente.
+func takeNewEnv(before map[string]string) map[string]string {
+	got := map[string]string{}
+	for k, v := range environMap() {
+		if _, ok := before[k]; !ok {
+			got[k] = v
+			_ = os.Unsetenv(k)
+		}
+	}
+	return got
+}
+
+// dotenvWarnings estrae i messaggi di warning del logger dotenv.main.
+func dotenvWarnings(logs string) []string {
+	var warnings []string
+	for _, line := range strings.Split(strings.TrimSpace(logs), "\n") {
+		if _, msg, ok := strings.Cut(line, " - dotenv.main - WARNING - "); ok {
+			warnings = append(warnings, msg)
+		}
+	}
+	return warnings
 }
 
 func TestDigitValue(t *testing.T) {

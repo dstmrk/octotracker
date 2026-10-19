@@ -76,11 +76,8 @@ func TestFormatNumberEdgeCases(t *testing.T) {
 		{2.675, 2, "2,67"}, // 2.675 in binario è leggermente sotto
 		{0.1 + 0.2, 4, "0,30"},
 		{-0.00005, 4, "-0,0001"},
-		{15, -1, "20"},
-		{25, -1, "20"},
 		{1e20, 2, "100000000000000000000"},
 		{123.456, 400, "123,4560000000000030695446184836328029632568359375"},
-		{123.456, -400, "0"},
 	}
 	for _, tt := range tests {
 		if got := FormatNumber(tt.value, tt.maxDecimals); got != tt.want {
@@ -102,21 +99,6 @@ func TestFormatNumberPanicsOnNaNAndInf(t *testing.T) {
 		if got := panicMessage(func() { FormatNumber(tt.value, 2) }); got != tt.want {
 			t.Errorf("FormatNumber(%v) panic = %q, want %q", tt.value, got, tt.want)
 		}
-	}
-}
-
-func TestPyRoundSpecialValues(t *testing.T) {
-	if !math.IsNaN(pyRound(math.NaN(), 2)) {
-		t.Error("pyRound(NaN) deve restare NaN")
-	}
-	if !math.IsInf(pyRound(math.Inf(-1), 2), -1) {
-		t.Error("pyRound(-inf) deve restare -inf")
-	}
-	if got := pyRound(-5, -400); got != 0 || !math.Signbit(got) {
-		t.Errorf("pyRound(-5, -400) = %v, want -0", got)
-	}
-	if got := pyRound(-0.00004, 4); got != 0 || !math.Signbit(got) {
-		t.Errorf("pyRound(-0.00004, 4) = %v, want -0", got)
 	}
 }
 
@@ -242,27 +224,15 @@ func TestFormatNumberGolden(t *testing.T) {
 
 	decimals := []int{0, 2, 3, 4}
 	for _, row := range g.Cases {
-		v := parsePyFloat(t, row[0])
 		for i, nd := range decimals {
-			if got := FormatNumber(v, nd); got != row[i+1] {
-				t.Errorf("FormatNumber(%s, %d) = %q, want %q", row[0], nd, got, row[i+1])
-			}
+			checkFormatNumber(t, row[0], nd, row[i+1])
 		}
 	}
-
 	for _, row := range g.Others {
-		repr := row[0].(string)
-		nd := int(row[1].(float64))
-		want := row[2].(string)
-		if got := FormatNumber(parsePyFloat(t, repr), nd); got != want {
-			t.Errorf("FormatNumber(%s, %d) = %q, want %q", repr, nd, got, want)
-		}
+		checkFormatNumber(t, row[0].(string), int(row[1].(float64)), row[2].(string))
 	}
-
 	for _, row := range g.Defaults {
-		if got := FormatNumber(parsePyFloat(t, row[0]), DefaultMaxDecimals); got != row[1] {
-			t.Errorf("FormatNumber(%s) = %q, want %q", row[0], got, row[1])
-		}
+		checkFormatNumber(t, row[0], DefaultMaxDecimals, row[1])
 	}
 
 	for _, raw := range g.Errors {
@@ -277,6 +247,13 @@ func TestFormatNumberGolden(t *testing.T) {
 		if got := panicMessage(func() { FormatNumber(v, 2) }); got != e.Error {
 			t.Errorf("FormatNumber(%s) panic = %q, want %q", e.Repr, got, e.Error)
 		}
+	}
+}
+
+func checkFormatNumber(t *testing.T, repr string, nd int, want string) {
+	t.Helper()
+	if got := FormatNumber(parsePyFloat(t, repr), nd); got != want {
+		t.Errorf("FormatNumber(%s, %d) = %q, want %q", repr, nd, got, want)
 	}
 }
 
@@ -334,19 +311,22 @@ func TestFormattersGolden(t *testing.T) {
 			t.Errorf("FormatUtilityHeader(%q, %q, %q) = %q, want %q", c.Utility, c.Tipo, c.Fascia, [3]string{a, b, u}, c.Result)
 		}
 	}
+}
+
+func TestFormatLuceConsumptionGolden(t *testing.T) {
+	var g formattersGolden
+	loadJSON(t, "formatters_golden.json", &g)
 
 	if len(g.Consumption) < 200 {
 		t.Fatalf("golden consumi troppo piccolo: %d", len(g.Consumption))
 	}
 	for _, row := range g.Consumption {
-		fascia := row[0].(string)
 		prefix := DefaultConsumptionPrefix
 		if row[1] != nil {
 			prefix = row[1].(string)
 		}
-		want := row[5].(string)
-		got := FormatLuceConsumption(fascia, optFloat(row[2]), optFloat(row[3]), optFloat(row[4]), prefix)
-		if got != want {
+		got := FormatLuceConsumption(row[0].(string), optFloat(row[2]), optFloat(row[3]), optFloat(row[4]), prefix)
+		if want := row[5].(string); got != want {
 			t.Errorf("FormatLuceConsumption(%v) = %q, want %q", row[:5], got, want)
 		}
 	}
@@ -357,15 +337,14 @@ func TestFormattersGolden(t *testing.T) {
 		msg := panicMessage(func() {
 			got = FormatLuceConsumption(c.Fascia, &one, c.F2, c.F3, DefaultConsumptionPrefix)
 		})
-		switch {
-		case c.Error != nil:
-			if msg != *c.Error {
-				t.Errorf("%s f2=%v f3=%v: panic %q, want %q", c.Fascia, c.F2, c.F3, msg, *c.Error)
-			}
-		case msg != "":
-			t.Errorf("%s: panic inattesa %q", c.Fascia, msg)
-		case got != *c.Result:
-			t.Errorf("%s: got %q, want %q", c.Fascia, got, *c.Result)
+		want := c.Result
+		if c.Error != nil {
+			got, want = msg, c.Error
+		} else if msg != "" {
+			got = "panic: " + msg
+		}
+		if got != *want {
+			t.Errorf("%s f2=%v f3=%v: got %q, want %q", c.Fascia, c.F2, c.F3, got, *want)
 		}
 	}
 }
@@ -388,7 +367,7 @@ func panicMessage(fn func()) (msg string) {
 	return ""
 }
 
-func TestPyCapitalize(t *testing.T) {
+func TestCapitalize(t *testing.T) {
 	tests := map[string]string{
 		"":           "",
 		"fissa":      "Fissa",
@@ -400,11 +379,11 @@ func TestPyCapitalize(t *testing.T) {
 		"élan VITAL": "Élan vital",
 	}
 	for in, want := range tests {
-		if got := pyCapitalize(in); got != want {
-			t.Errorf("pyCapitalize(%q) = %q, want %q", in, got, want)
+		if got := Capitalize(in); got != want {
+			t.Errorf("Capitalize(%q) = %q, want %q", in, got, want)
 		}
 	}
-	if !strings.HasPrefix(pyCapitalize("ǆa"), "ǅ") {
-		t.Error("pyCapitalize deve usare il title case per il primo carattere")
+	if !strings.HasPrefix(Capitalize("ǆa"), "ǅ") {
+		t.Error("Capitalize deve usare il title case per il primo carattere")
 	}
 }

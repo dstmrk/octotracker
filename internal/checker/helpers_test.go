@@ -3,6 +3,7 @@ package checker
 import (
 	"bytes"
 	"log/slog"
+	"maps"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -51,16 +52,20 @@ func merge(parts ...database.CurrentRates) database.CurrentRates {
 				out[s] = map[string]map[string]database.Rate{}
 			}
 			for tipo, byFascia := range byTipo {
-				if out[s][tipo] == nil {
-					out[s][tipo] = map[string]database.Rate{}
-				}
-				for f, r := range byFascia {
-					out[s][tipo][f] = r
-				}
+				out[s][tipo] = mergeFasce(out[s][tipo], byFascia)
 			}
 		}
 	}
 	return out
+}
+
+// mergeFasce aggiunge a dst (creandola se nil) le tariffe di src.
+func mergeFasce(dst, src map[string]database.Rate) map[string]database.Rate {
+	if dst == nil {
+		dst = map[string]database.Rate{}
+	}
+	maps.Copy(dst, src)
+	return dst
 }
 
 // ========== Cattura log ==========
