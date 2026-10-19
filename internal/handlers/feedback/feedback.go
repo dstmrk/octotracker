@@ -101,15 +101,18 @@ func (h *Handlers) canGiveFeedback(userID string) (bool, string) {
 		return true, ""
 	}
 
-	lastTime, err := time.ParseInLocation(sqliteTimestamp, *lastFeedback, time.Local)
+	lastTime, err := time.Parse(sqliteTimestamp, *lastFeedback)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Errore parsing timestamp feedback per %s: %v", userID, err))
 		// In caso di errore, permetti comunque (safe default)
 		return true, ""
 	}
 
+	// Come in Python, il timestamp UTC di SQLite è confrontato con l'ora
+	// locale "da muro" di datetime.now(): la differenza è tra date senza
+	// fuso, quindi un cambio d'ora non sposta la finestra di 24h.
 	// Microsecondi trascorsi, senza la saturazione di time.Duration (±292 anni)
-	now := dateutil.Now()
+	now := wallClock(dateutil.Now())
 	elapsed := (now.Unix()-lastTime.Unix())*1_000_000 + int64(now.Nanosecond()/1000-lastTime.Nanosecond()/1000)
 	if elapsed >= FeedbackCooldownHours*3600*1_000_000 {
 		return true, ""
@@ -119,6 +122,11 @@ func (h *Handlers) canGiveFeedback(userID string) (bool, string) {
 	return false, "⏰ Hai già inviato un feedback di recente!\n\n" +
 		"Per evitare spam, puoi dare feedback una volta ogni " + strconv.Itoa(FeedbackCooldownHours) + "h.\n" +
 		"Riprova tra circa " + strconv.FormatInt(int64(hoursRemaining), 10) + "h."
+}
+
+// wallClock restituisce l'ora "da muro" di t come se fosse UTC.
+func wallClock(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC)
 }
 
 // ratingKeyboard è la tastiera con i pulsanti da 1 a 5 stelle.

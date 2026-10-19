@@ -299,18 +299,48 @@ func TestFeedbackRatingParsing(t *testing.T) {
 	}
 }
 
-// Il timestamp di SQLite è letto come ora locale (bug Python mantenuto):
-// conta solo la differenza con l'orologio, anche con un fuso diverso.
-func TestCooldownReadsTimestampAsLocalTime(t *testing.T) {
-	setNow(t, time.Date(2026, 1, 29, 3, 30, 0, 0, time.Local))
-	h := &Handlers{Store: &fakeStore{last: sp("2026-01-28 04:30:00")}, UserData: tg.NewUserData()}
+// Il cooldown usa l'ora "da muro" dell'orologio, come datetime.now()
+// (naive), qualunque sia il fuso del time.Time restituito.
+func TestCooldownUsesWallClock(t *testing.T) {
+	setNow(t, time.Date(2026, 3, 29, 3, 30, 0, 0, time.FixedZone("CEST", 2*3600)))
+	h := &Handlers{Store: &fakeStore{last: sp("2026-03-28 04:30:00")}, UserData: tg.NewUserData()}
 	can, msg := h.canGiveFeedback(testUserID)
 	if can || !strings.HasSuffix(msg, "Riprova tra circa 1h.") {
 		t.Errorf("got %v %q", can, msg)
 	}
-	h.Store = &fakeStore{last: sp("2026-01-28 03:30:00")}
+	h.Store = &fakeStore{last: sp("2026-03-28 03:30:00")}
 	if can, _ := h.canGiveFeedback(testUserID); !can {
 		t.Error("24h esatte: il cooldown è scaduto")
+	}
+}
+
+// Nel fuso di produzione (Europe/Rome) un cambio d'ora non sposta la
+// finestra di 24h: valori calcolati con _can_give_feedback di Python.
+func TestCooldownAcrossDSTChange(t *testing.T) {
+	rome, err := time.LoadLocation("Europe/Rome")
+	if err != nil {
+		t.Skipf("tzdata non disponibile: %v", err)
+	}
+	cases := []struct {
+		now     time.Time
+		last    string
+		can     bool
+		retryIn string
+	}{
+		// Fine dell'ora legale: 25/10/2026 alle 03:00 CEST tornano le 02:00 CET
+		{time.Date(2026, 10, 25, 11, 30, 0, 0, rome), "2026-10-24 12:00:00", false, "0h"},
+		{time.Date(2026, 10, 25, 9, 30, 0, 0, rome), "2026-10-24 12:00:00", false, "2h"},
+		// Inizio dell'ora legale: 29/03/2026 alle 02:00 CET diventano le 03:00 CEST
+		{time.Date(2026, 3, 29, 12, 30, 0, 0, rome), "2026-03-28 12:00:00", true, ""},
+		{time.Date(2026, 3, 29, 10, 30, 0, 0, rome), "2026-03-28 12:00:00", false, "1h"},
+	}
+	for _, c := range cases {
+		setNow(t, c.now)
+		h := &Handlers{Store: &fakeStore{last: sp(c.last)}, UserData: tg.NewUserData()}
+		can, msg := h.canGiveFeedback(testUserID)
+		if can != c.can || (!can && !strings.HasSuffix(msg, "Riprova tra circa "+c.retryIn+".")) {
+			t.Errorf("now=%s last=%s: got %v %q", c.now, c.last, can, msg)
+		}
 	}
 }
 
