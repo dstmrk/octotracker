@@ -16,7 +16,7 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL:-}
       - WEBHOOK_PORT=${WEBHOOK_PORT:-8443}
       # WEBHOOK_SECRET: OBBLIGATORIO per sicurezza (protezione da webhook spoofing)
-      # Genera con: python -c 'import secrets; print(secrets.token_urlsafe(32))'
+      # Genera con: openssl rand -base64 32
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - HEALTH_PORT=${HEALTH_PORT:-8444}
       - SCRAPER_HOUR=${SCRAPER_HOUR:-11}

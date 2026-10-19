@@ -77,7 +77,7 @@ WEBHOOK_SECRET=  # Opzionale: openssl rand -hex 32
 **4. Avvia con Docker**
 
 ```bash
-# Build e avvio (prima volta: 5-10 min per scaricare dipendenze)
+# Build e avvio
 docker compose up -d
 
 # Verifica logs
@@ -295,7 +295,7 @@ curl https://tuodominio.xyz:8444/health
 **Uso con monitoring tools:**
 - **UptimeRobot**: URL = `https://tuodominio.xyz:8444/health`, Keyword = `"healthy"`
 - **Kubernetes**: `livenessProbe` su `http://localhost:8444/health`
-- **Docker**: `HEALTHCHECK CMD curl -f http://localhost:8444/health`
+- **Docker**: già incluso nell'immagine (`HEALTHCHECK` con `octotracker healthcheck`)
 
 ## ⚡️ Come Funziona
 
@@ -374,76 +374,39 @@ CREATE TABLE rate_history (
 
 ## 🛠️ Sviluppo Locale (senza Docker)
 
-Se vuoi sviluppare o testare senza Docker:
+Serve Go (la versione è in `go.mod`); nient'altro, il binario è statico.
 
 ```bash
-# Installa uv (se non già installato)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Installa dipendenze
-uv sync --extra dev
-
 # Crea .env
 cp .env.example .env
 # Modifica .env con il tuo token
 
 # Avvia bot (include scheduler)
-uv run python bot.py
+go run ./cmd/octotracker serve
+
+# Esegui un solo pezzo e termina
+go run ./cmd/octotracker scrape     # legge gli open-data ARERA
+go run ./cmd/octotracker check      # controlla le tariffe e invia le notifiche
+go run ./cmd/octotracker help       # tutti i sottocomandi
 ```
 
-### Code Quality Tools
-
-Il progetto usa **Black** (formatter) e **Ruff** (linter) per mantenere alta la qualità del codice.
-
-#### Setup Pre-commit Hooks (Consigliato)
-
-I pre-commit hooks formattano automaticamente il codice prima di ogni commit:
+### Test e qualità del codice
 
 ```bash
-# Installa pre-commit hooks
-uv run pre-commit install
-
-# Ora ad ogni git commit:
-# 1. Black formatta il codice automaticamente
-# 2. Ruff controlla e auto-fixa problemi risolvibili
-# 3. Commit procede solo se tutto è ok
+go test -race ./...
+go vet ./... && gofmt -l cmd internal webapp
+GOTOOLCHAIN=$(go env GOVERSION) go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
 ```
 
-#### Comandi Manuali
-
-Se preferisci eseguire i check manualmente:
-
-```bash
-# Formatta tutto il codice con Black
-uv run black .
-
-# Controlla e auto-fixa problemi con Ruff
-uv run ruff check --fix .
-
-# Solo controllo (senza modifiche)
-uv run black --check .
-uv run ruff check .
-```
+I test confrontano l'output con file golden generati dalla versione Python
+(testi dei messaggi, calcoli, parsing ARERA, JSON delle API): un testo che
+cambia per sbaglio fa fallire i test.
 
 #### GitHub Actions
 
-I check di linting e testing girano automaticamente ad ogni push:
-- ✅ **Unit Tests** - pytest su tutti i test
-- ✅ **Lint** - black + ruff verificano la qualità del codice
-- ✅ **Docker Build** - build dell'immagine (solo su PR)
-
-### Test componenti singoli
-
-```bash
-# Test solo updater (lettura open-data ARERA)
-uv run python updater.py
-
-# Test solo checker
-uv run python checker.py
-
-# Run unit tests
-uv run pytest tests/ -v
-```
+Ad ogni PR girano gofmt, go vet, staticcheck, govulncheck, `go test -race`
+con coverage minima dell'80%, SonarCloud e la build Docker multi-arch
+(immagine sotto i 30 MB).
 
 ## 🐳 Installazione Docker
 
@@ -469,12 +432,12 @@ docker compose version
 
 ### File Principali
 
-- `bot.py` - Bot Telegram con scheduler integrato
-- `updater.py` - Lettura open-data ARERA per tariffe Octopus
-- `checker.py` - Controllo e invio notifiche
+- `cmd/octotracker/` - Binario con i sottocomandi (`serve`, `check`, `scrape`, `backfill`, ...)
+- `internal/` - Package Go (bot, scheduler, database, scraper ARERA, checker, Mini App API)
+- `webapp/` - Mini App Telegram, inclusa nel binario
 - `docker-compose.yml` - Orchestrazione Docker
-- `Dockerfile` - Build immagine Docker
-- `pyproject.toml` - Dipendenze Python (gestite con uv)
+- `Dockerfile` - Build immagine Docker (distroless, multi-arch)
+- `go.mod` - Dipendenze Go
 - `.env.example` - Template configurazione
 
 ## 📝 Note
@@ -495,7 +458,7 @@ docker compose version
 
 - [x] **Calcolo automatico convenienza** nei casi "dubbi": ✅ Implementato! Il bot chiede i consumi (kWh/anno, Smc/anno) e calcola il risparmio stimato per luce e gas separatamente
 - [x] **Aggiornamento tariffe con un tap**: ✅ Implementato! Pulsanti inline "✅ Aggiorna tariffe" / "❌ No grazie" nelle notifiche permettono di aggiornare le tariffe registrate con un click
-- [x] **Storico tariffe (backend)**: ✅ Implementato! Le tariffe vengono salvate nella tabella `rate_history` del database (fino a 365 giorni). Script `backfill_rate_history.py` per popolare lo storico iniziale
+- [x] **Storico tariffe (backend)**: ✅ Implementato! Le tariffe vengono salvate nella tabella `rate_history` del database (fino a 365 giorni). Sottocomando `octotracker backfill` per popolare lo storico iniziale
 - [ ] **Storico tariffe (UI)**: comando bot per consultare lo storico e visualizzare grafici dell'andamento tariffe nel tempo
 
 ## 📜 Licenza

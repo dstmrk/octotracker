@@ -1,0 +1,875 @@
+[
+ {
+  "name": "sample_E",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVFL91XXXXXXXXOCTOFLEXv91</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>02</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>03</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESFML14XXXXXXXXOCTOFIXv114</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <DESCRIZIONE>Prezzo</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.107800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>00000000000</PIVA_UTENTE>\n            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>\n        </DettaglioOfferta>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.390000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.080000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1078, \"commercializzazione\": 72.0, \"cod_offerta\": \"000129ESFML14XXXXXXXXOCTOFIXv114\"}}, \"variabile\": {\"trioraria\": {\"energia\": 0.0088, \"commercializzazione\": 72.0, \"cod_offerta\": \"000129ESVFL91XXXXXXXXOCTOFLEXv91\"}, \"monoraria\": {\"energia\": 0.0088, \"commercializzazione\": 72.0, \"cod_offerta\": \"000129ESVML77XXXXXOCTOFLEXMONv77\"}}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1078",
+    "72.0",
+    "000129ESFML14XXXXXXXXOCTOFIXv114"
+   ],
+   [
+    "luce",
+    "variabile",
+    "trioraria",
+    "0.0088",
+    "72.0",
+    "000129ESVFL91XXXXXXXXOCTOFLEXv91"
+   ],
+   [
+    "luce",
+    "variabile",
+    "monoraria",
+    "0.0088",
+    "72.0",
+    "000129ESVML77XXXXXOCTOFLEXMONv77"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "sample_G",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVFL91XXXXXXXXOCTOFLEXv91</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>02</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>03</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESFML14XXXXXXXXOCTOFIXv114</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <DESCRIZIONE>Prezzo</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.107800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>00000000000</PIVA_UTENTE>\n            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>\n        </DettaglioOfferta>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.390000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.080000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"gas\": {\"fissa\": {\"monoraria\": {\"energia\": 0.39, \"commercializzazione\": 84.0, \"cod_offerta\": \"000129GSFML34XXXXXXXXOCTOFIXGv34\"}}, \"variabile\": {\"monoraria\": {\"energia\": 0.08, \"commercializzazione\": 84.0, \"cod_offerta\": \"000129GSVML13XXXXXXXOCTOFLEXGv13\"}}}}",
+  "flat": [
+   [
+    "gas",
+    "fissa",
+    "monoraria",
+    "0.39",
+    "84.0",
+    "000129GSFML34XXXXXXXXOCTOFIXGv34"
+   ],
+   [
+    "gas",
+    "variabile",
+    "monoraria",
+    "0.08",
+    "84.0",
+    "000129GSVML13XXXXXXXOCTOFLEXGv13"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "sample_X",
+  "service": "X",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVFL91XXXXXXXXOCTOFLEXv91</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex è la tariffa multioraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>02</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>03</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESVML77XXXXXOCTOFLEXMONv77</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Mono</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Flex Monoraria è la tariffa monoraria che ti garantisce energia elettrica 100% rinnovabile a prezzo indicizzato.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <DESCRIZIONE>Spread</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.008800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129ESFML14XXXXXXXXOCTOFIXv114</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <OFFERTA_SINGOLA>SI</OFFERTA_SINGOLA>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M</NOME_OFFERTA>\n            <DESCRIZIONE>Octopus Fissa 12M è la tariffa luce 100% green il cui prezzo della componente energia è bloccato per un anno.</DESCRIZIONE>\n        </DettaglioOfferta>\n        <TipoPrezzo>\n            <TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE>\n        </TipoPrezzo>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione 2025 72 euro</NOME>\n            <DESCRIZIONE>Corrispettivo di commercializzazione 2025 72 euro</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>72.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <DESCRIZIONE>Prezzo</DESCRIZIONE>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <FASCIA_COMPONENTE>01</FASCIA_COMPONENTE>\n                <PREZZO>0.107800</PREZZO>\n                <UNITA_MISURA>03</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>00000000000</PIVA_UTENTE>\n            <COD_OFFERTA>ALTRO_FORNITORE</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>01</TIPO_MERCATO>\n            <NOME_OFFERTA>Altra Offerta</NOME_OFFERTA>\n        </DettaglioOfferta>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSFML34XXXXXXXXOCTOFIXGv34</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>01</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Fissa 12M Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Prezzo</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.390000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n    <offerta>\n        <IdentificativiOfferta>\n            <PIVA_UTENTE>01771990445</PIVA_UTENTE>\n            <COD_OFFERTA>000129GSVML13XXXXXXXOCTOFLEXGv13</COD_OFFERTA>\n        </IdentificativiOfferta>\n        <DettaglioOfferta>\n            <TIPO_MERCATO>02</TIPO_MERCATO>\n            <TIPO_CLIENTE>01</TIPO_CLIENTE>\n            <TIPO_OFFERTA>02</TIPO_OFFERTA>\n            <NOME_OFFERTA>Octopus Flex Gas</NOME_OFFERTA>\n        </DettaglioOfferta>\n        <ComponenteImpresa>\n            <NOME>Corrispettivo di commercializzazione</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>01</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>84.000000</PREZZO>\n                <UNITA_MISURA>01</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n        <ComponenteImpresa>\n            <NOME>Spread</NOME>\n            <TIPOLOGIA>01</TIPOLOGIA>\n            <MACROAREA>04</MACROAREA>\n            <IntervalloPrezzi>\n                <PREZZO>0.080000</PREZZO>\n                <UNITA_MISURA>04</UNITA_MISURA>\n            </IntervalloPrezzi>\n        </ComponenteImpresa>\n    </offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "uppercase_offerta",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<Offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></Offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "both_tags_lower_wins",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<Offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.5</PREZZO></IntervalloPrezzi></ComponenteImpresa></Offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>LOW</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"LOW\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "LOW"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "only_upper_with_error_in_upper_but_lower_present",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<Offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>abc</PREZZO></IntervalloPrezzi></ComponenteImpresa></Offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "prefixed_namespace",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<p:Lista xmlns:p=\"urn:x\">\n<p:offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></p:offerta>\n</p:Lista>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "default_namespace",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero xmlns=\"http://www.acquirenteunico.it/schemas/SII_AU/OffertaRetail/01\">\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}}}",
+  "flat": [
+   [
+    "gas",
+    "variabile",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "nested_offerta",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa><offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>INNER</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {\"trioraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"INNER\"}}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ],
+   [
+    "luce",
+    "variabile",
+    "trioraria",
+    "0.1",
+    "72.0",
+    "INNER"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "root_is_offerta",
+  "service": "E",
+  "xml": "<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "no_tipologia_fasce",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "bioraria_trioraria",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>02</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"trioraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {\"bioraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}, \"trioraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "trioraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ],
+   [
+    "luce",
+    "variabile",
+    "bioraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ],
+   [
+    "luce",
+    "variabile",
+    "trioraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "unknown_fascia_code",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>07</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "duplicates_last_wins",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>A</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>B</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>C</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.2</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {\"trioraria\": {\"energia\": 0.2, \"commercializzazione\": null, \"cod_offerta\": \"C\"}, \"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"B\"}}}}",
+  "flat": [
+   [
+    "luce",
+    "variabile",
+    "trioraria",
+    "0.2",
+    null,
+    "C"
+   ],
+   [
+    "luce",
+    "variabile",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "B"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "no_comm",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": null, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    null,
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "comm_without_intervalli",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><NOME>Comm</NOME><MACROAREA>01</MACROAREA></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": null, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    null,
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "macroarea_06_fallback",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>06</MACROAREA><IntervalloPrezzi><PREZZO>0.0088</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.0088, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.0088",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "macroarea_04_empty_no_fallback",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA></ComponenteImpresa><ComponenteImpresa><MACROAREA>06</MACROAREA><IntervalloPrezzi><PREZZO>0.0088</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "macroarea_6_unpadded",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>6</MACROAREA><IntervalloPrezzi><PREZZO>0.115</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.115, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.115",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "macroarea_spaces",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA> 01 </MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>\n04\n</MACROAREA><IntervalloPrezzi><PREZZO>0.115</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.115, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.115",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "gas_no_06_fallback",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>84</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>06</MACROAREA><IntervalloPrezzi><PREZZO>0.3</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "no_energia_warning",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "no_energia_gas_warning",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "no_energia_nome_empty",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA></NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "no_energia_no_nome_attributeerror",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "AttributeError",
+   "msg": "'NoneType' object has no attribute 'text'"
+  }
+ },
+ {
+  "name": "no_energia_no_nome_gas",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "AttributeError",
+   "msg": "'NoneType' object has no attribute 'text'"
+  }
+ },
+ {
+  "name": "intervallo_without_prezzo_skipped",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><UNITA_MISURA>03</UNITA_MISURA></IntervalloPrezzi><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><UNITA_MISURA>03</UNITA_MISURA></IntervalloPrezzi><IntervalloPrezzi><FASCIA_COMPONENTE>01</FASCIA_COMPONENTE><PREZZO>0.1</PREZZO><UNITA_MISURA>03</UNITA_MISURA></IntervalloPrezzi><IntervalloPrezzi><FASCIA_COMPONENTE>02</FASCIA_COMPONENTE><PREZZO>0.2</PREZZO><UNITA_MISURA>03</UNITA_MISURA></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "prezzo_invalid_valueerror",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72,0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: '72,0'"
+  }
+ },
+ {
+  "name": "prezzo_empty_typeerror",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO></PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "TypeError",
+   "msg": "float() argument must be a string or a real number, not 'NoneType'"
+  }
+ },
+ {
+  "name": "prezzo_invalid_in_second_intervallo",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi><IntervalloPrezzi><PREZZO>x</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'x'"
+  }
+ },
+ {
+  "name": "prezzo_invalid_in_unused_component",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>bad</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "tipo_mercato_spaces",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO> 01 </TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "tipo_mercato_missing",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "tipo_offerta_missing",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "tipo_offerta_other_code",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>03</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}}}",
+  "flat": [
+   [
+    "luce",
+    "variabile",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "piva_with_spaces",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE> 01771990445 </PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "piva_missing",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "other_providers",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>00000000000</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>12345678901</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "gas_file_with_luce",
+  "service": "G",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>GASV</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>02</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>GASF</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>2</TIPO_MERCATO><TIPO_OFFERTA>1</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"gas\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"GASF\"}}, \"variabile\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"GASV\"}}}}",
+  "flat": [
+   [
+    "gas",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "GASF"
+   ],
+   [
+    "gas",
+    "variabile",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "GASV"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "cod_cdata_entity_unicode",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA><![CDATA[A<B]]>&amp;è🐙'\"</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA><![CDATA[]]></COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"A<B&\\u00e8\\ud83d\\udc19'\\\"\"}}, \"variabile\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": null}}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "A<B&è🐙'\""
+   ],
+   [
+    "luce",
+    "variabile",
+    "monoraria",
+    "0.1",
+    "72.0",
+    null
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "cod_missing",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": null}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    null
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "comment_in_prezzo",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>7<!-- x -->2</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.<?pi x?>1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "text_before_child",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445<x/>junk</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "nested_componenti",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>09</MACROAREA><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.3</PREZZO></IntervalloPrezzi></ComponenteImpresa></ComponenteImpresa><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.3, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.3",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "valid_then_error_logs",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>oops</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>02</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>03</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": null,
+  "flat": null,
+  "exception": {
+   "type": "ValueError",
+   "msg": "could not convert string to float: 'oops'"
+  }
+ },
+ {
+  "name": "bom_decl",
+  "service": "E",
+  "xml": "﻿<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "crlf",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<ListaOfferteMercatoLibero>\r\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\r\n</ListaOfferteMercatoLibero>\r\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "latin1_decl_ignored",
+  "service": "E",
+  "xml": "<?xml version='1.0' encoding='ISO-8859-1'?><ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Caffè</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "no_decl",
+  "service": "E",
+  "xml": "<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {\"monoraria\": {\"energia\": 0.1, \"commercializzazione\": 72.0, \"cod_offerta\": \"COD\"}}, \"variabile\": {}}}",
+  "flat": [
+   [
+    "luce",
+    "fissa",
+    "monoraria",
+    "0.1",
+    "72.0",
+    "COD"
+   ]
+  ],
+  "exception": null
+ },
+ {
+  "name": "empty_root",
+  "service": "E",
+  "xml": "<root/>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "malformed_missing_close",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\"?>\n    <OfferList>\n        <Offer>\n            <SupplierName>Octopus Energy Italia</SupplierName>\n            <OfferName>TARIFF<missing_close_tag>\n        </Offer>\n    ",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "html_wellformed",
+  "service": "G",
+  "xml": "<!DOCTYPE html>\n    <html>\n    <head><title>500 Internal Server Error</title></head>\n    <body><h1>Server Error</h1></body>\n    </html>",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "html_not_wellformed",
+  "service": "E",
+  "xml": "<html><head><meta charset='utf-8'></head><body>&nbsp;<br></body></html>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "empty",
+  "service": "E",
+  "xml": "",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "whitespace_only",
+  "service": "G",
+  "xml": "  \n  ",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "xxe",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\"?>\n    <!DOCTYPE foo [\n      <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n    ]>\n    <root>\n        <offerta>&xxe;</offerta>\n    </root>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "billion_laughs",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\"?>\n    <!DOCTYPE lolz [\n      <!ENTITY lol \"lol\">\n      <!ENTITY lol2 \"&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;\">\n      <!ENTITY lol3 \"&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;\">\n      <!ENTITY lol4 \"&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;\">\n    ]>\n    <root>&lol4;</root>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "entity_public_gas",
+  "service": "G",
+  "xml": "<!DOCTYPE a [<!ENTITY e PUBLIC 'pid' 'sid'>]><a/>",
+  "result": "{\"gas\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "truncated",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "junk_after_root",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\ngarbage",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "two_roots",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n<other/>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "undefined_entity",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>&nbsp;</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>01</MACROAREA><IntervalloPrezzi><PREZZO>72.0</PREZZO></IntervalloPrezzi></ComponenteImpresa><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>0.1</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ },
+ {
+  "name": "error_in_offer_but_malformed",
+  "service": "E",
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ListaOfferteMercatoLibero>\n<offerta><IdentificativiOfferta><PIVA_UTENTE>01771990445</PIVA_UTENTE><COD_OFFERTA>COD</COD_OFFERTA></IdentificativiOfferta><DettaglioOfferta><TIPO_MERCATO>01</TIPO_MERCATO><TIPO_OFFERTA>01</TIPO_OFFERTA><NOME_OFFERTA>Offerta Test</NOME_OFFERTA></DettaglioOfferta><TipoPrezzo><TIPOLOGIA_FASCE>01</TIPOLOGIA_FASCE></TipoPrezzo><ComponenteImpresa><MACROAREA>04</MACROAREA><IntervalloPrezzi><PREZZO>bad</PREZZO></IntervalloPrezzi></ComponenteImpresa></offerta>\n</ListaOfferteMercatoLibero>\n<x/>",
+  "result": "{\"luce\": {\"fissa\": {}, \"variabile\": {}}}",
+  "flat": [],
+  "exception": null
+ }
+]

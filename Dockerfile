@@ -1,32 +1,36 @@
-# Dockerfile per OctoTracker - Ottimizzato per dimensione ridotta
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-# Directory di lavoro
+# Dockerfile per OctoTracker (Go) - immagine minima distroless
+#
+# Stage 1: compila un binario statico (CGO disabilitato, SQLite puro Go).
+# Il build gira sull'architettura dell'host e fa cross-compile verso il
+# target (linux/amd64, linux/arm64): niente emulazione QEMU per la compilazione.
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS build
+
+WORKDIR /src
+
+# Dipendenze prima del codice, per sfruttare la cache dei layer
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY cmd ./cmd
+COPY internal ./internal
+COPY webapp ./webapp
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG VERSION=dev
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /out/octotracker ./cmd/octotracker
+
+# Stage 2: runtime. distroless/static contiene solo certificati CA, tzdata
+# e /etc/passwd: nessuna shell, nessun package manager.
+FROM gcr.io/distroless/static-debian12
+
 WORKDIR /app
 
-# Installa uv (copiando binary da immagine ufficiale - metodo più veloce)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# Copia file dipendenze
-COPY pyproject.toml .
-
-# Installa solo dipendenze di produzione (senza installare il progetto come package)
-# Il progetto è un'applicazione standalone, non una libreria da installare
-RUN uv pip install --system \
-    "python-telegram-bot[webhooks]>=20.7" \
-    "python-dotenv>=1.0.0" \
-    "defusedxml>=0.7.0" && \
-    # Pulizia per ridurre dimensione
-    rm -rf ~/.cache/uv && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Copia tutto il codice dell'applicazione
-# (.dockerignore escluderà tests/, .github/, documentazione, etc.)
-COPY . .
-
-# Crea directory per dati (sarà montata come volume)
-RUN mkdir -p /app/data
+COPY --from=build /out/octotracker /app/octotracker
 
 # Variabili d'ambiente di default (possono essere sovrascritte)
 ENV TELEGRAM_BOT_TOKEN=""
@@ -35,5 +39,12 @@ ENV CHECKER_HOUR="12"
 ENV TZ="Europe/Rome"
 ENV LOG_LEVEL="INFO"
 
-# Avvia il bot direttamente con python (non serve uv run per app standalone)
-CMD ["python", "-u", "bot.py"]
+EXPOSE 8443 8444
+
+# L'immagine non ha shell: l'health check usa il sottocomando del binario
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["/app/octotracker", "healthcheck"]
+
+# I dati (database e log) stanno in /app/data, montata come volume
+ENTRYPOINT ["/app/octotracker"]
+CMD ["serve"]

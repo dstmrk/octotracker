@@ -1,0 +1,787 @@
+[
+ {
+  "raw": "not json",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "not json"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "[]",
+  "result": null,
+  "exception": "TypeError",
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "[]"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "\"stringa\"",
+  "result": null,
+  "exception": "TypeError",
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "\"stringa\""
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": null}",
+  "result": null,
+  "exception": "TypeError",
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": null}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"mista\", \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 2}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"mista\", \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 2}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"fascia\": \"monoraria\"}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"fascia\": \"monoraria\"}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\"}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\"}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.1}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.1}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"quadrioraria\", \"energia\": 0.1, \"commercializzazione\": 1.0}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"quadrioraria\", \"energia\": 0.1, \"commercializzazione\": 1.0}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"bioraria\", \"energia\": 0.1, \"commercializzazione\": 1.0}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"bioraria\", \"energia\": 0.1, \"commercializzazione\": 1.0}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"commercializzazione\": 1.0}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"commercializzazione\": 1.0}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": null}",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.13,
+   65.0,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.4, \"commercializzazione\": 80.0}}",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.13,
+   65.0,
+   "fissa",
+   "monoraria",
+   0.4,
+   80.0,
+   null,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"gas\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.4, \"commercializzazione\": 80.0}, \"updated_services\": [\"gas\"]}",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.13,
+   65.0,
+   "fissa",
+   "monoraria",
+   0.4,
+   80.0,
+   null,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   null,
+   "2026-12-01",
+   null,
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"updated_services\": 5}",
+  "result": null,
+  "exception": "TypeError",
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"updated_services\": 5}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 2}}",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   1.0,
+   2.0,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": 1, \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": 1, \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": null, \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": null, \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": [\"fissa\"], \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}",
+  "result": null,
+  "exception": "TypeError",
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": [\"fissa\"], \"fascia\": \"monoraria\", \"energia\": 1, \"commercializzazione\": 1}}"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"bioraria\", \"energia\": 0.1, \"commercializzazione\": 1.0, \"consumo_f1\": 100, \"consumo_f2\": null, \"scadenza\": \"2030-01-01\", \"extra\": \"x\"}}",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "bioraria",
+   0.1,
+   1.0,
+   null,
+   null,
+   null,
+   null,
+   100.0,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}, \"extra\": [1, 2]} ",
+  "result": [
+   true,
+   "ok"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.13,
+   65.0,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   null,
+   null
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}} trailing",
+  "result": [
+   false,
+   "validation_error"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   "{\"luce\": {\"tipo\": \"fissa\", \"fascia\": \"monoraria\", \"energia\": 0.13, \"commercializzazione\": 65.0}} trailing"
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ },
+ {
+  "raw": "",
+  "result": [
+   false,
+   "no_pending"
+  ],
+  "exception": null,
+  "row": [
+   "fissa",
+   "monoraria",
+   0.15,
+   70.0,
+   "fissa",
+   "monoraria",
+   0.45,
+   84.0,
+   2000.0,
+   null,
+   null,
+   1000.0,
+   "2026-12-01",
+   "2027-01-01",
+   "2026-12-01",
+   "2027-01-01",
+   "{\"luce\": {\"energia\": 0.1, \"commercializzazione\": 60.0}}",
+   ""
+  ],
+  "row_types": [
+   "real",
+   "real"
+  ]
+ }
+]

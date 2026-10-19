@@ -1,0 +1,598 @@
+[
+ {
+  "name": "forbidden_blocked",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was blocked by the user\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was blocked by the user\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "forbidden_kicked",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was kicked from the group chat\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was kicked from the group chat\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_chat_not_found",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: chat not found\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_not_modified",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_parse",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: can't parse entities: Unsupported start tag \\\"x\\\" at byte offset 3\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_request_query_old",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: query is too old and response timeout expired or query ID is invalid\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "unauthorized",
+  "go": {
+   "kind": "http",
+   "code": 401,
+   "payload": "{\"ok\": false, \"error_code\": 401, \"description\": \"Unauthorized\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Unauthorized\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "not_found",
+  "go": {
+   "kind": "http",
+   "code": 404,
+   "payload": "{\"ok\": false, \"error_code\": 404, \"description\": \"Not Found\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Not Found\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "conflict",
+  "go": {
+   "kind": "http",
+   "code": 409,
+   "payload": "{\"ok\": false, \"error_code\": 409, \"description\": \"Conflict: terminated by other getUpdates request; make sure that only one bot instance is running\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Conflict\n<b>Messaggio:</b> Conflict: terminated by other getUpdates request; make sure that only one bot instance is running\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "retry_after",
+  "go": {
+   "kind": "http",
+   "code": 429,
+   "payload": "{\"ok\": false, \"error_code\": 429, \"description\": \"Too Many Requests: retry after 5\", \"parameters\": {\"retry_after\": 5}}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": [
+    5
+   ]
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": [
+    5
+   ]
+  }
+ },
+ {
+  "name": "retry_after_400",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Too Many Requests: retry after 7\", \"parameters\": {\"retry_after\": 7}}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": [
+    7
+   ]
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": [
+    7
+   ]
+  }
+ },
+ {
+  "name": "chat_migrated",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: group chat was upgraded to a supergroup chat\", \"parameters\": {\"migrate_to_chat_id\": -1001234567890}}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ChatMigrated\n<b>Messaggio:</b> Group migrated to supergroup. New chat id: -1001234567890\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "server_error",
+  "go": {
+   "kind": "http",
+   "code": 500,
+   "payload": "{\"ok\": false, \"error_code\": 500, \"description\": \"Internal Server Error\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "bad_gateway",
+  "go": {
+   "kind": "http",
+   "code": 502,
+   "payload": "{\"ok\": false, \"error_code\": 502, \"description\": \"Bad Gateway\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "error_prefix",
+  "go": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Error: something odd\"}"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "empty_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden (403)\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "long_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Errore lungo \\ud83d\\udc19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "html_description",
+  "go": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: <b>tag</b> & co\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: <b>tag</b> & co\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "timed_out",
+  "go": {
+   "kind": "timeout"
+  },
+  "admin": {
+   "sent": [],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "attribute_error",
+  "go": {
+   "kind": "text",
+   "text": "AttributeError: 'NoneType' object has no attribute 'reply_text'"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> AttributeError\n<b>Messaggio:</b> 'NoneType' object has no attribute 'reply_text'\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "type_error_inaccessible",
+  "go": {
+   "kind": "text",
+   "text": "TypeError: Cannot edit an inaccessible message"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> TypeError\n<b>Messaggio:</b> Cannot edit an inaccessible message\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "value_error_nan",
+  "go": {
+   "kind": "text",
+   "text": "ValueError: cannot convert float NaN to integer"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> cannot convert float NaN to integer\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "overflow_error",
+  "go": {
+   "kind": "text",
+   "text": "OverflowError: cannot convert float infinity to integer"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> OverflowError\n<b>Messaggio:</b> cannot convert float infinity to integer\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "key_error",
+  "go": {
+   "kind": "keyerror",
+   "text": "commercializzazione"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> KeyError\n<b>Messaggio:</b> 'commercializzazione'\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "runtime_error",
+  "go": {
+   "kind": "pyerror",
+   "text": "errore inatteso non gestito"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "long_value_error",
+  "go": {
+   "kind": "pyerror",
+   "text": "Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "empty_message",
+  "go": {
+   "kind": "pyerror",
+   "text": ""
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> \n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  },
+  "no_admin": {
+   "sent": [],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_timed_out",
+  "go": {
+   "kind": "pyerror",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "timeout"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_forbidden",
+  "go": {
+   "kind": "pyerror",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "http",
+   "code": 403,
+   "payload": "{\"ok\": false, \"error_code\": 403, \"description\": \"Forbidden: bot was blocked by the user\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ },
+ {
+  "name": "alert_fails_bad_request",
+  "go": {
+   "kind": "pyerror",
+   "text": "errore inatteso non gestito"
+  },
+  "go_send_error": {
+   "kind": "http",
+   "code": 400,
+   "payload": "{\"ok\": false, \"error_code\": 400, \"description\": \"Bad Request: can't parse entities: Unsupported start tag\"}"
+  },
+  "admin": {
+   "sent": [
+    {
+     "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
+     "parse_mode": "HTML"
+    }
+   ],
+   "sleeps": []
+  }
+ }
+]
