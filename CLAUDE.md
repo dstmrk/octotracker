@@ -4,7 +4,7 @@ Bot Telegram che confronta ogni giorno le tariffe luce/gas dell'utente con
 le offerte Octopus Energy pubblicate negli open data ARERA e avvisa quando
 conviene cambiare. Include una Mini App Telegram con lo storico tariffe.
 
-Fino alla 4.x il bot era scritto in Python; dalla 5.0 è un port Go 1:1. Il
+Fino alla 4.x il bot era scritto in Python; dalla 5.0 è in Go. Il
 comportamento verso gli utenti (testi, tastiere, flussi) e il formato del
 database sono rimasti identici: le golden in `testdata/` lo verificano.
 
@@ -68,9 +68,15 @@ Telegram finto · `webapp/` Mini App (embeddata nel binario) ·
    da `webapp/js/app.js`.
 4. **Le golden sono la fonte di verità del comportamento.** I file in
    `*/testdata/*_golden.json` sono stati generati eseguendo la versione
-   Python (commit `606e4c5`, ultima versione Python su `main`). Per
-   cambiare un testo di proposito: modifica il codice, aggiorna la golden
-   nello stesso commit e spiega il motivo nella PR.
+   Python (commit `606e4c5`, ultima versione Python su `main`). Coprono
+   solo il contratto della regola 3 più Mini App API, `/health`, webhook,
+   scheduler, parsing ARERA e backfill. Il port fedele, che emulava anche
+   CPython, Tornado e python-telegram-bot, è il commit `0f051f6`: quell'
+   emulazione è stata tolta e non va reintrodotta. Testi di log, errori
+   HTTP di Tornado e parsing Python di input esotici (cifre Unicode,
+   underscore nei numeri) non sono contratto. Per cambiare un testo di
+   proposito: modifica il codice, aggiorna la golden nello stesso commit e
+   spiega il motivo nella PR.
 5. **Prima la stdlib.** Una dipendenza nuova va motivata nella PR.
 6. **Mai nei log** token del bot, testo dei feedback, codici offerta.
    `user_id` sì.
