@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -126,9 +127,10 @@ func Diff(h http.Handler, c Case) []string {
 	if rec.Code != c.Status {
 		diffs = append(diffs, fmt.Sprintf("%s: status %d; atteso %d", c.Name, rec.Code, c.Status))
 	}
-	for _, kv := range c.Headers {
-		if got := rec.Header().Get(kv[0]); got != kv[1] {
-			diffs = append(diffs, fmt.Sprintf("%s: header %s = %q; atteso %q", c.Name, kv[0], got, kv[1]))
+	if len(c.Headers) > 0 {
+		want := sortedHeaders(c.Headers)
+		if got := contractHeaders(rec.Header(), want); !slices.Equal(got, want) {
+			diffs = append(diffs, fmt.Sprintf("%s: header\n  %q\nattesi\n  %q", c.Name, got, want))
 		}
 	}
 	want, err := hex.DecodeString(c.BodyHex)
@@ -139,6 +141,43 @@ func Diff(h http.Handler, c Case) []string {
 		diffs = append(diffs, fmt.Sprintf("%s: corpo\n  %s\natteso\n  %s", c.Name, rec.Body.Bytes(), want))
 	}
 	return diffs
+}
+
+// ignoredHeaders sono gli header che non fanno parte del contratto: quelli
+// che Tornado aggiungeva (Server, Etag, Connection, Content-Length, Date) e
+// quelli che net/http aggiunge alle risposte di http.Error.
+var ignoredHeaders = map[string]bool{
+	"Connection": true, "Content-Length": true, "Date": true, "Etag": true,
+	"Server": true, "X-Content-Type-Options": true,
+}
+
+// contractHeaders restituisce tutti i valori degli header della risposta,
+// ordinati, esclusi ignoredHeaders: un header duplicato o in più è una
+// differenza. Content-Type conta solo se il caso atteso lo elenca (le
+// risposte 405 hanno il corpo vuoto e il tipo di http.Error).
+func contractHeaders(h http.Header, want [][2]string) [][2]string {
+	wantType := slices.ContainsFunc(want, func(kv [2]string) bool { return kv[0] == "Content-Type" })
+	var out [][2]string
+	for k, vs := range h {
+		if ignoredHeaders[k] || (k == "Content-Type" && !wantType) {
+			continue
+		}
+		for _, v := range vs {
+			out = append(out, [2]string{k, v})
+		}
+	}
+	return sortedHeaders(out)
+}
+
+func sortedHeaders(hs [][2]string) [][2]string {
+	out := slices.Clone(hs)
+	slices.SortFunc(out, func(a, b [2]string) int {
+		if c := strings.Compare(a[0], b[0]); c != 0 {
+			return c
+		}
+		return strings.Compare(a[1], b[1])
+	})
+	return out
 }
 
 // Check segnala con t.Error ogni differenza trovata da Diff.
