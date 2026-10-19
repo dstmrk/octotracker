@@ -179,8 +179,10 @@ func LogRequest(status int, r *http.Request, start time.Time) {
 }
 
 // computeEtag replica compute_etag(): SHA-1 esadecimale del corpo tra virgolette.
+// L'ETag serve solo alla validazione della cache HTTP, non è un contesto di
+// sicurezza: SHA-1 resta per avere gli stessi ETag della versione Tornado.
 func (h *RequestHandler) computeEtag() string {
-	sum := sha1.Sum(h.buf.Bytes())
+	sum := sha1.Sum(h.buf.Bytes()) // NOSONAR: ETag di cache, non un uso crittografico
 	return `"` + hex.EncodeToString(sum[:]) + `"`
 }
 

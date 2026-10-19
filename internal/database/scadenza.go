@@ -46,6 +46,19 @@ func nullStringPtr(ns sql.NullString) *string {
 	return &v
 }
 
+// Query costanti per servizio: il nome della colonna non viene mai
+// formattato a runtime.
+var (
+	markRemindedSQL = map[string]string{
+		"luce": "UPDATE users SET luce_scadenza_reminded = ? WHERE user_id = ?",
+		"gas":  "UPDATE users SET gas_scadenza_reminded = ? WHERE user_id = ?",
+	}
+	updateScadenzaSQL = map[string]string{
+		"luce": "UPDATE users SET luce_scadenza = ?, luce_scadenza_reminded = NULL, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+		"gas":  "UPDATE users SET gas_scadenza = ?, gas_scadenza_reminded = NULL, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+	}
+)
+
 // MarkScadenzaReminded registra che il reminder di scadenza è stato inviato
 // per un servizio ("luce" o "gas") e per la scadenza ISO indicata
 // (mark_scadenza_reminded).
@@ -54,9 +67,7 @@ func (s *Store) MarkScadenzaReminded(userID, servizio, scadenza string) bool {
 		logger.Error(fmt.Sprintf("❌ Servizio non valido per mark_scadenza_reminded: %s", servizio))
 		return false
 	}
-	column := servizio + "_scadenza_reminded"
-	_, err := s.db.ExecContext(context.Background(),
-		fmt.Sprintf("UPDATE users SET %s = ? WHERE user_id = ?", column), scadenza, userID)
+	_, err := s.db.ExecContext(context.Background(), markRemindedSQL[servizio], scadenza, userID)
 	if err != nil {
 		logDBError(err)
 		logger.Error(fmt.Sprintf("❌ Errore aggiornamento reminder scadenza per %s: %v", userID, err))
@@ -75,12 +86,7 @@ func (s *Store) UpdateUserScadenza(userID, servizio, scadenza string) bool {
 		logger.Error(fmt.Sprintf("❌ Servizio non valido per update_user_scadenza: %s", servizio))
 		return false
 	}
-	scadenzaCol := servizio + "_scadenza"
-	remindedCol := servizio + "_scadenza_reminded"
-	_, err := s.db.ExecContext(context.Background(),
-		fmt.Sprintf("UPDATE users SET %s = ?, %s = NULL, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
-			scadenzaCol, remindedCol),
-		scadenza, userID)
+	_, err := s.db.ExecContext(context.Background(), updateScadenzaSQL[servizio], scadenza, userID)
 	if err != nil {
 		logDBError(err)
 		logger.Error(fmt.Sprintf("❌ Errore aggiornamento scadenza per %s: %v", userID, err))

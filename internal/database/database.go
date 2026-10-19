@@ -80,11 +80,13 @@ CREATE INDEX IF NOT EXISTS idx_rate_history_servizio ON rate_history(servizio, t
 
 // usersMigrations sono le colonne aggiunte dopo la creazione iniziale della
 // tabella users (_USERS_MIGRATIONS), nell'ordine in cui vengono applicate.
-var usersMigrations = []struct{ column, columnType string }{
-	{"luce_scadenza", "TEXT"},
-	{"gas_scadenza", "TEXT"},
-	{"luce_scadenza_reminded", "TEXT"},
-	{"gas_scadenza_reminded", "TEXT"},
+// Ogni voce porta la sua istruzione DDL costante: niente SQL formattato a
+// runtime.
+var usersMigrations = []struct{ column, columnType, ddl string }{
+	{"luce_scadenza", "TEXT", "ALTER TABLE users ADD COLUMN luce_scadenza TEXT"},
+	{"gas_scadenza", "TEXT", "ALTER TABLE users ADD COLUMN gas_scadenza TEXT"},
+	{"luce_scadenza_reminded", "TEXT", "ALTER TABLE users ADD COLUMN luce_scadenza_reminded TEXT"},
+	{"gas_scadenza_reminded", "TEXT", "ALTER TABLE users ADD COLUMN gas_scadenza_reminded TEXT"},
 }
 
 // Store è il database SQLite di OctoTracker. Sostituisce le funzioni di
@@ -176,7 +178,7 @@ func (s *Store) migrateUsersSchema(ctx context.Context) error {
 		if existing[mig.column] {
 			continue
 		}
-		if _, err := s.db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE users ADD COLUMN %s %s", mig.column, mig.columnType)); err != nil {
+		if _, err := s.db.ExecContext(ctx, mig.ddl); err != nil {
 			return err
 		}
 		logger.Info(fmt.Sprintf("🔧 Migrazione DB: aggiunta colonna users.%s", mig.column))
