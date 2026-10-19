@@ -75,9 +75,6 @@ type TaskReporter interface {
 	TaskDone(name string) (exists, done bool)
 }
 
-// TaskStatus è un alias di TaskReporter, il nome usato da internal/app.
-type TaskStatus = TaskReporter
-
 // Task è un task registrato in Registry.
 type Task struct {
 	done atomic.Bool

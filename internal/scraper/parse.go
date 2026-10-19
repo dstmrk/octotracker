@@ -424,9 +424,3 @@ func (p *areraParse) result(head string) (areraData, error) {
 	}
 	return areraData{servizio: empty.servizio, rates: tariffe}, nil
 }
-
-// parseAreraXML legge un file XML già in memoria.
-func parseAreraXML(xmlContent, service string) (areraData, error) {
-	head := xmlContent[:min(len(xmlContent), headBytes)]
-	return scanAreraXML(strings.NewReader(xmlContent), service).result(strings.ToValidUTF8(head, ""))
-}

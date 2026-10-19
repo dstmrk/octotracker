@@ -85,8 +85,8 @@ func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {
 
 	// Handler conversazione registrazione
 	d.AddHandler(reg.Conversation([]ext.Handler{
-		commands.NewCommandHandler("cancel", cmd.CancelConversation),
-		commands.NewCommandHandler("help", cmd.HelpCommand),
+		tg.NewCommand("cancel", cmd.CancelConversation),
+		tg.NewCommand("help", cmd.HelpCommand),
 	}))
 
 	// Handler conversazione feedback
@@ -95,17 +95,17 @@ func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {
 	// Handler per pulsanti aggiornamento tariffe nelle notifiche.
 	// È una conversazione: dopo aver adottato un'offerta fissa, chiede la nuova scadenza.
 	d.AddHandler(ru.Conversation([]ext.Handler{
-		commands.NewCommandHandler("cancel", cmd.CancelConversation),
+		tg.NewCommand("cancel", cmd.CancelConversation),
 	}))
 	d.AddHandler(ru.RateUpdateNoHandler())
 
 	// Comandi fuori dalle conversazioni (commands.Standalone ignora lo
 	// stato restituito).
-	d.AddHandler(commands.NewCommandHandler("cancel", commands.Standalone(cmd.CancelConversation)))
-	d.AddHandler(commands.NewCommandHandler("status", commands.Standalone(cmd.Status)))
-	d.AddHandler(commands.NewCommandHandler("history", commands.Standalone(cmd.HistoryCommand)))
-	d.AddHandler(commands.NewCommandHandler("remove", commands.Standalone(cmd.RemoveData)))
-	d.AddHandler(commands.NewCommandHandler("help", commands.Standalone(cmd.HelpCommand)))
+	d.AddHandler(tg.NewCommand("cancel", commands.Standalone(cmd.CancelConversation)))
+	d.AddHandler(tg.NewCommand("status", commands.Standalone(cmd.Status)))
+	d.AddHandler(tg.NewCommand("history", commands.Standalone(cmd.HistoryCommand)))
+	d.AddHandler(tg.NewCommand("remove", commands.Standalone(cmd.RemoveData)))
+	d.AddHandler(tg.NewCommand("help", commands.Standalone(cmd.HelpCommand)))
 
 	// Handler per comandi non riconosciuti (deve essere dopo tutti gli altri
 	// comandi). Considera anche i messaggi modificati, i post dei canali, i

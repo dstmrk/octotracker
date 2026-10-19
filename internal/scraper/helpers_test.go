@@ -393,3 +393,9 @@ func nowFrom(v []int) time.Time {
 }
 
 func noSleep(context.Context, time.Duration) error { return nil }
+
+// parseAreraXML legge un file XML già in memoria.
+func parseAreraXML(xmlContent, service string) (areraData, error) {
+	head := xmlContent[:min(len(xmlContent), headBytes)]
+	return scanAreraXML(strings.NewReader(xmlContent), service).result(strings.ToValidUTF8(head, ""))
+}

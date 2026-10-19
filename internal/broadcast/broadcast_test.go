@@ -452,6 +452,11 @@ func (blockingReader) Read([]byte) (int, error) { select {} }
 
 // ========== broadcast_to_users ==========
 
+// run esegue il broadcast con il bot b.
+func run(ctx context.Context, b *gotgbot.Bot, opts Options) (Result, error) {
+	return broadcastToUsers(ctx, func() (*gotgbot.Bot, error) { return b, nil }, opts)
+}
+
 func runOpts(message, users, answer string, batch int) Options {
 	return Options{MessageFile: message, UsersFile: users, BatchSize: batch, Stdin: strings.NewReader(answer + "\n"), Stdout: &bytes.Buffer{}}
 }
@@ -461,7 +466,7 @@ func TestBroadcastToUsersSuccess(t *testing.T) {
 	m := writeFile(t, dir, "message.txt", "Test broadcast message")
 	u := writeFile(t, dir, "users.txt", "user1\nuser2")
 	b, fc := testutil.NewBot(t)
-	res, err := Run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
+	res, err := run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
 	if err != nil || res != (Result{2, 0, 2}) || len(fc.CallsTo("sendMessage")) != 2 {
 		t.Errorf("risultato %+v, %v", res, err)
 	}
@@ -472,7 +477,7 @@ func TestBroadcastToUsersNoUsers(t *testing.T) {
 	m := writeFile(t, dir, "message.txt", "Test broadcast message")
 	u := writeFile(t, dir, "users.txt", "# solo commenti")
 	b, _ := testutil.NewBot(t)
-	_, err := Run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
+	_, err := run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
 	wantInputError(t, err, "non contiene user_id validi")
 }
 
@@ -482,7 +487,7 @@ func TestBroadcastToUsersCancelled(t *testing.T) {
 	m := writeFile(t, dir, "message.txt", "Test broadcast message")
 	u := writeFile(t, dir, "users.txt", "user1")
 	b, fc := testutil.NewBot(t)
-	res, err := Run(context.Background(), b, runOpts(m, u, "N", DefaultBatchSize))
+	res, err := run(context.Background(), b, runOpts(m, u, "N", DefaultBatchSize))
 	if err != nil || res != (Result{}) || len(fc.Calls()) != 0 {
 		t.Errorf("risultato %+v, %v", res, err)
 	}
@@ -496,7 +501,7 @@ func TestBroadcastToUsersPartialFailure(t *testing.T) {
 	m := writeFile(t, dir, "message.txt", "Test broadcast message")
 	u := writeFile(t, dir, "users.txt", "user1\nuser2\nuser3")
 	b, _ := sequenceBot(t, nil, retryAfter(), nil)
-	res, err := Run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
+	res, err := run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
 	if err != nil || res != (Result{2, 1, 3}) {
 		t.Errorf("risultato %+v, %v", res, err)
 	}
@@ -505,14 +510,14 @@ func TestBroadcastToUsersPartialFailure(t *testing.T) {
 func TestBroadcastToUsersFileNotFound(t *testing.T) {
 	tmpCwd(t)
 	b, _ := testutil.NewBot(t)
-	_, err := Run(context.Background(), b, runOpts("nonexistent.txt", "users.txt", "S", DefaultBatchSize))
+	_, err := run(context.Background(), b, runOpts("nonexistent.txt", "users.txt", "S", DefaultBatchSize))
 	wantInputError(t, err, "nonexistent.txt")
 }
 
 func TestBroadcastToUsersPathTraversal(t *testing.T) {
 	tmpCwd(t)
 	b, _ := testutil.NewBot(t)
-	_, err := Run(context.Background(), b, runOpts("/etc/passwd", "users.txt", "S", DefaultBatchSize))
+	_, err := run(context.Background(), b, runOpts("/etc/passwd", "users.txt", "S", DefaultBatchSize))
 	wantInputError(t, err, "non consentito")
 }
 
@@ -520,7 +525,7 @@ func TestBroadcastToUsersUsersFileNotFound(t *testing.T) {
 	dir := tmpCwd(t)
 	m := writeFile(t, dir, "message.txt", "Test message")
 	b, _ := testutil.NewBot(t)
-	_, err := Run(context.Background(), b, runOpts(m, "nonexistent.txt", "S", DefaultBatchSize))
+	_, err := run(context.Background(), b, runOpts(m, "nonexistent.txt", "S", DefaultBatchSize))
 	wantInputError(t, err, "File utenti non trovato")
 }
 
@@ -528,7 +533,7 @@ func TestBroadcastToUsersEmptyMessage(t *testing.T) {
 	dir := tmpCwd(t)
 	m := writeFile(t, dir, "empty.txt", "   ")
 	b, _ := testutil.NewBot(t)
-	_, err := Run(context.Background(), b, runOpts(m, "users.txt", "S", DefaultBatchSize))
+	_, err := run(context.Background(), b, runOpts(m, "users.txt", "S", DefaultBatchSize))
 	wantInputError(t, err, "Il file messaggio è vuoto")
 }
 
@@ -538,7 +543,7 @@ func TestBroadcastToUsersCustomBatchSize(t *testing.T) {
 	u := writeFile(t, dir, "users.txt", "user1\nuser2")
 	b, _ := testutil.NewBot(t)
 	opts := runOpts(m, u, "S", 5)
-	res, err := Run(context.Background(), b, opts)
+	res, err := run(context.Background(), b, opts)
 	if err != nil || res.Successful != 2 || res.Total != 2 {
 		t.Errorf("risultato %+v, %v", res, err)
 	}
@@ -555,11 +560,11 @@ func TestBroadcastToUsersErrors(t *testing.T) {
 	b, _ := testutil.NewBot(t)
 	opts := runOpts(m, u, "", DefaultBatchSize)
 	opts.Stdin = strings.NewReader("")
-	if _, err := Run(context.Background(), b, opts); !errors.Is(err, io.EOF) {
+	if _, err := run(context.Background(), b, opts); !errors.Is(err, io.EOF) {
 		t.Errorf("EOF: %v", err)
 	}
 	// batch negativo dopo la conferma
-	if _, err := Run(context.Background(), b, runOpts(m, u, "S", -1)); err == nil {
+	if _, err := run(context.Background(), b, runOpts(m, u, "S", -1)); err == nil {
 		t.Error("batch negativo accettato")
 	}
 	// errore nella creazione del bot (dopo la conferma)

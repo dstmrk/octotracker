@@ -84,17 +84,6 @@ func decodeUser(d InitData) error {
 	return nil
 }
 
-// ParseInitData analizza initData senza verificarne la firma: primo valore
-// di ogni chiave e "user" decodificato (resta la stringa se non è JSON
-// valido).
-func ParseInitData(initData string) InitData {
-	d := firstValues(initData)
-	if err := decodeUser(d); err != nil {
-		authLogger.Warn("Failed to parse user JSON in initData")
-	}
-	return d
-}
-
 // computeHash calcola l'hash atteso: HMAC-SHA256(data_check_string) con la
 // chiave segreta HMAC-SHA256("WebAppData", bot_token), in esadecimale.
 func computeHash(dataCheckString, botToken string) string {

@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"maps"
 	"os"
@@ -125,36 +124,7 @@ func TestLoadInvalidInts(t *testing.T) {
 	}
 }
 
-func TestValidateBot(t *testing.T) {
-	ok := Config{BotToken: "t", WebhookSecret: "s", WebhookURL: "https://x"}
-	if err := ok.ValidateBot(); err != nil {
-		t.Fatalf("config valida: %v", err)
-	}
-
-	noSecret := ok
-	noSecret.WebhookSecret = ""
-	if err := noSecret.ValidateBot(); !errors.Is(err, ErrMissingWebhookSecret) {
-		t.Errorf("senza secret: %v", err)
-	}
-
-	// Come in Python il secret viene controllato prima del token
-	nothing := Config{}
-	if err := nothing.ValidateBot(); !errors.Is(err, ErrMissingWebhookSecret) {
-		t.Errorf("config vuota: %v", err)
-	}
-
-	noToken := ok
-	noToken.BotToken = ""
-	if err := noToken.ValidateBot(); err == nil || err.Error() != "TELEGRAM_BOT_TOKEN non impostato" {
-		t.Errorf("senza token: %v", err)
-	}
-
-	noURL := ok
-	noURL.WebhookURL = ""
-	if err := noURL.ValidateBot(); err == nil || err.Error() != "WEBHOOK_URL richiesto" {
-		t.Errorf("senza URL: %v", err)
-	}
-
+func TestErrMissingWebhookSecret(t *testing.T) {
 	if !strings.HasPrefix(ErrMissingWebhookSecret.Error(), "WEBHOOK_SECRET è obbligatorio per sicurezza del webhook.\n") {
 		t.Errorf("messaggio secret = %q", ErrMissingWebhookSecret.Error())
 	}

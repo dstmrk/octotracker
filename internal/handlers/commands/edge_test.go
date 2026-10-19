@@ -16,19 +16,6 @@ import (
 // Edge case non coperti dai test Python: Standalone, update senza le parti
 // attese e ordine degli effetti collaterali rispetto agli errori di invio.
 
-func TestNewCommandHandler(t *testing.T) {
-	b, _ := testutil.NewBot(t)
-	called := false
-	h := NewCommandHandler("Help", func(*gotgbot.Bot, *ext.Context) error { called = true; return nil })
-	ctx := testutil.MessageContext(b, testutil.DefaultUserID, "/help@"+testutil.BotUsername)
-	if !h.CheckUpdate(b, ctx) {
-		t.Fatal("il comando va confrontato senza distinzione tra maiuscole e minuscole")
-	}
-	if err := h.HandleUpdate(b, ctx); err != nil || !called {
-		t.Fatalf("HandleUpdate: %v %v", err, called)
-	}
-}
-
 func TestStandalone(t *testing.T) {
 	b, _ := testutil.NewBot(t)
 	ctx := testutil.MessageContext(b, testutil.DefaultUserID, "/x")

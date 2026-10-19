@@ -30,7 +30,7 @@ type convo struct {
 func newConvo(t *testing.T, h *Handlers) *convo {
 	b, fc := testutil.NewBot(t)
 	cmd := &commands.Handlers{UserData: h.UserData}
-	fallbacks := []ext.Handler{commands.NewCommandHandler("cancel", cmd.CancelConversation)}
+	fallbacks := []ext.Handler{tg.NewCommand("cancel", cmd.CancelConversation)}
 	return &convo{t: t, b: b, fc: fc, conv: h.Conversation(fallbacks)}
 }
 

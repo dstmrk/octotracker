@@ -219,7 +219,7 @@ func TestGoldenBroadcast(t *testing.T) {
 		fixedClock(t)
 		b, fc := fakeBot(t, c.Behaviour)
 		var out bytes.Buffer
-		res, err := Run(context.Background(), b, Options{
+		res, err := run(context.Background(), b, Options{
 			MessageFile: "message.txt", UsersFile: c.UsersFile, BatchSize: c.Batch,
 			Stdin: strings.NewReader(c.Answer + "\n"), Stdout: &out,
 		})

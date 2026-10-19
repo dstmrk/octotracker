@@ -16,7 +16,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 )
 
-// BotUsername è lo username del bot finto (usato dai CommandHandler per /cmd@bot).
+// BotUsername è lo username del bot finto (usato da tg.Command per /cmd@bot).
 const BotUsername = "octotracker_test_bot"
 
 // Call è una chiamata registrata verso l'API Telegram.

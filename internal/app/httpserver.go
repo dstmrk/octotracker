@@ -22,13 +22,10 @@ const AppPrefix = "/app/"
 //     /app/ è index.html)
 //
 // Ogni altro percorso riceve 404.
-func NewHTTPHandler(store *database.Store, tasks health.TaskStatus, botToken string, webapp fs.FS) http.Handler {
-	a := api.New(store, botToken)
+func NewHTTPHandler(store *database.Store, tasks health.TaskReporter, botToken string, webapp fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle(health.Path, health.NewHandler(store, tasks))
-	mux.Handle(api.PathRatesHistory, a.RatesHistoryHandler())
-	mux.Handle(api.PathRatesCurrent, a.RatesCurrentHandler())
-	mux.Handle(api.PathUserRates, a.UserRatesHandler())
+	api.New(store, botToken).Register(mux)
 	mux.Handle(http.MethodGet+" "+AppPrefix, http.StripPrefix(AppPrefix, http.FileServerFS(webapp)))
 	return mux
 }

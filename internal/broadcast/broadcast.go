@@ -10,10 +10,10 @@
 //	})
 //	os.Exit(code)
 //
-// oppure, con un bot già creato, Run(ctx, b, opts). I file di default sono
-// message.txt e users.txt; i percorsi devono restare dentro la directory
-// di lavoro (protezione da path traversal). Il messaggio (HTML) viene
-// inviato in parallelo con al massimo BatchSize invii simultanei.
+// I file di default sono message.txt e users.txt; i percorsi devono restare
+// dentro la directory di lavoro (protezione da path traversal). Il
+// messaggio (HTML) viene inviato in parallelo con al massimo BatchSize
+// invii simultanei.
 package broadcast
 
 import (
@@ -296,7 +296,7 @@ func SendBroadcastsParallel(ctx context.Context, b *gotgbot.Bot, userIDs []strin
 	return successful, len(results) - successful, ctx.Err()
 }
 
-// Options configura Run.
+// Options configura un invio broadcast.
 type Options struct {
 	MessageFile string    // file del messaggio (DefaultMessageFile nel sottocomando)
 	UsersFile   string    // file degli user_id (DefaultUsersFile nel sottocomando)
@@ -313,13 +313,10 @@ type Result struct {
 	Total      int
 }
 
-// Run carica messaggio e utenti, chiede conferma e invia il broadcast. Se
-// l'utente non conferma restituisce un Result vuoto. Errori: file non
-// validi, ctx.Err() se interrotto, errori di I/O e di input.
-func Run(ctx context.Context, b *gotgbot.Bot, opts Options) (Result, error) {
-	return broadcastToUsers(ctx, func() (*gotgbot.Bot, error) { return b, nil }, opts)
-}
-
+// broadcastToUsers carica messaggio e utenti, chiede conferma e invia il
+// broadcast con il bot creato da newBot. Se l'utente non conferma
+// restituisce un Result vuoto. Errori: file non validi, ctx.Err() se
+// interrotto, errori di I/O e di input.
 func broadcastToUsers(ctx context.Context, newBot func() (*gotgbot.Bot, error), opts Options) (Result, error) {
 	in, out := opts.Stdin, opts.Stdout
 	if in == nil {

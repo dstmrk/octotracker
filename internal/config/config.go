@@ -32,7 +32,7 @@ type Config struct {
 	DataDir               string // DATA_DIR (default "data")
 }
 
-// ErrMissingWebhookSecret viene restituito da ValidateBot se WEBHOOK_SECRET manca.
+// ErrMissingWebhookSecret è l'errore di avvio del bot quando WEBHOOK_SECRET manca.
 var ErrMissingWebhookSecret = errors.New(
 	"WEBHOOK_SECRET è obbligatorio per sicurezza del webhook.\n" +
 		"Genera un token sicuro con:\n" +
@@ -76,22 +76,6 @@ func Load() (Config, error) {
 		DataDir:               envOr("DATA_DIR", "data"),
 	}
 	return cfg, errors.Join(errs...)
-}
-
-// ValidateBot verifica i campi obbligatori per avviare il bot in modalità
-// webhook, nello stesso ordine della versione Python (WEBHOOK_SECRET è
-// controllato all'import di bot.py, prima del token).
-func (c Config) ValidateBot() error {
-	if c.WebhookSecret == "" {
-		return ErrMissingWebhookSecret
-	}
-	if c.BotToken == "" {
-		return errors.New("TELEGRAM_BOT_TOKEN non impostato")
-	}
-	if c.WebhookURL == "" {
-		return errors.New("WEBHOOK_URL richiesto")
-	}
-	return nil
 }
 
 func envOr(name, def string) string {

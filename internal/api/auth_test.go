@@ -100,10 +100,19 @@ func numEq(v any, n int64) bool {
 	return ok && f == float64(n)
 }
 
-// ========== TestParseInitData ==========
+// ========== Parsing di initData ==========
+
+// parseInitData analizza initData come VerifyTelegramAuth, senza firma.
+func parseInitData(initData string) (InitData, error) {
+	d := firstValues(initData)
+	return d, decodeUser(d)
+}
 
 func TestParseValidInitData(t *testing.T) {
-	result := ParseInitData(generateTestInitData(initDataOpts{}))
+	result, err := parseInitData(generateTestInitData(initDataOpts{}))
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, k := range []string{"auth_date", "user", "hash"} {
 		if _, ok := result[k]; !ok {
 			t.Errorf("manca %q", k)
@@ -112,7 +121,7 @@ func TestParseValidInitData(t *testing.T) {
 }
 
 func TestParseExtractsUserJSON(t *testing.T) {
-	result := ParseInitData(generateTestInitData(initDataOpts{userID: 999, firstName: "Test", username: "testuser"}))
+	result, _ := parseInitData(generateTestInitData(initDataOpts{userID: 999, firstName: "Test", username: "testuser"}))
 	user, ok := result.User()
 	if !ok {
 		t.Fatalf("user non è un dict: %#v", result["user"])
@@ -123,41 +132,34 @@ func TestParseExtractsUserJSON(t *testing.T) {
 }
 
 func TestParseEmptyString(t *testing.T) {
-	if result := ParseInitData(""); result == nil || len(result) != 0 {
-		t.Errorf("ParseInitData(\"\") = %#v", result)
+	if result, err := parseInitData(""); err != nil || result == nil || len(result) != 0 {
+		t.Errorf("parseInitData(\"\") = %#v, %v", result, err)
 	}
 }
 
 func TestParseInvalidFormat(t *testing.T) {
-	result := ParseInitData("not_valid_query_string")
-	if result == nil {
-		t.Fatal("nil")
-	}
+	result, _ := parseInitData("not_valid_query_string")
 	if v, ok := result["not_valid_query_string"]; !ok || v != "" {
 		t.Errorf("result = %#v", result)
 	}
 }
 
 func TestParsePreservesHash(t *testing.T) {
-	result := ParseInitData(generateTestInitData(initDataOpts{}))
+	result, _ := parseInitData(generateTestInitData(initDataOpts{}))
 	if h, _ := result["hash"].(string); len(h) != 64 {
 		t.Errorf("hash = %q", h)
 	}
 }
 
 func TestParseInitDataEdgeCases(t *testing.T) {
-	logs := apitest.CaptureLogs(t)
-	// JSON non valido: resta la stringa, con warning
-	r := ParseInitData("user=%7Bx&auth_date=1")
-	if r["user"] != "{x" || r["auth_date"] != "1" {
-		t.Errorf("JSON non valido: %#v", r)
+	// JSON non valido: errore e resta la stringa
+	r, err := parseInitData("user=%7Bx&auth_date=1")
+	if err == nil || r["user"] != "{x" || r["auth_date"] != "1" {
+		t.Errorf("JSON non valido: %#v, %v", r, err)
 	}
 	// user vuoto: nessun parsing; chiavi duplicate: vince il primo valore
-	if r := ParseInitData("user=&a=1&a=2"); r["user"] != "" || r["a"] != "1" {
-		t.Errorf("user vuoto/duplicati: %#v", r)
-	}
-	if got := logs.Take(); len(got) != 1 || got[0] != (apitest.Record{"api.auth", "WARNING", "Failed to parse user JSON in initData"}) {
-		t.Errorf("log = %q", got)
+	if r, err := parseInitData("user=&a=1&a=2"); err != nil || r["user"] != "" || r["a"] != "1" {
+		t.Errorf("user vuoto/duplicati: %#v, %v", r, err)
 	}
 }
 

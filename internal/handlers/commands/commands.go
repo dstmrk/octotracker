@@ -107,21 +107,12 @@ type Handlers struct {
 	TelegramChannel string
 }
 
-// CommandHandler è l'handler di un comando (vedi tg.Command).
-type CommandHandler = tg.Command
-
-// NewCommandHandler crea l'handler del comando /command (senza distinzione
-// tra maiuscole e minuscole).
-func NewCommandHandler(command string, r handlers.Response) CommandHandler {
-	return tg.NewCommand(command, r)
-}
-
 // Standalone adatta un handler per l'uso fuori da una conversazione: il
 // cambio di stato (handlers.EndConversation()) viene scartato invece di
 // arrivare all'error handler del dispatcher. Gli altri errori passano
 // invariati.
 //
-//	dispatcher.AddHandler(commands.NewCommandHandler("status", commands.Standalone(h.Status)))
+//	dispatcher.AddHandler(tg.NewCommand("status", commands.Standalone(h.Status)))
 func Standalone(r handlers.Response) handlers.Response {
 	return func(b *gotgbot.Bot, ctx *ext.Context) error {
 		err := r(b, ctx)
