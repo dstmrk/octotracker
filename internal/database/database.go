@@ -217,13 +217,20 @@ func floatPtr(v sql.NullFloat64) *float64 {
 
 // ========== Utenti ==========
 
-// selectUserSQL legge le colonne di users usate da rowToUser.
-const selectUserSQL = `SELECT user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
+// Query costanti per leggere gli utenti: le colonne sono quelle usate da
+// rowToUser. Niente SQL composto a runtime.
+const (
+	selectAllUsersSQL = `SELECT user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
 	luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, luce_scadenza,
 	gas_tipo, gas_fascia, gas_energia, gas_commercializzazione, gas_consumo_annuo, gas_scadenza,
 	last_notified_rates FROM users`
+	selectUserByIDSQL = `SELECT user_id, luce_tipo, luce_fascia, luce_energia, luce_commercializzazione,
+	luce_consumo_f1, luce_consumo_f2, luce_consumo_f3, luce_scadenza,
+	gas_tipo, gas_fascia, gas_energia, gas_commercializzazione, gas_consumo_annuo, gas_scadenza,
+	last_notified_rates FROM users WHERE user_id = ?`
+)
 
-// rowToUser converte una riga di selectUserSQL nel modello User
+// rowToUser converte una riga di selectAllUsersSQL nel modello User
 // (_row_to_dict): il gas è presente solo se gas_tipo non è vuoto.
 func rowToUser(rows *sql.Rows) (*User, error) {
 	var (
@@ -259,9 +266,9 @@ func rowToUser(rows *sql.Rows) (*User, error) {
 	return &u, nil
 }
 
-// queryUsers esegue selectUserSQL (con il filtro where) e converte le righe.
-func (s *Store) queryUsers(where string, args ...any) ([]*User, error) {
-	rows, err := s.db.QueryContext(context.Background(), selectUserSQL+where, args...)
+// queryUsers esegue una delle query costanti sugli utenti e converte le righe.
+func (s *Store) queryUsers(query string, args ...any) ([]*User, error) {
+	rows, err := s.db.QueryContext(context.Background(), query, args...)
 	if err != nil {
 		logDBError(err)
 		return nil, err
@@ -282,7 +289,7 @@ func (s *Store) queryUsers(where string, args ...any) ([]*User, error) {
 // delle righe (rowid) come il dict Python. Su errore restituisce una slice
 // vuota.
 func (s *Store) LoadUsers() []*User {
-	users, err := s.queryUsers("")
+	users, err := s.queryUsers(selectAllUsersSQL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("❌ Errore caricamento utenti: %v", err))
 		return []*User{}
@@ -294,7 +301,7 @@ func (s *Store) LoadUsers() []*User {
 // LoadUser carica un singolo utente (load_user). Restituisce nil se
 // l'utente non esiste o in caso di errore.
 func (s *Store) LoadUser(userID string) *User {
-	users, err := s.queryUsers(" WHERE user_id = ?", userID)
+	users, err := s.queryUsers(selectUserByIDSQL, userID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("❌ Errore caricamento utente %s: %v", userID, err))
 		return nil
