@@ -1,539 +1,118 @@
-# Linee Guida per lo Sviluppo - OctoTracker
+# CLAUDE.md — OctoTracker
 
-Questo documento contiene le linee guida e le best practices per contribuire al progetto OctoTracker.
+Bot Telegram che confronta ogni giorno le tariffe luce/gas dell'utente con
+le offerte Octopus Energy pubblicate negli open data ARERA e avvisa quando
+conviene cambiare. Include una Mini App Telegram con lo storico tariffe.
 
-## 📦 Gestione Dipendenze
+Fino alla 4.x il bot era scritto in Python; dalla 5.0 è un port Go 1:1. Il
+comportamento verso gli utenti (testi, tastiere, flussi) e il formato del
+database sono rimasti identici: le golden in `testdata/` lo verificano.
 
-**Usa `uv` invece di `pip`** per tutte le operazioni con le dipendenze:
+## Stack e comandi
 
-```bash
-# Installa dipendenze
-uv sync
-
-# Installa dipendenze di sviluppo
-uv sync --extra dev
-
-# Esegui comandi nell'ambiente virtuale
-uv run <comando>
-
-# Attiva l'ambiente virtuale manualmente
-source .venv/bin/activate
-```
-
-## 🎨 Formattazione e Linting
-
-### Ruff
-Formattatore e linter veloce (configurato in `pyproject.toml`, line-length 100):
+Go (versione in `go.mod`), `CGO_ENABLED=0`. Dipendenze: `gotgbot/v2` (Bot
+API e conversation handler) e `modernc.org/sqlite` (SQLite puro Go). Tutto
+il resto è stdlib. Docker distroless, multi-arch (amd64, arm64).
 
 ```bash
-# Formatta i file modificati
-uv run ruff format <file1.py> <file2.py>
-
-# Formatta tutto il progetto
-uv run ruff format .
-
-# Check formattazione senza modificare
-uv run ruff format --check .
-
-# Linting con auto-fix
-uv run ruff check <file.py> --fix
-
-# Linting tutto il progetto
-uv run ruff check .
-
-# Solo check senza modifiche
-uv run ruff check . --no-fix
+go test -race ./...
+go vet ./... && gofmt -l cmd internal webapp
+GOTOOLCHAIN=$(go env GOVERSION) go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+GOTOOLCHAIN=$(go env GOVERSION) go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+go test -race -coverpkg=./internal/... -coverprofile=coverage.out ./... \
+  && go tool cover -func=coverage.out | tail -1      # gate CI: ≥ 80%
+go run ./cmd/octotracker help                         # sottocomandi
 ```
 
-**⚠️ IMPORTANTE**: Esegui sempre `ruff format` e `ruff check` prima di committare!
-
-## ✅ Testing
-
-### Eseguire i Test
-
-```bash
-# Tutti i test
-source .venv/bin/activate && pytest
-
-# Test specifico file
-source .venv/bin/activate && pytest tests/test_bot.py
-
-# Test specifico con verbose
-source .venv/bin/activate && pytest tests/test_bot.py -v
-
-# Test con pattern
-source .venv/bin/activate && pytest -k "test_status"
-```
-
-### Code Coverage
-
-**Requisito: Coverage > 80% per SonarCloud**
-
-```bash
-# Coverage per un modulo specifico
-source .venv/bin/activate && pytest tests/test_registration.py \
-  --cov=registration \
-  --cov-report=term-missing
-
-# Coverage completa
-source .venv/bin/activate && pytest \
-  --cov=. \
-  --cov-report=term-missing \
-  --cov-report=html
-
-# Visualizza report HTML
-open htmlcov/index.html  # macOS
-xdg-open htmlcov/index.html  # Linux
-```
-
-**Verifica sempre che il nuovo codice abbia coverage > 80%!**
-
-## 🏗️ Struttura del Progetto
-
-```
-octotracker/
-├── bot.py                    # Main bot: orchestrazione, setup, scheduler
-├── handlers/                 # Handler bot organizzati
-│   ├── __init__.py
-│   ├── registration.py      # Conversazione registrazione tariffe
-│   ├── feedback.py          # Sistema feedback utenti
-│   └── commands.py          # Comandi utility (status, help, etc.)
-├── checker.py               # Verifica tariffe e notifiche
-├── database.py              # Gestione database SQLite (users + rate_history)
-├── data_reader.py           # Scraper tariffe ARERA → salva in DB
-├── backfill_rate_history.py # Script standalone per backfill storico tariffe
-├── formatters.py            # Formattatori output
-├── constants.py             # Costanti globali
-├── health_handler.py        # Health check endpoint
-├── broadcast.py             # Sistema broadcast messaggi
-├── tests/
-│   ├── test_bot.py          # Test comandi bot
-│   ├── test_registration.py # Test conversazione registrazione
-│   ├── test_feedback.py     # Test sistema feedback
-│   └── ...
-├── Dockerfile               # Container produzione
-├── docker-compose.yml       # Orchestrazione Docker
-└── pyproject.toml           # Configurazione progetto
-```
-
-**Principi architetturali:**
-- `bot.py` contiene SOLO orchestrazione (main, setup, scheduler, error handler)
-- Handler conversazioni → `handlers/` subdirectory
-- Logica business → moduli root (checker.py, database.py, etc.)
-- Tests → `tests/` con naming `test_<modulo>.py`
-
-## 📝 Workflow di Sviluppo
-
-### 1. Prima di iniziare
-
-```bash
-# Assicurati che l'ambiente sia aggiornato
-uv sync --extra dev
-
-# Crea/cambia branch
-git checkout -b feature/nome-feature
-```
-
-### 2. Durante lo sviluppo
-
-```bash
-# Formatta il codice frequentemente
-uv run ruff format <file.py>
-uv run ruff check <file.py> --fix
-
-# Esegui i test rilevanti
-source .venv/bin/activate && pytest tests/test_<modulo>.py -v
-```
-
-### 3. Prima del commit
-
-**CHECKLIST OBBLIGATORIA:**
-
-- [ ] `uv run ruff format .` → Nessun file modificato
-- [ ] `uv run ruff check . --fix` → Nessun errore
-- [ ] `source .venv/bin/activate && pytest` → Tutti i test passano
-- [ ] `source .venv/bin/activate && pytest --cov=<nuovo_modulo>` → Coverage > 80%
-
-### 4. Commit
-
-```bash
-# Aggiungi i file
-git add <files>
-
-# Commit con messaggio descrittivo
-git commit -m "tipo: Descrizione breve
-
-Descrizione dettagliata del cambiamento.
-
-- Punto 1
-- Punto 2
-"
-
-# Push
-git push -u origin <branch-name>
-```
-
-Tipi di commit:
-- `feat`: Nuova funzionalità
-- `fix`: Correzione bug
-- `refactor`: Refactoring codice
-- `test`: Aggiunta/modifica test
-- `docs`: Documentazione
-- `chore`: Manutenzione/configurazione
-
-## 🧪 Best Practices per i Test
-
-### Struttura Test
-
-```python
-"""
-Docstring che descrive cosa testa questo modulo
-"""
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-
-# Import modulo da testare
-from modulo import funzione
-
-
-@pytest.fixture
-def fixture_name():
-    """Descrizione fixture"""
-    # Setup
-    yield oggetto
-    # Teardown (opzionale)
-
-
-@pytest.mark.asyncio
-async def test_nome_descrittivo():
-    """Descrizione del test"""
-    # Arrange (setup)
-    input_data = ...
-
-    # Act (esecuzione)
-    result = await funzione(input_data)
-
-    # Assert (verifica)
-    assert result == expected
-```
-
-### Coverage Requisiti
-
-- **Nuovo codice**: > 80% coverage obbligatorio
-- **File modificati**: Mantieni o migliora la coverage esistente
-- **Casi da testare**:
-  - Happy path (caso normale)
-  - Edge cases (valori limite)
-  - Error handling (gestione errori)
-  - Input validation (validazione input)
-
-## 🐙 Pattern Consolidati
-
-### Moduli Conversazione (handlers/)
-
-Quando crei un nuovo conversation handler:
-
-1. **Crea file in handlers/** (es. `handlers/nuova_feature.py`)
-2. **Struttura standard**:
-   ```python
-   #!/usr/bin/env python3
-   """
-   Docstring descrittivo del modulo
-   """
-   import logging
-   from telegram import Update
-   from telegram.ext import ContextTypes, ConversationHandler
-
-   # Setup logger
-   logger = logging.getLogger(__name__)
-
-   # Costanti e stati conversazione
-   STATO_1, STATO_2 = range(2)
-
-   # Handler functions (async)
-   async def handler_1(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-       """Docstring funzione"""
-       logger.info(f"User {update.effective_user.id}: azione")
-       # ...
-   ```
-
-3. **Import in bot.py**:
-   ```python
-   from handlers.nuova_feature import (
-       STATO_1,
-       STATO_2,
-       handler_1,
-       handler_2,
-   )
-   ```
-
-4. **Test completi**:
-   - File `tests/test_nuova_feature.py`
-   - Test per ogni handler
-   - Test validazione input
-   - Test flussi completi
-   - Test edge cases
-   - Coverage > 80%
-
-### Logging Best Practices
-
-**Ogni modulo deve avere il proprio logger:**
-
-```python
-import logging
-
-logger = logging.getLogger(__name__)  # NON usare root logger!
-
-# Log appropriati
-logger.debug("Info dettagliate per debug")
-logger.info("Operazione normale completata")
-logger.warning("Situazione anomala ma gestibile")
-logger.error("Errore che richiede attenzione")
-```
-
-**Quando loggare:**
-- `INFO`: Operazioni importanti (es. "User X registrato")
-- `WARNING`: Situazioni anomale (es. "Tentativo login fallito")
-- `ERROR`: Errori gestiti (es. "Database error durante save")
-- `DEBUG`: Solo per sviluppo (disabilitato in produzione)
-
-### Docstring Obbligatorie
-
-**Ogni modulo e funzione pubblica deve avere docstring:**
-
-```python
-"""
-Modulo per gestione tariffe Octopus Energy
-
-Responsabilità:
-- Scraping dati ARERA
-- Parsing XML offerte
-- Salvataggio tariffe in database (tabella rate_history)
-"""
-
-async def fetch_rates(service: str) -> dict:
-    """
-    Recupera tariffe Octopus per servizio specificato
-
-    Args:
-        service: "elettricita" o "gas"
-
-    Returns:
-        Dict con tariffe parsate
-
-    Raises:
-        ValueError: Se service non valido
-    """
-```
-
-### Import da Altri Moduli
-
-**Pattern standard per import:**
-
-```python
-# Import standard library
-import asyncio
-import logging
-import os
-
-# Import terze parti
-from telegram import Update
-from telegram.ext import ContextTypes
-
-# Import moduli interni (ordine alfabetico)
-from checker import format_number
-from database import load_user
-from handlers.registration import LUCE_ENERGIA
-```
-
-**Uso di `from handlers.*`:**
-
-```python
-# ✅ CORRETTO - Import da handlers/
-from handlers.commands import status, help_command
-from handlers.feedback import feedback_command
-from handlers.registration import start
-
-# ❌ SBAGLIATO - Import vecchio stile (pre-refactoring)
-from registration import start  # Questo non funziona più!
-```
-
-## 🔍 Debugging
-
-```bash
-# Test con output dettagliato
-source .venv/bin/activate && pytest tests/test_file.py -v -s
-
-# Test con print statements visibili
-source .venv/bin/activate && pytest tests/test_file.py -s
-
-# Test con breakpoint
-# Aggiungi `breakpoint()` nel codice, poi:
-source .venv/bin/activate && pytest tests/test_file.py -s
-```
-
-## 🐳 Docker Best Practices
-
-### Build Locale
-
-```bash
-# Build immagine (dalla root del progetto)
-docker build -t octotracker:latest .
-
-# Verifica dimensione immagine
-docker images octotracker:latest
-
-# Run container locale
-docker run -d \
-  --name octotracker \
-  -e TELEGRAM_BOT_TOKEN="your_token" \
-  -e WEBHOOK_SECRET="your_secret" \
-  -v ./data:/app/data \
-  -p 8443:8443 \
-  -p 8444:8444 \
-  octotracker:latest
-```
-
-### Docker Compose
-
-```bash
-# Crea file .env con variabili necessarie
-cp .env.example .env
-# Edita .env con i tuoi valori
-
-# Avvia servizi
-docker compose up -d
-
-# Verifica logs
-docker compose logs -f
-
-# Stop servizi
-docker compose down
-```
-
-### Ottimizzazione Dimensione
-
-**Il Dockerfile è ottimizzato per dimensioni minime:**
-
-1. **Base image slim**: `python:3.11-slim` invece di `python:3.11`
-2. **Multi-stage build**: Copia solo `uv` binary necessario
-3. **Solo dipendenze runtime**: `uv pip install --system` installa solo le dipendenze necessarie (no pytest, ruff, etc.)
-4. **Pulizia cache**: `rm -rf ~/.cache/uv` dopo install
-5. **.dockerignore completo**: Esclude test, docs, cache, .venv
-
-**⚠️ IMPORTANTE - Progetto Standalone:**
-Il progetto è un'**applicazione bot standalone**, non una libreria Python da installare come package.
-- Dockerfile usa `uv pip install --system` per installare solo dipendenze esterne
-- NON usa `uv sync` (che installerebbe il progetto stesso come package)
-- Il codice viene copiato in `/app` e eseguito direttamente con `python bot.py`
-- Il `[build-system]` in `pyproject.toml` serve solo per compatibilità con tool di sviluppo
-
-**File esclusi da .dockerignore:**
-- `tests/` - Test non servono in produzione
-- `.venv/` - Virtual env locale
-- `.pytest_cache/`, `.ruff_cache/` - Cache tools dev
-- `.coverage`, `htmlcov/` - Report coverage
-- `CLAUDE.md`, `README.md` - Documentazione
-- `.github/`, `.git/` - CI/CD e versioning
-
-**Verifica sempre che nuovi file non aumentino dimensione inutilmente!**
-
-### Troubleshooting Docker
-
-```bash
-# Entra nel container per debug
-docker exec -it octotracker /bin/bash
-
-# Verifica file copiati
-docker exec -it octotracker ls -la /app
-
-# Verifica dipendenze installate
-docker exec -it octotracker uv pip list
-
-# Rebuild forzato (senza cache)
-docker build --no-cache -t octotracker:latest .
-```
-
-## 📱 Mini App (Telegram WebApp)
-
-La Mini App per i grafici dello storico tariffe si trova in `webapp/`.
-
-### Struttura
-
-```
-webapp/
-├── index.html       # HTML principale
-├── css/
-│   └── style.css    # Stili Neo-Brutalist
-└── js/
-    └── app.js       # Logica applicativa
-```
-
-### Cache Busting
-
-**⚠️ IMPORTANTE**: Quando modifichi CSS o JavaScript della Mini App, incrementa sempre il parametro di versione negli include per forzare il browser a ricaricare i file aggiornati:
+Gli strumenti vanno compilati con la stessa Go del progetto: una versione
+più vecchia non legge l'export data di Go 1.27. `$(go env GOVERSION)`,
+dentro il modulo, è quella di `go.mod`.
+
+## Sottocomandi del binario
+
+`serve` (default) avvia bot, webhook, scheduler e server HTTP. Gli altri
+eseguono un solo pezzo e terminano: `check`, `remind`, `scrape`,
+`broadcast [message_file] [users_file]`, `backfill [--days N] [--dry-run]
+[--delay S] [--log-level L]`, `healthcheck`, `version`.
+
+L'immagine non ha shell: in produzione si lanciano con
+`docker exec octotracker /app/octotracker <comando>`.
+
+## Mappa
+
+`cmd/octotracker` sottocomandi · `internal/app` dispatcher, webhook,
+scheduler, server HTTP, error handler · `internal/config` env ·
+`internal/logging` formato log e rotazione del file ·
+`internal/database` SQLite, modelli, migrazioni · `internal/scraper`
+download e parsing XML ARERA, backfill · `internal/checker` confronto
+tariffe e notifiche · `internal/reminder` scadenze offerte fisse ·
+`internal/handlers/{registration,commands,feedback,rateupdate}`
+conversazioni e comandi · `internal/api` endpoint della Mini App ·
+`internal/health` `/health` · `internal/broadcast` invio massivo ·
+`internal/formatters`, `internal/dateutil` testi, numeri, date ·
+`internal/tg` filtri e helper Telegram · `internal/testutil` client
+Telegram finto · `webapp/` Mini App (embeddata nel binario) ·
+`static/` landing per Cloudflare Pages.
+
+## Regole sempre attive
+
+1. **Branch separato + PR, sempre.** Mai commit o push su `main`. Il merge
+   lo fa l'utente.
+2. **Test con ogni modifica.** Ogni package con logica ha i suoi test;
+   coverage di `internal/` ≥ 80% (gate in CI). Prima del commit:
+   gofmt, vet, staticcheck, `go test -race ./...`.
+3. **Testi utente e formato dati sono un contratto.** Messaggi Telegram,
+   `callback_data`, colonne SQLite e JSON di `last_notified_rates` /
+   `pending_rates` sono letti da utenti e righe già in produzione:
+   cambiarli è una decisione, non un dettaglio. Il JSON delle API è letto
+   da `webapp/js/app.js`.
+4. **Le golden sono la fonte di verità del comportamento.** I file in
+   `*/testdata/*_golden.json` sono stati generati eseguendo la versione
+   Python (commit `606e4c5`, ultima versione Python su `main`). Per
+   cambiare un testo di proposito: modifica il codice, aggiorna la golden
+   nello stesso commit e spiega il motivo nella PR.
+5. **Prima la stdlib.** Una dipendenza nuova va motivata nella PR.
+6. **Mai nei log** token del bot, testo dei feedback, codici offerta.
+   `user_id` sì.
+
+## Logging
+
+Ogni package dichiara `var logger = logging.Logger("<nome>")` e logga con
+`fmt.Sprintf` nel formato storico
+`YYYY-MM-DD HH:MM:SS - nome - LIVELLO - messaggio`. In `serve` i log vanno
+su stdout e su `data/octotracker.log` (rotazione giornaliera, 3 giorni).
+
+## Mini App (Telegram WebApp)
+
+File in `webapp/` (`index.html`, `css/style.css`, `js/app.js`), inclusi nel
+binario con `go:embed` e serviti su `HEALTH_PORT` sotto `/app/`.
+
+**Cache busting**: quando modifichi CSS o JavaScript incrementa la versione
+negli include di `webapp/index.html`, altrimenti Telegram e i browser
+continuano a usare i file vecchi:
 
 ```html
-<!-- In webapp/index.html -->
 <link rel="stylesheet" href="css/style.css?v=3">  <!-- Incrementa v=X -->
 <script src="js/app.js?v=3"></script>              <!-- Incrementa v=X -->
 ```
 
-Senza cache busting, Telegram e i browser potrebbero usare versioni vecchie dei file anche dopo il deploy.
+API (porta 8444, header `X-Telegram-Init-Data` obbligatorio):
+`GET /api/rates/history`, `GET /api/rates/current`, `GET /api/user/rates`.
+`WEBAPP_URL` è l'URL pubblico della Mini App.
 
-### API Endpoints
+## Docker
 
-La Mini App usa le seguenti API (servite sulla porta 8444 insieme all'health check):
+- Build multi-stage: lo stage Go fa cross-compile per l'architettura di
+  destinazione (niente QEMU); il runtime è `distroless/static`.
+- Il container gira come root perché il volume `./data` di produzione è
+  stato scritto da root. Per passare a `nonroot` serve prima
+  `chown -R 65532:65532 data` sull'host.
+- `HEALTHCHECK` usa `octotracker healthcheck` (niente curl nell'immagine).
+- La CI controlla che l'immagine amd64 resti sotto i 30 MB.
 
-- `GET /api/rates/history` - Storico tariffe per i grafici
-- `GET /api/rates/current` - Tariffe correnti
-- `GET /api/user/rates` - Tariffe salvate dell'utente
+## CI/CD
 
-Tutte le API richiedono l'header `X-Telegram-Init-Data` per l'autenticazione.
-
-### Configurazione
-
-Imposta la variabile d'ambiente `WEBAPP_URL` con l'URL pubblico della Mini App (es. `https://tuodominio.com/app/`).
-
-## 🚀 CI/CD
-
-Il progetto usa GitHub Actions e SonarCloud per:
-- Eseguire i test su ogni PR
-- Verificare la code coverage (> 80%)
-- Analizzare la code quality
-
-**Non bypassare mai i check CI/CD!**
-
-### ⚠️ Coverage Check Prima delle PR
-
-**SonarCloud richiede coverage > 80% sul nuovo codice.** Prima di aprire una PR:
-
-```bash
-# Verifica coverage sui moduli modificati
-source .venv/bin/activate && pytest \
-  --cov=<modulo1> --cov=<modulo2> \
-  --cov-report=term-missing
-
-# Esempio per checker e database
-source .venv/bin/activate && pytest \
-  --cov=checker --cov=database \
-  --cov-report=term-missing
-```
-
-Se la coverage è < 80%, aggiungi test per:
-- Nuove funzioni/metodi
-- Nuovi branch (if/else)
-- Gestione errori (try/except)
-
-**Tip**: Le righe mancanti sono mostrate nella colonna "Missing" del report.
-
-## 📚 Riferimenti
-
-- [uv documentation](https://github.com/astral-sh/uv)
-- [Ruff documentation](https://docs.astral.sh/ruff/)
-- [pytest documentation](https://docs.pytest.org/)
-- [python-telegram-bot documentation](https://docs.python-telegram-bot.org/)
-
----
-
-**Ricorda**: Qualità del codice > Velocità di sviluppo. Prenditi il tempo per scrivere codice pulito e ben testato! 🎯
+`.github/workflows/ci.yml`: gofmt, vet, staticcheck, govulncheck,
+`go test -race` con gate di coverage, SonarCloud, build Docker multi-arch.
+`release-docker.yml`: una release pubblicata (tag `vX.Y.Z`) pubblica
+l'immagine su GHCR. Non bypassare mai i check.

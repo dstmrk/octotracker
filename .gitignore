@@ -1,15 +1,11 @@
 # Environment
 .env
-venv/
-.venv/
-uv.lock
-__pycache__/
-*.pyc
 
 # Data files (ignorati perché contengono dati utente/tariffe)
 data/users.json
 data/octotracker.db
-data/octotracker.log
+data/octotracker.db-*
+data/octotracker.log*
 # Ma non gli esempi
 !data/*.example
 
@@ -18,17 +14,13 @@ data/octotracker.log
 playwright-report/
 test-results/
 
-# Build artifacts
-*.egg-info/
-
-# Testing & Coverage
-.pytest_cache/
-.coverage
-coverage.xml
-htmlcov/
-
-# Go
+# Build e coverage
 /octotracker
 /bin/
 coverage.out
 *.coverprofile
+
+# Residui della versione Python (venv locali non più usati)
+.venv/
+venv/
+__pycache__/
