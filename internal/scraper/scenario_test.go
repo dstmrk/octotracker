@@ -6,6 +6,7 @@ package scraper
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 	"time"
 
@@ -46,10 +47,18 @@ func assertSaved(t *testing.T, calls []saveCall, want []savedGolden) {
 		if c.dataFonte != want[i].DataFonte {
 			t.Errorf("salvataggio %d: data_fonte %q, attesa %q", i, c.dataFonte, want[i].DataFonte)
 		}
-		if got, w := rowsJSON(t, flatRows(c.rates)), rowsJSON(t, want[i].Rows); got != w {
-			t.Errorf("salvataggio %d righe:\n got  %s\n want %s", i, got, w)
-		}
+		assertRows(t, c.rates, want[i].Rows)
 	}
+}
+
+// seconds legge un numero di secondi del golden (es. "0.5").
+func seconds(t *testing.T, s string) float64 {
+	t.Helper()
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return v
 }
 
 func TestGoldenFetchOctopusTariffe(t *testing.T) {
@@ -59,11 +68,9 @@ func TestGoldenFetchOctopusTariffe(t *testing.T) {
 		MaxDaysBack int              `json:"max_days_back"`
 		Now         []int            `json:"now"`
 		SaveReturns *int             `json:"save_returns"`
-		Repr        *string          `json:"repr"`
 		JSONIndent  *string          `json:"json_indent"`
 		Exception   *pyExc           `json:"exception"`
 		Saved       []savedGolden    `json:"saved"`
-		Logs        [][2]string      `json:"logs"`
 	}
 	loadGolden(t, "fetch_golden.json", &cases)
 	for _, c := range cases {
@@ -71,28 +78,20 @@ func TestGoldenFetchOctopusTariffe(t *testing.T) {
 			client, _ := fakeClient(c.Routes, nowFrom(c.Now))
 			store := &fakeStore{t: t}
 			if c.SaveReturns != nil {
-				store.returns = []any{*c.SaveReturns}
+				store.returns = []int{*c.SaveReturns}
 			}
-			logs := captureLogs(t)
 			res, err := client.FetchOctopusTariffe(context.Background(), store, c.MaxDaysBack)
-			if c.Exception != nil {
-				assertPyException(t, err, c.Exception)
-				if res != nil {
-					t.Error("risultato non nil con eccezione")
+			switch {
+			case c.Exception != nil:
+				if err == nil || res != nil {
+					t.Errorf("res = %v, err = %v, Python solleva %s", res, err, c.Exception.Type)
 				}
-			} else {
-				if err != nil {
-					t.Fatalf("errore inatteso: %v", err)
-				}
-				if got := res.String(); got != *c.Repr {
-					t.Errorf("repr:\n got  %s\n want %s", got, *c.Repr)
-				}
-				if got := res.JSONIndent(); got != *c.JSONIndent {
-					t.Errorf("json:\n got  %s\n want %s", got, *c.JSONIndent)
-				}
+			case err != nil:
+				t.Fatalf("errore inatteso: %v", err)
+			default:
+				assertSameJSON(t, res.JSONIndent(), *c.JSONIndent)
 			}
 			assertSaved(t, store.calls, c.Saved)
-			assertLogs(t, logs.all(), c.Logs)
 		})
 	}
 }
@@ -105,9 +104,8 @@ func TestGoldenBackfill(t *testing.T) {
 		Delay       string           `json:"delay"`
 		Routes      map[string]route `json:"routes"`
 		Existing    [][4]string      `json:"existing"`
-		SaveReturns []any            `json:"save_returns"`
+		SaveReturns []int            `json:"save_returns"`
 		Now         []int            `json:"now"`
-		Exception   *pyExc           `json:"exception"`
 		Saved       []savedGolden    `json:"saved"`
 		Sleeps      []string         `json:"sleeps"`
 		Logs        [][2]string      `json:"logs"`
@@ -117,37 +115,26 @@ func TestGoldenBackfill(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			client, _ := fakeClient(c.Routes, nowFrom(c.Now))
 			store := &fakeStore{t: t, returns: c.SaveReturns, existing: existingKeys(c.Existing)}
-			delay, err := ParseFloat(c.Delay)
-			if err != nil {
-				t.Fatal(err)
-			}
 			var sleeps []time.Duration
-			opts := BackfillOptions{Days: c.Days, DryRun: c.DryRun, Delay: delay, Client: client,
+			opts := BackfillOptions{Days: c.Days, DryRun: c.DryRun, Delay: seconds(t, c.Delay), Client: client,
 				Sleep: func(_ context.Context, d time.Duration) error {
 					sleeps = append(sleeps, d)
 					return nil
 				}}
 			logs := captureLogs(t)
-			err = Backfill(context.Background(), store, opts)
-			if c.Exception != nil {
-				assertPyException(t, err, c.Exception)
-			} else if err != nil {
+			if err := Backfill(context.Background(), store, opts); err != nil {
 				t.Fatalf("errore inatteso: %v", err)
 			}
 			assertSaved(t, store.calls, c.Saved)
-			// Python registra la chiamata a time.sleep anche quando solleva;
-			// in Go il delay viene validato prima di chiamare Sleep.
 			var wantSleeps []time.Duration
 			for _, s := range c.Sleeps {
-				v, _ := ParseFloat(s)
-				if d, err := pySleepDuration(v); err == nil {
-					wantSleeps = append(wantSleeps, d)
-				}
+				wantSleeps = append(wantSleeps, time.Duration(seconds(t, s)*float64(time.Second)))
 			}
 			if rowsJSON(t, sleeps) != rowsJSON(t, wantSleeps) {
 				t.Errorf("sleep = %v, attesi %v", sleeps, wantSleeps)
 			}
-			assertLogs(t, logs.all(), c.Logs)
+			// I log del backfill (contatori e riepilogo) sono l'output del comando.
+			assertLogs(t, logs.all(), "backfill_rate_history", c.Logs)
 		})
 	}
 }

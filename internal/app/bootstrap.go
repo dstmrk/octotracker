@@ -62,23 +62,25 @@ func networkRetryLoop(ctx context.Context, description string, interval time.Dur
 			return ctx.Err()
 		}
 		next, retry := nextRetryWait(err, wait)
-		if !retry {
-			if isInvalidToken(err) {
-				logger.Error(fmt.Sprintf("❌ %s: token del bot rifiutato da Telegram", description))
-			}
-			return err
-		}
-		if maxRetries >= 0 && retries >= maxRetries {
-			logger.Error(fmt.Sprintf("❌ %s: fallito dopo %d tentativi: %s", description, retries+1, tg.ErrorString(err)))
+		if !retry || retries == maxRetries {
+			logGiveUp(description, err, retry, retries+1)
 			return err
 		}
 		wait = next
-		if wait == 0 {
-			continue
-		}
 		if err := sleep(ctx, wait); err != nil {
 			return err
 		}
+	}
+}
+
+// logGiveUp logga perché networkRetryLoop rinuncia dopo attempts tentativi:
+// token rifiutato, oppure tentativi esauriti per un errore ritentabile.
+func logGiveUp(description string, err error, retryable bool, attempts int) {
+	switch {
+	case isInvalidToken(err):
+		logger.Error(fmt.Sprintf("❌ %s: token del bot rifiutato da Telegram", description))
+	case retryable:
+		logger.Error(fmt.Sprintf("❌ %s: fallito dopo %d tentativi: %s", description, attempts, tg.ErrorString(err)))
 	}
 }
 

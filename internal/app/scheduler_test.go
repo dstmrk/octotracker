@@ -106,48 +106,56 @@ func TestRunCheckerAndReminderErrors(t *testing.T) {
 	}
 }
 
-// ========== *_daily_task ==========
+// ========== TASK GIORNALIERI ==========
 
-// panicThenCancel restituisce una funzione run che alla prima chiamata va
-// in panic e alla seconda cancella ctx.
-func panicThenCancel(cancel context.CancelFunc, calls *atomic.Int32) func(context.Context) {
-	return func(context.Context) {
-		if calls.Add(1) == 1 {
-			panic("boom")
-		}
-		cancel()
+// Indici dei task in dailyTasks.
+const (
+	scraperIdx = iota
+	checkerIdx
+	reminderIdx
+)
+
+// runDaily esegue il task giornaliero i come startBackgroundTasks (start +
+// loop).
+func runDaily(ctx context.Context, s *Scheduler, i int) error {
+	task := s.dailyTasks()[i]
+	wait, err := s.start(task)
+	if err != nil {
+		return err
 	}
+	return s.loop(ctx, task, wait)
 }
 
 // TestDailyTasksLogPanics: un panic nell'esecuzione viene loggato e il task
 // giornaliero continua fino alla cancellazione.
 func TestDailyTasksLogPanics(t *testing.T) {
-	for _, tc := range []struct {
-		label string
-		set   func(s *Scheduler, run func(context.Context))
-		task  func(s *Scheduler, ctx context.Context) error
-	}{
-		{"scraper", func(s *Scheduler, run func(context.Context)) { s.runScraperFn = run }, (*Scheduler).ScraperDailyTask},
-		{"checker", func(s *Scheduler, run func(context.Context)) { s.runCheckerFn = run }, (*Scheduler).CheckerDailyTask},
-		{"reminder", func(s *Scheduler, run func(context.Context)) { s.runReminderFn = run }, (*Scheduler).ReminderDailyTask},
-	} {
+	for i, label := range []string{"scraper", "checker", "reminder"} {
 		logs := captureLogs(t)
 		ctx, cancel := context.WithCancel(context.Background())
 		var calls atomic.Int32
+		// alla prima esecuzione panic, alla seconda cancellazione
+		run := func() {
+			if calls.Add(1) == 1 {
+				panic("boom")
+			}
+			cancel()
+		}
 		s := newTestScheduler()
-		tc.set(s, panicThenCancel(cancel, &calls))
-		if err := tc.task(s, ctx); !errors.Is(err, context.Canceled) {
-			t.Fatalf("%s: task = %v, attesa cancellazione", tc.label, err)
+		s.FetchTariffe = func(context.Context) (*scraper.Tariffe, error) { run(); return nil, nil }
+		s.CheckAndNotify = func(context.Context) error { run(); return nil }
+		s.SendReminders = s.CheckAndNotify
+		if err := runDaily(ctx, s, i); !errors.Is(err, context.Canceled) {
+			t.Fatalf("%s: task = %v, attesa cancellazione", label, err)
 		}
 		cancel()
-		assertLogContains(t, logs, "ERROR - ❌ Errore non gestito nel task "+tc.label+": boom")
+		assertLogContains(t, logs, "ERROR - ❌ Errore non gestito nel task "+label+": boom")
 		if calls.Load() != 2 {
-			t.Errorf("%s: eseguito %d volte, atteso 2", tc.label, calls.Load())
+			t.Errorf("%s: eseguito %d volte, atteso 2", label, calls.Load())
 		}
 	}
 }
 
-// TestRunReminderSuccess: run_reminder logga il completamento in caso di successo.
+// TestRunReminderSuccess: RunReminder logga il completamento in caso di successo.
 func TestRunReminderSuccess(t *testing.T) {
 	logs := captureLogs(t)
 	s := newTestScheduler()
@@ -194,8 +202,7 @@ func TestRunCheckerSuccessAndCancellation(t *testing.T) {
 	assertLogNotContains(t, logs, "completato")
 }
 
-// TestCalculateSecondsUntilNextRun copre i casi di
-// calculate_seconds_until_next_run: prima dell'ora, dopo, esattamente
+// TestCalculateSecondsUntilNextRun: prima dell'ora, dopo, esattamente
 // all'ora (→ domani), con i microsecondi.
 func TestCalculateSecondsUntilNextRun(t *testing.T) {
 	rome, err := time.LoadLocation("Europe/Rome")
@@ -264,13 +271,14 @@ func TestDailyTaskSchedule(t *testing.T) {
 		}
 		return nil
 	}
-	s.runScraperFn = func(context.Context) {
+	s.FetchTariffe = func(context.Context) (*scraper.Tariffe, error) {
 		runs++
 		clock = clock.Add(90 * time.Second) // durata dell'esecuzione
+		return &scraper.Tariffe{}, nil
 	}
 
-	if err := s.ScraperDailyTask(ctx); !errors.Is(err, context.Canceled) {
-		t.Fatalf("ScraperDailyTask = %v", err)
+	if err := runDaily(ctx, s, scraperIdx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("task scraper = %v", err)
 	}
 	want := []time.Duration{30 * time.Minute, 24*time.Hour - 90*time.Second, 24*time.Hour - 90*time.Second}
 	if fmt.Sprint(sleeps) != fmt.Sprint(want) {
@@ -291,17 +299,18 @@ func TestDailyTaskLogTexts(t *testing.T) {
 	s := newTestScheduler()
 	s.Sleep = func(ctx context.Context, _ time.Duration) error { return nil }
 	var n atomic.Int32
-	stopAfterOne := func(context.Context) {
+	stopAfterOne := func(context.Context) error {
 		if n.Add(1)%2 == 0 {
 			cancel()
 		}
+		return nil
 	}
-	s.runCheckerFn = stopAfterOne
-	s.runReminderFn = stopAfterOne
-	_ = s.CheckerDailyTask(ctx)
+	s.CheckAndNotify = stopAfterOne
+	s.SendReminders = stopAfterOne
+	_ = runDaily(ctx, s, checkerIdx)
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	_ = s.ReminderDailyTask(ctx)
+	_ = runDaily(ctx, s, reminderIdx)
 
 	assertLogContains(t, logs, "🔍 Checker schedulato per le 10:00 (tra 2.0 ore)")
 	assertLogContains(t, logs, "⏰ Prossimo checker tra 2.0 ore (alle 10:00)")
@@ -315,7 +324,7 @@ func TestDailyTaskInvalidHour(t *testing.T) {
 	s := newTestScheduler()
 	s.ScraperHour = 25
 	s.Sleep = func(context.Context, time.Duration) error { t.Error("attesa inattesa"); return nil }
-	if err := s.ScraperDailyTask(context.Background()); err == nil || !strings.Contains(err.Error(), "25") {
+	if err := runDaily(context.Background(), s, scraperIdx); err == nil || !strings.Contains(err.Error(), "25") {
 		t.Fatalf("errore = %v", err)
 	}
 }

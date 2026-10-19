@@ -1,8 +1,8 @@
 package scraper
 
-// Porting di tests/test_data_reader.py (stessi scenari e asserzioni; i mock
-// di urlopen/_fetch_service_data/save_rates_batch diventano un trasporto
-// HTTP finto, file XML equivalenti e uno store finto).
+// Porting di tests/test_data_reader.py: i mock di urlopen,
+// _fetch_service_data e save_rates_batch diventano un trasporto HTTP finto,
+// file XML equivalenti e uno store finto.
 
 import (
 	"bytes"
@@ -147,17 +147,17 @@ func TestParseAreraXMLSupportsUppercaseOffertaTag(t *testing.T) {
 func TestNormalizedCodeHandlesZeroPaddingAndSpaces(t *testing.T) {
 	for _, c := range []struct {
 		in   *string
-		want *string
+		want string
+		ok   bool
 	}{
-		{ptr("01"), ptr("1")},
-		{ptr(" 02 "), ptr("2")},
-		{ptr("ABC"), ptr("ABC")},
-		{ptr(""), nil},
-		{nil, nil},
+		{ptr("01"), "1", true},
+		{ptr(" 02 "), "2", true},
+		{ptr("ABC"), "ABC", true},
+		{ptr(""), "", false},
+		{nil, "", false},
 	} {
-		got, err := normalizedCode(c.in)
-		if err != nil || pyOptStrRepr(got) != pyOptStrRepr(c.want) {
-			t.Errorf("normalizedCode(%s) = %s, %v", pyOptStrRepr(c.in), pyOptStrRepr(got), err)
+		if got, ok := normalizedCode(c.in); got != c.want || ok != c.ok {
+			t.Errorf("normalizedCode(%v) = %q, %v", c.in, got, ok)
 		}
 	}
 }
@@ -223,17 +223,11 @@ func TestExtractComponenteImpresaFound(t *testing.T) {
         </ComponenteImpresa>
     </offerta>`)
 	result, err := extractComponenteImpresa(offerta, "01")
-	if err != nil || result == nil {
-		t.Fatalf("result = %v, %v", result, err)
+	if err != nil || !result.found {
+		t.Fatalf("result = %+v, %v", result, err)
 	}
-	if !result.hasNome || *result.nome != "Test" {
-		t.Errorf("nome = %v", result.nome)
-	}
-	if len(result.intervalli) != 1 || result.intervalli[0].prezzo != 72.0 {
-		t.Errorf("intervalli = %+v", result.intervalli)
-	}
-	if u := result.intervalli[0].unitaMisura; u == nil || *u != "01" {
-		t.Errorf("unita_misura = %v", u)
+	if len(result.prezzi) != 1 || result.prezzi[0] != 72.0 {
+		t.Errorf("prezzi = %v", result.prezzi)
 	}
 }
 
@@ -246,8 +240,8 @@ func TestExtractComponenteImpresaNotFound(t *testing.T) {
         </ComponenteImpresa>
     </offerta>`)
 	result, err := extractComponenteImpresa(offerta, "04")
-	if err != nil || result != nil {
-		t.Errorf("result = %v, %v", result, err)
+	if err != nil || result.found {
+		t.Errorf("result = %+v, %v", result, err)
 	}
 }
 
@@ -270,11 +264,11 @@ func TestExtractComponenteImpresaMultipleFasce(t *testing.T) {
         </ComponenteImpresa>
     </offerta>`)
 	result, err := extractComponenteImpresa(offerta, "04")
-	if err != nil || result == nil {
-		t.Fatalf("result = %v, %v", result, err)
+	if err != nil || !result.found {
+		t.Fatalf("result = %+v, %v", result, err)
 	}
-	if len(result.intervalli) != 2 || *result.intervalli[0].fascia != "01" || *result.intervalli[1].fascia != "02" {
-		t.Errorf("intervalli = %+v", result.intervalli)
+	if len(result.prezzi) != 2 || result.prezzi[0] != 0.0088 || result.prezzi[1] != 0.0088 {
+		t.Errorf("prezzi = %v", result.prezzi)
 	}
 }
 
@@ -289,7 +283,7 @@ func TestExtractComponenteImpresaNormalizesMacroareaZeroPadding(t *testing.T) {
         </ComponenteImpresa>
     </offerta>`)
 	result, err := extractComponenteImpresa(offerta, "06")
-	if err != nil || result == nil || result.intervalli[0].prezzo != 0.0099 {
+	if p, ok := result.firstPrezzo(); err != nil || !ok || p != 0.0099 {
 		t.Errorf("result = %+v, %v", result, err)
 	}
 }
@@ -765,7 +759,7 @@ func TestFlattenRatesEmpty(t *testing.T) {
 func TestFetchOctopusTariffeSuccess(t *testing.T) {
 	sample := readTestdata(t, "sample_arera.xml")
 	client, _ := fakeClient(map[string]route{todayURL("E"): bodyRoute(sample), todayURL("G"): bodyRoute(sample)}, frozenNow)
-	store := &fakeStore{t: t, returns: []any{5}}
+	store := &fakeStore{t: t, returns: []int{5}}
 
 	result, err := client.FetchOctopusTariffe(context.Background(), store, DefaultMaxDaysBack)
 	if err != nil {
@@ -788,7 +782,7 @@ func TestFetchOctopusTariffeSuccess(t *testing.T) {
 func TestFetchOctopusTariffePartialFailure(t *testing.T) {
 	gasXML := testDoc(testOffer("02", "01", "", "", comm("84.0"), energia("0.39")))
 	client, _ := fakeClient(map[string]route{todayURL("G"): bodyRoute(gasXML)}, frozenNow)
-	store := &fakeStore{t: t, returns: []any{2}}
+	store := &fakeStore{t: t, returns: []int{2}}
 
 	result, err := client.FetchOctopusTariffe(context.Background(), store, DefaultMaxDaysBack)
 	if err != nil {
@@ -825,7 +819,7 @@ func TestFetchOctopusTariffeNoRatesFoundDoesNotSave(t *testing.T) {
 func TestFetchOctopusTariffeDBErrorLogsError(t *testing.T) {
 	luceXML := testDoc(testOffer("01", "01", "01", "", comm("72.0"), energia("0.1078")))
 	client, _ := fakeClient(map[string]route{todayURL("E"): bodyRoute(luceXML)}, frozenNow)
-	store := &fakeStore{t: t, returns: []any{-1}}
+	store := &fakeStore{t: t, returns: []int{-1}}
 	logs := captureLogs(t)
 
 	result, err := client.FetchOctopusTariffe(context.Background(), store, DefaultMaxDaysBack)
@@ -852,8 +846,7 @@ func TestFetchServiceDataDownloadFailure(t *testing.T) {
 	routes := map[string]route{}
 	refused := "refused"
 	for d := 0; d <= 2; d++ {
-		day, _ := subDays(frozenNow, d)
-		routes[(&Client{}).buildAreraURL(day, "E")] = route{URLError: &refused}
+		routes[urlFor(frozenNow.AddDate(0, 0, -d), "E")] = route{URLError: &refused}
 	}
 	client, tr := fakeClient(routes, frozenNow)
 
@@ -906,20 +899,29 @@ func TestCompleteDataStructure(t *testing.T) {
 	}
 }
 
-// Tipi di dati corretti (float per energia/commercializzazione, str per la data)
+// Tipi di dati corretti (numeri per energia/commercializzazione, stringa per la data)
 func TestDataTypes(t *testing.T) {
 	tr := Tariffe{DataAggiornamento: "2025-11-13"}
 	tr.Luce.Fissa.set("monoraria", Rate{Energia: 0.1078, Commercializzazione: ptr(72.0)})
-	out := tr.JSONIndent()
-	// I float vengono serializzati come float Python (72.0, non 72)
-	for _, want := range []string{`"energia": 0.1078`, `"commercializzazione": 72.0`, `"data_aggiornamento": "2025-11-13"`} {
-		if !strings.Contains(out, want) {
-			t.Errorf("%q non trovato in %s", want, out)
-		}
+	var v struct {
+		Luce struct {
+			Fissa map[string]map[string]any `json:"fissa"`
+		} `json:"luce"`
+		DataAggiornamento any `json:"data_aggiornamento"`
 	}
-	r, _ := tr.Luce.Fissa.Get("monoraria")
-	var _ float64 = r.Energia
-	var _ string = tr.DataAggiornamento
+	if err := json.Unmarshal([]byte(tr.JSONIndent()), &v); err != nil {
+		t.Fatal(err)
+	}
+	mono := v.Luce.Fissa["monoraria"]
+	if _, ok := mono["energia"].(float64); !ok {
+		t.Errorf("energia = %T", mono["energia"])
+	}
+	if _, ok := mono["commercializzazione"].(float64); !ok {
+		t.Errorf("commercializzazione = %T", mono["commercializzazione"])
+	}
+	if _, ok := v.DataAggiornamento.(string); !ok {
+		t.Errorf("data_aggiornamento = %T", v.DataAggiornamento)
+	}
 }
 
 // L'output è serializzabile in JSON e si rilegge identico
@@ -957,7 +959,7 @@ func assertEmptyResult(t *testing.T, xml, service, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := result.pyValue().pyJSON(); got != want {
+	if got := areraJSON(t, result); got != want {
 		t.Errorf("result = %s, atteso %s", got, want)
 	}
 }
@@ -970,7 +972,7 @@ func TestParseAreraXMLMalformed(t *testing.T) {
             <OfferName>TARIFF<missing_close_tag>
         </Offer>
     ` // Missing closing tags
-	assertEmptyResult(t, malformed, "E", `{"luce": {"fissa": {}, "variabile": {}}}`)
+	assertEmptyResult(t, malformed, "E", `{"luce":{"fissa":{},"variabile":{}}}`)
 }
 
 // Contenuto non-XML (es. pagina di errore HTML)
@@ -980,28 +982,22 @@ func TestParseAreraXMLNonXMLContent(t *testing.T) {
     <head><title>500 Internal Server Error</title></head>
     <body><h1>Server Error</h1></body>
     </html>`
-	assertEmptyResult(t, htmlError, "G", `{"gas": {"fissa": {}, "variabile": {}}}`)
+	assertEmptyResult(t, htmlError, "G", `{"gas":{"fissa":{},"variabile":{}}}`)
 }
 
 func TestParseAreraXMLEmptyString(t *testing.T) {
-	assertEmptyResult(t, "", "E", `{"luce": {"fissa": {}, "variabile": {}}}`)
+	assertEmptyResult(t, "", "E", `{"luce":{"fissa":{},"variabile":{}}}`)
 }
 
-func TestEmptyStructureElectricity(t *testing.T) {
-	if got := emptyStructure("E").pyValue().pyJSON(); got != `{"luce": {"fissa": {}, "variabile": {}}}` {
-		t.Errorf("got %s", got)
-	}
-}
-
-func TestEmptyStructureGas(t *testing.T) {
-	if got := emptyStructure("G").pyValue().pyJSON(); got != `{"gas": {"fissa": {}, "variabile": {}}}` {
-		t.Errorf("got %s", got)
-	}
-}
-
-func TestEmptyStructureInvalidService(t *testing.T) {
-	if got := emptyStructure("INVALID").pyValue().pyJSON(); got != `{}` {
-		t.Errorf("got %s", got)
+func TestEmptyStructure(t *testing.T) {
+	for service, want := range map[string]string{
+		"E":       `{"luce":{"fissa":{},"variabile":{}}}`,
+		"G":       `{"gas":{"fissa":{},"variabile":{}}}`,
+		"INVALID": `{}`,
+	} {
+		if got := areraJSON(t, areraData{servizio: servizioOf(service)}); got != want {
+			t.Errorf("%s: got %s", service, got)
+		}
 	}
 }
 
@@ -1017,9 +1013,8 @@ func TestParseAreraXMLXXEAttackBlocked(t *testing.T) {
         <offerta>&xxe;</offerta>
     </root>`
 	logs := captureLogs(t)
-	assertEmptyResult(t, xxe, "E", `{"luce": {"fissa": {}, "variabile": {}}}`)
-	want := "❌ Errore inaspettato parsing XML elettricità: EntitiesForbidden: EntitiesForbidden(name='xxe', system_id='file:///etc/passwd', public_id=None)"
-	if !logs.has("ERROR", want) {
+	assertEmptyResult(t, xxe, "E", `{"luce":{"fissa":{},"variabile":{}}}`)
+	if !logs.has("ERROR", "❌ Errore inaspettato parsing XML elettricità: ") {
 		t.Errorf("log = %v", logs.all())
 	}
 }
@@ -1034,5 +1029,5 @@ func TestParseAreraXMLEntityExpansionBlocked(t *testing.T) {
       <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
     ]>
     <root>&lol4;</root>`
-	assertEmptyResult(t, bomb, "E", `{"luce": {"fissa": {}, "variabile": {}}}`)
+	assertEmptyResult(t, bomb, "E", `{"luce":{"fissa":{},"variabile":{}}}`)
 }

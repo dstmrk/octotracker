@@ -147,21 +147,13 @@ func serveUntilDone(ctx context.Context, srv *http.Server, ln net.Listener) erro
 // (ora non valida, porta occupata) termina solo quel task, con il log
 // CRITICAL di taskDoneCallback.
 func startBackgroundTasks(ctx context.Context, bt *backgroundTasks, sched *Scheduler, hs *healthServer) {
-	for _, t := range []struct {
-		key, name string
-		spec      *dailyTaskSpec
-	}{
-		{KeyScraperTask, TaskScraperDaily, sched.scraperSpec()},
-		{KeyCheckerTask, TaskCheckerDaily, sched.checkerSpec()},
-		{KeyReminderTask, TaskReminderDaily, sched.reminderSpec()},
-	} {
-		spec := t.spec
-		startErr := sched.start(spec)
-		bt.goTask(t.key, t.name, func() error {
+	for _, task := range sched.dailyTasks() {
+		wait, startErr := sched.start(task)
+		bt.goTask(task.key, task.name, func() error {
 			if startErr != nil {
 				return startErr
 			}
-			return sched.loop(ctx, spec)
+			return sched.loop(ctx, task, wait)
 		})
 	}
 

@@ -4,16 +4,17 @@ package app
 //
 //   - error_handler_golden.json: per ogni errore (ricavato dalle stesse
 //     risposte HTTP dell'API Telegram che qui riceve gotgbot) se l'error
-//     handler invia l'alert all'admin e quanto attende;
+//     handler invia l'alert all'admin, con quale modello di testo, e quanto
+//     attende;
 //   - scheduler_golden.json: secondi fino alla prossima esecuzione
-//     (calculate_seconds_until_next_run) con l'orologio fissato; i casi
-//     senza "seconds" sono ore non valide.
+//     con l'orologio fissato; i casi senza "seconds" sono ore non valide.
 
 import (
 	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"slices"
 	"sync"
 	"testing"
@@ -34,6 +35,7 @@ type goldenGoError struct {
 type goldenHandlerRun struct {
 	Sent []struct {
 		ChatID    string `json:"chat_id"`
+		Text      string `json:"text"`
 		ParseMode string `json:"parse_mode"`
 	} `json:"sent"`
 	Sleeps []int64 `json:"sleeps"`
@@ -175,10 +177,21 @@ func checkErrorHandlerRun(t *testing.T, err error, admin string, sendError *gold
 		t.Fatalf("admin %q: alert inviati = %v, attesi %v", admin, sent, want.Sent)
 	}
 	for i, s := range want.Sent {
-		if sent[i]["chat_id"] != s.ChatID || sent[i]["parse_mode"] != s.ParseMode {
+		// Il tipo e il testo dell'errore non fanno parte del confronto
+		// (in Python sono la classe e il messaggio dell'eccezione).
+		if sent[i]["chat_id"] != s.ChatID || sent[i]["parse_mode"] != s.ParseMode ||
+			maskAlertError(sent[i]["text"]) != maskAlertError(s.Text) {
 			t.Errorf("alert = %q, atteso %+v", sent[i], s)
 		}
 	}
+}
+
+// alertErrorValues sono i valori delle righe Tipo e Messaggio dell'alert.
+var alertErrorValues = regexp.MustCompile(`(?s)(<b>Tipo:</b>) .*\n(<b>Messaggio:</b>) .*(\n<b>Update:</b> )`)
+
+// maskAlertError nasconde tipo e testo dell'errore nell'alert all'admin.
+func maskAlertError(text string) string {
+	return alertErrorValues.ReplaceAllString(text, "$1 …\n$2 …$3")
 }
 
 // TestGoldenScheduler: secondi fino alla prossima esecuzione e attesa del
@@ -224,8 +237,8 @@ func checkLoopWait(t *testing.T, now time.Time, hour int, seconds float64) {
 		}
 		return nil
 	}
-	s.runCheckerFn = func(context.Context) {}
-	if err := s.loop(context.Background(), s.checkerSpec()); !errors.Is(err, context.Canceled) {
+	s.CheckAndNotify = func(context.Context) error { return nil }
+	if err := s.loop(context.Background(), s.dailyTasks()[checkerIdx], 0); !errors.Is(err, context.Canceled) {
 		t.Fatalf("loop = %v", err)
 	}
 	if waits[1] != secondsDuration(seconds) {

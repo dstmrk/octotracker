@@ -1,8 +1,7 @@
 package scraper
 
-// Test Go-specifici: HTTP reale (httptest), timeout con semantica di socket,
-// annullamento del contesto, integrazione con database.Store, entrypoint e
-// handler di logging degli script standalone.
+// Test Go-specifici: HTTP reale (httptest), timeout per singola lettura,
+// annullamento del contesto, integrazione con database.Store ed entrypoint.
 
 import (
 	"bytes"
@@ -10,12 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -25,14 +22,14 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 )
 
-func download(t *testing.T, c *Client, ctx context.Context, url string) (string, downloaded, error) {
+func download(t *testing.T, c *Client, ctx context.Context, url string) (string, string, error) {
 	t.Helper()
 	var content bytes.Buffer
-	dl, err := c.downloadXML(ctx, url, func(r io.Reader) { _, _ = io.Copy(&content, r) })
-	return content.String(), dl, err
+	head, err := c.downloadXML(ctx, url, func(r io.Reader) { _, _ = io.Copy(&content, r) })
+	return content.String(), head, err
 }
 
-func TestDownloadSendsUrllibHeaders(t *testing.T) {
+func TestDownloadSendsHeaders(t *testing.T) {
 	var got http.Header
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got = r.Header.Clone()
@@ -56,8 +53,8 @@ func TestDownloadHTTPError(t *testing.T) {
 	defer srv.Close()
 	logs := captureLogs(t)
 	_, _, err := download(t, &Client{}, context.Background(), srv.URL+"/x.xml")
-	var de *downloadError
-	if !errors.As(err, &de) || de.code != 404 || de.msg != "HTTP Error 404: Not Found" {
+	var se *httpStatusError
+	if !errors.As(err, &se) || se.code != 404 || err.Error() != "HTTP 404" {
 		t.Fatalf("err = %#v", err)
 	}
 	if !logs.has("WARNING", "⚠️  HTTP 404 durante download "+srv.URL+"/x.xml") {
@@ -65,22 +62,21 @@ func TestDownloadHTTPError(t *testing.T) {
 	}
 }
 
-func TestDownloadCountsCharactersAndKeepsBOM(t *testing.T) {
-	body := "\ufeff<a>caffè</a>"
+func TestDownloadKeepsContentAndHead(t *testing.T) {
+	body := "\ufeff<a>caffè</a>" + strings.Repeat(" ", 600)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, body)
 	}))
 	defer srv.Close()
 	logs := captureLogs(t)
-	content, dl, err := download(t, &Client{}, context.Background(), srv.URL)
+	content, head, err := download(t, &Client{}, context.Background(), srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// len(content) di Python conta i caratteri, BOM compreso.
-	if content != body || dl.chars != 13 || dl.head != body {
-		t.Errorf("content %q chars %d head %q", content, dl.chars, dl.head)
+	if content != body || head != body[:headBytes] {
+		t.Errorf("content %q head %q", content, head)
 	}
-	if !logs.has("DEBUG", "Downloaded 13 bytes") {
+	if !logs.has("DEBUG", fmt.Sprintf("Downloaded %d bytes", len(body))) {
 		t.Errorf("log = %v", logs.all())
 	}
 }
@@ -92,8 +88,7 @@ func TestDownloadInvalidUTF8IsDownloadError(t *testing.T) {
 	defer srv.Close()
 	logs := captureLogs(t)
 	_, _, err := download(t, &Client{}, context.Background(), srv.URL)
-	var de *downloadError
-	if !errors.As(err, &de) || de.code != 0 || de.msg != "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte" {
+	if !errors.Is(err, errInvalidUTF8) {
 		t.Fatalf("err = %v", err)
 	}
 	if logs.has("DEBUG", "Downloaded") || logs.has("WARNING", "") {
@@ -101,8 +96,48 @@ func TestDownloadInvalidUTF8IsDownloadError(t *testing.T) {
 	}
 }
 
-// Il timeout di urlopen vale per singola operazione: un download lento ma
-// continuo non viene interrotto anche se dura più del timeout.
+// chunkReader restituisce al massimo n byte per Read.
+type chunkReader struct {
+	r io.Reader
+	n int
+}
+
+func (c *chunkReader) Read(p []byte) (int, error) {
+	if len(p) > c.n {
+		p = p[:c.n]
+	}
+	return c.r.Read(p)
+}
+
+// Le sequenze multibyte spezzate tra due letture sono valide; quelle
+// troncate a fine file o malformate no.
+func TestBodyReaderChecksUTF8AcrossReads(t *testing.T) {
+	for _, c := range []struct {
+		in    string
+		valid bool
+	}{
+		{"caffè €🐙", true},
+		{"", true},
+		{"abc\xe2\x82", false},
+		{"abc\xff", false},
+		{"\xc3(", false},
+		{"\xed\xa0\x80", false}, // surrogato
+		{"\xf0\x9f\x90", false},
+	} {
+		for _, n := range []int{1, 2, 3, 4096} {
+			b := &bodyReader{r: &chunkReader{r: strings.NewReader(c.in), n: n}, onData: func() {}}
+			if _, err := io.Copy(io.Discard, b); err != nil {
+				t.Fatal(err)
+			}
+			if got := b.err == nil; got != c.valid {
+				t.Errorf("%q (chunk %d): valido = %v, err = %v", c.in, n, got, b.err)
+			}
+		}
+	}
+}
+
+// Il timeout vale per singola lettura: un download lento ma continuo non
+// viene interrotto anche se dura più del timeout.
 func TestDownloadTimeoutIsIdleNotTotal(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < 8; i++ {
@@ -135,11 +170,10 @@ func TestDownloadTimeoutBeforeHeaders(t *testing.T) {
 	defer close(release)
 	logs := captureLogs(t)
 	_, _, err := download(t, &Client{Timeout: 50 * time.Millisecond}, context.Background(), srv.URL)
-	var de *downloadError
-	if !errors.As(err, &de) || de.msg != "<urlopen error timed out>" {
+	if err == nil || !strings.Contains(err.Error(), "nessun dato ricevuto per 50ms") {
 		t.Fatalf("err = %v", err)
 	}
-	if !logs.has("WARNING", "⚠️  Errore rete durante download "+srv.URL+": timed out") {
+	if !logs.has("WARNING", "⚠️  Errore rete durante download "+srv.URL+": nessun dato ricevuto") {
 		t.Errorf("log = %v", logs.all())
 	}
 }
@@ -158,16 +192,12 @@ func TestDownloadTimeoutDuringBody(t *testing.T) {
 	defer close(release)
 	logs := captureLogs(t)
 	_, _, err := download(t, &Client{Timeout: 50 * time.Millisecond}, context.Background(), srv.URL)
-	var de *downloadError
-	if !errors.As(err, &de) || de.msg != "timed out" {
+	if err == nil || !strings.Contains(err.Error(), "nessun dato ricevuto") {
 		t.Fatalf("err = %v", err)
 	}
-	// Gli errori durante read() non sono URLError: nessun warning.
+	// Gli errori durante la lettura del corpo non hanno il warning di rete.
 	if logs.has("WARNING", "") {
 		t.Errorf("log = %v", logs.all())
-	}
-	if got := readErrorMessage(errors.New("x"), true, "https://example.com/f.xml", 0, -1); got != "The read operation timed out" {
-		t.Errorf("https timeout = %q", got)
 	}
 }
 
@@ -178,7 +208,7 @@ func TestDownloadTruncatedBody(t *testing.T) {
 	}))
 	defer srv.Close()
 	_, _, err := download(t, &Client{}, context.Background(), srv.URL)
-	if err == nil || err.Error() != "IncompleteRead(10 bytes read, 90 more expected)" {
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -192,10 +222,10 @@ func TestDownloadConnectionRefused(t *testing.T) {
 	l.Close()
 	logs := captureLogs(t)
 	_, _, err = download(t, &Client{}, context.Background(), url)
-	if err == nil || err.Error() != "<urlopen error [Errno 111] Connection refused>" {
+	if !errors.Is(err, syscall.ECONNREFUSED) {
 		t.Fatalf("err = %v", err)
 	}
-	if !logs.has("WARNING", "⚠️  Errore rete durante download "+url+": [Errno 111] Connection refused") {
+	if !logs.has("WARNING", "⚠️  Errore rete durante download "+url+": ") {
 		t.Errorf("log = %v", logs.all())
 	}
 }
@@ -203,30 +233,8 @@ func TestDownloadConnectionRefused(t *testing.T) {
 func TestDownloadInvalidURL(t *testing.T) {
 	logs := captureLogs(t)
 	_, _, err := download(t, &Client{}, context.Background(), "http://bad host/\x7f")
-	var de *downloadError
-	if !errors.As(err, &de) || de.code != 0 || logs.has("WARNING", "") {
+	if err == nil || logs.has("WARNING", "") {
 		t.Errorf("err = %v, log = %v", err, logs.all())
-	}
-}
-
-func TestURLErrorReasons(t *testing.T) {
-	dns := &net.DNSError{Err: "no such host", Name: "x.invalid", IsNotFound: true}
-	if got := urlErrorReason(dns, false); got != "[Errno -2] Name or service not known" {
-		t.Errorf("dns = %q", got)
-	}
-	wrapped := fmt.Errorf("wrap: %w", errors.New("inner"))
-	if got := urlErrorReason(wrapped, false); got != "inner" {
-		t.Errorf("wrapped = %q", got)
-	}
-	if got := urlErrorReason(errors.New("plain"), false); got != "plain" {
-		t.Errorf("plain = %q", got)
-	}
-	reset := &net.OpError{Op: "read", Err: os.NewSyscallError("read", syscall.ECONNRESET)}
-	if got := readErrorMessage(reset, false, "http://x", 1, 10); got != "[Errno 104] Connection reset by peer" {
-		t.Errorf("reset = %q", got)
-	}
-	if got := readErrorMessage(errors.New("boom"), false, "http://x", 1, -1); got != "boom" {
-		t.Errorf("generic = %q", got)
 	}
 }
 
@@ -265,7 +273,7 @@ func TestDownloadContextCanceledDuringBody(t *testing.T) {
 	}
 }
 
-// ========== Annullamento (asyncio.wait_for) ==========
+// ========== Annullamento ==========
 
 func TestFetchOctopusTariffeDeadlineExceeded(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
@@ -320,7 +328,7 @@ func TestFetchOctopusTariffeCanceledDuringSave(t *testing.T) {
 	defer cancel()
 	sample := readTestdata(t, "sample_arera.xml")
 	client, _ := fakeClient(map[string]route{todayURL("E"): bodyRoute(sample)}, frozenNow)
-	store := &cancelingStore{fakeStore: fakeStore{t: t, returns: []any{3}}, cancel: cancel}
+	store := &cancelingStore{fakeStore: fakeStore{t: t, returns: []int{3}}, cancel: cancel}
 	logs := captureLogs(t)
 	res, err := client.FetchOctopusTariffe(ctx, store, 0)
 	if !errors.Is(err, context.Canceled) || res != nil {
@@ -350,7 +358,7 @@ func TestPackageLevelEntryPointsUseDefaultClient(t *testing.T) {
 func TestBackfillCanceledDuringSleep(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	client, _ := fakeClient(routesEveryDay(1, "E", mockRatesXML), frozenNow)
-	store := &fakeStore{t: t, returns: []any{1}}
+	store := &fakeStore{t: t, returns: []int{1}}
 	logs := captureLogs(t)
 	opts := BackfillOptions{Days: 1, Delay: 60, Client: client, Sleep: func(ctx context.Context, d time.Duration) error {
 		cancel()
@@ -371,49 +379,10 @@ func TestSleepCtx(t *testing.T) {
 	}
 }
 
-func TestPySleepDuration(t *testing.T) {
-	for _, c := range []struct {
-		in   float64
-		want time.Duration
-		err  string
-	}{
-		{0.5, 500 * time.Millisecond, ""},
-		{0, 0, ""},
-		{1e-10, 1, ""}, // _PyTime_ROUND_TIMEOUT arrotonda per eccesso
-		{-1, 0, "sleep length must be non-negative"},
-		{math.NaN(), 0, "Invalid value NaN (not a number)"},
-		{math.Inf(1), 0, "timestamp out of range for C PyTime_t"},
-		{1e10, 0, "timestamp out of range for C PyTime_t"},
-	} {
-		got, err := pySleepDuration(c.in)
-		if c.err != "" {
-			if err == nil || err.Error() != c.err {
-				t.Errorf("sleep(%v): err = %v", c.in, err)
-			}
-			continue
-		}
-		if err != nil || got != c.want {
-			t.Errorf("sleep(%v) = %v, %v", c.in, got, err)
-		}
-	}
-}
-
 func TestDefaultBackfillOptions(t *testing.T) {
 	o := DefaultBackfillOptions()
 	if o.Days != 365 || o.DryRun || o.Delay != 0.5 || o.Client != nil || o.Sleep != nil {
 		t.Errorf("opts = %+v", o)
-	}
-}
-
-func TestSubDaysOverflow(t *testing.T) {
-	if _, err := subDays(frozenNow, 1000000000); err == nil || err.Error() != "days=1000000000; must have magnitude <= 999999999" {
-		t.Errorf("err = %v", err)
-	}
-	if _, err := subDays(frozenNow, -3000000); err == nil || err.Error() != "date value out of range" {
-		t.Errorf("err = %v", err)
-	}
-	if got := formatDate(time.Date(999, 1, 2, 0, 0, 0, 0, time.UTC), ""); got != "9990102" {
-		t.Errorf("formatDate = %q", got)
 	}
 }
 
@@ -422,8 +391,8 @@ func TestClientDefaults(t *testing.T) {
 	if c.baseURL() != AreraBaseURL || c.httpClient() != http.DefaultClient || c.timeout() != RequestTimeout {
 		t.Error("default non applicati")
 	}
-	if d := time.Since(c.clock()); d < 0 || d > time.Minute {
-		t.Errorf("clock = %v", d)
+	if d := time.Since(c.now()); d < 0 || d > time.Minute {
+		t.Errorf("now = %v", d)
 	}
 	c = &Client{BaseURL: "http://x"}
 	if got := c.buildAreraURL(frozenNow, "E"); got != "http://x/2026_1/PO_Offerte_E_MLIBERO_20260103.xml" {
@@ -431,12 +400,15 @@ func TestClientDefaults(t *testing.T) {
 	}
 }
 
-// datetime.now() è l'ora locale "naive": Client.now usa i campi locali.
-func TestClientNowUsesLocalWallClock(t *testing.T) {
+// Le date dei file sono quelle del fuso dell'orologio, non UTC.
+func TestClientDatesUseLocalWallClock(t *testing.T) {
 	loc := time.FixedZone("CET", 3600)
 	c := &Client{Now: func() time.Time { return time.Date(2026, 1, 1, 0, 30, 0, 0, loc) }}
-	if got := formatDate(c.now(), "-"); got != "2026-01-01" {
-		t.Errorf("now = %s", got)
+	if got := formatDate(c.daysAgo(0)); got != "2026-01-01" {
+		t.Errorf("oggi = %s", got)
+	}
+	if got := formatDate(c.daysAgo(1)); got != "2025-12-31" {
+		t.Errorf("ieri = %s", got)
 	}
 }
 
@@ -519,7 +491,7 @@ func TestRunScrape(t *testing.T) {
 	sample := readTestdata(t, "sample_arera.xml")
 	client, _ := fakeClient(map[string]route{todayURL("E"): bodyRoute(sample), todayURL("G"): bodyRoute(sample)}, frozenNow)
 	logs := captureLogs(t)
-	if err := client.RunScrape(context.Background(), &fakeStore{t: t, returns: []any{5}}); err != nil {
+	if err := client.RunScrape(context.Background(), &fakeStore{t: t, returns: []int{5}}); err != nil {
 		t.Fatal(err)
 	}
 	info := logs.messages("INFO")
@@ -533,38 +505,11 @@ func TestRunScrape(t *testing.T) {
 	}
 }
 
-func TestRunScrapePropagatesPyException(t *testing.T) {
+func TestRunScrapePropagatesOfferError(t *testing.T) {
 	bad := testDoc(strings.Replace(testOffer("01", "01", "01", "", comm("72")), "<NOME_OFFERTA>Test</NOME_OFFERTA>", "", 1))
 	client, _ := fakeClient(map[string]route{todayURL("E"): bodyRoute(bad)}, frozenNow)
-	err := client.RunScrape(context.Background(), &fakeStore{t: t})
-	var exc *PyException
-	if !errors.As(err, &exc) || exc.Type != "AttributeError" || err.Error() != "'NoneType' object has no attribute 'text'" {
+	if err := client.RunScrape(context.Background(), &fakeStore{t: t}); !errors.Is(err, errNoNomeOfferta) {
 		t.Errorf("err = %v", err)
-	}
-}
-
-func TestBasicHandler(t *testing.T) {
-	var buf bytes.Buffer
-	l := slog.New(NewBasicHandler(&buf, slog.LevelInfo, ScrapeLogTimeLayout)).With("logger", "data_reader").WithGroup("g")
-	l.Debug("nascosto")
-	l.Info("📊 Tariffe estratte:", "k", "v")
-	l.Warn("{\n  \"a\": 1\n}")
-	if got := buf.String(); got != "📊 Tariffe estratte:\n{\n  \"a\": 1\n}\n" {
-		t.Errorf("output = %q", got)
-	}
-
-	buf.Reset()
-	h := NewBasicHandler(&buf, slog.LevelDebug, BackfillLogTimeLayout)
-	r := slog.NewRecord(time.Date(2026, 1, 3, 14, 5, 9, 0, time.Local), slog.LevelDebug, "   2026-01-03: 2 tariffe salvate", 0)
-	if err := h.Handle(context.Background(), r); err != nil {
-		t.Fatal(err)
-	}
-	if got := buf.String(); got != "14:05:09    2026-01-03: 2 tariffe salvate\n" {
-		t.Errorf("output = %q", got)
-	}
-	buf.Reset()
-	if err := h.Handle(context.Background(), slog.NewRecord(time.Time{}, slog.LevelInfo, "x", 0)); err != nil || !strings.HasSuffix(buf.String(), " x\n") {
-		t.Errorf("output = %q", buf.String())
 	}
 }
 
@@ -618,26 +563,42 @@ type errReader struct{ err error }
 
 func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
-func TestPyExceptionError(t *testing.T) {
-	e := &PyException{Type: "ValueError", Msg: "boom"}
-	if e.Error() != "boom" {
-		t.Errorf("Error() = %q", e.Error())
+// I controlli di struttura che encoding/xml non fa: radice unica, niente
+// testo fuori dalla radice, niente dichiarazioni ENTITY.
+func TestScanXMLStructureErrors(t *testing.T) {
+	for doc, want := range map[string]error{
+		"":                                   errNoRoot,
+		"  \n ":                              errNoRoot,
+		"<a/><b/>":                           errOutsideRoot,
+		"<a/>x":                              errOutsideRoot,
+		"x<a/>":                              errOutsideRoot,
+		"<!DOCTYPE a [<!ENTITY e 'x'>]><a/>": errEntitiesForbidden,
+		"<!ENTITY e 'x'><a/>":                errEntitiesForbidden,
+	} {
+		if _, err := parseElement(doc); !errors.Is(err, want) {
+			t.Errorf("%q: err = %v, atteso %v", doc, err, want)
+		}
+	}
+	for _, doc := range []string{
+		"\ufeff<?xml version=\"1.0\"?>\n<a/>\n",
+		"<?xml version='1.0' encoding='ISO-8859-1'?><a>caffè</a>",
+		"<!-- c --><!DOCTYPE a><a/><?pi x?>",
+	} {
+		if _, err := parseElement(doc); err != nil {
+			t.Errorf("%q: err = %v", doc, err)
+		}
 	}
 }
 
-func TestPyStrReprAndJSONString(t *testing.T) {
-	in := "\b\f\x01\x7f\u00e8\U0001F419\"\\"
-	if got := pyJSONString(in); got != "\"\\b\\f\\u0001\\u007f\\u00e8\\ud83d\\udc19\\\"\\\\\"" {
-		t.Errorf("json = %s", got)
+func TestTariffeStringAndNonFiniteNumbers(t *testing.T) {
+	tr := completeTariffe()
+	assertSameJSON(t, tr.String(), tr.JSONIndent())
+	if !strings.HasPrefix(fmt.Sprint(&tr), `{"luce":{"fissa":{"monoraria":{"energia":0.1078,`) {
+		t.Errorf("String = %s", tr.String())
 	}
-	// repr: \x per i non stampabili < 0x100, \u / \U oltre, stampabili invariati.
-	in = "\x00\x7f\u0085\u00a0\u2028\U0001F419\U000E0001"
-	if got := pyStrRepr(in); got != "'\\x00\\x7f\\x85\\xa0\\u2028\U0001F419\\U000e0001'" {
-		t.Errorf("repr = %s", got)
-	}
-	for in, want := range map[string]string{`a"b`: `'a"b'`, "a'b": `"a'b"`, `a'b"c`: `'a\'b"c'`} {
-		if got := pyStrRepr(in); got != want {
-			t.Errorf("repr(%s) = %s, atteso %s", in, got, want)
-		}
+	// Un prezzo "NaN" (accettato da strconv) non è serializzabile in JSON.
+	tr.Gas.Fissa.set("monoraria", Rate{Energia: math.NaN()})
+	if got := tr.String(); !strings.HasPrefix(got, "tariffe non serializzabili: ") {
+		t.Errorf("String = %s", got)
 	}
 }

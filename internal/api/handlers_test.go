@@ -8,13 +8,14 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/dstmrk/octotracker/internal/api/apitest"
-	"github.com/dstmrk/octotracker/internal/api/tornado"
 	"github.com/dstmrk/octotracker/internal/database"
 )
 
@@ -104,6 +105,22 @@ func errorText(t *testing.T, rec *httptest.ResponseRecorder) string {
 	return *r.Error
 }
 
+// assertJSON confronta il corpo con want come JSON decodificato (chiavi,
+// valori e null; non formato né ordine delle chiavi).
+func assertJSON(t *testing.T, rec *httptest.ResponseRecorder, want string) {
+	t.Helper()
+	var got, exp any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("JSON non valido %q: %v", rec.Body.String(), err)
+	}
+	if err := json.Unmarshal([]byte(want), &exp); err != nil {
+		t.Fatalf("JSON atteso non valido: %v", err)
+	}
+	if !reflect.DeepEqual(got, exp) {
+		t.Errorf("corpo = %s\natteso %s", rec.Body.String(), want)
+	}
+}
+
 func history(t *testing.T, store *fakeStore, query, initData string) *httptest.ResponseRecorder {
 	t.Helper()
 	return do(t, New(store, testBotToken).RatesHistoryHandler(), http.MethodGet, PathRatesHistory+query, initData)
@@ -130,10 +147,7 @@ func TestRatesHistoryGetSuccess(t *testing.T) {
 	if err := json.Unmarshal(r.Data, &data); err != nil || strings.Join(data.Labels, ",") != "2025-01-01,2025-01-02" {
 		t.Errorf("labels = %v (%v)", data.Labels, err)
 	}
-	want := `{"success": true, "data": {"labels": ["2025-01-01", "2025-01-02"], "data": [0.115, 0.116], "period": {"from": "2025-01-01", "to": "2025-01-02"}}}`
-	if rec.Body.String() != want {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"labels": ["2025-01-01", "2025-01-02"], "data": [0.115, 0.116], "period": {"from": "2025-01-01", "to": "2025-01-02"}}}`)
 	if c := store.historyCalls; len(c) != 1 || c[0] != (historyCall{"luce", "fissa", "monoraria", 30, true, true}) {
 		t.Errorf("chiamate = %+v", c)
 	}
@@ -219,10 +233,7 @@ func TestRatesCurrentGetSuccess(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d", rec.Code)
 	}
-	want := `{"success": true, "data": {"date": "2025-01-15", "luce": {"fissa": {"monoraria": {"energia": 0.115}}}, "gas": {"fissa": {"monoraria": {"energia": 0.39}}}}}`
-	if rec.Body.String() != want {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"date": "2025-01-15", "luce": {"fissa": {"monoraria": {"energia": 0.115}}}, "gas": {"fissa": {"monoraria": {"energia": 0.39}}}}}`)
 }
 
 func TestRatesCurrentGetNoRates(t *testing.T) {
@@ -242,10 +253,7 @@ func TestUserRatesGetSuccess(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d", rec.Code)
 	}
-	want := `{"success": true, "data": {"luce": {"tipo": "variabile", "fascia": "monoraria", "energia": 0.09, "commercializzazione": 72.0}, "gas": null}}`
-	if rec.Body.String() != want {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"luce": {"tipo": "variabile", "fascia": "monoraria", "energia": 0.09, "commercializzazione": 72.0}, "gas": null}}`)
 	if len(store.userCalls) != 1 || store.userCalls[0] != "123456789" {
 		t.Errorf("LoadUser chiamato con %v", store.userCalls)
 	}
@@ -313,8 +321,8 @@ func TestInvalidFascia(t *testing.T) {
 func TestDaysBounds(t *testing.T) {
 	tests := map[string]int{
 		"-5": 365, "9999": 3650, "abc": 365, // i tre casi Python
-		"0": 365, "1": 1, "3650": 3650, "3651": 3650, "": 365, "1.5": 365, "%2B7": 7, "3_0": 30,
-		"%D9%A3%D9%A0": 30, "99999999999999999999999": 3650, "-99999999999999999999999": 365,
+		"0": 365, "1": 1, "3650": 3650, "3651": 3650, "": 365, "1.5": 365, "%2B7": 7, "%2030%20": 30,
+		"3_0": 365, "99999999999999999999999": 365,
 	}
 	for days, want := range tests {
 		store := &fakeStore{}
@@ -396,13 +404,37 @@ func hasLog(recs []apitest.Record, name, level, msg string) bool {
 func TestNonErrorPanicIsInternalError(t *testing.T) {
 	logs := apitest.CaptureLogs(t)
 	store := &fakeStore{}
-	h := New(store, testBotToken).handler("RatesHistoryHandler", func(*tornado.RequestHandler) error { panic("boom") })
-	rec := do(t, h, http.MethodGet, "/", "")
+	h := New(store, testBotToken).handler("RatesHistoryHandler", func(*http.Request, InitData) (int, any) { panic("boom") })
+	rec := do(t, h, http.MethodGet, "/", validInit(1))
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status %d", rec.Code)
 	}
 	if !hasLog(logs.Take(), "api.handlers", "ERROR", "Unexpected error in RatesHistoryHandler: boom") {
 		t.Error("log mancante")
+	}
+}
+
+// TestUnserializableIsInternalError: un valore che encoding/json non
+// serializza (NaN) dà 500 come ogni altro errore inatteso.
+func TestUnserializableIsInternalError(t *testing.T) {
+	logs := apitest.CaptureLogs(t)
+	store := &fakeStore{users: map[string]*database.User{"1": {Luce: database.Utility{Tipo: "fissa", Energia: math.NaN()}}}}
+	rec := do(t, New(store, testBotToken).UserRatesHandler(), http.MethodGet, PathUserRates, validInit(1))
+	if rec.Code != http.StatusInternalServerError || errorText(t, rec) != ErrInternalServer {
+		t.Errorf("status %d, corpo %s", rec.Code, rec.Body.String())
+	}
+	if !hasLog(logs.Take(), "api.handlers", "ERROR", "Unexpected error in UserRatesHandler: json: unsupported value: NaN") {
+		t.Error("log mancante")
+	}
+}
+
+func TestMethodNotAllowed(t *testing.T) {
+	h := New(&fakeStore{}, testBotToken).RatesHistoryHandler()
+	for _, m := range []string{http.MethodPost, http.MethodHead, http.MethodPut, http.MethodDelete, "FOO"} {
+		rec := do(t, h, m, PathRatesHistory, validInit(1))
+		if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Errorf("%s: status %d, header %v", m, rec.Code, rec.Header())
+		}
 	}
 }
 
@@ -414,15 +446,12 @@ func TestUserRatesFullUtility(t *testing.T) {
 		Gas: &database.Utility{Tipo: "fissa", Fascia: "monoraria", Energia: 0.39, Commercializzazione: 84, ConsumoAnnuo: &annuo},
 	}}}
 	rec := do(t, New(store, testBotToken).UserRatesHandler(), http.MethodGet, PathUserRates, validInit(1))
-	want := `{"success": true, "data": {"luce": {"tipo": "fissa", "fascia": "trioraria", "energia": 0.115, "commercializzazione": 96.5, ` +
-		`"consumo_f1": 1000.0, "consumo_f2": 800.25, "consumo_f3": 1200.0, "scadenza": "2026-12-31"}, ` +
-		`"gas": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.39, "commercializzazione": 84.0, "consumo_annuo": 1200.5}}}`
-	if rec.Body.String() != want {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"luce": {"tipo": "fissa", "fascia": "trioraria", "energia": 0.115, "commercializzazione": 96.5, `+
+		`"consumo_f1": 1000.0, "consumo_f2": 800.25, "consumo_f3": 1200.0, "scadenza": "2026-12-31"}, `+
+		`"gas": {"tipo": "fissa", "fascia": "monoraria", "energia": 0.39, "commercializzazione": 84.0, "consumo_annuo": 1200.5}}}`)
 }
 
-func TestCurrentRatesFasciaOrder(t *testing.T) {
+func TestCurrentRatesAllFasce(t *testing.T) {
 	comm := 72.0
 	cod := "COD"
 	date := "2025-01-15"
@@ -434,18 +463,15 @@ func TestCurrentRatesFasciaOrder(t *testing.T) {
 		"gas": {"fissa": {}, "variabile": {}},
 	}}
 	rec := do(t, New(store, testBotToken).RatesCurrentHandler(), http.MethodGet, PathRatesCurrent, validInit(1))
-	want := `{"success": true, "data": {"date": "2025-01-15", "luce": {"fissa": {}, "variabile": {` +
-		`"monoraria": {"energia": 0.1, "commercializzazione": 72.0, "cod_offerta": "COD"}, "bioraria": {"energia": 0.2}, ` +
-		`"trioraria": {"energia": 0.3}, "alfa": {"energia": 0.4}, "zeta": {"energia": 0.5}}}, "gas": {"fissa": {}, "variabile": {}}}}`
-	if rec.Body.String() != want {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"date": "2025-01-15", "luce": {"fissa": {}, "variabile": {`+
+		`"monoraria": {"energia": 0.1, "commercializzazione": 72.0, "cod_offerta": "COD"}, "bioraria": {"energia": 0.2}, `+
+		`"trioraria": {"energia": 0.3}, "alfa": {"energia": 0.4}, "zeta": {"energia": 0.5}}}, "gas": {"fissa": {}, "variabile": {}}}}`)
 	// data nil → "date": null
 	store.date = nil
 	rec = do(t, New(store, testBotToken).RatesCurrentHandler(), http.MethodGet, PathRatesCurrent, validInit(1))
-	if !strings.HasPrefix(rec.Body.String(), `{"success": true, "data": {"date": null, "luce"`) {
-		t.Errorf("corpo = %s", rec.Body.String())
-	}
+	assertJSON(t, rec, `{"success": true, "data": {"date": null, "luce": {"fissa": {}, "variabile": {`+
+		`"monoraria": {"energia": 0.1, "commercializzazione": 72.0, "cod_offerta": "COD"}, "bioraria": {"energia": 0.2}, `+
+		`"trioraria": {"energia": 0.3}, "alfa": {"energia": 0.4}, "zeta": {"energia": 0.5}}}, "gas": {"fissa": {}, "variabile": {}}}}`)
 }
 
 func TestRegister(t *testing.T) {

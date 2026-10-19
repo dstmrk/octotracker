@@ -68,8 +68,8 @@ func TestLoadOverrides(t *testing.T) {
 		"WEBHOOK_SECRET":          "s3cret",
 		"HEALTH_PORT":             " 9444 ",
 		"SCRAPER_HOUR":            "+7",
-		"CHECKER_HOUR":            "1_2",
-		"REMINDER_HOUR":           "١٣", // cifre arabe: int() di Python le accetta
+		"CHECKER_HOUR":            "012",
+		"REMINDER_HOUR":           "\t13\n",
 		"SCRAPER_TIMEOUT_SECONDS": "60",
 		"ADMIN_USER_ID":           "42",
 		"WEBAPP_URL":              "https://example.org/app/",
@@ -110,43 +110,18 @@ func TestLoadOverrides(t *testing.T) {
 func TestLoadInvalidInts(t *testing.T) {
 	clearConfigEnv(t)
 	t.Setenv("WEBHOOK_PORT", "abc")
-	t.Setenv("CHECKER_HOUR", "1__0")
+	t.Setenv("CHECKER_HOUR", "1_0")
 	t.Setenv("HEALTH_PORT", "   ") // vuoto: default
 	cfg, err := Load()
 	if err == nil {
 		t.Fatal("Load deve fallire con interi non validi")
 	}
 	msg := err.Error()
-	if !strings.Contains(msg, `WEBHOOK_PORT non valido: "abc"`) || !strings.Contains(msg, `CHECKER_HOUR non valido: "1__0"`) {
+	if !strings.Contains(msg, `WEBHOOK_PORT non valido: "abc"`) || !strings.Contains(msg, `CHECKER_HOUR non valido: "1_0"`) {
 		t.Errorf("errore = %q", msg)
 	}
 	if cfg.WebhookPort != 8443 || cfg.CheckerHour != 10 || cfg.HealthPort != 8444 {
 		t.Errorf("i valori non validi devono ricadere sul default: %+v", cfg)
-	}
-}
-
-func TestPyAtoi(t *testing.T) {
-	// Risultati verificati con int() di Python 3.13
-	valid := map[string]int{
-		" 8443 ": 8443, "+5": 5, "-3": -3, "1_000": 1000, "٣": 3, "010": 10,
-		" 5　": 5, "1_2_3": 123, "１２": 12, "\t7\n": 7,
-	}
-	for in, want := range valid {
-		got, err := pyAtoi(in)
-		if err != nil || got != want {
-			t.Errorf("pyAtoi(%q) = %d, %v; want %d", in, got, err, want)
-		}
-	}
-	invalid := []string{
-		"1__0", "_1", "1_", "", " ", "8443a", "0x10", "1 2", "\x1c7\x1f", "+", "-_1", "+-1",
-		"99999999999999999999999",
-	}
-	for _, in := range invalid {
-		if got, err := pyAtoi(in); err == nil {
-			t.Errorf("pyAtoi(%q) = %d, want errore", in, got)
-		} else if !strings.HasPrefix(err.Error(), "invalid literal for int() with base 10") {
-			t.Errorf("pyAtoi(%q) errore = %v", in, err)
-		}
 	}
 }
 
@@ -378,12 +353,4 @@ func dotenvWarnings(logs string) []string {
 		}
 	}
 	return warnings
-}
-
-func TestDigitValue(t *testing.T) {
-	for r, want := range map[rune]int{'0': 0, '9': 9, '٣': 3, '١': 1, '０': 0, '９': 9, '७': 7} {
-		if got := digitValue(r); got != want {
-			t.Errorf("digitValue(%q) = %d, want %d", r, got, want)
-		}
-	}
 }

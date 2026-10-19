@@ -3,19 +3,17 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/dstmrk/octotracker/internal/api/apitest"
-	"github.com/dstmrk/octotracker/internal/api/tornado"
 	"github.com/dstmrk/octotracker/internal/database"
 )
 
-// httpGolden sono le risposte della vera app Tornado (api/handlers.py) alle
-// stesse richieste HTTP grezze, con DB e orologio fissati.
+// httpGolden sono le risposte della versione Python (api/handlers.py) alle
+// stesse richieste HTTP grezze, con DB e orologio fissati. Contiene solo il
+// contratto: status, header CORS e Content-Type, corpo JSON.
 type httpGolden struct {
 	Token     string `json:"token"`
 	Now       int64  `json:"now"`
@@ -26,7 +24,7 @@ type httpGolden struct {
 	} `json:"scenarios"`
 }
 
-// setNow fissa int(time.time()) per la durata del test.
+// setNow fissa l'ora corrente per la durata del test.
 func setNow(t *testing.T, v int64) {
 	t.Helper()
 	prev := nowUnix
@@ -61,23 +59,15 @@ func TestGoldenHTTP(t *testing.T) {
 	total := 0
 	for _, sc := range g.Scenarios {
 		t.Run(sc.Name, func(t *testing.T) {
-			logs := apitest.CaptureLogs(t)
-			store := newTestStore(t, sc.SQL)
 			mux := http.NewServeMux()
-			New(store, g.Token).Register(mux)
-			mux.Handle("/", tornado.NotFoundHandler())
-			srv := httptest.NewServer(mux)
-			defer srv.Close()
-			addr := strings.TrimPrefix(srv.URL, "http://")
-			logs.Take() // log di apertura del DB
+			New(newTestStore(t, sc.SQL), g.Token).Register(mux)
 			for _, c := range sc.Cases {
-				got := apitest.Do(t, addr, c.Raw())
-				apitest.Check(t, c, got, logs.Take())
+				apitest.Check(t, mux, c)
 				total++
 			}
 		})
 	}
-	if total < 100 {
+	if total < 80 {
 		t.Errorf("solo %d casi golden", total)
 	}
 }

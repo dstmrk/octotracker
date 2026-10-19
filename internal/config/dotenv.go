@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/dstmrk/octotracker/internal/logging"
@@ -344,4 +345,10 @@ func dotenvDisabled() bool {
 		}
 	}
 	return false
+}
+
+// pyIsSpace replica str.isspace() di Python, usato da python-dotenv per
+// togliere gli spazi in coda ai valori senza virgolette.
+func pyIsSpace(r rune) bool {
+	return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f)
 }

@@ -16,26 +16,24 @@ import (
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 
-	"github.com/dstmrk/octotracker/internal/api/apitest"
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
 
 // broadcastGolden contiene gli output di broadcast.py (CPython 3.13, PTB
-// 22.6) per gli stessi file, risposte e comportamenti del bot.
+// 22.6) per gli stessi file, risposte e comportamenti del bot: percorsi
+// risolti, contenuti letti, messaggi d'errore dell'app (msg), stdout,
+// risultati e chiamate a Telegram.
 type broadcastGolden struct {
 	Files map[string]string `json:"files"`
 	Paths []struct {
 		In  string `json:"in"`
 		OK  string `json:"ok"`
-		Err string `json:"err"`
 		Msg string `json:"msg"`
 	} `json:"paths"`
 	Loads []struct {
 		Fn  string          `json:"fn"`
 		In  string          `json:"in"`
 		OK  json.RawMessage `json:"ok"`
-		Err string          `json:"err"`
 		Msg string          `json:"msg"`
 	} `json:"loads"`
 	Confirm []struct {
@@ -52,16 +50,14 @@ type broadcastGolden struct {
 		Result    map[string]int    `json:"result"`
 		Stdout    string            `json:"stdout"`
 		Calls     [][3]string       `json:"calls"`
-		Logs      []apitest.Record  `json:"logs"`
 	} `json:"runs"`
 	Main []struct {
-		Name   string           `json:"name"`
-		Args   []string         `json:"args"`
-		Token  string           `json:"token"`
-		Batch  int              `json:"batch"`
-		Code   int              `json:"code"`
-		Stdout string           `json:"stdout"`
-		Logs   []apitest.Record `json:"logs"`
+		Name   string   `json:"name"`
+		Args   []string `json:"args"`
+		Token  string   `json:"token"`
+		Batch  int      `json:"batch"`
+		Code   int      `json:"code"`
+		Stdout string   `json:"stdout"`
 	} `json:"main"`
 }
 
@@ -90,7 +86,6 @@ func setupTree(t *testing.T, g *broadcastGolden) (base, outside string) {
 		b, _ := hex.DecodeString(h)
 		mustWrite(t, filepath.Join(base, name), b)
 	}
-	mustWrite(t, filepath.Join(base, "bad_utf8.txt"), []byte("ok\xff"))
 	mustMkdir(t, filepath.Join(base, "dir.txt"))
 	t.Chdir(base)
 	return base, outside
@@ -123,16 +118,9 @@ func loadBroadcastGolden(t *testing.T) *broadcastGolden {
 	return &g
 }
 
-// pyErrClass restituisce la classe Python di err ("" se non è un *pycompat.Error).
-func pyErrClass(err error) string {
-	var pe *pycompat.Error
-	if errors.As(err, &pe) {
-		return pe.Class
-	}
-	return ""
-}
-
-// behaviourError produce l'errore gotgbot equivalente all'eccezione PTB del generatore.
+// behaviourError produce l'errore gotgbot equivalente all'eccezione PTB del
+// generatore; "valueerror" (eccezione non Telegram) diventa un errore
+// generico, che conta come invio fallito.
 func behaviourError(b string) error {
 	switch b {
 	case "retry":
@@ -148,7 +136,7 @@ func behaviourError(b string) error {
 	case "telegram":
 		return testutil.TelegramError("sendMessage", 409, "Generic error")
 	case "valueerror":
-		panic("ValueError: boom") // eccezione non Telegram
+		return errors.New("boom")
 	}
 	return nil
 }
@@ -179,44 +167,20 @@ func fixedClock(t *testing.T) {
 	t.Cleanup(func() { now = prev })
 }
 
-func onlyBroadcast(recs []apitest.Record) []apitest.Record {
-	var out []apitest.Record
-	for _, r := range recs {
-		if r[0] == "broadcast" {
-			out = append(out, r)
-		}
-	}
-	return out
-}
-
-func equalRecords(a, b []apitest.Record) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func TestGoldenBroadcast(t *testing.T) {
 	g := loadBroadcastGolden(t)
 	base, outside := setupTree(t, g)
 	expand := func(s string) string {
 		return strings.ReplaceAll(strings.ReplaceAll(s, "@BASE@", base), "@OUTSIDE@", outside)
 	}
-	logs := apitest.CaptureLogs(t)
-
 	for _, c := range g.Paths {
 		got, err := resolveSafePath(expand(c.In), "")
-		if c.Err == "" {
+		if c.Msg == "" {
 			if err != nil || got != expand(c.OK) {
 				t.Errorf("resolveSafePath(%q) = %q, %v; atteso %q", c.In, got, err, c.OK)
 			}
-		} else if pyErrClass(err) != c.Err || err.Error() != expand(c.Msg) {
-			t.Errorf("resolveSafePath(%q) errore %v; atteso %s %q", c.In, err, c.Err, c.Msg)
+		} else if err == nil || err.Error() != expand(c.Msg) {
+			t.Errorf("resolveSafePath(%q) errore %v; atteso %q", c.In, err, c.Msg)
 		}
 	}
 
@@ -228,9 +192,9 @@ func TestGoldenBroadcast(t *testing.T) {
 		} else {
 			got, err = LoadUsersFromFile(c.In, "")
 		}
-		if c.Err != "" {
-			if pyErrClass(err) != c.Err || err.Error() != expand(c.Msg) {
-				t.Errorf("%s(%q) errore %v (%s); atteso %s %q", c.Fn, c.In, err, pyErrClass(err), c.Err, c.Msg)
+		if c.Msg != "" {
+			if err == nil || err.Error() != expand(c.Msg) {
+				t.Errorf("%s(%q) errore %v; atteso %q", c.Fn, c.In, err, c.Msg)
 			}
 			continue
 		}
@@ -250,7 +214,6 @@ func TestGoldenBroadcast(t *testing.T) {
 			t.Errorf("ConfirmSend(%q) = %v, %v; atteso %v\nstdout %q\natteso %q", c.Answer, ok, err, c.OK, out.String(), c.Stdout)
 		}
 	}
-	logs.Take()
 
 	for _, c := range g.Runs {
 		fixedClock(t)
@@ -280,9 +243,6 @@ func TestGoldenBroadcast(t *testing.T) {
 				t.Errorf("%s: chiamata %d = %q; attesa %q", c.Name, i, got, c.Calls[i])
 			}
 		}
-		if got := onlyBroadcast(logs.Take()); !equalRecords(got, c.Logs) {
-			t.Errorf("%s: log\n%q\nattesi\n%q", c.Name, got, c.Logs)
-		}
 	}
 
 	for _, c := range g.Main {
@@ -305,13 +265,6 @@ func TestGoldenBroadcast(t *testing.T) {
 		}
 		if out.String() != c.Stdout {
 			t.Errorf("main %s: stdout\n%q\natteso\n%q", c.Name, out.String(), c.Stdout)
-		}
-		want := make([]apitest.Record, len(c.Logs))
-		for i, r := range c.Logs {
-			want[i] = apitest.Record{r[0], r[1], expand(r[2])}
-		}
-		if got := onlyBroadcast(logs.Take()); !equalRecords(got, want) {
-			t.Errorf("main %s: log\n%q\nattesi\n%q", c.Name, got, want)
 		}
 	}
 }

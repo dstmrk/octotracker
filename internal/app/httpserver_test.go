@@ -34,9 +34,9 @@ func do(h http.Handler, method, target string) *httptest.ResponseRecorder {
 	return w
 }
 
-// TestStaticFiles: /app/ restituisce index.html, CSS e JavaScript hanno il
-// Content-Type giusto anche con ?v=N, i file inesistenti danno 404 e i
-// metodi diversi da GET e HEAD 405.
+// TestStaticFiles: /app/ restituisce index.html (/app/index.html vi
+// rimanda), CSS e JavaScript hanno il Content-Type giusto anche con ?v=N,
+// i file inesistenti danno 404 e i metodi diversi da GET e HEAD 405.
 func TestStaticFiles(t *testing.T) {
 	h := newTestHTTP(t, testFS())
 	cases := []struct {
@@ -48,6 +48,7 @@ func TestStaticFiles(t *testing.T) {
 		{http.MethodHead, "/app/", 200, "text/html", ""},
 		{http.MethodGet, "/app/css/style.css?v=3", 200, "text/css", "body{}"},
 		{http.MethodGet, "/app/js/app.js?v=3", 200, "text/javascript", "console.log(1)"},
+		{http.MethodGet, "/app/index.html", http.StatusMovedPermanently, "", ""}, // → /app/
 		{http.MethodGet, "/app/js/manca.js", 404, "", ""},
 		{http.MethodPost, "/app/", 405, "", ""},
 	}

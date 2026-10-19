@@ -6,15 +6,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
-	"math/big"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/dstmrk/octotracker/internal/api/apitest"
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 )
 
 // testBotToken è il bot token di test (non reale).
@@ -37,7 +37,7 @@ func signParams(pairs [][2]string, botToken string) string {
 		keys = append(keys, p[0])
 		m[p[0]] = p[1]
 	}
-	sortStrings(keys)
+	sort.Strings(keys)
 	lines := make([]string, len(keys))
 	for i, k := range keys {
 		lines[i] = k + "=" + m[k]
@@ -52,14 +52,6 @@ func signParams(pairs [][2]string, botToken string) string {
 	}
 	parts = append(parts, "hash="+hex.EncodeToString(mac.Sum(nil)))
 	return strings.Join(parts, "&")
-}
-
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j] < s[j-1]; j-- {
-			s[j], s[j-1] = s[j-1], s[j]
-		}
-	}
 }
 
 // generateTestInitData genera initData valido (generate_test_init_data).
@@ -83,12 +75,14 @@ func generateTestInitData(o initDataOpts) string {
 	if o.authDate != nil {
 		authDate = *o.authDate
 	}
-	user := pycompat.MustDumps(pycompat.Object{
-		{Key: "id", Value: o.userID}, {Key: "first_name", Value: o.firstName}, {Key: "last_name", Value: o.lastName},
-		{Key: "username", Value: o.username}, {Key: "language_code", Value: "it"},
-	})
-	user = strings.ReplaceAll(strings.ReplaceAll(user, ", ", ","), ": ", ":") // separators=(",", ":")
-	return signParams([][2]string{{"auth_date", strconv.FormatInt(authDate, 10)}, {"user", user}}, o.botToken)
+	user, _ := json.Marshal(struct {
+		ID           int64  `json:"id"`
+		FirstName    string `json:"first_name"`
+		LastName     string `json:"last_name"`
+		Username     string `json:"username"`
+		LanguageCode string `json:"language_code"`
+	}{o.userID, o.firstName, o.lastName, o.username, "it"})
+	return signParams([][2]string{{"auth_date", strconv.FormatInt(authDate, 10)}, {"user", string(user)}}, o.botToken)
 }
 
 func userIDOf(t *testing.T, d InitData) any {
@@ -97,13 +91,13 @@ func userIDOf(t *testing.T, d InitData) any {
 	if !ok {
 		t.Fatalf("user non è un dict: %#v", d["user"])
 	}
-	id, _ := u.Get("id")
-	return id
+	return u["id"]
 }
 
-func bigEq(v any, n int64) bool {
-	b, ok := v.(*big.Int)
-	return ok && b.Cmp(big.NewInt(n)) == 0
+// numEq verifica che v sia il numero JSON n.
+func numEq(v any, n int64) bool {
+	f, ok := v.(float64)
+	return ok && f == float64(n)
 }
 
 // ========== TestParseInitData ==========
@@ -123,10 +117,7 @@ func TestParseExtractsUserJSON(t *testing.T) {
 	if !ok {
 		t.Fatalf("user non è un dict: %#v", result["user"])
 	}
-	id, _ := user.Get("id")
-	fn, _ := user.Get("first_name")
-	un, _ := user.Get("username")
-	if !bigEq(id, 999) || fn != "Test" || un != "testuser" {
+	if !numEq(user["id"], 999) || user["first_name"] != "Test" || user["username"] != "testuser" {
 		t.Errorf("user = %#v", user)
 	}
 }
@@ -161,18 +152,11 @@ func TestParseInitDataEdgeCases(t *testing.T) {
 	if r["user"] != "{x" || r["auth_date"] != "1" {
 		t.Errorf("JSON non valido: %#v", r)
 	}
-	// RecursionError: l'except esterno restituisce {}
-	deep := "user=" + url.QueryEscape(strings.Repeat("[", 10000)+strings.Repeat("]", 10000))
-	if r := ParseInitData(deep); len(r) != 0 {
-		t.Errorf("JSON troppo annidato: %d chiavi", len(r))
-	}
 	// user vuoto: nessun parsing; chiavi duplicate: vince il primo valore
 	if r := ParseInitData("user=&a=1&a=2"); r["user"] != "" || r["a"] != "1" {
 		t.Errorf("user vuoto/duplicati: %#v", r)
 	}
-	got := logs.Take()
-	if len(got) != 2 || got[0][2] != "Failed to parse user JSON in initData" ||
-		got[1][2] != "Failed to parse initData: maximum recursion depth exceeded while decoding a JSON array from a unicode string" {
+	if got := logs.Take(); len(got) != 1 || got[0] != (apitest.Record{"api.auth", "WARNING", "Failed to parse user JSON in initData"}) {
 		t.Errorf("log = %q", got)
 	}
 }
@@ -184,7 +168,7 @@ func TestVerifyValidSignature(t *testing.T) {
 	if result == nil {
 		t.Fatal("nil")
 	}
-	if !bigEq(userIDOf(t, result), 123456789) {
+	if !numEq(userIDOf(t, result), 123456789) {
 		t.Errorf("id = %v", userIDOf(t, result))
 	}
 	if _, ok := result["hash"]; ok {
@@ -226,26 +210,15 @@ func TestVerifyEmptyInitData(t *testing.T) {
 	}
 }
 
-// TestVerifyUnexpectedExceptionReturnsNone: in Python il caso usa un
-// bot_token non stringa (impossibile con i tipi Go); qui si esercita il
-// ramo "except Exception" raggiungibile: hash con caratteri non ASCII
-// (TypeError di hmac.compare_digest) e un JSON user troppo annidato
-// (RecursionError) con firma valida.
-func TestVerifyUnexpectedExceptionReturnsNone(t *testing.T) {
+// TestVerifyUnexpectedInputReturnsNone: in Python il caso usa un
+// bot_token non stringa (impossibile con i tipi Go); qui un hash con
+// caratteri non ASCII, che non può coincidere con quello atteso.
+func TestVerifyUnexpectedInputReturnsNone(t *testing.T) {
 	logs := apitest.CaptureLogs(t)
 	if result := VerifyTelegramAuth("auth_date=1&hash=%C3%A9", testBotToken); result != nil {
 		t.Errorf("hash non ASCII: %#v", result)
 	}
-	deep := signParams([][2]string{{"auth_date", "1"}, {"user", strings.Repeat("[", 10000) + strings.Repeat("]", 10000)}}, testBotToken)
-	if result := VerifyTelegramAuth(deep, testBotToken); result != nil {
-		t.Errorf("JSON annidato: %#v", result)
-	}
-	got := logs.Take()
-	want := []apitest.Record{
-		{"api.auth", "ERROR", "Error verifying Telegram auth: comparing strings with non-ASCII characters is not supported"},
-		{"api.auth", "ERROR", "Error verifying Telegram auth: maximum recursion depth exceeded while decoding a JSON array from a unicode string"},
-	}
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	if got := logs.Take(); len(got) != 1 || got[0] != (apitest.Record{"api.auth", "DEBUG", "Hash mismatch in initData verification"}) {
 		t.Errorf("log = %q", got)
 	}
 }
@@ -256,9 +229,7 @@ func TestVerifyReturnsParsedUser(t *testing.T) {
 		t.Fatal("nil")
 	}
 	user, _ := result.User()
-	fn, _ := user.Get("first_name")
-	ln, _ := user.Get("last_name")
-	if !bigEq(userIDOf(t, result), 42) || fn != "Alice" || ln != "Wonder" {
+	if !numEq(userIDOf(t, result), 42) || user["first_name"] != "Alice" || user["last_name"] != "Wonder" {
 		t.Errorf("user = %#v", user)
 	}
 }
@@ -339,7 +310,7 @@ func TestValidateExtractsUserID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bigEq(userIDOf(t, result), 987654321) || result.UserID() != "987654321" {
+	if !numEq(userIDOf(t, result), 987654321) || result.UserID() != "987654321" {
 		t.Errorf("id = %v / %q", userIDOf(t, result), result.UserID())
 	}
 }
@@ -361,12 +332,11 @@ func TestValidateMessages(t *testing.T) {
 	}{
 		{"expired", "1759913599", `{"id":1}`, "Authentication expired (auth_date: 1759913599, age: 86401s, max: 86400s)"},
 		{"limite", "1759913600", `{"id":1}`, ""},
-		{"futuro", "99999999999999999999999", `{"id":1}`, ""},
+		{"futuro", "99999999999", `{"id":1}`, ""},
 		{"auth_date assente", "\x00", `{"id":1}`, "Authentication expired (auth_date: 0, age: 1760000000s, max: 86400s)"},
-		{"auth_date non numerico", "abc", `{"id":1}`, "Invalid auth_date format: invalid literal for int() with base 10: 'abc'"},
-		{"auth_date unicode", "١٧٦٠٠٠٠٠٠٠", `{"id":1}`, ""},
-		{"auth_date enorme", "-" + strings.Repeat("9", 4300), `{"id":1}`,
-			"Invalid auth_date format: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit"},
+		{"auth_date non numerico", "abc", `{"id":1}`, `Invalid auth_date format: strconv.ParseInt: parsing "abc": invalid syntax`},
+		{"auth_date enorme", "-" + strings.Repeat("9", 30), `{"id":1}`,
+			`Invalid auth_date format: strconv.ParseInt: parsing "-` + strings.Repeat("9", 30) + `": value out of range`},
 		{"user assente", "1760000000", "\x00", "Missing user data in authentication"},
 		{"user vuoto", "1760000000", "", "Missing user data in authentication"},
 		{"user dict vuoto", "1760000000", "{}", "Missing user data in authentication"},
@@ -387,20 +357,28 @@ func TestValidateMessages(t *testing.T) {
 	}
 }
 
+// TestValidateMinAuthDate: auth_date minimo di int64 è scaduto (nessun
+// overflow nel confronto con l'età massima).
+func TestValidateMinAuthDate(t *testing.T) {
+	setNow(t, 1760000000)
+	initData := signParams([][2]string{{"auth_date", "-9223372036854775808"}, {"user", `{"id":1}`}}, testBotToken)
+	_, err := ValidateInitData(initData, testBotToken, DefaultMaxAgeSeconds)
+	if err == nil || !strings.HasPrefix(err.Error(), "Authentication expired (auth_date: -9223372036854775808,") {
+		t.Errorf("errore = %v", err)
+	}
+}
+
 func TestUserIDStr(t *testing.T) {
 	tests := map[string]string{
-		`{"id":123}`:           "123",
-		`{"id":"abc"}`:         "abc",
-		`{"id":1.0}`:           "1.0",
-		`{"id":1e16}`:          "1e+16",
-		`{"id":true}`:          "True",
-		`{"id":null}`:          "None",
-		`{"id":[1,"a"]}`:       "[1, 'a']",
-		`{"id":{"b":2,"a":1}}`: "{'b': 2, 'a': 1}",
+		`{"id":123}`:              "123",
+		`{"id":8123456789012345}`: "8123456789012345",
+		`{"id":"abc"}`:            "abc",
+		`{"id":1.5}`:              "1.5",
+		`{"id":true}`:             "true",
 	}
 	for user, want := range tests {
-		v, err := pycompat.Loads(user)
-		if err != nil {
+		var v any
+		if err := json.Unmarshal([]byte(user), &v); err != nil {
 			t.Fatal(err)
 		}
 		if got := (InitData{"user": v}).UserID(); got != want {

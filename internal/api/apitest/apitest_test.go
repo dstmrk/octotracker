@@ -4,62 +4,48 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
-func TestDoParseAndDiff(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-B", "2")
+func TestDiffAndCheck(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-A", "1")
 		w.WriteHeader(201)
-		fmt.Fprint(w, `{"e": "Must be one of: {'luce', 'gas'}"}`)
-	}))
-	defer srv.Close()
-	raw := []byte("GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
-	got := Do(t, strings.TrimPrefix(srv.URL, "http://"), raw)
-	if got.Status != 201 || string(got.Body) != `{"e": "Must be one of: {'luce', 'gas'}"}` {
-		t.Fatalf("risposta = %+v", got)
-	}
-	for _, h := range got.Headers {
-		if h[0] == "Date" || h[0] == "Server" {
-			t.Errorf("header non filtrato %v", h)
-		}
-	}
+		fmt.Fprintf(w, `{"e":"Must be one of: {'gas', 'luce'}","q":%q}`, r.URL.Query().Get("q"))
+	})
+	raw := hex.EncodeToString([]byte("GET /x?q=v HTTP/1.1\r\nHost: x\r\n\r\n"))
 	c := Case{
 		Name:    "x",
-		RawHex:  hex.EncodeToString(raw),
+		RawHex:  raw,
 		Status:  201,
-		Headers: got.Headers,
-		BodyHex: hex.EncodeToString([]byte(`{"e": "Must be one of: {'gas', 'luce'}"}`)),
-		Logs:    []Record{{"tornado.access", "INFO", "201 GET / (127.0.0.1) 9.99ms"}},
+		Headers: [][2]string{{"X-A", "1"}},
+		// formato e ordine dei set diversi: stesso JSON dopo la normalizzazione
+		BodyHex: hex.EncodeToString([]byte(`{"q": "v", "e": "Must be one of: {'luce', 'gas'}"}`)),
 	}
-	if string(c.Raw()) != string(raw) {
-		t.Error("Raw")
-	}
-	got.Body = []byte(NormalizeSets(string(got.Body)))
-	logs := []Record{{"tornado.access", "INFO", "201 GET / (127.0.0.1) 0.01ms"}}
-	if d := Diff(c, got, logs); len(d) != 0 {
+	if d := Diff(h, c); len(d) != 0 {
 		t.Errorf("differenze inattese: %v", d)
 	}
-	Check(t, c, got, logs)
-	bad := got
-	bad.Status = 500
-	bad.Body = []byte("x")
-	bad.Headers = nil
-	if d := Diff(c, bad, nil); len(d) != 4 {
+	Check(t, h, c)
+
+	bad := c
+	bad.Status = 200
+	bad.Headers = [][2]string{{"X-A", "2"}}
+	bad.BodyHex = hex.EncodeToString([]byte(`{"q": "w"}`))
+	if d := Diff(h, bad); len(d) != 3 {
 		t.Errorf("differenze = %v", d)
 	}
-	bare := Case{Name: "bare", Status: 400}
-	if d := Diff(bare, Response{Status: 400, Headers: [][2]string{{"Content-Length", "0"}}}, nil); len(d) != 0 {
-		t.Errorf("400 grezzo: %v", d)
+	noBody := c
+	noBody.BodyHex = ""
+	if d := Diff(h, noBody); len(d) != 0 {
+		t.Errorf("corpo vuoto controllato: %v", d)
 	}
-	if d := Diff(c, got, []Record{{"a", "INFO", "b"}}); len(d) != 1 {
-		t.Errorf("log diversi: %v", d)
+	for _, broken := range []Case{{Name: "hex", RawHex: "zz"}, {Name: "req", RawHex: hex.EncodeToString([]byte("x"))}, {Name: "body", RawHex: raw, Status: 201, BodyHex: "zz"}} {
+		if d := Diff(h, broken); len(d) != 1 {
+			t.Errorf("%s: differenze = %v", broken.Name, d)
+		}
 	}
 }
 

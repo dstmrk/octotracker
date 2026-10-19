@@ -39,15 +39,6 @@ func secondsDuration(s float64) time.Duration {
 	return time.Duration(s * float64(time.Second))
 }
 
-// dailyTaskSpec descrive uno dei tre task giornalieri.
-type dailyTaskSpec struct {
-	label     string // "scraper", "checker", "reminder"
-	schedLog  string // formato del log iniziale: %d ora, %.1f ore
-	hour      int
-	runOnce   func(ctx context.Context)
-	firstWait float64
-}
-
 // Scheduler esegue ogni giorno, in ora locale, lo scraper (SCRAPER_HOUR),
 // il checker (CHECKER_HOUR) e il reminder (REMINDER_HOUR).
 type Scheduler struct {
@@ -68,10 +59,6 @@ type Scheduler struct {
 	Now func() time.Time
 	// Sleep è l'attesa tra le esecuzioni; nil = attesa interrompibile da ctx.
 	Sleep func(ctx context.Context, d time.Duration) error
-
-	// Sostituti di RunScraper/RunChecker/RunReminder per i test (nil =
-	// implementazione reale).
-	runScraperFn, runCheckerFn, runReminderFn func(ctx context.Context)
 }
 
 // NewScheduler crea lo scheduler con le operazioni reali: lo scraper salva
@@ -171,93 +158,63 @@ func (s *Scheduler) runLogged(ctx context.Context, run func(context.Context) err
 
 // ========== TASK GIORNALIERI ==========
 
-// newSpec crea la descrizione di un task giornaliero; run è il sostituto per
-// i test (nil = def).
-func newSpec(label, schedLog string, hour int, run, def func(context.Context)) *dailyTaskSpec {
-	if run == nil {
-		run = def
+// dailyTask descrive uno dei tre task giornalieri.
+type dailyTask struct {
+	key, name string // chiave nel registro di /health e nome nei log
+	label     string // "scraper", "checker", "reminder"
+	schedLog  string // formato del log iniziale: %d ora, %.1f ore
+	hour      int
+	run       func(ctx context.Context)
+}
+
+// dailyTasks restituisce scraper, checker e reminder, nell'ordine di avvio.
+func (s *Scheduler) dailyTasks() []dailyTask {
+	return []dailyTask{
+		{KeyScraperTask, TaskScraperDaily, "scraper", "🕷️  Scraper schedulato per le %d:00 (tra %.1f ore)", s.ScraperHour, s.RunScraper},
+		{KeyCheckerTask, TaskCheckerDaily, "checker", "🔍 Checker schedulato per le %d:00 (tra %.1f ore)", s.CheckerHour, s.RunChecker},
+		{KeyReminderTask, TaskReminderDaily, "reminder", "📅 Reminder schedulato per le %d:00 (tra %.1f ore)", s.ReminderHour, s.RunReminder},
 	}
-	return &dailyTaskSpec{label: label, schedLog: schedLog, hour: hour, runOnce: run}
 }
 
-func (s *Scheduler) scraperSpec() *dailyTaskSpec {
-	return newSpec("scraper", "🕷️  Scraper schedulato per le %d:00 (tra %.1f ore)", s.ScraperHour, s.runScraperFn, s.RunScraper)
-}
-
-func (s *Scheduler) checkerSpec() *dailyTaskSpec {
-	return newSpec("checker", "🔍 Checker schedulato per le %d:00 (tra %.1f ore)", s.CheckerHour, s.runCheckerFn, s.RunChecker)
-}
-
-func (s *Scheduler) reminderSpec() *dailyTaskSpec {
-	return newSpec("reminder", "📅 Reminder schedulato per le %d:00 (tra %.1f ore)", s.ReminderHour, s.runReminderFn, s.RunReminder)
-}
-
-// start calcola l'attesa iniziale del task e logga l'orario schedulato.
-func (s *Scheduler) start(spec *dailyTaskSpec) error {
-	secondsUntilRun, err := CalculateSecondsUntilNextRun(s.now(), spec.hour)
+// start logga l'orario schedulato del task e restituisce l'attesa fino alla
+// prima esecuzione (errore per un'ora non valida).
+func (s *Scheduler) start(task dailyTask) (time.Duration, error) {
+	seconds, err := CalculateSecondsUntilNextRun(s.now(), task.hour)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	spec.firstWait = secondsUntilRun
-	logger.Info(fmt.Sprintf(spec.schedLog, spec.hour, secondsUntilRun/3600))
-	return nil
+	logger.Info(fmt.Sprintf(task.schedLog, task.hour, seconds/3600))
+	return secondsDuration(seconds), nil
 }
 
-// loop attende la prima esecuzione, poi esegue il task e ricalcola l'attesa
-// (previene il drift temporale), per sempre. Termina con ctx.Err() quando
-// ctx viene cancellato.
-func (s *Scheduler) loop(ctx context.Context, spec *dailyTaskSpec) error {
-	if err := s.sleep(ctx, secondsDuration(spec.firstWait)); err != nil {
-		return err
-	}
+// loop attende wait, poi esegue il task e ricalcola l'attesa (previene il
+// drift temporale), per sempre. Termina con ctx.Err() quando ctx viene
+// cancellato.
+func (s *Scheduler) loop(ctx context.Context, task dailyTask, wait time.Duration) error {
 	for {
-		s.runGuarded(ctx, spec)
+		if err := s.sleep(ctx, wait); err != nil {
+			return err
+		}
+		s.runGuarded(ctx, task)
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-
-		secondsUntilNext, err := CalculateSecondsUntilNextRun(s.now(), spec.hour)
+		seconds, err := CalculateSecondsUntilNextRun(s.now(), task.hour)
 		if err != nil {
 			return err
 		}
-		logger.Info(fmt.Sprintf("⏰ Prossimo %s tra %.1f ore (alle %d:00)", spec.label, secondsUntilNext/3600, spec.hour))
-		if err := s.sleep(ctx, secondsDuration(secondsUntilNext)); err != nil {
-			return err
-		}
+		logger.Info(fmt.Sprintf("⏰ Prossimo %s tra %.1f ore (alle %d:00)", task.label, seconds/3600, task.hour))
+		wait = secondsDuration(seconds)
 	}
 }
 
 // runGuarded esegue un'iterazione del task: un panic viene loggato e il
 // loop continua.
-func (s *Scheduler) runGuarded(ctx context.Context, spec *dailyTaskSpec) {
+func (s *Scheduler) runGuarded(ctx context.Context, task dailyTask) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error(fmt.Sprintf("❌ Errore non gestito nel task %s: %v", spec.label, r))
+			logger.Error(fmt.Sprintf("❌ Errore non gestito nel task %s: %v", task.label, r))
 		}
 	}()
-	spec.runOnce(ctx)
-}
-
-// dailyTask esegue un task giornaliero completo (start + loop).
-func (s *Scheduler) dailyTask(ctx context.Context, spec *dailyTaskSpec) error {
-	if err := s.start(spec); err != nil {
-		return err
-	}
-	return s.loop(ctx, spec)
-}
-
-// ScraperDailyTask esegue lo scraper ogni giorno alle ScraperHour:00.
-// Termina solo per cancellazione di ctx (o per un'ora non valida).
-func (s *Scheduler) ScraperDailyTask(ctx context.Context) error {
-	return s.dailyTask(ctx, s.scraperSpec())
-}
-
-// CheckerDailyTask esegue il checker ogni giorno alle CheckerHour:00.
-func (s *Scheduler) CheckerDailyTask(ctx context.Context) error {
-	return s.dailyTask(ctx, s.checkerSpec())
-}
-
-// ReminderDailyTask esegue il reminder ogni giorno alle ReminderHour:00.
-func (s *Scheduler) ReminderDailyTask(ctx context.Context) error {
-	return s.dailyTask(ctx, s.reminderSpec())
+	task.run(ctx)
 }

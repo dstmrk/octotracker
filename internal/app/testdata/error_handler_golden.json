@@ -10,6 +10,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was blocked by the user\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -31,6 +32,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: bot was kicked from the group chat\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -116,6 +118,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Unauthorized\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -137,6 +140,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> InvalidToken\n<b>Messaggio:</b> Not Found\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -158,6 +162,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Conflict\n<b>Messaggio:</b> Conflict: terminated by other getUpdates request; make sure that only one bot instance is running\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -219,6 +224,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ChatMigrated\n<b>Messaggio:</b> Group migrated to supergroup. New chat id: -1001234567890\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -288,6 +294,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden (403)\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -309,6 +316,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -330,6 +338,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: <b>tag</b> & co\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -364,6 +373,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> AttributeError\n<b>Messaggio:</b> 'NoneType' object has no attribute 'reply_text'\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -384,6 +394,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> TypeError\n<b>Messaggio:</b> Cannot edit an inaccessible message\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -404,6 +415,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> cannot convert float NaN to integer\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -424,6 +436,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> OverflowError\n<b>Messaggio:</b> cannot convert float infinity to integer\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -444,6 +457,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> KeyError\n<b>Messaggio:</b> 'commercializzazione'\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -464,6 +478,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -484,6 +499,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> ValueError\n<b>Messaggio:</b> Errore lungo 🐙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -504,6 +520,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> \n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -527,6 +544,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -548,6 +566,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
@@ -569,6 +588,7 @@
    "sent": [
     {
      "chat_id": "999",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> RuntimeError\n<b>Messaggio:</b> errore inatteso non gestito\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],

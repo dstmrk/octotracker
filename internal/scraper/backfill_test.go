@@ -26,8 +26,7 @@ func urlFor(d time.Time, service string) string { return (&Client{}).buildAreraU
 func routesEveryDay(days int, service, body string) map[string]route {
 	routes := map[string]route{}
 	for d := 0; d <= days; d++ {
-		day, _ := subDays(frozenNow, d)
-		routes[urlFor(day, service)] = bodyRoute(body)
+		routes[urlFor(frozenNow.AddDate(0, 0, -d), service)] = bodyRoute(body)
 	}
 	return routes
 }
@@ -114,7 +113,7 @@ func TestBackfillDryRun(t *testing.T) {
 
 // Tariffe già presenti non vengono risalvate
 func TestBackfillSkipsExistingKeys(t *testing.T) {
-	today := formatDate(frozenNow, "-")
+	today := formatDate(frozenNow)
 	client, _ := fakeClient(routesEveryDay(0, "E", mockRatesXML), frozenNow)
 	// La chiave (data, servizio, tipo, fascia) è già nel DB
 	store := &fakeStore{t: t, existing: map[database.RateKey]struct{}{
@@ -132,7 +131,7 @@ func TestBackfillSkipsExistingKeys(t *testing.T) {
 
 func TestBackfillSavesNewRates(t *testing.T) {
 	client, _ := fakeClient(routesEveryDay(0, "E", mockRatesXML), frozenNow)
-	store := &fakeStore{t: t, returns: []any{1}}
+	store := &fakeStore{t: t, returns: []int{1}}
 
 	if err := Backfill(context.Background(), store, backfillOpts(client, 0, false, 0)); err != nil {
 		t.Fatal(err)
@@ -157,25 +156,24 @@ func TestBackfillHandlesEmptyDays(t *testing.T) {
 	}
 }
 
-// Gestione errore durante salvataggio
+// Un errore del database (-1) non interrompe il backfill
 func TestBackfillHandlesSaveError(t *testing.T) {
-	client, _ := fakeClient(routesEveryDay(0, "E", mockRatesXML), frozenNow)
-	store := &fakeStore{t: t, returns: []any{"raise"}}
+	client, _ := fakeClient(routesEveryDay(1, "E", mockRatesXML), frozenNow)
+	store := &fakeStore{t: t, returns: []int{-1, 1}}
 	logs := captureLogs(t)
 
-	// Non deve sollevare eccezione
-	if err := Backfill(context.Background(), store, backfillOpts(client, 0, false, 0)); err != nil {
+	if err := Backfill(context.Background(), store, backfillOpts(client, 1, false, 0)); err != nil {
 		t.Fatal(err)
 	}
-	if !logs.has("ERROR", "   2026-01-03: errore salvataggio: DB error") || !logs.has("INFO", "   Errori: 1") {
-		t.Errorf("log = %v", logs.all())
+	if len(store.calls) != 2 || !logs.has("INFO", "   2026-01-02: -1 tariffe salvate") || !logs.has("INFO", "   Tariffe inserite: 0") {
+		t.Errorf("calls = %d, log = %v", len(store.calls), logs.all())
 	}
 }
 
 // Il delay viene rispettato
 func TestBackfillRespectsDelay(t *testing.T) {
 	client, _ := fakeClient(routesEveryDay(1, "E", mockRatesXML), frozenNow)
-	store := &fakeStore{t: t, returns: []any{1, 1}}
+	store := &fakeStore{t: t, returns: []int{1, 1}}
 	var sleeps []time.Duration
 	opts := backfillOpts(client, 1, false, 0.5)
 	opts.Sleep = func(_ context.Context, d time.Duration) error {

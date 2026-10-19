@@ -1,9 +1,8 @@
 package broadcast
 
-// Port di tests/test_broadcast.py (44 casi). I mock di Python (Bot,
-// confirm_send, input, asyncio.run) sono sostituiti da testutil.FakeClient,
-// da stdin/stdout iniettati e da casi reali che producono le stesse
-// eccezioni.
+// Port di tests/test_broadcast.py. I mock di Python (Bot, confirm_send,
+// input, asyncio.run) sono sostituiti da testutil.FakeClient, da
+// stdin/stdout iniettati e da casi reali che producono gli stessi errori.
 
 import (
 	"bytes"
@@ -11,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +22,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 
 	"github.com/dstmrk/octotracker/internal/api/apitest"
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
 
@@ -75,11 +74,24 @@ func tmpCwd(t *testing.T) string {
 	return dir
 }
 
-func wantPyError(t *testing.T, err error, class, contains string) {
+// wantInputError verifica che err sia un errore sui file di input con
+// contains nel messaggio.
+func wantInputError(t *testing.T, err error, contains string) {
 	t.Helper()
-	if !pycompat.IsInstance(err, class) || !strings.Contains(err.Error(), contains) {
-		t.Errorf("errore %v (%s); atteso %s con %q", err, pyErrClass(err), class, contains)
+	var ie inputError
+	if !errors.As(err, &ie) || !strings.Contains(err.Error(), contains) {
+		t.Errorf("errore %v; atteso inputError con %q", err, contains)
 	}
+}
+
+func onlyBroadcast(recs []apitest.Record) []apitest.Record {
+	var out []apitest.Record
+	for _, r := range recs {
+		if r[0] == "broadcast" {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // ========== send_broadcast_message ==========
@@ -103,14 +115,14 @@ func TestSendBroadcastMessageErrors(t *testing.T) {
 		log  apitest.Record
 	}{
 		{"retry_after", retryAfter(), apitest.Record{"broadcast", "WARNING", "⏱️  Rate limit per utente 123456: riprova dopo 30s"}},
-		{"timeout", fmt.Errorf("x: %w", context.DeadlineExceeded), apitest.Record{"broadcast", "ERROR", "❌ Errore di rete per utente 123456: Timed out"}},
+		{"timeout", fmt.Errorf("x: %w", context.DeadlineExceeded), apitest.Record{"broadcast", "ERROR", "❌ Errore di rete per utente 123456: x: context deadline exceeded"}},
 		{"network_error", errors.New("Network error"), apitest.Record{"broadcast", "ERROR", "❌ Errore di rete per utente 123456: Network error"}},
 		{"telegram_error", testutil.TelegramError("sendMessage", 409, "Generic error"), apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Generic error"}},
-		{"bad_request", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"), apitest.Record{"broadcast", "ERROR", "❌ Errore di rete per utente 123456: Chat not found"}},
+		{"bad_request", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"), apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Bad Request: chat not found"}},
 		{"forbidden", testutil.TelegramError("sendMessage", 403, "Forbidden: bot was blocked by the user"), apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Forbidden: bot was blocked by the user"}},
-		{"server_error", testutil.TelegramError("sendMessage", 500, "Internal Server Error"), apitest.Record{"broadcast", "ERROR", "❌ Errore di rete per utente 123456: Internal Server Error"}},
+		{"server_error", testutil.TelegramError("sendMessage", 500, "Internal Server Error"), apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Internal Server Error"}},
 		{"migrated", &gotgbot.TelegramError{Code: 400, Description: "Bad Request: group chat was upgraded", ResponseParams: &gotgbot.ResponseParameters{MigrateToChatId: -100}},
-			apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Group migrated to supergroup. New chat id: -100"}},
+			apitest.Record{"broadcast", "ERROR", "❌ Errore Telegram per utente 123456: Bad Request: group chat was upgraded"}},
 	}
 	for _, tt := range tests {
 		b, fc := alwaysFail(t, tt.err)
@@ -223,23 +235,19 @@ func TestSendBroadcastsParallelCustomBatchSize(t *testing.T) {
 	}
 }
 
-func TestSendBroadcastsParallelSemaphoreEdgeCases(t *testing.T) {
+func TestSendBroadcastsParallelBatchSizeEdgeCases(t *testing.T) {
 	b, fc := testutil.NewBot(t)
-	if _, _, err := SendBroadcastsParallel(context.Background(), b, []string{"1"}, "x", -1); !pycompat.IsInstance(err, "ValueError") ||
-		err.Error() != "Semaphore initial value must be >= 0" {
-		t.Errorf("batch negativo: %v", err)
+	for _, batch := range []int{-1, 0} {
+		if _, _, err := SendBroadcastsParallel(context.Background(), b, []string{"1"}, "x", batch); err == nil ||
+			err.Error() != fmt.Sprintf("batch size non valido: %d (minimo 1)", batch) {
+			t.Errorf("batch %d: %v", batch, err)
+		}
+	}
+	if n := len(fc.CallsTo("sendMessage")); n != 0 {
+		t.Errorf("batch non valido: %d invii", n)
 	}
 	if ok, failed, err := SendBroadcastsParallel(context.Background(), b, nil, "x", 3); ok != 0 || failed != 0 || err != nil {
 		t.Errorf("lista vuota: %d %d %v", ok, failed, err)
-	}
-	// Semaphore(0): nessun invio parte finché il contesto non viene cancellato
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-	defer cancel()
-	if _, _, err := SendBroadcastsParallel(ctx, b, []string{"1"}, "x", 0); !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("batch 0: %v", err)
-	}
-	if n := len(fc.CallsTo("sendMessage")); n != 0 {
-		t.Errorf("batch 0: %d invii", n)
 	}
 }
 
@@ -273,26 +281,6 @@ func TestSendBroadcastsParallelCancellation(t *testing.T) {
 	}
 }
 
-func TestSendBroadcastsParallelPanicCountsAsFailure(t *testing.T) {
-	logs := apitest.CaptureLogs(t)
-	b, fc := testutil.NewBot(t)
-	fc.SetResponder(func(_ string, p map[string]any) (json.RawMessage, error) {
-		if p["chat_id"] == int64(2) {
-			panic("ValueError: boom")
-		}
-		return nil, nil
-	})
-	ok, failed, err := SendBroadcastsParallel(context.Background(), b, []string{"1", "2"}, "x", 1)
-	if err != nil || ok != 1 || failed != 1 {
-		t.Errorf("risultato %d/%d %v", ok, failed, err)
-	}
-	for _, r := range logs.Take() {
-		if strings.Contains(r[2], "#2") {
-			t.Errorf("log per l'eccezione non Telegram: %q", r)
-		}
-	}
-}
-
 // ========== load_message ==========
 
 func TestLoadMessageSuccess(t *testing.T) {
@@ -306,20 +294,20 @@ func TestLoadMessageSuccess(t *testing.T) {
 func TestLoadMessageFileNotFound(t *testing.T) {
 	tmpCwd(t)
 	_, err := LoadMessage("nonexistent/file.txt", "")
-	wantPyError(t, err, "FileNotFoundError", "File messaggio non trovato: nonexistent/file.txt")
+	wantInputError(t, err, "File messaggio non trovato: nonexistent/file.txt")
 }
 
 func TestLoadMessagePathTraversal(t *testing.T) {
 	tmpCwd(t)
 	_, err := LoadMessage("/etc/passwd", "")
-	wantPyError(t, err, "ValueError", "non consentito")
+	wantInputError(t, err, "non consentito")
 }
 
 func TestLoadMessageEmptyFile(t *testing.T) {
 	dir := tmpCwd(t)
 	p := writeFile(t, dir, "empty.txt", "   \n  \t  ")
 	_, err := LoadMessage(p, "")
-	wantPyError(t, err, "ValueError", "Il file messaggio è vuoto")
+	wantInputError(t, err, "Il file messaggio è vuoto")
 }
 
 func TestLoadMessageWithWhitespace(t *testing.T) {
@@ -337,9 +325,8 @@ func TestLoadMessageBaseDir(t *testing.T) {
 	if got, err := LoadMessage("m.txt", other); err != nil || got != "altrove" {
 		t.Errorf("LoadMessage con BaseDir = %q, %v", got, err)
 	}
-	if _, err := LoadMessage(filepath.Join(dir, "x"), other); !pycompat.IsInstance(err, "ValueError") {
-		t.Errorf("fuori da BaseDir: %v", err)
-	}
+	_, err := LoadMessage(filepath.Join(dir, "x"), other)
+	wantInputError(t, err, "fuori dalla directory di lavoro")
 	if got, err := resolveSafePath("etc/passwd", "/"); err != nil || got != "/etc/passwd" {
 		t.Errorf("BaseDir /: %q %v", got, err)
 	}
@@ -374,14 +361,14 @@ func TestLoadUsersFromFileWithEmptyLines(t *testing.T) {
 func TestLoadUsersFromFileNotFound(t *testing.T) {
 	tmpCwd(t)
 	_, err := LoadUsersFromFile("nonexistent/users.txt", "")
-	wantPyError(t, err, "FileNotFoundError", "File utenti non trovato")
+	wantInputError(t, err, "File utenti non trovato")
 }
 
 func TestLoadUsersFromFileEmpty(t *testing.T) {
 	dir := tmpCwd(t)
 	p := writeFile(t, dir, "empty.txt", "   \n# solo commenti\n  ")
 	_, err := LoadUsersFromFile(p, "")
-	wantPyError(t, err, "ValueError", "non contiene user_id validi")
+	wantInputError(t, err, "non contiene user_id validi")
 }
 
 // ========== confirm_send ==========
@@ -439,8 +426,8 @@ func TestConfirmSendInputEdgeCases(t *testing.T) {
 	if ok, err := ConfirmSend(context.Background(), "m", 1, 1, strings.NewReader("Y\r\n"), &bytes.Buffer{}); err != nil || !ok {
 		t.Errorf("CRLF: %v %v", ok, err)
 	}
-	// EOF senza caratteri: EOFError
-	if _, err := ConfirmSend(context.Background(), "m", 1, 1, strings.NewReader(""), &bytes.Buffer{}); !pycompat.IsInstance(err, "EOFError") {
+	// EOF senza caratteri
+	if _, err := ConfirmSend(context.Background(), "m", 1, 1, strings.NewReader(""), &bytes.Buffer{}); !errors.Is(err, io.EOF) {
 		t.Errorf("EOF: %v", err)
 	}
 	// errore di lettura
@@ -486,7 +473,7 @@ func TestBroadcastToUsersNoUsers(t *testing.T) {
 	u := writeFile(t, dir, "users.txt", "# solo commenti")
 	b, _ := testutil.NewBot(t)
 	_, err := Run(context.Background(), b, runOpts(m, u, "S", DefaultBatchSize))
-	wantPyError(t, err, "ValueError", "non contiene user_id validi")
+	wantInputError(t, err, "non contiene user_id validi")
 }
 
 func TestBroadcastToUsersCancelled(t *testing.T) {
@@ -519,14 +506,14 @@ func TestBroadcastToUsersFileNotFound(t *testing.T) {
 	tmpCwd(t)
 	b, _ := testutil.NewBot(t)
 	_, err := Run(context.Background(), b, runOpts("nonexistent.txt", "users.txt", "S", DefaultBatchSize))
-	wantPyError(t, err, "FileNotFoundError", "nonexistent.txt")
+	wantInputError(t, err, "nonexistent.txt")
 }
 
 func TestBroadcastToUsersPathTraversal(t *testing.T) {
 	tmpCwd(t)
 	b, _ := testutil.NewBot(t)
 	_, err := Run(context.Background(), b, runOpts("/etc/passwd", "users.txt", "S", DefaultBatchSize))
-	wantPyError(t, err, "ValueError", "non consentito")
+	wantInputError(t, err, "non consentito")
 }
 
 func TestBroadcastToUsersUsersFileNotFound(t *testing.T) {
@@ -534,7 +521,7 @@ func TestBroadcastToUsersUsersFileNotFound(t *testing.T) {
 	m := writeFile(t, dir, "message.txt", "Test message")
 	b, _ := testutil.NewBot(t)
 	_, err := Run(context.Background(), b, runOpts(m, "nonexistent.txt", "S", DefaultBatchSize))
-	wantPyError(t, err, "FileNotFoundError", "File utenti non trovato")
+	wantInputError(t, err, "File utenti non trovato")
 }
 
 func TestBroadcastToUsersEmptyMessage(t *testing.T) {
@@ -542,7 +529,7 @@ func TestBroadcastToUsersEmptyMessage(t *testing.T) {
 	m := writeFile(t, dir, "empty.txt", "   ")
 	b, _ := testutil.NewBot(t)
 	_, err := Run(context.Background(), b, runOpts(m, "users.txt", "S", DefaultBatchSize))
-	wantPyError(t, err, "ValueError", "Il file messaggio è vuoto")
+	wantInputError(t, err, "Il file messaggio è vuoto")
 }
 
 func TestBroadcastToUsersCustomBatchSize(t *testing.T) {
@@ -568,12 +555,12 @@ func TestBroadcastToUsersErrors(t *testing.T) {
 	b, _ := testutil.NewBot(t)
 	opts := runOpts(m, u, "", DefaultBatchSize)
 	opts.Stdin = strings.NewReader("")
-	if _, err := Run(context.Background(), b, opts); !pycompat.IsInstance(err, "EOFError") {
+	if _, err := Run(context.Background(), b, opts); !errors.Is(err, io.EOF) {
 		t.Errorf("EOF: %v", err)
 	}
 	// batch negativo dopo la conferma
-	if _, err := Run(context.Background(), b, runOpts(m, u, "S", -1)); !pycompat.IsInstance(err, "ValueError") {
-		t.Errorf("batch negativo: %v", err)
+	if _, err := Run(context.Background(), b, runOpts(m, u, "S", -1)); err == nil {
+		t.Error("batch negativo accettato")
 	}
 	// errore nella creazione del bot (dopo la conferma)
 	_, err := broadcastToUsers(context.Background(), func() (*gotgbot.Bot, error) { return nil, errors.New("no bot") }, runOpts(m, u, "S", 1))
@@ -581,9 +568,8 @@ func TestBroadcastToUsersErrors(t *testing.T) {
 		t.Errorf("newBot: %v", err)
 	}
 	// stdin/stdout di default (os.Stdin/os.Stdout) senza conferma possibile
-	if _, err := broadcastToUsers(context.Background(), nil, Options{MessageFile: "nonexistent.txt"}); !pycompat.IsInstance(err, "FileNotFoundError") {
-		t.Errorf("default stdin: %v", err)
-	}
+	_, err = broadcastToUsers(context.Background(), nil, Options{MessageFile: "nonexistent.txt"})
+	wantInputError(t, err, "File messaggio non trovato")
 }
 
 // ========== main ==========
@@ -683,7 +669,7 @@ func TestMainGenericException(t *testing.T) {
 	if code := Main(context.Background(), cfg); code != 1 {
 		t.Errorf("codice %d", code)
 	}
-	want := "❌ Errore durante l'invio broadcast: [Errno 21] Is a directory: " + pycompat.StrRepr(filepath.Join(dir, "message.txt"))
+	want := "❌ Errore durante l'invio broadcast: read " + filepath.Join(dir, "message.txt") + ": is a directory"
 	if got := onlyBroadcast(logs.Take()); len(got) != 1 || got[0][2] != want {
 		t.Errorf("log %q", got)
 	}
@@ -739,7 +725,37 @@ func TestMainDefaultNewBot(t *testing.T) {
 	if code := Main(context.Background(), cfg); code != 0 {
 		t.Errorf("codice %d", code)
 	}
-	if opts := DefaultOptions(); opts.MessageFile != "message.txt" || opts.UsersFile != "users.txt" || opts.BatchSize != 10 {
-		t.Errorf("DefaultOptions = %+v", opts)
+}
+
+func TestResolveSafePathEdgeCases(t *testing.T) {
+	dir := tmpCwd(t)
+	writeFile(t, dir, "file.txt", "x")
+	// directory base inesistente
+	if _, err := resolveSafePath("x", filepath.Join(dir, "manca")); err == nil {
+		t.Error("base inesistente accettata")
+	}
+	// componente intermedio che non è una directory: errore di sistema
+	if _, err := resolveSafePath("file.txt/x", ""); err == nil || errors.As(err, new(inputError)) {
+		t.Errorf("file.txt/x: %v", err)
+	}
+	// symlink che punta fuori a un file inesistente: controllato sul
+	// percorso del link, poi la lettura non trova il file
+	if err := os.Symlink(filepath.Join(t.TempDir(), "manca.txt"), filepath.Join(dir, "rotto.txt")); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadMessage("rotto.txt", "")
+	wantInputError(t, err, "File messaggio non trovato: rotto.txt")
+	// percorso inesistente fuori dalla base: non consentito
+	_, err = LoadMessage("../manca/x.txt", "")
+	wantInputError(t, err, "Percorso non consentito")
+}
+
+func TestSendBroadcastsParallelAlreadyCancelled(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	ok, failed, err := SendBroadcastsParallel(ctx, b, []string{"1", "2"}, "x", 2)
+	if !errors.Is(err, context.Canceled) || ok != 0 || failed != 2 || len(fc.Calls()) != 0 {
+		t.Errorf("risultato %d/%d %v, chiamate %d", ok, failed, err, len(fc.Calls()))
 	}
 }

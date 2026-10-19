@@ -26,8 +26,8 @@ type DispatcherConfig struct {
 	Config config.Config
 	// Store è il database.
 	Store *database.Store
-	// UserData è context.user_data, condiviso da tutte le conversazioni;
-	// nil crea uno store nuovo.
+	// UserData è lo user_data degli utenti, condiviso da tutte le
+	// conversazioni; nil crea uno store nuovo.
 	UserData *tg.UserData
 	// Sleep è l'attesa usata dall'error handler per il rate limit
 	// (nil = time.Sleep).
@@ -59,8 +59,7 @@ func NewDispatcher(cfg DispatcherConfig) *ext.Dispatcher {
 //     con fallback /cancel;
 //  4. pulsante rate_update_no;
 //  5. /cancel, /status, /history, /remove, /help;
-//  6. MessageHandler(filters.COMMAND, unknown_command) per i comandi non
-//     riconosciuti.
+//  6. UnknownCommand per i comandi non riconosciuti.
 //
 // Restituisce lo store user_data usato.
 func RegisterHandlers(d *ext.Dispatcher, cfg DispatcherConfig) *tg.UserData {

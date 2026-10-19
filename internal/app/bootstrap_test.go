@@ -18,7 +18,7 @@ import (
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
 
-// recordSleep registra le attese di network_retry_loop senza attendere.
+// recordSleep registra le attese di networkRetryLoop senza attendere.
 type recordSleep struct{ waits []time.Duration }
 
 func (r *recordSleep) sleep(ctx context.Context, d time.Duration) error {
@@ -103,14 +103,14 @@ func TestNetworkRetryLoopTimedOutRetriesImmediately(t *testing.T) {
 	var calls int
 	rs := &recordSleep{}
 	err := networkRetryLoop(context.Background(), "X", time.Second, 3, rs.sleep, failing(&calls, repeat(context.DeadlineExceeded, 10)...))
-	if !errors.Is(err, context.DeadlineExceeded) || calls != 4 || len(rs.waits) != 0 {
+	if !errors.Is(err, context.DeadlineExceeded) || calls != 4 || fmt.Sprint(rs.waits) != "[0s 0s 0s]" {
 		t.Errorf("errore %v, chiamate %d, attese %v", err, calls, rs.waits)
 	}
 
 	calls = 0
 	rs = &recordSleep{}
 	err = networkRetryLoop(context.Background(), "X", time.Second, 3, rs.sleep, failing(&calls, context.DeadlineExceeded, netDown))
-	if err != nil || fmt.Sprint(rs.waits) != fmt.Sprint([]time.Duration{time.Second}) {
+	if err != nil || fmt.Sprint(rs.waits) != fmt.Sprint([]time.Duration{0, time.Second}) {
 		t.Errorf("errore %v, attese %v", err, rs.waits)
 	}
 }
@@ -195,7 +195,7 @@ func TestInitializeBot(t *testing.T) {
 }
 
 // TestBootstrapWebhook: deleteWebhook(drop_pending_updates=True) e poi
-// setWebhook con i parametri di run_webhook.
+// setWebhook con i parametri del webhook.
 func TestBootstrapWebhook(t *testing.T) {
 	b, fc := testutil.NewBot(t)
 	rs := &recordSleep{}

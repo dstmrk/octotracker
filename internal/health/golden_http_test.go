@@ -3,10 +3,8 @@ package health
 import (
 	"encoding/json"
 	"errors"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -14,8 +12,9 @@ import (
 	"github.com/dstmrk/octotracker/internal/database"
 )
 
-// healthGolden sono le risposte della vera app Tornado (health_handler.py)
-// con DB, orologio e task fissati per scenario.
+// healthGolden sono le risposte della versione Python (health_handler.py)
+// con DB, orologio e task fissati per scenario: status, Content-Type e
+// corpo JSON.
 type healthGolden struct {
 	Scenarios []struct {
 		Name       string         `json:"name"`
@@ -27,8 +26,8 @@ type healthGolden struct {
 	} `json:"scenarios"`
 }
 
-// fakeTasks è un TaskStatus configurabile; "raise" fa panicare TaskDone
-// come task.done() che solleva Exception("Task error").
+// fakeTasks è un TaskReporter configurabile; "raise" fa panicare TaskDone
+// (in Python task.done() che solleva Exception("Task error")).
 type fakeTasks map[string]any
 
 func (f fakeTasks) TaskDone(name string) (bool, bool) {
@@ -69,7 +68,6 @@ func TestGoldenHTTP(t *testing.T) {
 	total := 0
 	for _, sc := range g.Scenarios {
 		t.Run(sc.Name, func(t *testing.T) {
-			logs := apitest.CaptureLogs(t)
 			n := sc.Now
 			setNow(t, time.Date(n[0], time.Month(n[1]), n[2], n[3], n[4], n[5], n[6]*1000, time.Local))
 
@@ -93,15 +91,9 @@ func TestGoldenHTTP(t *testing.T) {
 				}
 				store = pathStore{db, d}
 			}
-			tasks := fakeTasks{ScraperTask: sc.Tasks[0], CheckerTask: sc.Tasks[1]}
-
-			srv := httptest.NewServer(NewHandler(store, tasks))
-			defer srv.Close()
-			addr := strings.TrimPrefix(srv.URL, "http://")
-			logs.Take()
+			h := NewHandler(store, fakeTasks{ScraperTask: sc.Tasks[0], CheckerTask: sc.Tasks[1]})
 			for _, c := range sc.Cases {
-				got := apitest.Do(t, addr, c.Raw())
-				apitest.Check(t, c, got, logs.Take())
+				apitest.Check(t, h, c)
 				total++
 			}
 		})

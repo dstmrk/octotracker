@@ -1,52 +1,64 @@
-// Package health porta health_handler.py: l'endpoint /health per il
-// monitoring di OctoTracker, che verifica database, freschezza delle
-// tariffe e task dello scheduler.
+// Package health implementa l'endpoint /health per il monitoring di
+// OctoTracker, che verifica database, freschezza delle tariffe e task
+// dello scheduler.
 //
-// Risposta: JSON indentato di 2 spazi (json.dumps(indent=2), con escape
-// \uXXXX dei caratteri non ASCII) nella forma
+// Risposta: JSON indentato di 2 spazi nella forma
 //
 //	{"status": "healthy"|"degraded"|"unhealthy", "timestamp": "...",
 //	 "checks": {"database": {...}, "tariffe": {...}, "bot": {...}}}
 //
-// con status HTTP 200 (anche se degraded) oppure 503 se unhealthy o in caso
-// di eccezione.
+// con status HTTP 200 (anche se degraded) oppure 503 se unhealthy. Solo
+// GET è ammesso (altri metodi → 405).
 //
 // # Task dello scheduler
 //
-// In Python il check legge i task asyncio scraper_task e checker_task da
-// bot_data. In Go lo scheduler espone lo stato tramite l'interfaccia
-// TaskStatus; Registry ne è un'implementazione pronta:
+// Lo scheduler espone lo stato dei task tramite l'interfaccia
+// TaskReporter; Registry ne è un'implementazione pronta:
 //
 //	reg := health.NewRegistry()
-//	reg.Go(health.ScraperTask, func() { scraperLoop(ctx) })  // come asyncio.create_task
-//	reg.Go(health.CheckerTask, func() { checkerLoop(ctx) })
-//	mux.Handle("/health", health.NewHandler(store, reg))
+//	t := reg.Register(health.ScraperTask)  // all'avvio del task
+//	defer t.MarkDone()                     // quando il task termina
+//	mux.Handle(health.Path, health.NewHandler(store, reg))
 //
-// Un task non registrato vale come "missing", un task terminato (anche per
-// panic) come "stopped".
+// Un task non registrato vale come "missing", un task terminato come
+// "stopped".
 package health
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/dstmrk/octotracker/internal/api/pycompat"
-	"github.com/dstmrk/octotracker/internal/api/tornado"
 	"github.com/dstmrk/octotracker/internal/logging"
 )
 
 var logger = logging.Logger("health_handler")
 
-// now è l'orologio (datetime.now(), ora locale); sostituibile nei test.
+// now è l'orologio (ora locale); sostituibile nei test.
 var now = time.Now
+
+// Stati complessivi della risposta.
+const (
+	statusHealthy   = "healthy"
+	statusDegraded  = "degraded"
+	statusUnhealthy = "unhealthy"
+)
+
+// Stati dei singoli controlli.
+const (
+	checkOK      = "ok"
+	checkWarning = "warning"
+	checkError   = "error"
+)
 
 // Path è il percorso dell'endpoint.
 const Path = "/health"
 
-// Nomi dei task controllati (le chiavi di bot_data).
+// Nomi dei task controllati.
 const (
 	ScraperTask = "scraper_task"
 	CheckerTask = "checker_task"
@@ -55,27 +67,30 @@ const (
 // MaxTariffeAgeDays è l'età massima delle tariffe prima del warning (> 3 giorni).
 const MaxTariffeAgeDays = 3
 
-// TaskStatus espone lo stato dei task dello scheduler.
-type TaskStatus interface {
-	// TaskDone restituisce exists=false se il task name non è registrato
-	// (bot_data.get(name) is None); altrimenti done riporta task.done(),
-	// cioè se il task è terminato (completato, cancellato o crashato).
+// TaskReporter espone lo stato dei task dello scheduler.
+type TaskReporter interface {
+	// TaskDone restituisce exists=false se il task name non è registrato;
+	// altrimenti done riporta se il task è terminato (completato,
+	// cancellato o crashato).
 	TaskDone(name string) (exists, done bool)
 }
+
+// TaskStatus è un alias di TaskReporter, il nome usato da internal/app.
+type TaskStatus = TaskReporter
 
 // Task è un task registrato in Registry.
 type Task struct {
 	done atomic.Bool
 }
 
-// MarkDone segna il task come terminato (task.done() diventa True).
+// MarkDone segna il task come terminato.
 func (t *Task) MarkDone() { t.done.Store(true) }
 
-// Done restituisce task.done().
+// Done riporta se il task è terminato.
 func (t *Task) Done() bool { return t.done.Load() }
 
-// Registry è un TaskStatus sicuro per l'uso concorrente: lo scheduler vi
-// registra i task (come application.bot_data["scraper_task"] = task).
+// Registry è un TaskReporter sicuro per l'uso concorrente in cui lo
+// scheduler registra i task.
 type Registry struct {
 	mu    sync.Mutex
 	tasks map[string]*Task
@@ -95,18 +110,7 @@ func (r *Registry) Register(name string) *Task {
 	return t
 }
 
-// Go registra il task name ed esegue fn in una goroutine; quando fn
-// termina (anche per panic) il task risulta "stopped".
-func (r *Registry) Go(name string, fn func()) *Task {
-	t := r.Register(name)
-	go func() {
-		defer t.MarkDone()
-		fn()
-	}()
-	return t
-}
-
-// TaskDone implementa TaskStatus.
+// TaskDone implementa TaskReporter.
 func (r *Registry) TaskDone(name string) (exists, done bool) {
 	r.mu.Lock()
 	t, ok := r.tasks[name]
@@ -118,239 +122,188 @@ func (r *Registry) TaskDone(name string) (exists, done bool) {
 }
 
 // Store è la parte del database usata dal check (*database.Store la
-// implementa). Path() sostituisce il percorso fisso "data/octotracker.db"
-// di Python, che coincide con il default <DATA_DIR>/octotracker.db.
+// implementa): Path() è il percorso del file SQLite.
 type Store interface {
 	Path() string
 	GetUserCount() int
 	GetLatestRateDate() *string
 }
 
-// Handler è l'handler di /health (HealthHandler).
+// Response è la risposta di /health.
+type Response struct {
+	Status    string `json:"status"`
+	Timestamp string `json:"timestamp"`
+	Checks    Checks `json:"checks"`
+}
+
+// Checks sono i risultati dei singoli controlli.
+type Checks struct {
+	Database Check `json:"database"`
+	Tariffe  Check `json:"tariffe"`
+	Bot      Check `json:"bot"`
+}
+
+// Check è il risultato di un controllo: nel JSON compaiono solo i campi
+// valorizzati.
+type Check struct {
+	Status         string          `json:"status"`
+	UsersCount     *int            `json:"users_count,omitempty"`
+	LastUpdate     string          `json:"last_update,omitempty"`
+	DaysOld        *int            `json:"days_old,omitempty"`
+	Message        string          `json:"message,omitempty"`
+	ScheduledTasks *ScheduledTasks `json:"scheduled_tasks,omitempty"`
+	Error          string          `json:"error,omitempty"`
+}
+
+// ScheduledTasks è lo stato dei task: "running", "stopped" o "missing".
+type ScheduledTasks struct {
+	Scraper string `json:"scraper"`
+	Checker string `json:"checker"`
+}
+
+// Handler è l'handler di /health.
 type Handler struct {
 	store Store
-	tasks TaskStatus
-	check func() pycompat.Object
+	tasks TaskReporter
 }
 
 // NewHandler crea l'handler di /health. tasks può essere nil (nessun task
 // registrato).
-func NewHandler(store Store, tasks TaskStatus) *Handler {
-	h := &Handler{store: store, tasks: tasks}
-	h.check = func() pycompat.Object { return CheckSystemHealth(h.store, h.tasks) }
-	return h
+func NewHandler(store Store, tasks TaskReporter) *Handler {
+	return &Handler{store: store, tasks: tasks}
 }
 
-// ServeHTTP implementa http.Handler con la semantica di un RequestHandler
-// Tornado che implementa solo get() (altri metodi → 405).
+// ServeHTTP risponde alle GET con 503 se unhealthy, 200 altrimenti (anche
+// degraded).
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	tornado.Serve(w, r, nil, tornado.Methods{http.MethodGet: h.get})
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	res := CheckSystemHealth(h.store, h.tasks)
+	status := http.StatusOK
+	if res.Status == statusUnhealthy {
+		status = http.StatusServiceUnavailable
+	}
+	body, _ := json.MarshalIndent(res, "", "  ") // solo stringhe e interi: non fallisce
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
 }
 
-func panicError(r any) error {
-	if err, ok := r.(error); ok {
-		return err
+// isoformat formatta t come "YYYY-MM-DDTHH:MM:SS", con ".ffffff" solo se i
+// microsecondi non sono zero.
+func isoformat(t time.Time) string {
+	if t.Nanosecond()/1000 == 0 {
+		return t.Format("2006-01-02T15:04:05")
 	}
-	return fmt.Errorf("%v", r)
+	return t.Format("2006-01-02T15:04:05.000000")
 }
 
-// get replica HealthHandler.get: 503 se unhealthy, 200 altrimenti (anche
-// degraded); in caso di eccezione 503 con {"status", "error", "timestamp"}.
-func (h *Handler) get(rh *tornado.RequestHandler) error {
-	body, status, err := func() (body string, status int, err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = panicError(r)
-			}
-		}()
-		healthData := h.check()
-		status = http.StatusOK // OK (anche per degraded)
-		if s, _ := healthData.Get("status"); s == "unhealthy" {
-			status = http.StatusServiceUnavailable // Service Unavailable
-		}
-		body, err = pycompat.DumpsIndent(healthData, 2)
-		return body, status, err
-	}()
-	rh.SetHeader("Content-Type", "application/json")
-	if err == nil {
-		rh.SetStatus(status)
-		rh.Write(body)
-		return nil
+// CheckSystemHealth esegue i controlli: un errore del database, delle
+// tariffe o dei task rende lo stato unhealthy, un warning delle tariffe
+// degraded.
+func CheckSystemHealth(store Store, tasks TaskReporter) Response {
+	checks := Checks{
+		Database: checkDatabase(store),
+		Tariffe:  checkTariffe(store),
+		Bot:      checkTasks(tasks),
 	}
-	logger.Error(fmt.Sprintf("❌ Errore health check: %s", err.Error()))
-	rh.SetStatus(http.StatusServiceUnavailable)
-	rh.Write(pycompat.MustDumps(pycompat.Object{
-		{Key: "status", Value: "unhealthy"},
-		{Key: "error", Value: err.Error()},
-		{Key: "timestamp", Value: pycompat.ISOFormat(now())},
-	}))
-	return nil
+	status := statusHealthy
+	switch {
+	case checks.Database.Status == checkError, checks.Tariffe.Status == checkError, checks.Bot.Status == checkError:
+		status = statusUnhealthy
+	case checks.Tariffe.Status == checkWarning:
+		status = statusDegraded
+	}
+	return Response{Status: status, Timestamp: isoformat(now()), Checks: checks}
 }
 
-func statusOf(o pycompat.Object) any {
-	s, _ := o.Get("status")
-	return s
-}
-
-// CheckSystemHealth replica check_system_health: database (error →
-// unhealthy), tariffe (error → unhealthy, warning → degraded) e task dello
-// scheduler (error → unhealthy).
-func CheckSystemHealth(store Store, tasks TaskStatus) pycompat.Object {
-	checks := pycompat.Object{}
-	overallStatus := "healthy"
-
-	// Check 1: Database
-	dbCheck := checkDatabase(store)
-	checks.Set("database", dbCheck)
-	if statusOf(dbCheck) == "error" {
-		overallStatus = "unhealthy"
-	}
-
-	// Check 2: Tariffe
-	tariffeCheck := checkTariffe(store)
-	checks.Set("tariffe", tariffeCheck)
-	if statusOf(tariffeCheck) == "error" {
-		overallStatus = "unhealthy"
-	} else if statusOf(tariffeCheck) == "warning" && overallStatus == "healthy" {
-		overallStatus = "degraded"
-	}
-
-	// Check 3: Bot tasks
-	tasksCheck := checkTasks(tasks)
-	checks.Set("bot", tasksCheck)
-	if statusOf(tasksCheck) == "error" {
-		overallStatus = "unhealthy"
-	}
-
-	return pycompat.Object{
-		{Key: "status", Value: overallStatus},
-		{Key: "timestamp", Value: pycompat.ISOFormat(now())},
-		{Key: "checks", Value: checks},
-	}
-}
-
-// guarded esegue check trasformando errori e panic nel dict
-// {"status": "error", "error": str(e)} dopo il log logMsg (logger.exception).
-func guarded(logMsg string, check func() (pycompat.Object, error)) (result pycompat.Object) {
-	fail := func(err error) pycompat.Object {
-		logger.Error(fmt.Sprintf("%s: %s", logMsg, err.Error()))
-		return pycompat.Object{{Key: "status", Value: "error"}, {Key: "error", Value: err.Error()}}
+// guarded esegue check trasformando un errore o un panic nel risultato
+// {"status": "error", "error": messaggio}, dopo il log logMsg.
+func guarded(logMsg string, check func() (Check, error)) (result Check) {
+	fail := func(msg string) Check {
+		logger.Error(logMsg + ": " + msg)
+		return Check{Status: checkError, Error: msg}
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			result = fail(panicError(r))
+			result = fail(fmt.Sprint(r))
 		}
 	}()
 	res, err := check()
 	if err != nil {
-		return fail(err)
+		return fail(err.Error())
 	}
 	return res
 }
 
-// checkDatabase replica _check_database: il file del database deve esistere
-// ed essere un file regolare, poi una query di test (conteggio utenti).
-func checkDatabase(store Store) pycompat.Object {
-	return guarded("❌ Errore check database", func() (pycompat.Object, error) {
-		dbPath := store.Path()
-		notFound := pycompat.Object{{Key: "status", Value: "error"}, {Key: "error", Value: "Database file not found"}}
-		exists, err := pycompat.PathExists(dbPath)
-		if err != nil {
-			return nil, err
+// checkDatabase richiede che il file del database esista e sia un file
+// regolare, poi esegue una query di test (conteggio utenti).
+func checkDatabase(store Store) Check {
+	return guarded("❌ Errore check database", func() (Check, error) {
+		info, err := os.Stat(store.Path())
+		if err != nil || !info.Mode().IsRegular() {
+			return Check{Status: checkError, Error: "Database file not found"}, nil
 		}
-		if !exists {
-			return notFound, nil
-		}
-		isFile, err := pycompat.PathIsFile(dbPath)
-		if err != nil {
-			return nil, err
-		}
-		if !isFile {
-			return notFound, nil
-		}
-
-		// Verifica database funzionante (query di test)
 		usersCount := store.GetUserCount()
-		return pycompat.Object{{Key: "status", Value: "ok"}, {Key: "users_count", Value: usersCount}}, nil
+		return Check{Status: checkOK, UsersCount: &usersCount}, nil
 	})
 }
 
-// checkTariffe replica _check_tariffe: warning se non ci sono tariffe o se
-// l'ultima data è più vecchia di 3 giorni, error se la data non è valida.
-func checkTariffe(store Store) pycompat.Object {
-	return guarded("❌ Errore check tariffe", func() (pycompat.Object, error) {
-		lastUpdateStr := store.GetLatestRateDate()
-		if lastUpdateStr == nil || *lastUpdateStr == "" {
-			return pycompat.Object{
-				{Key: "status", Value: "warning"},
-				{Key: "message", Value: "No rates in database (will be populated on first scrape)"},
-			}, nil
+// checkTariffe dà warning se non ci sono tariffe o se l'ultima data è più
+// vecchia di MaxTariffeAgeDays giorni, error se la data non è valida.
+func checkTariffe(store Store) Check {
+	return guarded("❌ Errore check tariffe", func() (Check, error) {
+		lastUpdate := store.GetLatestRateDate()
+		if lastUpdate == nil || *lastUpdate == "" {
+			return Check{Status: checkWarning, Message: "No rates in database (will be populated on first scrape)"}, nil
 		}
-
-		lastUpdate, err := pycompat.StrptimeYMD(*lastUpdateStr)
+		date, err := time.Parse(time.DateOnly, *lastUpdate)
 		if err != nil {
-			return nil, err
+			return Check{}, err
 		}
-		daysOld := pycompat.TimedeltaDays(now(), lastUpdate)
+		// giorni di calendario tra la data delle tariffe e oggi (ora locale)
+		n := now()
+		today := time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
+		daysOld := int(today.Sub(date) / (24 * time.Hour))
 
+		res := Check{Status: checkOK, LastUpdate: *lastUpdate, DaysOld: &daysOld}
 		if daysOld > MaxTariffeAgeDays {
-			return pycompat.Object{
-				{Key: "status", Value: "warning"},
-				{Key: "last_update", Value: *lastUpdateStr},
-				{Key: "days_old", Value: daysOld},
-				{Key: "message", Value: fmt.Sprintf("Tariffe outdated (%d days old)", daysOld)},
-			}, nil
+			res.Status = checkWarning
+			res.Message = fmt.Sprintf("Tariffe outdated (%d days old)", daysOld)
 		}
-		return pycompat.Object{
-			{Key: "status", Value: "ok"},
-			{Key: "last_update", Value: *lastUpdateStr},
-			{Key: "days_old", Value: daysOld},
-		}, nil
+		return res, nil
 	})
 }
 
-// checkTasks replica _check_tasks: entrambi i task devono esistere e non
-// essere terminati.
-func checkTasks(tasks TaskStatus) pycompat.Object {
-	return guarded("❌ Errore check tasks", func() (pycompat.Object, error) {
+func taskState(done bool) string {
+	if done {
+		return "stopped"
+	}
+	return "running"
+}
+
+// checkTasks richiede che entrambi i task esistano e non siano terminati.
+func checkTasks(tasks TaskReporter) Check {
+	return guarded("❌ Errore check tasks", func() (Check, error) {
 		var scraperExists, scraperDone, checkerExists, checkerDone bool
 		if tasks != nil {
 			scraperExists, scraperDone = tasks.TaskDone(ScraperTask)
 			checkerExists, checkerDone = tasks.TaskDone(CheckerTask)
 		}
-
-		// Verifica task esistono
 		if !scraperExists || !checkerExists {
-			return pycompat.Object{
-				{Key: "status", Value: "error"},
-				{Key: "scheduled_tasks", Value: pycompat.Object{
-					{Key: "scraper", Value: "missing"},
-					{Key: "checker", Value: "missing"},
-				}},
-				{Key: "error", Value: "Scheduler tasks not initialized"},
+			return Check{
+				Status:         checkError,
+				ScheduledTasks: &ScheduledTasks{Scraper: "missing", Checker: "missing"},
+				Error:          "Scheduler tasks not initialized",
 			}, nil
 		}
-
-		// Verifica task non sono cancellati o in errore
-		statusName := func(done bool) string {
-			if done {
-				return "stopped"
-			}
-			return "running"
-		}
-		scheduled := pycompat.Object{
-			{Key: "scraper", Value: statusName(scraperDone)},
-			{Key: "checker", Value: statusName(checkerDone)},
-		}
-
-		// Se un task è done(), potrebbe essere crashato
+		scheduled := &ScheduledTasks{Scraper: taskState(scraperDone), Checker: taskState(checkerDone)}
+		// un task terminato potrebbe essere crashato
 		if scraperDone || checkerDone {
-			return pycompat.Object{
-				{Key: "status", Value: "error"},
-				{Key: "scheduled_tasks", Value: scheduled},
-				{Key: "error", Value: "One or more scheduler tasks have stopped"},
-			}, nil
+			return Check{Status: checkError, ScheduledTasks: scheduled, Error: "One or more scheduler tasks have stopped"}, nil
 		}
-		return pycompat.Object{{Key: "status", Value: "ok"}, {Key: "scheduled_tasks", Value: scheduled}}, nil
+		return Check{Status: checkOK, ScheduledTasks: scheduled}, nil
 	})
 }

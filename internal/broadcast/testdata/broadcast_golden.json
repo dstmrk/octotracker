@@ -3,7 +3,6 @@
   "message.txt": "20200d0a3c623e4369616f3c2f623e20f09f918b0d0a5365636f6e646120726967610d5465727a610a0a2020",
   "sub/m.txt": "4d657373616767696f20696e20737562",
   "empty.txt": "2020200a2020092020",
-  "unicode_ws.txt": "c2a0e38080546573746fe280a81c",
   "bom.txt": "efbbbf436f6e20424f4d",
   "users.txt": "23205574656e746920746573740d0a3132333435360a0a20200a3738393031320d0a20202320636f6d6d656e746f20696e64656e7461746f0a097573657235c2a00a230a",
   "users_empty.txt": "2020200a2320736f6c6f20636f6d6d656e74690a2020",
@@ -29,17 +28,14 @@
   },
   {
    "in": "link_out.txt",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: link_out.txt"
   },
   {
    "in": "../x",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: ../x"
   },
   {
    "in": "/etc/passwd",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: /etc/passwd"
   },
   {
@@ -56,7 +52,6 @@
   },
   {
    "in": "sub/../../x",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: sub/../../x"
   },
   {
@@ -73,7 +68,6 @@
   },
   {
    "in": "@OUTSIDE@/secret.txt",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: @OUTSIDE@/secret.txt"
   },
   {
@@ -95,13 +89,7 @@
   {
    "fn": "message",
    "in": "empty.txt",
-   "err": "ValueError",
    "msg": "Il file messaggio \u00e8 vuoto"
-  },
-  {
-   "fn": "message",
-   "in": "unicode_ws.txt",
-   "ok": "Testo"
   },
   {
    "fn": "message",
@@ -110,32 +98,17 @@
   },
   {
    "fn": "message",
-   "in": "bad_utf8.txt",
-   "err": "UnicodeDecodeError",
-   "msg": "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte"
-  },
-  {
-   "fn": "message",
-   "in": "dir.txt",
-   "err": "IsADirectoryError",
-   "msg": "[Errno 21] Is a directory: '@BASE@/dir.txt'"
-  },
-  {
-   "fn": "message",
    "in": "nonexistent/file.txt",
-   "err": "FileNotFoundError",
    "msg": "File messaggio non trovato: nonexistent/file.txt"
   },
   {
    "fn": "message",
    "in": "/etc/passwd",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: /etc/passwd"
   },
   {
    "fn": "message",
    "in": "link_out.txt",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: link_out.txt"
   },
   {
@@ -155,7 +128,6 @@
   {
    "fn": "users",
    "in": "users_empty.txt",
-   "err": "ValueError",
    "msg": "Il file users_empty.txt non contiene user_id validi"
   },
   {
@@ -176,14 +148,7 @@
   {
    "fn": "users",
    "in": "nonexistent/users.txt",
-   "err": "FileNotFoundError",
    "msg": "File utenti non trovato: nonexistent/users.txt"
-  },
-  {
-   "fn": "users",
-   "in": "bad_utf8.txt",
-   "err": "UnicodeDecodeError",
-   "msg": "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte"
   },
   {
    "fn": "users",
@@ -197,7 +162,6 @@
   {
    "fn": "users",
    "in": "../etc",
-   "err": "ValueError",
    "msg": "Percorso non consentito, fuori dalla directory di lavoro: ../etc"
   }
  ],
@@ -317,38 +281,6 @@
      "<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza",
      "HTML"
     ]
-   ],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 3 utenti..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\ud83d\udce8 Invio 3 messaggi in parallelo (max 1 simultanei)..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #1"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #2"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #3"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\u2705 Broadcast completato in 1.50s - Successi: 3/3, Falliti: 0/3"
-    ]
    ]
   },
   {
@@ -381,48 +313,6 @@
      "user5",
      "<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza",
      "HTML"
-    ]
-   ],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 3 utenti..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\ud83d\udce8 Invio 3 messaggi in parallelo (max 1 simultanei)..."
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "\u23f1\ufe0f  Rate limit per utente 123456: riprova dopo 30s"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #1"
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore di rete per utente 789012: Chat not found"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #2"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #3"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\u2705 Broadcast completato in 1.50s - Successi: 1/3, Falliti: 2/3"
     ]
    ]
   },
@@ -458,53 +348,6 @@
      "<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza",
      "HTML"
     ]
-   ],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 3 utenti..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\ud83d\udce8 Invio 3 messaggi in parallelo (max 1 simultanei)..."
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore di rete per utente 123456: Timed out"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #1"
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore di rete per utente 789012: Network error"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #2"
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore Telegram per utente user5: Forbidden: bot was blocked by the user"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #3"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\u2705 Broadcast completato in 1.50s - Successi: 0/3, Falliti: 3/3"
-    ]
    ]
   },
   {
@@ -538,38 +381,6 @@
      "<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza",
      "HTML"
     ]
-   ],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 3 utenti..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\ud83d\udce8 Invio 3 messaggi in parallelo (max 1 simultanei)..."
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore Telegram per utente 123456: Generic error"
-    ],
-    [
-     "broadcast",
-     "WARNING",
-     "  \u274c Invio fallito per il destinatario #1"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #3"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\u2705 Broadcast completato in 1.50s - Successi: 1/3, Falliti: 2/3"
-    ]
    ]
   },
   {
@@ -584,14 +395,7 @@
     "total": 0
    },
    "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): ",
-   "calls": [],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\u274c Invio annullato dall'utente"
-    ]
-   ]
+   "calls": []
   },
   {
    "name": "batch_10",
@@ -611,28 +415,6 @@
      "<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza",
      "HTML"
     ]
-   ],
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 1 utenti..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\ud83d\udce8 Invio 1 messaggi in parallelo (max 10 simultanei)..."
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "  \u2705 Messaggio inviato al destinatario #1"
-    ],
-    [
-     "broadcast",
-     "INFO",
-     "\u2705 Broadcast completato in 1.50s - Successi: 1/1, Falliti: 0/1"
-    ]
    ]
   }
  ],
@@ -643,14 +425,7 @@
    "token": "",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c TELEGRAM_BOT_TOKEN non configurato nel file .env"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "default_files_cancel",
@@ -658,14 +433,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 0,
-   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): ",
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\u274c Invio annullato dall'utente"
-    ]
-   ]
+   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): "
   },
   {
    "name": "custom_files_cancel",
@@ -676,14 +444,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 0,
-   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\nMessaggio in sub\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 1 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 1 utenti.\n\nSei sicuro? (S/N): ",
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\u274c Invio annullato dall'utente"
-    ]
-   ]
+   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\nMessaggio in sub\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 1 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 1 utenti.\n\nSei sicuro? (S/N): "
   },
   {
    "name": "missing_message",
@@ -693,14 +454,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c File messaggio non trovato: nonexistent.txt"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "missing_users",
@@ -711,14 +465,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c File utenti non trovato: nonexistent.txt"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "traversal",
@@ -728,14 +475,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Percorso non consentito, fuori dalla directory di lavoro: /etc/passwd"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "empty_message",
@@ -745,14 +485,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Il file messaggio \u00e8 vuoto"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "no_users",
@@ -763,31 +496,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Il file users_empty.txt non contiene user_id validi"
-    ]
-   ]
-  },
-  {
-   "name": "bad_utf8",
-   "args": [
-    "bad_utf8.txt"
-   ],
-   "token": "fake_token",
-   "batch": 10,
-   "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c 'utf-8' codec can't decode byte 0xff in position 2: invalid start byte"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "dir_message",
@@ -797,14 +506,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore durante l'invio broadcast: [Errno 21] Is a directory: '@BASE@/dir.txt'"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "empty_arg",
@@ -814,14 +516,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore durante l'invio broadcast: [Errno 21] Is a directory: '@BASE@'"
-    ]
-   ]
+   "stdout": ""
   },
   {
    "name": "negative_batch",
@@ -829,19 +524,7 @@
    "token": "fake_token",
    "batch": -1,
    "code": 1,
-   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: -1 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): ",
-   "logs": [
-    [
-     "broadcast",
-     "INFO",
-     "\n\ud83d\ude80 Inizio invio broadcast a 3 utenti..."
-    ],
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Semaphore initial value must be >= 0"
-    ]
-   ]
+   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: -1 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): "
   },
   {
    "name": "eof",
@@ -849,14 +532,7 @@
    "token": "fake_token",
    "batch": 10,
    "code": 1,
-   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): ",
-   "logs": [
-    [
-     "broadcast",
-     "ERROR",
-     "\u274c Errore durante l'invio broadcast: "
-    ]
-   ]
+   "stdout": "\n======================================================================\n\ud83d\udce2 BROADCAST MESSAGE PREVIEW\n======================================================================\n\n<b>Ciao</b> \ud83d\udc4b\nSeconda riga\nTerza\n\n======================================================================\n\n\ud83d\udcca Configurazione invio:\n   \u2022 Destinatari: 3 utenti\n   \u2022 Batch size: 10 messaggi simultanei\n\n\u26a0\ufe0f  Stai per inviare questo messaggio a 3 utenti.\n\nSei sicuro? (S/N): "
   }
  ]
 }
