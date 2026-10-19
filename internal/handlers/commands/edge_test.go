@@ -61,7 +61,7 @@ func TestEditedMessageReturnsError(t *testing.T) {
 		if res.err == nil || len(res.calls) != 0 {
 			t.Errorf("%s: err=%v calls=%d", name, res.err, len(res.calls))
 		}
-		if cleared := len(res.userAfter) == 0; cleared != (name != "unknown" && name != "cancel") {
+		if (len(res.userAfter) == 0) != (name != "unknown" && name != "cancel") {
 			t.Errorf("%s: user_data dopo l'errore: %v", name, res.userAfter)
 		}
 	}

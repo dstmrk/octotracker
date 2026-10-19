@@ -173,6 +173,14 @@ func TestGoldenBroadcast(t *testing.T) {
 	expand := func(s string) string {
 		return strings.ReplaceAll(strings.ReplaceAll(s, "@BASE@", base), "@OUTSIDE@", outside)
 	}
+	t.Run("paths", func(t *testing.T) { checkGoldenPaths(t, g, expand) })
+	t.Run("loads", func(t *testing.T) { checkGoldenLoads(t, g, expand) })
+	t.Run("confirm", func(t *testing.T) { checkGoldenConfirm(t, g) })
+	t.Run("runs", func(t *testing.T) { checkGoldenRuns(t, g) })
+	t.Run("main", func(t *testing.T) { checkGoldenMain(t, g) })
+}
+
+func checkGoldenPaths(t *testing.T, g *broadcastGolden, expand func(string) string) {
 	for _, c := range g.Paths {
 		got, err := resolveSafePath(expand(c.In), "")
 		if c.Msg == "" {
@@ -183,7 +191,9 @@ func TestGoldenBroadcast(t *testing.T) {
 			t.Errorf("resolveSafePath(%q) errore %v; atteso %q", c.In, err, c.Msg)
 		}
 	}
+}
 
+func checkGoldenLoads(t *testing.T, g *broadcastGolden, expand func(string) string) {
 	for _, c := range g.Loads {
 		var got any
 		var err error
@@ -206,7 +216,9 @@ func TestGoldenBroadcast(t *testing.T) {
 			t.Errorf("%s(%q) = %q, %v; atteso %s", c.Fn, c.In, got, err, c.OK)
 		}
 	}
+}
 
+func checkGoldenConfirm(t *testing.T, g *broadcastGolden) {
 	for _, c := range g.Confirm {
 		var out bytes.Buffer
 		ok, err := ConfirmSend(context.Background(), "<b>Test</b> message 🎉", 5, 10, strings.NewReader(c.Answer+"\n"), &out)
@@ -214,7 +226,9 @@ func TestGoldenBroadcast(t *testing.T) {
 			t.Errorf("ConfirmSend(%q) = %v, %v; atteso %v\nstdout %q\natteso %q", c.Answer, ok, err, c.OK, out.String(), c.Stdout)
 		}
 	}
+}
 
+func checkGoldenRuns(t *testing.T, g *broadcastGolden) {
 	for _, c := range g.Runs {
 		fixedClock(t)
 		b, fc := fakeBot(t, c.Behaviour)
@@ -244,7 +258,9 @@ func TestGoldenBroadcast(t *testing.T) {
 			}
 		}
 	}
+}
 
+func checkGoldenMain(t *testing.T, g *broadcastGolden) {
 	for _, c := range g.Main {
 		answer := "N\n"
 		switch c.Name {

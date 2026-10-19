@@ -91,9 +91,9 @@ func TestFormatNumberPanicsOnNaNAndInf(t *testing.T) {
 		value float64
 		want  string
 	}{
-		{math.NaN(), "ValueError: cannot convert float NaN to integer"},
-		{math.Inf(1), "OverflowError: cannot convert float infinity to integer"},
-		{math.Inf(-1), "OverflowError: cannot convert float infinity to integer"},
+		{math.NaN(), "FormatNumber: valore NaN"},
+		{math.Inf(1), "FormatNumber: valore infinito"},
+		{math.Inf(-1), "FormatNumber: valore infinito"},
 	}
 	for _, tt := range tests {
 		if got := panicMessage(func() { FormatNumber(tt.value, 2) }); got != tt.want {
@@ -243,9 +243,10 @@ func TestFormatNumberGolden(t *testing.T) {
 		if err := json.Unmarshal(raw, &e); err != nil {
 			t.Fatal(err)
 		}
+		// Come in Python va in panic (il testo dell'eccezione non conta)
 		v := parsePyFloat(t, e.Repr)
-		if got := panicMessage(func() { FormatNumber(v, 2) }); got != e.Error {
-			t.Errorf("FormatNumber(%s) panic = %q, want %q", e.Repr, got, e.Error)
+		if got := panicMessage(func() { FormatNumber(v, 2) }); got == "" {
+			t.Errorf("FormatNumber(%s): atteso panic (%s)", e.Repr, e.Error)
 		}
 	}
 }
@@ -337,14 +338,16 @@ func TestFormatLuceConsumptionGolden(t *testing.T) {
 		msg := panicMessage(func() {
 			got = FormatLuceConsumption(c.Fascia, &one, c.F2, c.F3, DefaultConsumptionPrefix)
 		})
-		want := c.Result
-		if c.Error != nil {
-			got, want = msg, c.Error
-		} else if msg != "" {
-			got = "panic: " + msg
-		}
-		if got != *want {
-			t.Errorf("%s f2=%v f3=%v: got %q, want %q", c.Fascia, c.F2, c.F3, got, *want)
+		switch {
+		case c.Error != nil:
+			// Come in Python va in panic (il testo dell'eccezione non conta)
+			if msg == "" {
+				t.Errorf("%s f2=%v f3=%v: atteso panic (%s), ottenuto %q", c.Fascia, c.F2, c.F3, *c.Error, got)
+			}
+		case msg != "":
+			t.Errorf("%s f2=%v f3=%v: panic inatteso %q", c.Fascia, c.F2, c.F3, msg)
+		case got != *c.Result:
+			t.Errorf("%s f2=%v f3=%v: got %q, want %q", c.Fascia, c.F2, c.F3, got, *c.Result)
 		}
 	}
 }

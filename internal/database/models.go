@@ -73,30 +73,38 @@ func jsonEqual(a, b any) bool {
 	switch x := a.(type) {
 	case map[string]any:
 		y, ok := b.(map[string]any)
-		if !ok || len(x) != len(y) {
-			return false
-		}
-		for k, v := range x {
-			if w, ok := y[k]; !ok || !jsonEqual(v, w) {
-				return false
-			}
-		}
-		return true
+		return ok && jsonMapEqual(x, y)
 	case []any:
 		y, ok := b.([]any)
-		if !ok || len(x) != len(y) {
-			return false
-		}
-		for i := range x {
-			if !jsonEqual(x[i], y[i]) {
-				return false
-			}
-		}
-		return true
+		return ok && jsonSliceEqual(x, y)
 	case float64, string, bool, nil:
 		return a == b
 	}
 	return false
+}
+
+func jsonMapEqual(x, y map[string]any) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for k, v := range x {
+		if w, ok := y[k]; !ok || !jsonEqual(v, w) {
+			return false
+		}
+	}
+	return true
+}
+
+func jsonSliceEqual(x, y []any) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for i := range x {
+		if !jsonEqual(x[i], y[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // PendingRates sono le tariffe in attesa di conferma (colonna pending_rates),

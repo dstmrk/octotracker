@@ -33,10 +33,10 @@ const DefaultConsumptionPrefix = "- "
 // Come la versione Python, va in panic se value è NaN o infinito.
 func FormatNumber(value float64, maxDecimals int) string {
 	if math.IsNaN(value) {
-		panic("ValueError: cannot convert float NaN to integer")
+		panic("FormatNumber: valore NaN")
 	}
 	if math.IsInf(value, 0) {
-		panic("OverflowError: cannot convert float infinity to integer")
+		panic("FormatNumber: valore infinito")
 	}
 
 	// Arrotonda al massimo di decimali (come round(value, maxDecimals):
@@ -169,7 +169,7 @@ func FormatLuceConsumption(fascia string, consumoF1, consumoF2, consumoF3 *float
 // versione Python (None + float).
 func requireConsumo(v *float64) float64 {
 	if v == nil {
-		panic("TypeError: unsupported operand type(s) for +: 'float' and 'NoneType'")
+		panic("FormatLuceConsumption: consumo mancante")
 	}
 	return *v
 }

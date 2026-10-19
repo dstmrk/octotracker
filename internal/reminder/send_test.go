@@ -171,7 +171,7 @@ func TestCheckAndSendRemindersPhaseOneError(t *testing.T) {
 
 	err := CheckAndSendReminders(context.Background(), b, store, dp(TODAY))
 
-	if err == nil || !strings.Contains(err.Error(), "infinity") {
+	if err == nil || !strings.Contains(err.Error(), "infinito") {
 		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
 	}
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {

@@ -261,7 +261,7 @@ func TestPanicError(t *testing.T) {
 	if err := PanicError(ke); !errors.Is(err, ke) || err.Error() != "'commercializzazione'" {
 		t.Errorf("KeyError: %v", err)
 	}
-	if err := PanicError("OverflowError: cannot convert float infinity to integer"); err.Error() != "OverflowError: cannot convert float infinity to integer" {
+	if err := PanicError("FormatNumber: valore infinito"); err.Error() != "FormatNumber: valore infinito" {
 		t.Errorf("stringa: %q", err.Error())
 	}
 	if err := PanicError(42); err.Error() != "42" {
@@ -323,7 +323,7 @@ func TestCheckAndNotifyUsersInfiniteRateAbortsRun(t *testing.T) {
 
 	err := CheckAndNotifyUsers(context.Background(), b, store)
 
-	if err == nil || !strings.Contains(err.Error(), "infinity") {
+	if err == nil || !strings.Contains(err.Error(), "infinito") {
 		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
 	}
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {
