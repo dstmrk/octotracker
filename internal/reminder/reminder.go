@@ -233,21 +233,32 @@ func sendRemindersParallel(ctx context.Context, b *gotgbot.Bot, store Store, rem
 }
 
 // prepareReminders è la FASE 1 di check_and_send_reminders. Un panic (es.
-// una tariffa utente infinita che FormatNumber non sa formattare)
-// interrompe la preparazione e viene restituito come errore.
-func prepareReminders(users []*database.User, remindedMap map[string]database.ScadenzaReminded, currentRates database.CurrentRates, today time.Time) (reminders []queuedReminder, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			reminders, err = nil, checker.PanicError(r)
-		}
-	}()
-
+// una tariffa utente infinita che FormatNumber non sa formattare) scarta
+// solo l'utente che lo ha causato: viene loggato e il giro continua.
+func prepareReminders(users []*database.User, remindedMap map[string]database.ScadenzaReminded, currentRates database.CurrentRates, today time.Time) []queuedReminder {
+	var reminders []queuedReminder
 	for _, user := range users {
-		if message, expiring, ok := prepareReminder(user.ID, user, remindedMap, currentRates, today); ok {
+		message, expiring, ok, err := prepareReminderSafe(user, remindedMap, currentRates, today)
+		if err != nil {
+			logger.Error(fmt.Sprintf("❌ Errore preparazione reminder per %s: %v", user.ID, err))
+			continue
+		}
+		if ok {
 			reminders = append(reminders, queuedReminder{userID: user.ID, message: message, expiring: expiring})
 		}
 	}
-	return reminders, nil
+	return reminders
+}
+
+// prepareReminderSafe esegue prepareReminder convertendo un panic in errore.
+func prepareReminderSafe(user *database.User, remindedMap map[string]database.ScadenzaReminded, currentRates database.CurrentRates, today time.Time) (message string, expiring []ExpiringService, ok bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			message, expiring, ok, err = "", nil, false, checker.PanicError(r)
+		}
+	}()
+	message, expiring, ok = prepareReminder(user.ID, user, remindedMap, currentRates, today)
+	return message, expiring, ok, nil
 }
 
 // CheckAndSendReminders controlla le offerte fisse in scadenza e invia i
@@ -257,9 +268,9 @@ func prepareReminders(users []*database.User, remindedMap map[string]database.Sc
 // odierna in ora locale (una data esplicita è utile per i test). Il
 // chiamante può passare checker.NewBot(token).
 //
-// Restituisce un errore solo dove Python solleverebbe un'eccezione verso
-// run_reminder (da loggare come "❌ Errore inatteso reminder: <err>"); gli
-// errori di invio sono gestiti per utente da checker.SendNotification.
+// Un errore nella preparazione di un utente salta solo quell'utente.
+// L'errore restituito è oggi sempre nil; resta nella firma per i chiamanti.
+// Gli errori di invio sono gestiti per utente da checker.SendNotification.
 func CheckAndSendReminders(ctx context.Context, b *gotgbot.Bot, store Store, today *time.Time) error {
 	startTime := now()
 	var referenceDay time.Time
@@ -280,10 +291,7 @@ func CheckAndSendReminders(ctx context.Context, b *gotgbot.Bot, store Store, tod
 	remindedMap := store.GetScadenzaRemindedMap()
 
 	// ========== FASE 1: Prepara i reminder ==========
-	remindersToSend, err := prepareReminders(users, remindedMap, currentRates, referenceDay)
-	if err != nil {
-		return err
-	}
+	remindersToSend := prepareReminders(users, remindedMap, currentRates, referenceDay)
 
 	// ========== FASE 2: Invia i reminder in parallelo ==========
 	sent := sendRemindersParallel(ctx, b, store, remindersToSend)

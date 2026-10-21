@@ -285,23 +285,35 @@ func PanicError(r any) error {
 }
 
 // prepareNotifications è la FASE 1 di check_and_notify_users: prepara le
-// notifiche per tutti gli utenti. Un panic (es. KeyError) interrompe la
-// preparazione e viene restituito come errore: nessuna notifica viene
-// inviata, come in Python dove l'eccezione esce da check_and_notify_users
-// prima della FASE 2 (bug Python replicato di proposito).
-func prepareNotifications(users []*database.User, currentRates database.CurrentRates) (notifications []queuedNotification, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			notifications, err = nil, PanicError(r)
-		}
-	}()
-
+// notifiche per tutti gli utenti. Un panic (es. KeyError per una tariffa
+// corrente senza commercializzazione, tariffa utente infinita) scarta solo
+// l'utente che lo ha causato: viene loggato e il giro continua con gli
+// altri. L'utente saltato non viene toccato (niente last_notified_rates) e
+// riprova al giro successivo.
+func prepareNotifications(users []*database.User, currentRates database.CurrentRates) []queuedNotification {
+	var notifications []queuedNotification
 	for _, user := range users {
-		if result := prepareUserNotification(user.ID, user, currentRates); result != nil {
+		result, err := prepareUserNotificationSafe(user, currentRates)
+		if err != nil {
+			logger.Error(fmt.Sprintf("❌ Errore preparazione notifica per %s: %v", user.ID, err))
+			continue
+		}
+		if result != nil {
 			notifications = append(notifications, queuedNotification{userID: user.ID, user: user, preparedNotification: result})
 		}
 	}
-	return notifications, nil
+	return notifications
+}
+
+// prepareUserNotificationSafe esegue prepareUserNotification convertendo un
+// panic in errore.
+func prepareUserNotificationSafe(user *database.User, currentRates database.CurrentRates) (result *preparedNotification, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			result, err = nil, PanicError(r)
+		}
+	}()
+	return prepareUserNotification(user.ID, user, currentRates), nil
 }
 
 // CheckAndNotifyUsers controlla le tariffe e invia le notifiche in parallelo
@@ -309,12 +321,11 @@ func prepareNotifications(users []*database.User, currentRates database.CurrentR
 //
 // Il chiamante può passare NewBot(token).
 //
-// Restituisce un errore solo dove Python solleverebbe un'eccezione verso
-// run_checker (KeyError 'commercializzazione' per una tariffa corrente senza
-// commercializzazione, oppure una tariffa utente infinita che FormatNumber
-// non sa formattare): in quel caso nessuna notifica viene inviata e il
-// chiamante logga "❌ Errore inatteso checker: <err>". Gli errori di invio
-// sono gestiti per utente da SendNotification.
+// Un errore nella preparazione di un utente (KeyError 'commercializzazione'
+// per una tariffa corrente senza commercializzazione, tariffa utente
+// infinita che FormatNumber non sa formattare) salta solo quell'utente.
+// L'errore restituito è oggi sempre nil; resta nella firma per i chiamanti.
+// Gli errori di invio sono gestiti per utente da SendNotification.
 func CheckAndNotifyUsers(ctx context.Context, b *gotgbot.Bot, store Store) error {
 	startTime := now()
 	logger.Info("🔍 Inizio controllo tariffe...")
@@ -328,10 +339,7 @@ func CheckAndNotifyUsers(ctx context.Context, b *gotgbot.Bot, store Store) error
 	}
 
 	// ========== FASE 1: Prepara tutte le notifiche ==========
-	notificationsToSend, err := prepareNotifications(users, currentRates)
-	if err != nil {
-		return err
-	}
+	notificationsToSend := prepareNotifications(users, currentRates)
 
 	// ========== FASE 2: Invia notifiche in parallelo ==========
 	notificationsSent := sendNotificationsParallel(ctx, b, store, notificationsToSend)
