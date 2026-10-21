@@ -35,9 +35,38 @@ const (
 // connessioni in corso allo spegnimento.
 const HTTPShutdownTimeout = 5 * time.Second
 
-// ReadHeaderTimeout limita la lettura degli header delle richieste HTTP in
-// arrivo (protezione da client lenti).
-const ReadHeaderTimeout = 60 * time.Second
+// Timeout dei server HTTP (webhook e Mini App/API/health), contro client
+// lenti o inattivi che terrebbero aperte connessioni su una macchina con
+// poca RAM. Le richieste sono piccole (un update Telegram pesa pochi KB, le
+// API non leggono il corpo) e le risposte sono immediate: il webhook risponde
+// appena l'update è in coda, non dopo l'elaborazione.
+const (
+	// ServerReadHeaderTimeout limita la lettura degli header.
+	ServerReadHeaderTimeout = 10 * time.Second
+	// ServerReadTimeout limita la lettura dell'intera richiesta, corpo compreso.
+	ServerReadTimeout = 10 * time.Second
+	// ServerWriteTimeout limita la scrittura della risposta.
+	ServerWriteTimeout = 10 * time.Second
+	// ServerIdleTimeout chiude le connessioni keep-alive inattive.
+	ServerIdleTimeout = 60 * time.Second
+)
+
+// newHTTPServer crea un http.Server con i timeout standard.
+func newHTTPServer(h http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           h,
+		ReadHeaderTimeout: ServerReadHeaderTimeout,
+		ReadTimeout:       ServerReadTimeout,
+		WriteTimeout:      ServerWriteTimeout,
+		IdleTimeout:       ServerIdleTimeout,
+	}
+}
+
+// newWebhookServer crea il server del webhook Telegram.
+func newWebhookServer(h http.Handler) *http.Server { return newHTTPServer(h) }
+
+// newHealthServer crea il server di Mini App, API e /health.
+func newHealthServer(h http.Handler) *http.Server { return newHTTPServer(h) }
 
 // taskDoneCallback logga se un task in background termina per
 // cancellazione o con un errore. err è nil per un task terminato
@@ -113,7 +142,7 @@ func (h *healthServer) open() (net.Listener, error) {
 
 // serve serve le richieste finché ctx non viene cancellato.
 func (h *healthServer) serve(ctx context.Context, ln net.Listener) error {
-	return serveUntilDone(ctx, &http.Server{Handler: h.handler, ReadHeaderTimeout: ReadHeaderTimeout}, ln)
+	return serveUntilDone(ctx, newHealthServer(h.handler), ln)
 }
 
 // serveUntilDone esegue srv.Serve(ln) e lo chiude quando ctx viene

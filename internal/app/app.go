@@ -158,10 +158,7 @@ func runWebhook(ctx context.Context, cfg config.Config, store *database.Store, b
 	if err != nil {
 		return err
 	}
-	srv := &http.Server{
-		Handler:           NewWebhookHandler(cfg.BotToken, cfg.WebhookSecret, updater.GetHandlerFunc("/")),
-		ReadHeaderTimeout: ReadHeaderTimeout,
-	}
+	srv := newWebhookServer(NewWebhookHandler(cfg.BotToken, cfg.WebhookSecret, updater.GetHandlerFunc("/")))
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- srv.Serve(ln) }()
 	if opts.Ready != nil {
