@@ -337,3 +337,21 @@ func TestConversationEndToEnd(t *testing.T) {
 		t.Errorf("answerCallbackQuery %d volte, attese 4", n)
 	}
 }
+
+func TestValidateNumericInputRejectsNonFinite(t *testing.T) {
+	for _, in := range []string{"nan", "NaN", "+nan", "-nan", "inf", "+inf", "Infinity", "1e400", "1,5e400"} {
+		if v, ok, msg := ValidateNumericInput(in); ok || msg != "" {
+			t.Errorf("%q: want rifiutato come non numerico, got (%v, %v, %q)", in, v, ok, msg)
+		}
+	}
+	for _, in := range []string{"-inf", "-1e400"} {
+		if _, ok, msg := ValidateNumericInput(in); ok || msg == "" {
+			t.Errorf("%q: want rifiutato come negativo, got ok=%v msg=%q", in, ok, msg)
+		}
+	}
+	for _, in := range []string{"1e300", "1e-400"} {
+		if _, ok, _ := ValidateNumericInput(in); !ok {
+			t.Errorf("%q: want accettato", in)
+		}
+	}
+}
