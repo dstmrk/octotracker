@@ -88,10 +88,11 @@ func TestErrorHandlerUnhandledSendsAdminAlert(t *testing.T) {
 		t.Errorf("parametri = %v", call.Params)
 	}
 	updateJSON, _ := json.Marshal(ctx.Update)
-	// Il messaggio d'errore non viene sottoposto a escape HTML.
+	// Il messaggio d'errore viene escapato (&lt;b&gt;), altrimenti Telegram
+	// rifiuta l'alert con "can't parse entities".
 	want := "🚨 <b>Errore Bot OctoTracker</b>\n\n" +
 		"<b>Tipo:</b> *errors.errorString\n" +
-		"<b>Messaggio:</b> qualcosa <b>non</b> va\n" +
+		"<b>Messaggio:</b> qualcosa &lt;b&gt;non&lt;/b&gt; va\n" +
 		"<b>Update:</b> " + string(updateJSON)
 	if call.Text() != want {
 		t.Errorf("testo alert =\n%q\natteso\n%q", call.Text(), want)
@@ -285,5 +286,41 @@ func TestPanicError(t *testing.T) {
 	}
 	if panicError("y").Error() != "y" || panicError(3).Error() != "3" {
 		t.Error("valore non convertito")
+	}
+}
+
+// TestErrorHandlerEscapesHTML: tipo e messaggio con <, > e & arrivano
+// escapati, e l'escape avviene dopo il troncamento a 200 caratteri.
+func TestErrorHandlerEscapesHTML(t *testing.T) {
+	captureLogs(t)
+	b, fc := testutil.NewBot(t)
+	h := &ErrorHandler{AdminUserID: "1"}
+
+	h.HandleError(b, nil, errors.New(`<nil> & "x" <b>`))
+	if got := fc.LastCall(t, "sendMessage").Text(); !strings.Contains(got, "<b>Messaggio:</b> &lt;nil&gt; &amp; &#34;x&#34; &lt;b&gt;\n") {
+		t.Errorf("messaggio non escapato: %q", got)
+	}
+
+	h.HandleError(b, nil, errors.New(strings.Repeat("a", 199)+"&b"))
+	want := "<b>Messaggio:</b> " + strings.Repeat("a", 199) + "&amp;\n"
+	if got := fc.LastCall(t, "sendMessage").Text(); !strings.Contains(got, want) {
+		t.Errorf("escape prima del troncamento: %q", got)
+	}
+}
+
+// TestErrorHandlerLongUpdateStaysUnderTelegramLimit: un update con un testo
+// di 4096 caratteri non fa superare all'alert il limite di Telegram.
+func TestErrorHandlerLongUpdateStaysUnderTelegramLimit(t *testing.T) {
+	captureLogs(t)
+	b, fc := testutil.NewBot(t)
+	ctx := testutil.Context(b, testutil.MessageUpdate(1, strings.Repeat("x", 4096)))
+	h := &ErrorHandler{AdminUserID: "1"}
+	h.HandleError(b, ctx, errors.New(strings.Repeat(`"`, 250)))
+	text := fc.LastCall(t, "sendMessage").Text()
+	if n := len([]rune(text)); n >= 4096 {
+		t.Errorf("alert di %d caratteri", n)
+	}
+	if !strings.HasSuffix(text, "…") {
+		t.Errorf("update non troncato con il suffisso: %q", text[len(text)-20:])
 	}
 }
