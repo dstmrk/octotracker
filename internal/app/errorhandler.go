@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"runtime/debug"
 	"time"
 
@@ -21,6 +22,12 @@ var logger = logging.Logger("__main__")
 // MaxAlertMessageLength è la lunghezza massima (in caratteri) del
 // messaggio d'errore nell'alert all'admin.
 const MaxAlertMessageLength = 200
+
+// MaxAlertUpdateLength è la lunghezza massima (in caratteri) della riga
+// "Update:" dell'alert: con il resto del testo l'alert resta sotto il limite
+// di 4096 caratteri di Telegram anche con il messaggio d'errore escapato
+// (200 caratteri possono diventare 1000 con &#34;).
+const MaxAlertUpdateLength = 2800
 
 // ErrorHandler gestisce gli errori restituiti dagli handler:
 //
@@ -82,12 +89,14 @@ func (h *ErrorHandler) handle(b *gotgbot.Bot, update *gotgbot.Update, err error,
 	if h.AdminUserID == "" || b == nil {
 		return
 	}
-	// Il messaggio non viene sottoposto a escape HTML (comportamento storico).
+	// Tipo e messaggio sono escapati dopo il troncamento, così un'entità
+	// non viene tagliata a metà.
 	alert := fmt.Sprintf("🚨 <b>Errore Bot OctoTracker</b>\n\n"+
 		"<b>Tipo:</b> %s\n"+
 		"<b>Messaggio:</b> %s\n"+
 		"<b>Update:</b> %s",
-		kind, truncateRunes(msg, MaxAlertMessageLength), updateString(update))
+		html.EscapeString(kind), html.EscapeString(truncateRunes(msg, MaxAlertMessageLength)),
+		truncateUpdate(updateString(update)))
 	if sendErr := sendAdminAlert(b, h.AdminUserID, alert); sendErr != nil {
 		logger.Error(fmt.Sprintf("❌ Errore invio alert admin: %s", tg.ErrorString(sendErr)))
 		return
@@ -127,6 +136,16 @@ func updateString(update *gotgbot.Update) string {
 		return fmt.Sprintf("(update non serializzabile: %v)", err)
 	}
 	return string(raw)
+}
+
+// truncateUpdate limita la riga "Update:" a MaxAlertUpdateLength caratteri,
+// con il suffisso "…" se è stata accorciata. Il JSON ha già <, > e & in forma
+// \uXXXX, quindi il taglio non può produrre HTML non valido.
+func truncateUpdate(s string) string {
+	if r := []rune(s); len(r) > MaxAlertUpdateLength {
+		return string(r[:MaxAlertUpdateLength]) + "…"
+	}
+	return s
 }
 
 // truncateRunes restituisce i primi n caratteri di s.

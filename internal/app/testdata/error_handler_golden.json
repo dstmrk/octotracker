@@ -338,7 +338,7 @@
    "sent": [
     {
      "chat_id": "999",
-     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: <b>tag</b> & co\n<b>Update:</b> None",
+     "text": "🚨 <b>Errore Bot OctoTracker</b>\n\n<b>Tipo:</b> Forbidden\n<b>Messaggio:</b> Forbidden: &lt;b&gt;tag&lt;/b&gt; &amp; co\n<b>Update:</b> None",
      "parse_mode": "HTML"
     }
    ],
