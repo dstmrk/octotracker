@@ -214,9 +214,11 @@ func sendRemindersParallel(ctx context.Context, b *gotgbot.Bot, store Store, rem
 
 	logger.Info(fmt.Sprintf("📨 Invio %d reminder scadenza in parallelo...", len(remindersToSend)))
 
+	removals := checker.NewRemovalCollector(store)
+
 	sendWithLimit := func(i int) bool {
 		r := remindersToSend[i]
-		success := checker.SendNotification(ctx, b, store, r.userID, r.message, nil)
+		success := checker.SendNotification(ctx, b, removals, r.userID, r.message, nil)
 		if success {
 			// Marca come notificato ogni servizio incluso nel reminder
 			for _, e := range r.expiring {
@@ -229,7 +231,9 @@ func sendRemindersParallel(ctx context.Context, b *gotgbot.Bot, store Store, rem
 		return false
 	}
 
-	return checker.ParallelSend(ctx, len(remindersToSend), sendWithLimit)
+	sent := checker.ParallelSend(ctx, len(remindersToSend), sendWithLimit)
+	removals.Flush(len(remindersToSend))
+	return sent
 }
 
 // prepareReminders è la FASE 1 di check_and_send_reminders. Un panic (es.

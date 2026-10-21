@@ -54,7 +54,8 @@ func TestClassifySendError(t *testing.T) {
 		{"401 InvalidToken", testutil.TelegramError("sendMessage", 401, "Unauthorized"), kindTelegram},
 		{"404 InvalidToken", testutil.TelegramError("sendMessage", 404, "Not Found"), kindTelegram},
 		{"409 Conflict", testutil.TelegramError("sendMessage", 409, "Conflict"), kindTelegram},
-		{"400 BadRequest (sottoclasse di NetworkError)", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"), kindNetwork},
+		{"400 BadRequest (sottoclasse di NetworkError)", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"), kindTelegram},
+		{"400 con retry_after", testutil.RetryAfterError("sendMessage", 3), kindRetryAfter},
 		{"429 senza retry_after", testutil.TelegramError("sendMessage", 429, "Too Many Requests"), kindNetwork},
 		{"500", testutil.TelegramError("sendMessage", 500, "Internal Server Error"), kindNetwork},
 		{"502", testutil.TelegramError("sendMessage", 502, "Bad Gateway"), kindNetwork},
@@ -74,10 +75,9 @@ func TestClassifySendError(t *testing.T) {
 	}
 }
 
-// Un vero HTTP 400 "chat not found" in PTB è BadRequest ⊂ NetworkError:
-// send_notification lo intercetta nel ramo NetworkError e NON rimuove
-// l'utente (bug Python replicato di proposito).
-func TestSendNotificationRealBadRequestChatNotFoundIsNetworkError(t *testing.T) {
+// Un HTTP 400 "chat not found" corrisponde a TelegramErrorsToDelete: l'utente
+// viene rimosso come per un 403.
+func TestSendNotificationBadRequestChatNotFoundRemovesUser(t *testing.T) {
 	logs := captureLogs(t)
 
 	err := testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found")
@@ -86,10 +86,119 @@ func TestSendNotificationRealBadRequestChatNotFoundIsNetworkError(t *testing.T) 
 	if result {
 		t.Error("atteso False")
 	}
-	if got := store.removedIDs(); len(got) != 0 {
-		t.Errorf("l'utente non deve essere rimosso: %v", got)
+	assertRemoved(t, store)
+	assertContains(t, logs.String(), "WARNING - 🚫 Utente 123456 non raggiungibile ('"+tg.ErrorString(err)+"') - rimozione dal database\n")
+}
+
+func TestSendNotificationBadRequestChatNotFoundIsCaseInsensitive(t *testing.T) {
+	_, store := sendWithError(t, testutil.TelegramError("sendMessage", 400, "Bad Request: Chat Not Found"))
+	assertRemoved(t, store)
+}
+
+func TestSendNotificationOtherBadRequestIsTelegramErrorNotRemoved(t *testing.T) {
+	logs := captureLogs(t)
+	err := testutil.TelegramError("sendMessage", 400, "Bad Request: can't parse entities")
+
+	result, store := sendWithError(t, err)
+
+	if result || len(store.removedIDs()) != 0 {
+		t.Errorf("result=%v removed=%v", result, store.removedIDs())
 	}
-	assertContains(t, logs.String(), "ERROR - 🌐 Errore di rete invio messaggio a 123456: "+tg.ErrorString(err)+"\n")
+	assertContains(t, logs.String(), "ERROR - ❌ Errore Telegram invio messaggio a 123456: "+tg.ErrorString(err)+"\n")
+}
+
+func TestRemovalCollectorFlushBelowThreshold(t *testing.T) {
+	store := &fakeStore{}
+	c := NewRemovalCollector(store)
+	for i := range MinSendsForRemovalGuard - 1 {
+		c.RemoveUser(fmt.Sprint(i))
+	}
+
+	if got := c.Flush(MinSendsForRemovalGuard - 1); got != MinSendsForRemovalGuard-1 {
+		t.Errorf("Flush = %d", got)
+	}
+	if got := len(store.removedIDs()); got != MinSendsForRemovalGuard-1 {
+		t.Errorf("rimossi = %d", got)
+	}
+}
+
+func TestRemovalCollectorGuardBlocksMassRemoval(t *testing.T) {
+	logs := captureLogs(t)
+	store := &fakeStore{}
+	c := NewRemovalCollector(store)
+	for i := range MinSendsForRemovalGuard {
+		c.RemoveUser(fmt.Sprint(i))
+	}
+
+	if got := c.Flush(MinSendsForRemovalGuard); got != 0 {
+		t.Errorf("Flush = %d, atteso 0", got)
+	}
+	if got := store.removedIDs(); len(got) != 0 {
+		t.Errorf("rimossi = %v", got)
+	}
+	assertContains(t, logs.String(), "ERROR - 🛑 10 invii su 10 falliti con errori di rimozione: nessun utente rimosso")
+}
+
+func TestRemovalCollectorHalfOrLessIsRemoved(t *testing.T) {
+	store := &fakeStore{}
+	c := NewRemovalCollector(store)
+	for i := range MinSendsForRemovalGuard {
+		c.RemoveUser(fmt.Sprint(i))
+	}
+
+	// Esattamente la metà degli invii: non è "più della metà".
+	if got := c.Flush(MinSendsForRemovalGuard * 2); got != MinSendsForRemovalGuard {
+		t.Errorf("Flush = %d", got)
+	}
+}
+
+func TestRemovalCollectorFlushEmptiesCollector(t *testing.T) {
+	store := &fakeStore{}
+	c := NewRemovalCollector(store)
+	c.RemoveUser("1")
+	c.Flush(100)
+	if got := c.Flush(100); got != 0 {
+		t.Errorf("secondo Flush = %d", got)
+	}
+	if got := len(store.removedIDs()); got != 1 {
+		t.Errorf("rimossi = %d", got)
+	}
+}
+
+func queueN(n int) []queuedNotification {
+	var q []queuedNotification
+	for i := range n {
+		id := fmt.Sprint(1000 + i)
+		q = append(q, queuedNotification{userID: id, user: &database.User{ID: id}, preparedNotification: &preparedNotification{message: "m"}})
+	}
+	return q
+}
+
+// Con il token sbagliato ogni invio risponde "chat not found": la guardia
+// impedisce di svuotare la tabella users.
+func TestSendNotificationsParallelGuardKeepsUsers(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	fc.FailMethod("sendMessage", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"))
+	store := &fakeStore{}
+
+	if sent := sendNotificationsParallel(context.Background(), b, store, queueN(12)); sent != 0 {
+		t.Errorf("inviate = %d", sent)
+	}
+	if got := store.removedIDs(); len(got) != 0 {
+		t.Errorf("rimossi = %v", got)
+	}
+}
+
+func TestSendNotificationsParallelRemovesFewUnreachable(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	fc.FailMethod("sendMessage", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"))
+	store := &fakeStore{}
+
+	sendNotificationsParallel(context.Background(), b, store, queueN(3))
+
+	if got := store.removedIDs(); len(got) != 3 {
+		t.Errorf("rimossi = %v", got)
+	}
 }
 
 func TestSendNotificationChatMigratedLogsTelegramError(t *testing.T) {

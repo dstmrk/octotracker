@@ -66,18 +66,16 @@ type sendErrorKind int
 const (
 	kindRetryAfter sendErrorKind = iota // rate limit con retry_after
 	kindTimedOut                        // timeout di trasporto
-	kindNetwork                         // errore di rete, risposta non JSON, 400 o 5xx
-	kindTelegram                        // altri errori Telegram: 401, 403, 404, 409, chat migrata
+	kindNetwork                         // errore di rete, risposta non JSON o 5xx
+	kindTelegram                        // altri errori Telegram: 400, 401, 403, 404, 409, chat migrata
 )
 
-// classifySendError classifica un errore di invio come la versione Python:
+// classifySendError classifica un errore di invio:
 //
 //   - retry_after → kindRetryAfter; migrate_to_chat_id → kindTelegram;
-//   - 401, 403, 404 e 409 → kindTelegram (unici candidati alla rimozione
-//     dell'utente);
-//   - 400 → kindNetwork: un "Bad Request: chat not found" reale viene
-//     loggato come errore di rete e l'utente NON viene rimosso (bug Python
-//     replicato di proposito);
+//   - 400, 401, 403, 404 e 409 → kindTelegram (candidati alla rimozione
+//     dell'utente se il messaggio corrisponde a TelegramErrorsToDelete,
+//     per esempio "Bad Request: chat not found");
 //   - ogni altro codice (5xx, 429 senza retry_after, ...) → kindNetwork;
 //   - deadline del context o timeout net.Error → kindTimedOut; altri errori
 //     di trasporto e risposte non JSON → kindNetwork.
@@ -93,7 +91,7 @@ func classifySendError(err error) sendErrorKind {
 			}
 		}
 		switch tgErr.Code {
-		case http.StatusForbidden, http.StatusUnauthorized, http.StatusNotFound, http.StatusConflict:
+		case http.StatusBadRequest, http.StatusForbidden, http.StatusUnauthorized, http.StatusNotFound, http.StatusConflict:
 			return kindTelegram
 		default:
 			return kindNetwork
@@ -141,7 +139,7 @@ func sendMessage(ctx context.Context, b *gotgbot.Bot, userID, text string, reply
 // propagati ma loggati (vedi classifySendError):
 //
 //   - rate limit: warning, nessun nuovo tentativo;
-//   - timeout ed errori di rete (incluso il 400): errore loggato;
+//   - timeout ed errori di rete: errore loggato;
 //   - altri errori Telegram: se il messaggio (in minuscolo) contiene uno dei
 //     TelegramErrorsToDelete l'utente viene rimosso dal database, altrimenti
 //     l'errore viene loggato.
@@ -174,6 +172,57 @@ func SendNotification(ctx context.Context, b *gotgbot.Bot, store UserRemover, us
 		logger.Error(fmt.Sprintf("❌ Errore Telegram invio messaggio a %s: %s", userID, errText))
 	}
 	return false
+}
+
+// Soglie della guardia contro le rimozioni di massa: se in un giro almeno
+// MinSendsForRemovalGuard utenti, e più della metà degli invii tentati,
+// risultano da rimuovere, la causa più probabile è un problema nostro (per
+// esempio il token di un altro bot) e non si rimuove nessuno.
+const MinSendsForRemovalGuard = 10
+
+// RemovalCollector raccoglie le rimozioni richieste da SendNotification
+// durante un giro di invii e le applica con Flush solo se la guardia lo
+// permette. Implementa UserRemover ed è sicuro per uso concorrente.
+type RemovalCollector struct {
+	store UserRemover
+
+	mu  sync.Mutex
+	ids []string
+}
+
+// NewRemovalCollector crea un collettore che rimuove da store.
+func NewRemovalCollector(store UserRemover) *RemovalCollector {
+	return &RemovalCollector{store: store}
+}
+
+// RemoveUser registra la rimozione di userID senza applicarla.
+func (c *RemovalCollector) RemoveUser(userID string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ids = append(c.ids, userID)
+	return true
+}
+
+// Flush applica le rimozioni raccolte, dato il numero di invii tentati nel
+// giro, e restituisce quanti utenti ha rimosso. Sopra la soglia della
+// guardia non rimuove nessuno e logga un errore.
+func (c *RemovalCollector) Flush(attempted int) int {
+	c.mu.Lock()
+	ids := c.ids
+	c.ids = nil
+	c.mu.Unlock()
+
+	if len(ids) >= MinSendsForRemovalGuard && len(ids)*2 > attempted {
+		logger.Error(fmt.Sprintf("🛑 %d invii su %d falliti con errori di rimozione: nessun utente rimosso, verifica token e configurazione", len(ids), attempted))
+		return 0
+	}
+	removed := 0
+	for _, id := range ids {
+		if c.store.RemoveUser(id) {
+			removed++
+		}
+	}
+	return removed
 }
 
 // validateCheckerData verifica che ci siano utenti e tariffe disponibili
@@ -251,11 +300,13 @@ func sendNotificationsParallel(ctx context.Context, b *gotgbot.Bot, store Store,
 
 	logger.Info(fmt.Sprintf("📨 Invio %d notifiche in parallelo (max 10 simultanee)...", len(notificationsToSend)))
 
+	removals := NewRemovalCollector(store)
+
 	// Invia notifica con rate limiting
 	sendWithLimit := func(i int) bool {
 		n := notificationsToSend[i]
 		replyMarkup := BuildRateUpdateKeyboard()
-		success := SendNotification(ctx, b, store, n.userID, n.message, replyMarkup)
+		success := SendNotification(ctx, b, removals, n.userID, n.message, replyMarkup)
 		if success {
 			// Aggiorna last_notified_rates per questo utente
 			userRates := *n.user
@@ -271,7 +322,9 @@ func sendNotificationsParallel(ctx context.Context, b *gotgbot.Bot, store Store,
 	}
 
 	// Esegui tutte le notifiche in parallelo (max 10 simultanee) e conta i successi
-	return ParallelSend(ctx, len(notificationsToSend), sendWithLimit)
+	sent := ParallelSend(ctx, len(notificationsToSend), sendWithLimit)
+	removals.Flush(len(notificationsToSend))
+	return sent
 }
 
 // PanicError converte il valore di un panic della FASE 1 (KeyError per una
