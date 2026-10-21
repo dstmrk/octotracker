@@ -275,17 +275,16 @@ func TestKeyErrorString(t *testing.T) {
 	}
 }
 
-// Una tariffa corrente senza commercializzazione (NULL nel DB) fa sollevare
-// KeyError in _build_current_octopus_rates: l'eccezione esce da
-// check_and_notify_users e nessuna notifica viene inviata, nemmeno agli
-// utenti preparati prima.
-func TestCheckAndNotifyUsersKeyErrorAbortsRun(t *testing.T) {
+// Una tariffa corrente senza commercializzazione (NULL nel DB) fa andare in
+// panic buildCurrentOctopusRates (KeyError): viene saltato solo l'utente
+// interessato, gli altri sono notificati.
+func TestCheckAndNotifyUsersKeyErrorSkipsOnlyBrokenUser(t *testing.T) {
 	logs := captureLogs(t)
 	b, fc := testutil.NewBot(t)
 	ok := userWith("1", utility("fissa", "monoraria", 0.145, 72.0), nil)
 	broken := userWith("2", utility("variabile", "monoraria", 0.02, 72.0), nil)
 	store := &fakeStore{
-		users: []*database.User{ok, broken},
+		users: []*database.User{broken, ok},
 		rates: database.CurrentRates{
 			"luce": {
 				"fissa":     {"monoraria": rate(0.130, 72.0)},
@@ -295,36 +294,63 @@ func TestCheckAndNotifyUsersKeyErrorAbortsRun(t *testing.T) {
 		},
 	}
 
-	err := CheckAndNotifyUsers(context.Background(), b, store)
+	if err := CheckAndNotifyUsers(context.Background(), b, store); err != nil {
+		t.Fatalf("errore inatteso: %v", err)
+	}
 
-	var ke KeyError
-	if !errors.As(err, &ke) || err.Error() != "'commercializzazione'" {
-		t.Fatalf("atteso KeyError 'commercializzazione', ottenuto %v", err)
+	calls := fc.CallsTo("sendMessage")
+	if len(calls) != 1 || calls[0].ChatID() != "1" {
+		t.Fatalf("atteso 1 invio all'utente 1, ottenuti %d", len(calls))
 	}
-	if n := len(fc.CallsTo("sendMessage")); n != 0 {
-		t.Errorf("nessun invio atteso, ottenuti %d", n)
-	}
-	if len(store.saved) != 0 || len(store.pending) != 0 {
-		t.Error("nessun salvataggio atteso")
+	for _, sv := range store.saved {
+		if sv.id == "2" {
+			t.Error("l'utente saltato non deve avere last_notified_rates aggiornato")
+		}
 	}
 	out := logs.String()
 	assertContains(t, out, "📤 Utente 1: notifica accodata (luce)")
-	assertNotContains(t, out, "Checker completato")
+	assertContains(t, out, "❌ Errore preparazione notifica per 2: 'commercializzazione'")
+	assertContains(t, out, "Checker completato")
 }
 
-// Una tariffa utente infinita (registrazione che accetta "inf", bug Python)
-// fa andare in panic FormatNumber: tutta l'esecuzione si ferma.
-func TestCheckAndNotifyUsersInfiniteRateAbortsRun(t *testing.T) {
+// Una tariffa utente infinita (registrazione che accetta "inf", #171) fa
+// andare in panic FormatNumber: viene saltato solo quell'utente.
+func TestCheckAndNotifyUsersInfiniteRateSkipsOnlyThatUser(t *testing.T) {
+	logs := captureLogs(t)
 	b, fc := testutil.NewBot(t)
 	store := &fakeStore{
-		users: []*database.User{userWith("1", utility("fissa", "monoraria", math.Inf(1), 72.0), nil)},
+		users: []*database.User{
+			userWith("1", utility("fissa", "monoraria", math.Inf(1), 72.0), nil),
+			userWith("2", utility("fissa", "monoraria", 0.145, 72.0), nil),
+		},
 		rates: database.CurrentRates{"luce": {"fissa": {"monoraria": rate(0.130, 72.0)}, "variabile": {}}},
 	}
 
-	err := CheckAndNotifyUsers(context.Background(), b, store)
+	if err := CheckAndNotifyUsers(context.Background(), b, store); err != nil {
+		t.Fatalf("errore inatteso: %v", err)
+	}
 
-	if err == nil || !strings.Contains(err.Error(), "infinito") {
-		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
+	calls := fc.CallsTo("sendMessage")
+	if len(calls) != 1 || calls[0].ChatID() != "2" {
+		t.Fatalf("atteso 1 invio all'utente 2, ottenuti %d", len(calls))
+	}
+	assertContains(t, logs.String(), "❌ Errore preparazione notifica per 1:")
+}
+
+// Se tutti gli utenti vanno in panic il giro termina con 0 notifiche e
+// senza errore globale.
+func TestCheckAndNotifyUsersAllUsersPanic(t *testing.T) {
+	b, fc := testutil.NewBot(t)
+	store := &fakeStore{
+		users: []*database.User{
+			userWith("1", utility("fissa", "monoraria", math.Inf(1), 72.0), nil),
+			userWith("2", utility("fissa", "monoraria", math.Inf(1), 72.0), nil),
+		},
+		rates: database.CurrentRates{"luce": {"fissa": {"monoraria": rate(0.130, 72.0)}, "variabile": {}}},
+	}
+
+	if err := CheckAndNotifyUsers(context.Background(), b, store); err != nil {
+		t.Fatalf("errore inatteso: %v", err)
 	}
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {
 		t.Errorf("nessun invio atteso, ottenuti %d", n)

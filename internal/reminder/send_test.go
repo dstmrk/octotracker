@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 	"time"
 
@@ -158,36 +157,64 @@ func TestCheckAndSendRemindersWithoutRates(t *testing.T) {
 	}
 }
 
-// Un panic nella FASE 1 (FormatNumber su una tariffa infinita) esce da
-// CheckAndSendReminders come errore: nessun invio.
-func TestCheckAndSendRemindersPhaseOneError(t *testing.T) {
-	luce := fissaUser("2025-01-20", nil).Luce
-	luce.Energia = math.Inf(1)
-	store := &fakeStore{users: []*database.User{
-		{ID: "1", Luce: fissaUser("2025-01-20", nil).Luce},
-		{ID: "2", Luce: luce},
-	}}
+// Un panic nella FASE 1 (FormatNumber su una tariffa infinita) salta solo
+// l'utente interessato: gli altri ricevono il reminder.
+func TestCheckAndSendRemindersSkipsUserWithPanic(t *testing.T) {
+	logs := captureLogs(t)
+	good := fissaUser("2025-01-02", nil)
+	broken := fissaUser("2025-01-02", nil)
+	broken.Luce.Energia = math.Inf(1)
+	good.ID, broken.ID = "1", "2"
+	store := &fakeStore{users: []*database.User{&broken, &good}}
 	b, fc := testutil.NewBot(t)
 
-	err := CheckAndSendReminders(context.Background(), b, store, dp(TODAY))
-
-	if err == nil || !strings.Contains(err.Error(), "infinito") {
-		t.Fatalf("atteso errore per la tariffa infinita, ottenuto %v", err)
+	if err := CheckAndSendReminders(context.Background(), b, store, dp(TODAY)); err != nil {
+		t.Fatalf("errore inatteso: %v", err)
 	}
+
+	calls := fc.CallsTo("sendMessage")
+	if len(calls) != 1 || calls[0].ChatID() != "1" {
+		t.Fatalf("atteso 1 invio all'utente 1, ottenuti %d", len(calls))
+	}
+	if len(store.marked) != 1 || store.marked[0] != "1/luce/2025-01-02" {
+		t.Errorf("marked = %v", store.marked)
+	}
+	assertContains(t, logs.String(), "❌ Errore preparazione reminder per 2:")
+}
+
+// Se tutti gli utenti vanno in panic il giro termina senza invii e senza
+// errore globale.
+func TestCheckAndSendRemindersAllUsersPanic(t *testing.T) {
+	logs := captureLogs(t)
+	u1 := fissaUser("2025-01-02", nil)
+	u2 := fissaUser("2025-01-02", nil)
+	u1.ID, u2.ID = "1", "2"
+	u1.Luce.Energia, u2.Luce.Energia = math.Inf(1), math.NaN()
+	store := &fakeStore{users: []*database.User{&u1, &u2}}
+	b, fc := testutil.NewBot(t)
+
+	if err := CheckAndSendReminders(context.Background(), b, store, dp(TODAY)); err != nil {
+		t.Fatalf("errore inatteso: %v", err)
+	}
+
 	if n := len(fc.CallsTo("sendMessage")); n != 0 {
 		t.Errorf("nessun invio atteso, ottenuti %d", n)
 	}
+	assertContains(t, logs.String(), "❌ Errore preparazione reminder per 1:")
+	assertContains(t, logs.String(), "❌ Errore preparazione reminder per 2:")
 }
 
-func TestPrepareRemindersRecoversNonStringPanic(t *testing.T) {
+func TestPrepareReminderSafeRecoversNonStringPanic(t *testing.T) {
 	// Un servizio sconosciuto in formatServiceSection (KeyError in Python)
-	// va in panic; prepareReminders lo converte in errore.
-	reminders, err := func() ([]queuedReminder, error) {
-		defer func() { _ = recover() }()
-		return prepareReminders([]*database.User{nil}, nil, nil, TODAY)
-	}()
-	if err == nil || reminders != nil {
-		t.Errorf("atteso errore, ottenuti %v, %v", reminders, err)
+	// va in panic; prepareReminderSafe lo converte in errore.
+	_, _, ok, err := prepareReminderSafe(&database.User{ID: "1"}, nil, nil, TODAY)
+	if err != nil || ok {
+		t.Errorf("utente senza scadenze: atteso (false, nil), ottenuti %v, %v", ok, err)
+	}
+	u := fissaUser("2025-01-02", nil)
+	u.Luce.Energia = math.Inf(1)
+	if _, _, ok, err = prepareReminderSafe(&u, nil, nil, TODAY); err == nil || ok {
+		t.Errorf("atteso errore, ottenuti %v, %v", ok, err)
 	}
 }
 
