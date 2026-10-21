@@ -5,7 +5,7 @@
 # Stage 1: compila un binario statico (CGO disabilitato, SQLite puro Go).
 # Il build gira sull'architettura dell'host e fa cross-compile verso il
 # target (linux/amd64, linux/arm64): niente emulazione QEMU per la compilazione.
-FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS build
 
 WORKDIR /src
 
