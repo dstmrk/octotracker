@@ -38,7 +38,7 @@ func readJSON(t *testing.T, name string, v any) {
 type goldenNow []int
 
 func (n goldenNow) time() time.Time {
-	return time.Date(n[0], time.Month(n[1]), n[2], n[3], n[4], n[5], n[6]*1000, time.Local)
+	return time.Date(n[0], time.Month(n[1]), n[2], n[3], n[4], n[5], n[6]*1000, time.UTC)
 }
 
 func TestGoldenCooldown(t *testing.T) {

@@ -17,14 +17,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 
 	"github.com/dstmrk/octotracker/internal/checker"
 	"github.com/dstmrk/octotracker/internal/config"
 	"github.com/dstmrk/octotracker/internal/database"
-	"github.com/dstmrk/octotracker/internal/dateutil"
 	"github.com/dstmrk/octotracker/internal/testutil"
 )
 
@@ -228,12 +226,6 @@ func TestGoldenE2EDispatcher(t *testing.T) {
 		Steps []e2eStep `json:"steps"`
 	}
 	loadGolden(t, "e2e_golden.json", &scenarios)
-	// Il golden è stato generato con TZ=UTC: il cooldown del feedback
-	// dipende dal fuso (bug Python mantenuto), quindi l'orologio è in UTC.
-	// Registrato per primo, viene ripristinato dopo le altre Cleanup.
-	prevNow := dateutil.Now
-	dateutil.Now = func() time.Time { return time.Now().UTC() }
-	t.Cleanup(func() { dateutil.Now = prevNow })
 	captureLogs(t)
 	compared := 0
 	t.Cleanup(func() {
