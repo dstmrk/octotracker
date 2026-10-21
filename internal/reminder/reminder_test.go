@@ -251,6 +251,22 @@ func TestCheckAndSendNotMarkedOnFailure(t *testing.T) {
 	}
 }
 
+// Un 400 "chat not found" rimuove l'utente anche dal reminder.
+func TestCheckAndSendRemovesUserOnChatNotFound(t *testing.T) {
+	db := openTestDB(t)
+	db.SaveUser("1", fissaUser("2025-01-20", nil))
+	b, fc := testutil.NewBot(t)
+	fc.FailMethod("sendMessage", testutil.TelegramError("sendMessage", 400, "Bad Request: chat not found"))
+
+	if err := CheckAndSendReminders(context.Background(), b, db, dp(TODAY)); err != nil {
+		t.Fatal(err)
+	}
+
+	if n := db.GetUserCount(); n != 0 {
+		t.Errorf("utenti rimasti = %d, atteso 0", n)
+	}
+}
+
 // test_check_and_send_skips_when_not_expiring
 func TestCheckAndSendSkipsWhenNotExpiring(t *testing.T) {
 	db := openTestDB(t)
