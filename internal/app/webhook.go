@@ -18,8 +18,10 @@ import (
 // webhook.
 const SecretTokenHeader = "X-Telegram-Bot-Api-Secret-Token"
 
-// MaxWebhookBodySize è il limite del corpo di una richiesta al webhook.
-const MaxWebhookBodySize = 100 * 1024 * 1024
+// MaxWebhookBodySize è il limite del corpo di una richiesta al webhook. Un
+// update Telegram in JSON pesa di solito pochi KB (il testo di un messaggio
+// arriva al massimo a 4096 caratteri, i file viaggiano come id).
+const MaxWebhookBodySize = 1 << 20
 
 // AllowedUpdates sono tutti i tipi di update, passati a setWebhook come
 // allowed_updates.
