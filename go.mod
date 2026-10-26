@@ -3,7 +3,7 @@ module github.com/dstmrk/octotracker
 go 1.27.3
 
 require (
-	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.36
+	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.37
 	modernc.org/sqlite v1.60.1
 )
 
