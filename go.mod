@@ -4,7 +4,7 @@ go 1.27.3
 
 require (
 	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.37
-	modernc.org/sqlite v1.61.0
+	modernc.org/sqlite v1.61.1
 )
 
 require (
