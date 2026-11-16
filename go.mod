@@ -1,6 +1,6 @@
 module github.com/dstmrk/octotracker
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.37
